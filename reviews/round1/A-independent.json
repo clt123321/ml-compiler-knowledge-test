@@ -1,0 +1,38 @@
+{
+  "module": "arch_perf_model",
+  "code": "A",
+  "reviewer": "primary-review-canary",
+  "reviewedAt": "2026-07-26",
+  "answers": [
+    {
+      "id": "A-ARITH-001",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Batch-1 GEMV on A100. Compute: 2*4096*4096 = 33.55 MFLOP; Memory streamed: W dominates at 4096*4096*2 = 32 MiB, x and y negligible ~ 8 KiB each; therefore AI ~= 33.55e6 / 33.55e6 = ~1 FLOP/byte. A100 FP16 Tensor-Core ridge is 312 TFLOP/s / 2 TB/s = 156 FLOP/byte, so AI << ridge => memory-bound. Ceiling = BW * AI = 2 TB/s * 1 = ~2 TFLOP/s. Option A (compute-bound at 312 TFLOP/s) contradicts Roofline for a memory-bound workload; option B mis-uses FP32 ridge and wrong AI; option D confuses SMEM staging with binding ceiling (HBM bandwidth is the true limit for streaming weights)."
+    },
+    {
+      "id": "A-ARITH-002",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Elementwise softplus. Per element: read 4 B FP32 A, write 4 B FP32 B => 8 B; ~10 FLOP. AI = 10/8 = 1.25 FLOP/byte. A100 FP32 ridge point = 19.5 TFLOP/s / 2 TB/s = ~9.75 FLOP/byte. AI < ridge => memory-bound. Ceiling = 2 TB/s * 1.25 = 2.5 TFLOP/s. Option B is wrong because writes DO count against DRAM bandwidth (bytes-moved model); option A/D falsely claim compute-bound."
+    },
+    {
+      "id": "A-LITTLE-004",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Little's Law: outstanding bytes = BW * L = 2e12 B/s * 400e-9 s = 8e5 bytes = 800 KB in flight. Divided by 128 B per load => 6,250 in-flight loads. Option B mis-scopes Little's Law to a single scheduler; option C mis-mixes SM count with load concurrency; option D denies latency's role in Little's Law which is directly false."
+    },
+    {
+      "id": "A-MEM-005",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: A100 register file = 65,536 * 4 B = 256 KB per SM; unified L1/SMEM = up to 192 KB per SM. 256 > 192 => TRUE. B: Aggregate SMEM BW across ~108 SMs (each ~ hundreds GB/s) totals tens of TB/s, much higher than HBM's ~2 TB/s => FALSE (statement inverts the inequality). C: SMEM banks serialize on same-bank distinct-address accesses; global memory uses coalescing on 32/64/128 B transactions => TRUE. D: Constant memory broadcast for uniform warp access is a documented HW feature (constant cache) delivering ~register-latency reads => TRUE."
+    },
+    {
+      "id": "A-OCC-003",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Registers per block = 96 * 256 = 24,576. Blocks per SM (register-limited) = floor(65,536 / 24,576) = 2. Threads = 2 * 256 = 512 = 16 warps. Occupancy = 16/64 = 25%. Option A off by a factor of two (claims 4 blocks); option B incorrect (register budget only supports 2 blocks); option C invents a fake 8-block cap; option D matches the arithmetic."
+    }
+  ]
+}

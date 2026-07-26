@@ -1,0 +1,38 @@
+{
+  "module": "profiling_debug",
+  "code": "L",
+  "reviewer": "primary-review-canary",
+  "reviewedAt": "2026-07-26",
+  "answers": [
+    {
+      "id": "L-LAUNCH-001",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Signals: 1000 kernels * 20 µs CPU gap = ~20 ms of dispatch overhead ~= 40% of 50 ms wall time; kernel sum 30 ms and GPU utilization 60% match. No PCIe traffic, no dataloader stall => host-side launch dispatch is the bottleneck. Correct mitigations: kernel fusion, CUDA Graphs capture/replay, or making each kernel larger so overhead amortizes. A misattributes to memory bandwidth (no HBM data supports this). B claims compute-bound with zero evidence. C blames I/O despite explicit 'no PCIe / no dataloader stall' evidence."
+    },
+    {
+      "id": "L-NCU-004",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "DRAM throughput at 92% peak with SM utilization only 12% and top stall = 'Long Scoreboard (memory latency)' is the textbook DRAM-bandwidth-bound signature for a streaming FP32 kernel. Achieved occupancy 0.85 is already high — more warps cannot help if HBM is the bottleneck; more math per byte is what unlocks headroom. Correct mitigation: fuse to reduce bytes moved and/or move to a lower-precision dtype (bf16/fp16) to double AI. A misreads low SM util as headroom (it is the SYMPTOM of memory stalls). C wrongly targets L1 (cache is irrelevant for a streaming no-reuse kernel). D wrongly targets occupancy which is already near max."
+    },
+    {
+      "id": "L-TIMING-002",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "CUDA kernel launches from Python are asynchronous. Without `torch.cuda.synchronize()` (or CUDA events), the CPU timer in Attempt 1 captures only queue-dispatch time, not GPU execution — the 0.008 ms number is the launch cost, not the matmul work. Attempt 2 synchronizes before starting the timer and after finishing => wall time truly bounds GPU work. B confuses launch time with kernel time. C wrongly claims `torch.cuda.synchronize()` is stream-scoped-and-broken. D fabricates a JIT warmup story."
+    },
+    {
+      "id": "L-TOL-003",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Two conforming FP16 GEMMs can differ by O(K * eps_fp16) in individual output entries due to different accumulation order/tile schedules; even with FP32 accumulators, the pair-wise reduction tree, Tensor-Core split-K, and rounding differ across implementations. atol/rtol = 1e-5/1e-6 are FP64-scale and inappropriate; realistic tolerances for FP16 GEMM at K=1024 are ~1e-2 (absolute) with rtol on similar order. A is backwards (FP32 accum is standard best-practice). B is false (FP16 matmul is not bit-deterministic across implementations). D misuses `check_dtype`, which controls dtype comparison, not numerical tolerance."
+    },
+    {
+      "id": "L-WARMUP-005",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "The first CUDA matmul call in a process pays one-time costs: cuBLAS handle initialization, kernel loading/lazy JIT (cubins), autotune/heuristic algo selection, and cache warmup. Correct discipline: run several warmup iterations, then time N iterations with CUDA events (or wall time with synchronize), and report a robust statistic (median). B mis-interprets Event.elapsed_time (it correctly returns the total interval; dividing by 100 IS the mean). C fabricates a 'kernel result cache'. D fabricates automatic torch.compile promotion."
+    }
+  ]
+}

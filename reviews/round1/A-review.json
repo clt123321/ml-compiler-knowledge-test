@@ -1,0 +1,78 @@
+[
+  {
+    "id": "A-ARITH-001",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["C"],
+    "officialAnswer": ["C"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "A-ARITH-002",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["C"],
+    "officialAnswer": ["C"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "A-LITTLE-004",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["A"],
+    "officialAnswer": ["A"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "A-MEM-005",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["A", "C", "D"],
+    "officialAnswer": ["A", "C", "D"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "wording",
+        "note": "Option D says the constant-memory broadcast delivers the value 'in one cycle' — the CUDA C++ Programming Guide phrases this more carefully as 'as fast as reading from a register' when all warp threads hit the same address in the cached constant memory. The exact cycle count is not strictly 1; the claim is otherwise correct and well-supported. Consider softening to match the canonical wording."
+      }
+    ],
+    "overallResult": "MINOR"
+  },
+  {
+    "id": "A-OCC-003",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["D"],
+    "officialAnswer": ["D"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  }
+]

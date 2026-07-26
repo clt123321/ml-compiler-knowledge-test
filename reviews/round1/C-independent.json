@@ -1,0 +1,38 @@
+{
+  "module": "graph_tensor_ir",
+  "code": "C",
+  "reviewer": "primary-review-canary",
+  "reviewedAt": "2026-07-26",
+  "answers": [
+    {
+      "id": "C-IRLEVEL-005",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: operator-level IRs (HLO/ONNX) treat matmul/softmax/layernorm as coarse-grained ops with implicit iteration; loop-level IRs (linalg/affine/TensorIR) make loops/indexing explicit => TRUE. B: XLA HLO performs graph-level fusion at the operator level (HloFusion pass); the claim that loop-level IRs are strictly required for fusion decisions is false. C: tiling/unrolling/vectorization are IR-level ops in TensorIR/affine, whereas HLO delegates to a downstream compiler/library => TRUE. D: HLO/StableHLO/ONNX carry static shape+dtype on SSA-like values enabling shape-based rewrites (e.g., algebraic simplification) => TRUE."
+    },
+    {
+      "id": "C-LAYOUT-002",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "NCHW-contig storage index = n*C*H*W + c*H*W + h*W + w. channels_last storage index = n*C*H*W + h*W*C + w*C + c. For any (n,c,h,w) with c>0 or h>0, these physical positions differ, so the two layouts represent different byte orderings of the SAME logical shape. Changing strides alone reinterprets the buffer under a different bijection, producing wrong element values unless data is physically reordered => not a pure view. B/C wrongly conflate strides-change with view-only; D confuses strides with shape."
+    },
+    {
+      "id": "C-LICM-001",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "LICM correctness for hoisting `c[0]*d[0]` out of the loop requires that neither c[0] nor d[0] is modified by any statement inside the loop across iterations. Because the loop stores through a[i], a must not alias c or d at the invariant addresses; otherwise a[i] = ... could clobber c[0]/d[0], invalidating the hoisted temporary. A (compile-time N) is a scheduling/analysis concern unrelated to correctness; C (element-type match) is a type-inference issue, not a safety condition; D (integer-only) is false — FP LICM of pure multiplication does not change per-iteration rounding order because the hoisted expression itself is scalar and iteration-independent."
+    },
+    {
+      "id": "C-SHAPE-004",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Static shape specialization narrows the input domain to a specific configuration, enabling tile-size selection, kernel library dispatch, constant-folding of shape-derived quantities (strides, loop bounds), and layout decisions. Trade-off: only that one shape configuration is served, requiring guards + a fallback for other shapes. A inverts the direction of specialization (specialization is a refinement, not a superset). B ignores that shape metadata drives kernel/tile selection. C fabricates a runtime dispatch behavior."
+    },
+    {
+      "id": "C-SSA-003",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "The primary reason compilers functionalize in-place ops is SSA compliance: mutations create multiple definitions of the same value name, which breaks single-static-assignment invariants and complicates use-def chains, CSE, DCE, and reordering-based fusion. A/D invent bogus perf reasons. B is too strong — in-place ops CAN be represented (with side-effect modeling) but are typically functionalized to enable classical dataflow analyses."
+    }
+  ]
+}

@@ -1,0 +1,251 @@
+{
+  "module": "graph_tensor_ir",
+  "code": "C",
+  "label": "计算图、张量程序与中间表示",
+  "generatedAt": "2026-07-26",
+  "count": 5,
+  "questions": [
+    {
+      "id": "C-IRLEVEL-005",
+      "type": "multiple",
+      "module": "graph_tensor_ir",
+      "subtopic": "Operator-level IR vs. Loop / Tensor-expression IR",
+      "learningObjective": "Distinguish the abstractions and capabilities of graph-/operator-level IR (e.g., XLA HLO, ONNX) from loop/tensor-expression-level IR (e.g., TVM TensorIR, MLIR linalg/affine).",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following statements correctly distinguish operator-level IR (e.g., XLA HLO, ONNX) from loop-/tensor-expression-level IR (e.g., TVM TensorIR, MLIR linalg or affine)? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Operator-level IRs represent computations as coarse-grained ops (matmul, softmax, layernorm) with implicit iteration; loop-level IRs make loops, iteration variables, and memory indexing explicit."
+        },
+        {
+          "id": "B",
+          "text": "Loop-level IRs are strictly required to make graph-level fusion decisions such as which pairs of ops to fuse, because operator-level IRs cannot express fusion of any kind and depend on lowering to loop dialects first."
+        },
+        {
+          "id": "C",
+          "text": "Loop-level IRs support tiling, unrolling, and vectorization at the IR level, whereas operator-level IRs delegate such transformations to a lower-level compiler or kernel library."
+        },
+        {
+          "id": "D",
+          "text": "Operator-level IRs can carry static tensor shape and dtype annotations on SSA-like values without exposing loop structure, enabling shape-based rewrites at the graph level."
+        }
+      ],
+      "assumptions": [
+        "The comparison is between typical instances of each IR level (HLO for operator-level; TensorIR / MLIR linalg for loop-level), acknowledging that some frameworks bridge both."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-LAYOUT-002",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Layout / Stride / View vs. materialization",
+      "learningObjective": "Determine whether converting between two strided tensor layouts is achievable as a pure view or requires data movement, based on stride patterns of the source and target.",
+      "archetype": "ir_transformation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            16,
+            3,
+            224,
+            224
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ],
+        "strides": [
+          [
+            150528,
+            50176,
+            224,
+            1
+          ]
+        ]
+      },
+      "stem": "A 4-D tensor `x` has shape `[N=16, C=3, H=224, W=224]` and NCHW-contiguous strides `[150528, 50176, 224, 1]`. Consider producing a same-shape tensor with strides `[150528, 1, 672, 3]` (the standard `torch.channels_last` layout for NCHW-shaped tensors). Which statement about this transformation is correct?",
+      "irSnippet": "// Pseudo IR (Aten-like)\n// BEFORE (NCHW contiguous)\n%x : Tensor<16x3x224x224xf32, strides=[150528,50176,224,1]>\n\n// TARGET (channels_last strides on the same logical shape)\n%y : Tensor<16x3x224x224xf32, strides=[150528,1,672,3]>\n\n// Storage index formula for element (n, c, h, w):\n//   NCHW-contiguous: n*C*H*W + c*H*W + h*W + w\n//   channels_last : n*C*H*W + h*W*C + w*C + c\n// These two orderings place different elements in a given physical byte;\n// hence a pure view (no data movement) cannot rewrite one into the other.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Not a pure view: producing `strides=[150528, 1, 672, 3]` from an NCHW-contiguous buffer requires physically reordering elements — consecutive-in-C elements sit `H*W` bytes apart in the source but must sit 1 byte apart in the target."
+        },
+        {
+          "id": "B",
+          "text": "This can be expressed as a pure view (no data movement) since only the strides change; shape, dtype, and total element count are identical between source and target, and PyTorch views are precisely metadata-only transformations that repurpose the same storage."
+        },
+        {
+          "id": "C",
+          "text": "`channels_last` and `NCHW` describe the same physical layout under a different logical permutation; both are metadata-equivalent and interconvert with zero runtime cost via a view that shifts the interpretation of the strides."
+        },
+        {
+          "id": "D",
+          "text": "This is a shape transformation, not a stride transformation; the underlying tensor must be reshaped from `[16, 3, 224, 224]` to `[16, 224, 224, 3]` first, and `channels_last` is effectively PyTorch's shorthand for that NHWC reshape."
+        }
+      ],
+      "assumptions": [
+        "PyTorch stride conventions: contiguous means the fastest-varying index in memory has stride 1.",
+        "The source storage is exactly the NCHW-contiguous buffer, not a broadcast or expanded view."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-LICM-001",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Loop-invariant code motion / Aliasing",
+      "learningObjective": "Identify the aliasing precondition required for loop-invariant code motion to be semantics-preserving in an imperative tensor IR.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the loop before and after loop-invariant code motion (LICM):\n\nBEFORE:\n```\nfor i in 0..N:\n  a[i] = b[i] + (c[0] * d[0])   # (c[0] * d[0]) is loop-invariant\n```\nAFTER:\n```\nt = c[0] * d[0]\nfor i in 0..N:\n  a[i] = b[i] + t\n```\nWhich condition is required for this transformation to be semantics-preserving?",
+      "irSnippet": "// BEFORE (pseudo-IR, imperative)\nfunc @f(%a: memref<N x f32>, %b: memref<N x f32>,\n        %c: memref<1 x f32>, %d: memref<1 x f32>) {\n  scf.for %i = 0 to N step 1 {\n    %inv = arith.mulf (load %c[0]) (load %d[0]) : f32\n    %v   = arith.addf (load %b[%i]) %inv     : f32\n    store %v, %a[%i]\n  }\n}\n\n// AFTER (LICM applied)\nfunc @f(%a, %b, %c, %d) {\n  %t = arith.mulf (load %c[0]) (load %d[0]) : f32\n  scf.for %i = 0 to N step 1 {\n    %v = arith.addf (load %b[%i]) %t : f32\n    store %v, %a[%i]\n  }\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "The loop trip count `N` must be a compile-time constant, because LICM is a strength-reduction transformation whose validity is tied to the compiler's ability to statically bound the number of iterations."
+        },
+        {
+          "id": "B",
+          "text": "`a` must not alias `c[0]` or `d[0]` over the loop; otherwise stores through `a[i]` could modify a hoisted operand."
+        },
+        {
+          "id": "C",
+          "text": "`c` and `d` must have the same element type as `a` and `b`, so that the type of the hoisted temporary `t` is unambiguous and matches the type inference rules of the arithmetic operations in the loop body."
+        },
+        {
+          "id": "D",
+          "text": "The expression `c[0] * d[0]` must involve only integer types; hoisting floating-point invariants is always invalid because it changes the per-iteration rounding order of the reduction."
+        }
+      ],
+      "assumptions": [
+        "The IR distinguishes memory reads/writes explicitly (imperative memref-like semantics).",
+        "No concurrent mutations from other threads (single-threaded IR)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-SHAPE-004",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Static shape specialization / Dynamic vs. symbolic shape",
+      "learningObjective": "Reason about the trade-offs of static shape specialization versus symbolic-shape (dynamic) compilation at the graph-IR level.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM Relax / TorchInductor / general graph IR",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the following graph-level IR transformation where a symbolic-shape function is specialized to concrete shapes at compile time:\n\nBEFORE (symbolic):\n```\nfunc f(x : Tensor[N, K, f16], w : Tensor[K, M, f16]) -> Tensor[N, M, f16]:\n    return matmul(x, w)\n```\nAFTER (specialized to N=32, K=4096, M=4096):\n```\nfunc f_32x4096x4096(x : Tensor[32, 4096, f16], w : Tensor[4096, 4096, f16]) -> Tensor[32, 4096, f16]:\n    return matmul(x, w)\n```\nWhich statement about this specialization is correct?",
+      "irSnippet": "// BEFORE (symbolic shape)\nfunc.func @f(%x : tensor<?x?xf16>, %w : tensor<?x?xf16>) -> tensor<?x?xf16> {\n  %0 = \"custom.matmul\"(%x, %w) : (tensor<?x?xf16>, tensor<?x?xf16>) -> tensor<?x?xf16>\n  return %0 : tensor<?x?xf16>\n}\n\n// AFTER (shape-specialized)\nfunc.func @f_32x4096x4096(%x : tensor<32x4096xf16>, %w : tensor<4096x4096xf16>) -> tensor<32x4096xf16> {\n  %0 = \"custom.matmul\"(%x, %w) : (tensor<32x4096xf16>, tensor<4096x4096xf16>) -> tensor<32x4096xf16>\n  return %0 : tensor<32x4096xf16>\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because the specialized function has concrete shapes, it is a strict semantic superset of the symbolic version and can substitute for `f` in every call site, since concrete shape info can always be relaxed back to symbolic at will."
+        },
+        {
+          "id": "B",
+          "text": "Static-shape specialization is a naming convenience only; it does not affect emitted kernel selection or downstream optimizations, because tiling and vectorization operate on abstract loop nests that ignore the concrete shape metadata."
+        },
+        {
+          "id": "C",
+          "text": "After specialization, calling `f_32x4096x4096` on inputs with shape `[64, 4096]` silently returns correct but slower results because the compiler installs a runtime dispatch to the symbolic implementation."
+        },
+        {
+          "id": "D",
+          "text": "Shape specialization enables downstream passes (tiling, kernel selection, constant folding of shape-derived quantities) to produce a more efficient kernel at the cost of covering only one input-shape configuration."
+        }
+      ],
+      "assumptions": [
+        "The graph IR verifier enforces static shape compatibility at boundaries.",
+        "There is a downstream tiling/kernel-selection pass that uses static shape information."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-SSA-003",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "SSA / Functionalization of in-place tensor mutations",
+      "learningObjective": "Explain why compiler passes over tensor IRs commonly functionalize in-place operations into non-mutating SSA-like forms.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch / AOTAutograd or general tensor compiler",
+        "stability": "stable_principle"
+      },
+      "stem": "A compiler ingests the following pseudo-IR fragment (with an in-place op) and converts it to a functional / SSA form before running fusion, DCE, and CSE:\n\nBEFORE (imperative, in-place):\n```\n%x = ...\naten::mul_(%x, 2.0)     # in-place: mutates %x\n%y = aten::add(%x, 1.0)\nreturn %y\n```\nAFTER (functionalized):\n```\n%x0 = ...\n%x1 = aten::mul(%x0, 2.0)   # non-mutating\n%y  = aten::add(%x1, 1.0)\nreturn %y\n```\nWhich statement best explains why compilers perform this functionalization?",
+      "irSnippet": "// BEFORE (mutating)\n%x : tensor<Nxf32> = ...\naten.mul_(%x, 2.0)          // %x is redefined implicitly\n%y : tensor<Nxf32> = aten.add(%x, 1.0)\nreturn %y\n\n// AFTER (functional / SSA)\n%x0 : tensor<Nxf32> = ...\n%x1 : tensor<Nxf32> = aten.mul(%x0, 2.0)\n%y  : tensor<Nxf32> = aten.add(%x1, 1.0)\nreturn %y",
+      "options": [
+        {
+          "id": "A",
+          "text": "Functional operations run faster than in-place operations at runtime because non-mutating ops enable more aggressive prefetching and are lowered to a distinct CUDA scheduling path."
+        },
+        {
+          "id": "B",
+          "text": "In-place tensor operations cannot be represented in FX Graph or any tensor IR; functionalization is required for the IR to be well-formed and to satisfy graph-level verifiers."
+        },
+        {
+          "id": "C",
+          "text": "In-place mutations violate SSA: they create multiple definitions under one name, complicating dataflow analysis, CSE, and safe reordering/fusion."
+        },
+        {
+          "id": "D",
+          "text": "Functional operations avoid CUDA context switches, whereas in-place operations require a stream synchronization between iterations to preserve the read-modify-write ordering across launches."
+        }
+      ],
+      "assumptions": [
+        "The IR under consideration supports both mutating and non-mutating variants of an operator (as PyTorch aten does).",
+        "The functionalization pass preserves outward-visible mutation semantics for tensors that escape the compiled region."
+      ],
+      "version": 1
+    }
+  ]
+}

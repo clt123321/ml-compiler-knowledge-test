@@ -1,0 +1,78 @@
+[
+  {
+    "id": "D-AOT-004",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["C"],
+    "officialAnswer": ["C"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "D-BREAK-005",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["B"],
+    "officialAnswer": ["B"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "D-DYNAMIC-002",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["D"],
+    "officialAnswer": ["D"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "version_boundary",
+        "note": "Automatic dynamic shape promotion (assume_static_by_default after N recompiles) is on-by-default in some PyTorch 2.3-2.5 minor versions. The question guards against this via the explicit assumption 'no automatic dynamic promotion overrides changing this behavior in the user's version', which is adequate. Consider strengthening by referencing the specific `torch._dynamo.config.automatic_dynamic_shapes` knob and its default value at the verifiedAt date to make the version scope more traceable."
+      }
+    ],
+    "overallResult": "MINOR"
+  },
+  {
+    "id": "D-DYNAMO-001",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["B"],
+    "officialAnswer": ["B"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "D-INDUCTOR-003",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["A"],
+    "officialAnswer": ["A"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  }
+]

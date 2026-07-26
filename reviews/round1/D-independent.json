@@ -1,0 +1,38 @@
+{
+  "module": "pytorch_compiler",
+  "code": "D",
+  "reviewer": "primary-review-canary",
+  "reviewedAt": "2026-07-26",
+  "answers": [
+    {
+      "id": "D-AOT-004",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "AOTAutograd runs a functionalization pass that rewrites aten `_` mutating ops (e.g., add_) into non-mutating aten ops (add). To preserve externally observable mutation on inputs, the compiled forward returns the post-mutation tensor(s) as extra outputs, and the runtime copies them back into the original storage (the classic 'copy_ epilogue'). A is factually wrong (functionalization applies to all mutations, not just reductions). B is wrong (in-place ops are functionalized, not rejected). D is wrong (there is no per-op eager fallback for supported mutations)."
+    },
+    {
+      "id": "D-BREAK-005",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "The graph break stems from Dynamo attempting to convert a 0-D bool tensor `x.sum()>0` to a Python bool via `__bool__` for a Python-level `if`. The value depends on runtime data => graph break. Correct rewrite: use `torch.where(cond, x*2.0, x*3.0)` which keeps both arms as tensor ops in one traceable graph (or use `torch.cond` for the version-agnostic branching primitive). A misattributes cause to `x.sum()`. C misinterprets fullgraph=False. D is wrong — `bool()` still evaluates a tensor to a Python bool, still causing a graph break."
+    },
+    {
+      "id": "D-DYNAMIC-002",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Default torch.compile installs shape guards (per-dim sizes). Each new size fails the guard `L['x'].size()[0] == 128` and triggers a fresh compile until the guard set covers seen sizes. Fix: pass `dynamic=True` or use `torch._dynamo.mark_dynamic` so shapes are symbolic and one compiled artifact covers multiple sizes. A/C invent false semantics; B misinterprets guard-failure as graph-break."
+    },
+    {
+      "id": "D-DYNAMO-001",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Dynamo cannot track mutations of Python attributes on arbitrary user objects (they escape the FX graph model). The bytecode `STORE_ATTR` triggers a graph break: everything up to the break is compiled, the attribute mutation runs eagerly in Python, and the code after (`z = y*y`) is compiled as a separate FX subgraph. A misidentifies `+=` as the cause. C wrongly blames relu. D is factually wrong."
+    },
+    {
+      "id": "D-INDUCTOR-003",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "mul, add, relu are all pointwise ops with the same iteration space, no reduction, no dtype change, no side effects — canonical fusion target. TorchInductor's fusion policy emits a single Triton kernel that computes `(x*2.0 + y).relu()` per element. B fabricates a constant-hashing prohibition. C is nonsensical. D is fabricated."
+    }
+  ]
+}

@@ -1,0 +1,371 @@
+{
+  "module": "cuda_triton_kernel",
+  "code": "F",
+  "label": "CUDA / Triton / GPU Kernel",
+  "generatedAt": "2026-07-26",
+  "count": 5,
+  "questions": [
+    {
+      "id": "F-BANK-003",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Shared memory bank conflicts / Matrix transpose",
+      "learningObjective": "Analyze a shared-memory transpose kernel and identify which access pattern causes a 32-way bank conflict; know the padding-based mitigation.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "32 shared-memory banks, 4-byte bank width"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N",
+            "N"
+          ],
+          [
+            "N",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "Consider the following CUDA matrix-transpose kernel using shared memory, launched with `blockDim = (32, 32)` and `gridDim = (N/32, N/32)` on sm_80. Which statement about shared-memory bank conflicts is correct?",
+      "codeSnippet": "// CUDA C++, sm_80 (A100)\n__global__ void transpose(const float* __restrict__ A, float* __restrict__ B, int N) {\n    __shared__ float tile[32][32];    // 32 x 32 floats, 4 B each; 32 SMEM banks of 4 B\n    int x = blockIdx.x * 32 + threadIdx.x;\n    int y = blockIdx.y * 32 + threadIdx.y;\n\n    tile[threadIdx.y][threadIdx.x] = A[y * N + x];       // (W1) write\n    __syncthreads();\n\n    int tx = blockIdx.y * 32 + threadIdx.x;\n    int ty = blockIdx.x * 32 + threadIdx.y;\n    B[ty * N + tx] = tile[threadIdx.x][threadIdx.y];     // (R1) transposed read\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both the write (W1) and the transposed read (R1) are conflict-free because sm_80 supports 32-way multicast for shared memory across distinct addresses within the same bank, effectively eliminating serialization."
+        },
+        {
+          "id": "B",
+          "text": "The write (W1) causes a 32-way conflict because 32 threads target the same bank while writing a row; the transposed read (R1) is conflict-free because column accesses spread evenly across banks."
+        },
+        {
+          "id": "C",
+          "text": "Write (W1) is conflict-free (row stride-1 across banks); transposed read (R1) causes a 32-way bank conflict since all 32 warp lanes hit one bank; padding to `tile[32][33]` breaks the alignment."
+        },
+        {
+          "id": "D",
+          "text": "Bank conflicts are automatically eliminated by the CUDA compiler via a promotion pass that pads shared-memory arrays whose access patterns match a canonical conflict template, so no source-level change is required for correctness or performance."
+        }
+      ],
+      "assumptions": [
+        "Default 4-byte shared-memory bank width on sm_80.",
+        "The kernel is intended to transpose an N × N matrix with N a multiple of 32."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-COALESCE-002",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Coalesced access / Global-memory strided reads",
+      "learningObjective": "Identify the impact of a large stride on effective global-memory bandwidth utilization in a warp-wide load.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "128-byte L1/L2 sector transactions"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N * stride"
+          ],
+          [
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ],
+        "strides": [
+          [
+            1
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "stem": "The Triton kernel below reads FP32 values from `in_ptr` with a compile-time stride and writes them to `out_ptr` (dense). Launch config: BLOCK=256, stride=8, `in` is a contiguous FP32 tensor of length `N*stride`. On sm_80 (A100), which is the primary performance issue for the load?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef strided_load(in_ptr, out_ptr, N, stride: tl.constexpr, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    # in has one useful element per `stride` elements; we sample them all.\n    x = tl.load(in_ptr + offsets * stride, mask=mask)   # <-- strided load\n    tl.store(out_ptr + offsets, x, mask=mask)\n\n# Launch: grid = (triton.cdiv(N, BLOCK),), BLOCK = 256, stride = 8\n# `in`  : FP32 contiguous, length = N * stride\n# `out` : FP32 contiguous, length = N",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because `mask` is applied to the load, no memory transactions occur for lanes with `offsets >= N`; the mask also eliminates any coalescing penalty for the strided access among the valid lanes."
+        },
+        {
+          "id": "B",
+          "text": "The load triggers shared-memory bank conflicts because 32 threads access addresses 32 bytes apart, and sm_80's bank layout is designed for stride-1 accesses; the conflict serializes each warp into 32 transactions."
+        },
+        {
+          "id": "C",
+          "text": "The performance impact of strided access is negligible when `BLOCK = 256` because Triton automatically inserts asynchronous copies via `cp.async` that hide the stride penalty behind compute overlap."
+        },
+        {
+          "id": "D",
+          "text": "Consecutive lanes read addresses stride*4 = 32 B apart; each 128 B L1/L2 sector delivers only 4 useful bytes per lane, so effective global BW is ~1/stride of peak (~ 1/8)."
+        }
+      ],
+      "assumptions": [
+        "The pointer arithmetic `in_ptr + offsets * stride` produces a strided address pattern within a warp.",
+        "L1/L2 sector granularity is 128 bytes (or an integer multiple thereof) on sm_80.",
+        "No unrolling reorders the accesses into a coalesceable form."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-DOTPROD-004",
+      "type": "multiple",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton reduction with atomic accumulation",
+      "learningObjective": "Reason about correctness, determinism, and initialization semantics of a Triton per-block partial dot-product accumulated via tl.atomic_add.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP32 global atomic add"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            1
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the Triton kernel below computing a global FP32 dot product via per-block partials accumulated with `tl.atomic_add` into a single-element output `out`. Assume `x, y` are FP32 contiguous CUDA tensors of length N, and the caller sets `out` to 0 before launching. Which of the following statements are correct? (Select all that apply.)",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef dot_prod(x_ptr, y_ptr, out_ptr, N, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    x = tl.load(x_ptr + offsets, mask=mask, other=0.0)\n    y = tl.load(y_ptr + offsets, mask=mask, other=0.0)\n    partial = tl.sum(x * y, axis=0)\n    tl.atomic_add(out_ptr, partial)\n\n# Caller:\n#   out.zero_()\n#   grid = (triton.cdiv(N, BLOCK),)\n#   dot_prod[grid](x, y, out, N, BLOCK=1024)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The kernel is correct: final `out[0]` equals the sum of all partials, and `tl.atomic_add` is necessary because programs concurrently accumulate into the same address."
+        },
+        {
+          "id": "B",
+          "text": "Reduction order across programs is non-deterministic; for FP32 this can yield bitwise-different results across runs due to floating-point non-associativity."
+        },
+        {
+          "id": "C",
+          "text": "The `mask=mask, other=0.0` combination in the loads ensures tail lanes contribute 0 to `partial` (since 0 * anything = 0), preserving mask semantics through `tl.sum`."
+        },
+        {
+          "id": "D",
+          "text": "Setting `out` to a non-zero initial value has no effect on correctness because `tl.atomic_add` overwrites the previous value with each incoming partial, so only the last program's contribution determines the final result stored in memory."
+        }
+      ],
+      "assumptions": [
+        "`out` is FP32 and supports the atomic add operation on the target GPU.",
+        "The launch grid covers all elements; no lanes are skipped."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-RMS-005",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton RMSNorm / Launch configuration and register pressure",
+      "learningObjective": "Reason about the register/SMEM footprint of a row-parallel Triton RMSNorm kernel and how BLOCK sizing affects occupancy.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "shared memory / register file for row-parallel reductions"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the Triton row-parallel RMSNorm kernel below launched with `grid = (M,)` (one program per row), BLOCK=4096, N=4096. Which assessment is correct?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef rms_norm(x_ptr, out_ptr, weight_ptr,\n             N: tl.constexpr, eps: tl.constexpr, BLOCK: tl.constexpr):\n    row = tl.program_id(0)\n    cols = tl.arange(0, BLOCK)\n    mask = cols < N\n    x = tl.load(x_ptr + row * N + cols, mask=mask, other=0.0)\n    var = tl.sum(x * x, axis=0) / N\n    rstd = 1.0 / tl.sqrt(var + eps)\n    w = tl.load(weight_ptr + cols, mask=mask, other=0.0)\n    y = x * rstd * w\n    tl.store(out_ptr + row * N + cols, y, mask=mask)\n\n# Launch: grid = (M,), BLOCK = 4096\n# x, out : FP32 contiguous, shape [M, N]; weight : FP32 shape [N]; N = 4096",
+      "options": [
+        {
+          "id": "A",
+          "text": "The kernel is incorrect because `tl.sum(x * x, axis=0)` requires its own explicit `mask` argument to zero out invalid lanes; without it, tail lanes contribute stale register values and bias the computed variance upwards."
+        },
+        {
+          "id": "B",
+          "text": "Each program handles one row by loading all `N=4096` FP32 elements into registers/SRAM (~16 KB); this constrains occupancy since the full row lives in one program's tile."
+        },
+        {
+          "id": "C",
+          "text": "With `BLOCK = N = 4096` the mask is always True, so removing `other=0.0` improves performance by roughly 20% by skipping a redundant predicate check that Triton would otherwise emit on every lane of the load."
+        },
+        {
+          "id": "D",
+          "text": "`1.0 / tl.sqrt(var + eps)` is guaranteed to be lowered to a `rcpsqrt` PTX instruction that produces bit-identical FP32 results across all NVIDIA architectures, since PTX reciprocal-square-root is an IEEE-strict operation."
+        }
+      ],
+      "assumptions": [
+        "N=4096 fits within one program's tile; larger N would require a two-pass reduction or online-softmax-style algorithm.",
+        "FP32 accumulation of `x * x` is used; FP16 inputs would motivate an FP32 upcast."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-TRITON-001",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / Mask and boundary handling",
+      "learningObjective": "Reason about how Triton's tl.load/tl.store mask semantics handle out-of-bounds lanes at the tail of a block-tiled kernel.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer (sm_80+)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Triton runtime with LLVM/PTX backend"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            1000000
+          ],
+          [
+            1000000
+          ],
+          [
+            1000000
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the Triton vector-add kernel below launched with grid = (triton.cdiv(N, BLOCK),), BLOCK=1024, N=1_000_000, and 1-D contiguous FP32 CUDA inputs `x`, `y`, `out` of length N. Which statement about the last program (pid = 976) is correct?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef add_kernel(x_ptr, y_ptr, out_ptr, N, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    x = tl.load(x_ptr + offsets, mask=mask, other=0.0)\n    y = tl.load(y_ptr + offsets, mask=mask, other=0.0)\n    tl.store(out_ptr + offsets, x + y, mask=mask)\n\n# Launch: grid = (triton.cdiv(N, BLOCK),), BLOCK = 1024, N = 1_000_000\n# For pid = 976: base = 976 * 1024 = 999_424; offsets = 999_424 .. 1_000_447\n# Valid lanes: offsets 999_424 .. 999_999 (576 lanes); OOB: 1_000_000 .. 1_000_447 (448 lanes)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Tail lanes with `offsets >= N` (448 lanes here) skip the load (using `other=0.0`) and skip the store thanks to `mask`; no OOB access occurs and those lanes are no-ops."
+        },
+        {
+          "id": "B",
+          "text": "The last program reads 448 out-of-bounds addresses which produce undefined values, but even without a mask `tl.load` would remain safe because Triton performs implicit bounds checking on every load operation before dereferencing."
+        },
+        {
+          "id": "C",
+          "text": "The `mask` argument affects only the store; the load always performs 1024 contiguous global-memory transactions and will read past the end of the tensor whenever `pid * BLOCK + BLOCK > N` on the last program."
+        },
+        {
+          "id": "D",
+          "text": "Because `BLOCK` is a `tl.constexpr`, the mask is fully constant-folded at compile time and lanes with `offsets >= N` still incur memory traffic identical to the non-tail programs, so tail masking provides no bandwidth savings."
+        }
+      ],
+      "assumptions": [
+        "The pointers `x_ptr`, `y_ptr`, `out_ptr` correspond to tensors of length exactly N (no padding beyond).",
+        "Triton version implements `mask`/`other` as documented in the language reference."
+      ],
+      "version": 1
+    }
+  ]
+}

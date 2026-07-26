@@ -1,0 +1,281 @@
+{
+  "module": "arch_perf_model",
+  "code": "A",
+  "label": "计算机体系结构与性能模型",
+  "generatedAt": "2026-07-26",
+  "count": 5,
+  "questions": [
+    {
+      "id": "A-ARITH-001",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Roofline / Arithmetic Intensity / GEMV",
+      "learningObjective": "Apply the Roofline model to classify a batch-1 GEMV as compute- or memory-bound on a specific GPU and derive the achievable throughput ceiling from arithmetic intensity times HBM bandwidth.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100 SXM)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM2e",
+          "Tensor Cores FP16"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            4096,
+            4096
+          ],
+          [
+            4096
+          ],
+          [
+            4096
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "row_major",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "On A100 SXM (peak FP16 Tensor-Core throughput ≈ 312 TFLOP/s, HBM2e bandwidth ≈ 2.0 TB/s), consider a batch-1 GEMV y = W x with W ∈ ℝ^{4096×4096} FP16, x ∈ ℝ^{4096} FP16, y ∈ ℝ^{4096} FP16 (all resident in HBM, weights streamed once, negligible reuse). Assuming steady state and ignoring launch overhead, which Roofline characterization is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Compute-bound; the achievable ceiling is approximately the FP16 Tensor-Core peak of about 312 TFLOP/s, since Tensor Cores are the dispatched math path for FP16 GEMV kernels on A100."
+        },
+        {
+          "id": "B",
+          "text": "Compute-bound; the operational intensity for this GEMV is ≈ 2 FLOP/byte, comfortably above the A100 FP32 ridge point (~ 9.75 FLOP/byte), so the SMs saturate at the FP32 peak of 19.5 TFLOP/s."
+        },
+        {
+          "id": "C",
+          "text": "Memory-bound; AI ≈ 1 FLOP/byte is far below A100's FP16 ridge point (~ 153 FLOP/byte), so the ceiling is HBM × AI ≈ 2 TFLOP/s."
+        },
+        {
+          "id": "D",
+          "text": "Memory-bound, but the binding ceiling is set by on-chip shared-memory (SRAM) bandwidth rather than HBM, because Tensor-Core GEMV routes each weight through SMEM staging before consumption."
+        }
+      ],
+      "assumptions": [
+        "Weights resident in HBM, no persistent-kernel weight caching.",
+        "Launch and kernel-overhead time excluded from steady-state analysis."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-ARITH-002",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Roofline / Elementwise memory-bound",
+      "learningObjective": "Given an elementwise kernel's per-element FLOP and byte cost, compute the arithmetic intensity and classify the kernel against a specific GPU's FP32 ridge point.",
+      "archetype": "formula_performance",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100 SXM)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM2e"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            33554432
+          ],
+          [
+            33554432
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "On A100 SXM (peak FP32 ≈ 19.5 TFLOP/s, HBM ≈ 2.0 TB/s), a kernel reads an FP32 tensor A of shape [32M] and writes B[i] = softplus(A[i]) (≈ 10 FLOPs per element). Which Roofline analysis is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Compute-bound; the 10 FLOPs per element push arithmetic intensity above the FP32 ridge point, so the achievable ceiling is close to the A100 FP32 peak of 19.5 TFLOP/s."
+        },
+        {
+          "id": "B",
+          "text": "Memory-bound; arithmetic intensity ≈ 2.5 FLOP/byte, obtained by counting only the input reads and ignoring the output writes since writes are asynchronous on the memory bus."
+        },
+        {
+          "id": "C",
+          "text": "Memory-bound; AI = 10/8 = 1.25 FLOP/byte < A100 FP32 ridge (~ 9.75); ceiling ≈ 2.5 TFLOP/s."
+        },
+        {
+          "id": "D",
+          "text": "Compute-bound; achievable throughput ≈ 19.5 TFLOP/s because element-wise kernels always saturate the SM math pipelines once occupancy exceeds 50%."
+        }
+      ],
+      "assumptions": [
+        "No cache reuse: each byte of A is read from HBM exactly once, each byte of B is written to HBM exactly once.",
+        "Softplus operates on a single tensor and does not fuse with adjacent ops in this measurement."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-LITTLE-004",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Little's Law / Memory-level parallelism",
+      "learningObjective": "Apply Little's Law to compute the number of in-flight memory loads required to saturate a GPU's HBM bandwidth given a target latency.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM2e"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Little's Law states Concurrency = Bandwidth × Latency. Suppose an A100 has peak HBM bandwidth ≈ 2 TB/s and average DRAM load latency ≈ 400 ns, and each in-flight load fetches a 128-byte sector. Approximately how many 128-byte loads must be simultaneously in flight (aggregated across all SMs) to saturate HBM bandwidth?",
+      "options": [
+        {
+          "id": "A",
+          "text": "≈ 6,250 in-flight 128-byte loads (BW × L = 2×10¹² × 400×10⁻⁹ = 800 KB; /128 = 6,250)."
+        },
+        {
+          "id": "B",
+          "text": "≈ 32 concurrent loads — one per warp scheduler on a single SM — because Little's Law counts per-scheduler concurrency, not aggregate outstanding requests across all SMs."
+        },
+        {
+          "id": "C",
+          "text": "≈ 400 loads (roughly one per SM times four schedulers, since A100 has ~ 108 SMs and each SM has four warp schedulers dispatching one load at a time in steady state)."
+        },
+        {
+          "id": "D",
+          "text": "The number is independent of latency; only bandwidth determines the required concurrency, since bandwidth by itself already characterizes the memory system's throughput ceiling."
+        }
+      ],
+      "assumptions": [
+        "DRAM latency and bandwidth are steady-state, aggregate figures for the GPU.",
+        "Each load request completes in ~ 400 ns on average.",
+        "Requests are for 128-byte sectors (typical L2 sector granularity for coalesced accesses)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-MEM-005",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "GPU memory hierarchy / bandwidth / access rules",
+      "learningObjective": "Distinguish structural and access-pattern properties of NVIDIA GPU memory tiers (register file, shared memory, constant memory, global memory).",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "compute capability 8.0"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following statements about the A100 (sm_80) memory hierarchy are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The per-SM register file (65,536 × 32-bit ≈ 256 KB) is larger than the per-SM configurable L1/shared-memory partition (up to 192 KB total on A100)."
+        },
+        {
+          "id": "B",
+          "text": "Aggregate global-memory (HBM2e) bandwidth on the A100 board is higher than the aggregate on-chip shared-memory bandwidth summed across all SMs, since HBM stacks scale linearly with pin count and channels."
+        },
+        {
+          "id": "C",
+          "text": "Shared memory is bank-organized: warp threads accessing distinct addresses in the same bank serialize (bank conflict); global memory has no banks but obeys coalescing rules on 32/64/128 B transactions."
+        },
+        {
+          "id": "D",
+          "text": "Constant memory accesses in which all threads of a warp read the same address are broadcast, avoiding a per-thread memory transaction and delivering the value in one cycle to the whole warp."
+        }
+      ],
+      "assumptions": [
+        "sm_80 (A100) compute capability configuration.",
+        "Shared-memory bank width = 32-bit (4 bytes) per bank."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-OCC-003",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Occupancy / Register pressure",
+      "learningObjective": "From ptxas register report and launch configuration, derive the register-file-limited theoretical occupancy on a given GPU architecture.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "compute capability 8.0"
+        ]
+      },
+      "softwareContext": {
+        "compiler": "nvcc / ptxas",
+        "stability": "stable_principle"
+      },
+      "stem": "A CUDA kernel targeting sm_80 is compiled with `nvcc -arch=sm_80 --ptxas-options=-v` and prints `ptxas info : Used 96 registers, 384 bytes cmem[0]`. The launch config is `<<<gridDim, 256>>>`. A100 provides 65,536 32-bit registers per SM, a max of 2,048 threads (64 warps) per SM, and up to 32 concurrent blocks per SM. Ignoring shared-memory and block-count limits, what is the register-limited theoretical occupancy?",
+      "codeSnippet": "// Compilation command:\n//   nvcc -arch=sm_80 --ptxas-options=-v kernel.cu\n// ptxas info    : Compiling entry function '_Z10my_kernelPfS_'\n// ptxas info    : Function properties for _Z10my_kernelPfS_\n// ptxas info    : Used 96 registers, 384 bytes cmem[0]\n//\n// Launch:\n//   my_kernel<<<gridDim, /*blockDim=*/256>>>(...);",
+      "profileData": "Used 96 registers, 384 bytes cmem[0]; block size = 256; per-SM: 65536 regs, max 2048 threads (64 warps), max 32 blocks",
+      "options": [
+        {
+          "id": "A",
+          "text": "50% (32 of 64 warps active per SM); 96 registers per thread and 256 threads per block allow 4 concurrent blocks per SM under the register-file budget."
+        },
+        {
+          "id": "B",
+          "text": "100%; A100's register file is large enough to accommodate 8 concurrent blocks of 256 threads at 96 registers per thread, so occupancy hits the SM's maximum of 64 warps."
+        },
+        {
+          "id": "C",
+          "text": "12.5%; the effective limit is 8 concurrent blocks per SM regardless of register usage, since Ampere caps blocks-per-SM at 8 rather than 32 in practice."
+        },
+        {
+          "id": "D",
+          "text": "25%; 96 × 256 = 24,576 regs/block, ⌊65536/24576⌋ = 2 blocks/SM, 512 threads = 16/64 warps."
+        }
+      ],
+      "assumptions": [
+        "Shared memory usage per block is small enough to not further limit occupancy.",
+        "Grid dimension is large enough to fully populate the SMs (not launch-limited)."
+      ],
+      "version": 1
+    }
+  ]
+}

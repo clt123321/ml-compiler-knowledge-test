@@ -1,0 +1,78 @@
+[
+  {
+    "id": "C-IRLEVEL-005",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["A", "C", "D"],
+    "officialAnswer": ["A", "C", "D"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-LAYOUT-002",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["A"],
+    "officialAnswer": ["A"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "source_scope",
+        "note": "The question uses PyTorch-specific terminology (`torch.channels_last`) but the sourceRefs are compiler-general (BOOK:eac3, DOC:mlir-langref). The underlying stride-vs-physical-layout reasoning IS captured by those sources; the argument is language-agnostic. Nonetheless, adding a Tier 1 PyTorch reference (e.g., torch.Tensor.stride / channels_last docs) would tighten the source-to-claim mapping for the PyTorch phrasing. Consider adding for future revisions."
+      }
+    ],
+    "overallResult": "MINOR"
+  },
+  {
+    "id": "C-LICM-001",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["B"],
+    "officialAnswer": ["B"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-SHAPE-004",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["D"],
+    "officialAnswer": ["D"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-SSA-003",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["C"],
+    "officialAnswer": ["C"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  }
+]

@@ -1,0 +1,38 @@
+{
+  "module": "cuda_triton_kernel",
+  "code": "F",
+  "reviewer": "primary-review-canary",
+  "reviewedAt": "2026-07-26",
+  "answers": [
+    {
+      "id": "F-BANK-003",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "SMEM has 32 banks * 4 B. Bank(addr) = (addr/4) mod 32. For `tile[32][32]` FP32, address of tile[i][j] = (i*32 + j)*4; bank = (i*32 + j) mod 32 = j mod 32 = j. Write W1 uses index [ty][tx] with a warp varying tx (0..31), ty fixed => banks 0..31, conflict-free stride-1 write. Read R1 uses [tx][ty] with a warp varying tx (0..31) and fixed ty => all lanes hit bank ty => 32-way conflict serialized as 32 sub-transactions. The classical fix is `__shared__ float tile[32][33]` so bank(i*33+j) = (i*33+j) mod 32 = (i+j) mod 32 spreads across banks. A invents fake broadcast; B swaps which access conflicts; D fabricates a nonexistent nvcc pass."
+    },
+    {
+      "id": "F-COALESCE-002",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "For stride=8 FP32, consecutive warp lanes read addresses (base + lane*8)*4 bytes = 32 bytes apart. A 128-byte L1/L2 sector spans 4 lanes' worth of useful data per sector; equivalently, each fetched 128-byte sector delivers only 4 useful bytes per lane => effective BW ~ 1/8 peak. This is a global-memory coalescing/waste problem, not shared-memory banks. A confuses masking with coalescing. B miscategorizes the issue as SMEM banking. C fabricates a Triton cp.async hiding mechanism that doesn't remove sector waste."
+    },
+    {
+      "id": "F-DOTPROD-004",
+      "independentAnswer": ["A", "B", "C"],
+      "confidence": "high",
+      "rationale": "A: The kernel is correct given the caller pre-zeroes `out`; `tl.atomic_add` is necessary because programs concurrently accumulate to a single address. B: `tl.atomic_add` executes in non-deterministic order across programs; FP32 addition is non-associative so results can differ bitwise across runs. C: `mask+other=0.0` on both loads => tail lanes contribute 0*0=0 to `x*y` => `tl.sum` result unaffected by tail. D is wrong: atomic_add ADDS to the previous value; a non-zero initial value would corrupt the result."
+    },
+    {
+      "id": "F-RMS-005",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "With BLOCK=4096 FP32, each program's tile is 4096*4 = 16 KB just for `x`, plus another 16 KB for `x*x`/intermediate + `w` loads. This heavy per-program register/SRAM footprint limits how many blocks (and thus warps) can co-reside on an SM, constraining occupancy. A is wrong: `other=0.0` on the load already zeros tail lanes so `x*x` on those lanes is 0, no upward bias. C fabricates a 20% predicate-elimination claim. D is wrong: `1.0/sqrt(x)` is not guaranteed to be lowered to a hardware rcpsqrt and rcpsqrt is not IEEE-strict (PTX has approximate variants like rsqrt.approx that differ across arches)."
+    },
+    {
+      "id": "F-TRITON-001",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Triton `tl.load(ptr, mask=mask, other=0.0)` predicates the load per-lane: masked-off lanes do NOT dereference the pointer (safe from OOB) and get `other` instead. `tl.store(ptr, x, mask=mask)` predicates the store: masked-off lanes do not write. So tail lanes are pure no-ops with respect to memory. B fabricates 'implicit bounds checking'; C wrongly claims mask only affects store; D wrongly claims the mask does not reduce memory traffic."
+    }
+  ]
+}

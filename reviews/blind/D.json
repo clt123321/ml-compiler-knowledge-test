@@ -1,0 +1,266 @@
+{
+  "module": "pytorch_compiler",
+  "code": "D",
+  "label": "PyTorch Compiler 与动态图捕获",
+  "generatedAt": "2026-07-26",
+  "count": 5,
+  "questions": [
+    {
+      "id": "D-AOT-004",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "AOTAutograd / Functionalization of in-place ops",
+      "learningObjective": "Describe how AOTAutograd's functionalization pass transforms in-place tensor mutations before TorchInductor lowering, and how external mutation semantics are preserved.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider the compiled function below with an in-place op on an input tensor `x`. Which of the following best describes how AOTAutograd/functionalization treats `x.add_(1.0)` before Inductor codegen?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    x.add_(1.0)      # in-place mutation on input\n    return x * 2.0\n\nx = torch.randn(4, device=\"cuda\", requires_grad=True)\ny = f(x)\n# After the call, the caller expects x to reflect the +1 mutation as well.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Inductor emits two kernels: one for `add_` (mutating the buffer in place) and one for the multiply; functionalization is applied only to reductions rather than to elementwise mutations, so this in-place op survives to codegen."
+        },
+        {
+          "id": "B",
+          "text": "In-place operations are always rejected by AOTAutograd and raise a runtime error at trace time when the compiled region attempts to trace any mutating aten op such as `add_`."
+        },
+        {
+          "id": "C",
+          "text": "Functionalization rewrites `x.add_(1.0)` into a non-mutating `x_new = x + 1.0` in the graph; the compiled region returns the extra mutated tensor so the runtime can write it back to preserve external mutation semantics."
+        },
+        {
+          "id": "D",
+          "text": "In-place operations bypass the compilation stack entirely; the compiled `f` calls the eager `torch.add_` at runtime and skips AOTAutograd for that op while the rest of the graph is still traced through Inductor."
+        }
+      ],
+      "assumptions": [
+        "`x` is an input to the compiled region (its mutation is externally observable).",
+        "AOTAutograd successfully traces the function into an FX graph."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-BREAK-005",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Data-dependent control flow / Graph break rewrite",
+      "learningObjective": "Diagnose a graph break caused by data-dependent control flow on tensor values and identify a Dynamo-tracable rewrite.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The following function produces a graph-break log when compiled. Which option both correctly identifies the cause and gives a valid Dynamo-tracable rewrite?",
+      "codeSnippet": "import torch\n\n@torch.compile(fullgraph=False)\ndef f(x):\n    if x.sum() > 0:\n        return x * 2.0\n    else:\n        return x * 3.0\n\n# TORCH_LOGS=\"graph_breaks\" (excerpt):\n#   Graph break in user code at .../f\n#   Reason: Data-dependent branching on tensor value\n#            (implicit .__bool__() on a 0-D tensor produced by comparison).\n#   Consider replacing with torch.where(cond, a, b) or torch.cond(cond, fn_true, fn_false).",
+      "options": [
+        {
+          "id": "A",
+          "text": "The issue is that `x.sum()` is not supported by Dynamo; replacing it with `x.mean()` avoids the graph break because mean is treated as a supported reduction while sum is a fallback op."
+        },
+        {
+          "id": "B",
+          "text": "The branch condition `x.sum() > 0` yields a tensor whose `__bool__` is runtime-dependent; rewrite with `torch.where(x.sum() > 0, x*2.0, x*3.0)` to keep both arms in one graph."
+        },
+        {
+          "id": "C",
+          "text": "`fullgraph=False` disables all graph breaks; the log must be stale and can be ignored, since with graph breaks disabled Dynamo produces a single fused trace for the entire function regardless of the branch."
+        },
+        {
+          "id": "D",
+          "text": "Using `bool()` explicitly (e.g., `if bool(x.sum() > 0):`) forces Dynamo to specialize the condition to a compile-time constant, eliminating the graph break by informing the tracer that the value is a Python scalar."
+        }
+      ],
+      "assumptions": [
+        "Both arms of the branch have the same output shape and dtype (needed for `torch.where`).",
+        "The user cares primarily about eliminating the graph break, not preserving lazy evaluation of the un-taken arm."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-DYNAMIC-002",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Dynamic shape / Guard failure / Recompilation",
+      "learningObjective": "Read a torch.compile recompilation log, identify the guard that failed, and choose the right knob (dynamic shapes) to prevent shape-triggered recompilation.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A user compiles the following function with the default `torch.compile(...)` and observes the `TORCH_LOGS=\"recompiles\"` output shown. Which diagnosis and fix pair is best supported?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    return x.sin() + x.cos()\n\nfor n in [128, 256, 512, 128, 256, 512]:\n    x = torch.randn(n, device=\"cuda\")\n    f(x)\n\n# TORCH_LOGS=\"recompiles\" (excerpt):\n#   Recompiling function f\n#     triggered by the following guard failure(s):\n#       - L['x'].size()[0] == 128\n#   Recompiling function f\n#     triggered by the following guard failure(s):\n#       - L['x'].size()[0] == 256\n#   (no further recompiles observed after the third distinct size)",
+      "profileData": "Recompile events: 3 distinct compiled variants observed (one per unique input first-dim size); subsequent same-size calls hit the compilation cache.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Recompilation is triggered only when the tensor dtype changes; the shape is treated dynamically by default in current PyTorch releases, so the observed guards on `size()[0]` must be from a bug in the TORCH_LOGS reporting layer."
+        },
+        {
+          "id": "B",
+          "text": "`x.sin() + x.cos()` cannot be traced by Dynamo; the log actually indicates a graph break rather than a recompilation, and the `guard failure` label is a misnomer for the same underlying event."
+        },
+        {
+          "id": "C",
+          "text": "Guards are only inserted on strides, not on shapes, in current PyTorch releases; the recompiles observed here are therefore unexpected and indicate a version incompatibility between the compile cache and the runtime."
+        },
+        {
+          "id": "D",
+          "text": "Default `torch.compile` installs shape guards specializing on leading dims; each new size fails a guard and triggers a fresh compile. `dynamic=True` compiles symbolically so one graph serves multiple sizes."
+        }
+      ],
+      "assumptions": [
+        "The compile-cache is not being cleared between iterations.",
+        "The default torch.compile mode is used (no automatic dynamic promotion overrides changing this behavior in the user's version)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-DYNAMO-001",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchDynamo / Graph break on Python side effect",
+      "learningObjective": "Diagnose a TorchDynamo graph break caused by a Python-object side effect and describe the resulting graph-split behavior.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Given the following code and TorchDynamo log fragment, what is the most accurate description of the direct cause of the graph break and its immediate consequence?",
+      "codeSnippet": "import torch\n\nclass Ctx:\n    def __init__(self):\n        self.count = 0\n\n@torch.compile(fullgraph=False)\ndef f(x, ctx):\n    y = torch.relu(x)\n    ctx.count += 1     # Python attribute mutation on a non-tensor object\n    z = y * y\n    return z\n\n# TORCH_LOGS=\"graph_breaks\" output (excerpt):\n#   Graph break in user code at .../example.py:9\n#   Reason: STORE_ATTR on a Python object with side effects (ctx.count)\n#   Torch-Dynamo cannot trace mutation of arbitrary user objects; splitting graph here.",
+      "profileData": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "The `+=` operator is unsupported on Python integers under Dynamo; rewriting as `ctx.count = ctx.count + 1` avoids the STORE_ATTR pathway and restores full-graph tracing across the offending line."
+        },
+        {
+          "id": "B",
+          "text": "TorchDynamo cannot trace mutations of Python attributes on arbitrary non-tensor objects; the graph splits at STORE_ATTR, `z = y * y` compiles as a separate FX subgraph, and eager Python runs the attribute update in between."
+        },
+        {
+          "id": "C",
+          "text": "`torch.relu` is not traceable under `fullgraph=False`; the graph break originates from `torch.relu`, not from `ctx.count`, and the log's line-number attribution is misleading due to how Dynamo reports offsets."
+        },
+        {
+          "id": "D",
+          "text": "Graph breaks only occur when a tensor-valued Python control-flow branch is data-dependent; a scalar attribute mutation cannot cause a graph break in any current PyTorch release, so the log entry indicates a misconfigured environment."
+        }
+      ],
+      "assumptions": [
+        "The `ctx` object is a regular Python class instance, not a tensor or a compiled module submodule.",
+        "`fullgraph=False` is used, so graph breaks are permitted (with `fullgraph=True`, this would raise an error instead)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-INDUCTOR-003",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchInductor / Pointwise fusion",
+      "learningObjective": "Predict how TorchInductor fuses a chain of pointwise ops on CUDA and how many kernels the compiled function produces.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            1024,
+            1024
+          ],
+          [
+            1024,
+            1024
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the following compiled function. `x` and `y` are CUDA FP32 tensors with identical shape `[1024, 1024]` and contiguous layout. Under standard PyTorch 2.3-2.5 defaults, roughly how many CUDA kernels does the compiled version launch per call, and why?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x, y):\n    a = x * 2.0\n    b = a + y\n    c = b.relu()\n    return c\n\nx = torch.randn(1024, 1024, device=\"cuda\")\ny = torch.randn(1024, 1024, device=\"cuda\")\nout = f(x, y)  # first call warms up compilation",
+      "options": [
+        {
+          "id": "A",
+          "text": "1 kernel: mul, add, relu share an iteration space with no reduction or side effects, so Inductor emits a single fused Triton kernel."
+        },
+        {
+          "id": "B",
+          "text": "3 kernels — one per pointwise op — because TorchInductor does not fuse pointwise ops that use different scalar constants such as `2.0` in the first mul, since constants participate in guard hashing between fusion candidates."
+        },
+        {
+          "id": "C",
+          "text": "0 kernels: TorchInductor lowers pointwise ops to CPU C++ code even for CUDA inputs when they can be evaluated eagerly, and the host-side execution reads back the CUDA tensors for element-wise processing on the CPU."
+        },
+        {
+          "id": "D",
+          "text": "4 kernels: one for each of mul, add, relu, plus a separate materialization kernel to place the fused result into the output tensor because Inductor emits explicit copy kernels for aliasing safety."
+        }
+      ],
+      "assumptions": [
+        "Standard TorchInductor mode (no `mode='reduce-overhead'` CUDA Graph capture that would still emit a single kernel but replay it via graph).",
+        "Inputs are on the same CUDA device and have compatible layouts."
+      ],
+      "version": 1
+    }
+  ]
+}

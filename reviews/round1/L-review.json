@@ -1,0 +1,72 @@
+[
+  {
+    "id": "L-LAUNCH-001",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["D"],
+    "officialAnswer": ["D"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "L-NCU-004",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["B"],
+    "officialAnswer": ["B"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "L-TIMING-002",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["A"],
+    "officialAnswer": ["A"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "L-TOL-003",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["C"],
+    "officialAnswer": ["C"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "L-WARMUP-005",
+    "reviewer": "primary-review-canary",
+    "round": "round1",
+    "independentAnswer": ["A"],
+    "officialAnswer": ["A"],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  }
+]

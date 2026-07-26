@@ -1,0 +1,285 @@
+{
+  "module": "profiling_debug",
+  "code": "L",
+  "label": "Profiling / Benchmark / Debug / 正确性",
+  "generatedAt": "2026-07-26",
+  "count": 5,
+  "questions": [
+    {
+      "id": "L-LAUNCH-001",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Launch overhead / Nsight Systems timeline diagnosis",
+      "learningObjective": "Diagnose a launch-overhead-limited workload from an Nsight Systems timeline showing many small kernels with large CPU-side gaps.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "Nsight Systems",
+        "stability": "stable_principle"
+      },
+      "stem": "A user profiles a training step with Nsight Systems and observes the timeline data shown. Which diagnosis and mitigation set is most appropriate?",
+      "profileData": "Nsight Systems timeline (aggregated, one training step):\n  Total wall time: 50 ms\n  Number of CUDA kernel launches: 1000\n  Mean kernel duration: 30 µs\n  Mean CPU-side gap between consecutive launches: 20 µs\n  Sum of kernel durations: ≈ 30 ms\n  Sum of CPU-side launch gaps: ≈ 20 ms\n  GPU utilization (Nsight measure): ≈ 60%\n  No PCIe/host-device transfers visible in the trace\n  No CPU dataloader stall visible in the trace",
+      "options": [
+        {
+          "id": "A",
+          "text": "The workload is memory-bandwidth limited; the 40% idle time on the GPU indicates HBM is saturated in a way that stalls SM issue slots, and the correct mitigation is to shrink model weights via quantization to lower HBM pressure."
+        },
+        {
+          "id": "B",
+          "text": "The workload is compute-bound; the fix is to add more math per kernel to shift the compute-to-memory ratio, since compute-bound kernels benefit directly from higher arithmetic intensity per iteration."
+        },
+        {
+          "id": "C",
+          "text": "The workload is I/O bound (SSD/PCIe); reducing dataloader thread count will help, because the trace's 40% idle time reflects host-side dataloader blocking behind slower storage or PCIe transfer bandwidth."
+        },
+        {
+          "id": "D",
+          "text": "Launch-overhead limited: ~20 ms (40%) is CPU-side dispatch between many small kernels. Mitigate with fusion, CUDA Graphs, or larger per-kernel work."
+        }
+      ],
+      "assumptions": [
+        "Nsight's 'GPU utilization' metric here reflects the fraction of wall time during which any SM is running a kernel; 60% ≈ 30/50 ms.",
+        "The 'CPU-side gap' truly measures time between one kernel's end and the next kernel's start on the same stream, not synchronization waits."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-NCU-004",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Nsight Compute / Memory-bound diagnosis",
+      "learningObjective": "Interpret Nsight Compute metrics (SM utilization, achieved occupancy, DRAM throughput, L1 hit rate) to conclude that an elementwise kernel is DRAM-bandwidth bound and choose the right mitigation.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM2e"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Nsight Compute",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            16777216
+          ],
+          [
+            16777216
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Nsight Compute reports the following metrics for an FP32 elementwise kernel `out[i] = sqrt(in[i])` on A100. Which is the best-supported diagnosis and mitigation?",
+      "profileData": "Kernel: fp32_elementwise_sqrt\n  SM Utilization           : 12 %\n  Achieved Occupancy       : 0.85\n  DRAM Throughput          : 92 % of peak\n  L1 Cache Hit Rate        : 40 %\n  L2 Cache Hit Rate        : 8 %\n  Warp Stall Reason (top-1): Long Scoreboard (memory latency)",
+      "options": [
+        {
+          "id": "A",
+          "text": "SM utilization is 12%; increasing block size until SMs reach 100% utilization will improve performance proportionally, since more warps per SM directly translates to higher throughput on any streaming kernel."
+        },
+        {
+          "id": "B",
+          "text": "DRAM-bandwidth bound: 92% DRAM throughput near peak, low SM utilization from memory stalls; occupancy and math cannot help — reduce bytes moved (fusion, lower dtype)."
+        },
+        {
+          "id": "C",
+          "text": "L1 hit rate (40%) is the primary bottleneck; increasing per-block shared-memory usage will lift the L1 hit rate and speed up the kernel by satisfying more accesses from on-chip cache instead of HBM."
+        },
+        {
+          "id": "D",
+          "text": "Achieved occupancy 0.85 is too low; further reducing register usage per thread will raise it to 1.0 and unlock roughly 20% speedup by allowing more warps to reside per SM and hide latency more thoroughly."
+        }
+      ],
+      "assumptions": [
+        "A100 with HBM2e ≈ 2.0 TB/s peak; 92% of peak ≈ 1.84 TB/s.",
+        "The kernel touches each element exactly once for read and once for write (no reuse)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-TIMING-002",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "CUDA async timing / CPU-timer trap",
+      "learningObjective": "Explain why a CPU-based timer around a CUDA kernel launch loop under-reports GPU execution time and how to obtain a correct measurement.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "A user times a matmul on CUDA two different ways. Attempt 1 reports 0.008 ms per iteration; Attempt 2 reports 3.412 ms per iteration. Which measurement reflects actual GPU execution time and what explains the discrepancy?",
+      "codeSnippet": "import torch, time\n\nx = torch.randn(4096, 4096, device=\"cuda\")\nw = torch.randn(4096, 4096, device=\"cuda\")\n\n# Attempt 1: CPU timer only, no synchronization\nt0 = time.perf_counter()\nfor _ in range(10):\n    y = x @ w\nt1 = time.perf_counter()\nprint(f\"Attempt 1 mean per iter: {(t1 - t0) / 10 * 1000:.3f} ms\")\n\n# Attempt 2: synchronize on both sides\ntorch.cuda.synchronize()\nt0 = time.perf_counter()\nfor _ in range(10):\n    y = x @ w\ntorch.cuda.synchronize()\nt1 = time.perf_counter()\nprint(f\"Attempt 2 mean per iter: {(t1 - t0) / 10 * 1000:.3f} ms\")\n\n# Output:\n#   Attempt 1 mean per iter: 0.008 ms\n#   Attempt 2 mean per iter: 3.412 ms",
+      "profileData": "Reported per-iter times: Attempt 1 = 0.008 ms; Attempt 2 = 3.412 ms",
+      "options": [
+        {
+          "id": "A",
+          "text": "Attempt 2 is correct. CUDA launches are asynchronous; without `torch.cuda.synchronize()`, the CPU timer captures dispatch cost, not GPU execution time."
+        },
+        {
+          "id": "B",
+          "text": "Attempt 1 is correct. Modern GPUs execute matmul in single-digit microseconds thanks to Tensor Cores and cuBLAS's autotuning; Attempt 2 is measuring the added synchronize overhead rather than the actual per-iter kernel duration."
+        },
+        {
+          "id": "C",
+          "text": "Both are incorrect. `torch.cuda.synchronize()` returns before kernels finish because it only waits for launches on the default stream; only `torch.cuda.Event.elapsed_time` is a valid method for CUDA-side timing measurements."
+        },
+        {
+          "id": "D",
+          "text": "Attempt 1 is correct because JIT warmup happens after the 10th iteration and pre-warmup runs are much slower; Attempt 2 unfortunately measures pre-warmup kernels because `synchronize()` resets the JIT cache between the two measurements."
+        }
+      ],
+      "assumptions": [
+        "The matmul kernel is compute-heavy enough that GPU work dominates once measured correctly.",
+        "No CUDA Graphs capture is active (which would alter the timing model)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-TOL-003",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Numerical tolerance / Golden test for FP16 GEMM",
+      "learningObjective": "Choose realistic tolerance thresholds when validating a custom FP16 GEMM implementation against a reference (e.g., cuBLAS) with a large K reduction.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any Tensor-Core-capable",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP16 Tensor Cores"
+        ]
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            1024,
+            1024
+          ],
+          [
+            1024,
+            1024
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "A custom FP16 matmul kernel using FP32 accumulators is compared against `x @ w` on FP16 tensors with `K = 1024`. The following tolerance check fails:\n\n`torch.testing.assert_close(out_ref, out_test, atol=1e-5, rtol=1e-6)`\n\nWhat is the most likely reason and what is a correct fix?",
+      "codeSnippet": "import torch\n\nx = torch.randn(1024, 1024, device=\"cuda\", dtype=torch.float16)\nw = torch.randn(1024, 1024, device=\"cuda\", dtype=torch.float16)\n\nout_ref  = x @ w                       # cuBLAS FP16 (Tensor Core), FP32 accum\nout_test = my_flash_matmul(x, w)       # custom kernel, also FP32 accum\n\n# Fails:\ntorch.testing.assert_close(out_ref, out_test, atol=1e-5, rtol=1e-6)",
+      "profileData": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "The FP32 accumulator in `my_flash_matmul` is the problem — reducing at higher precision produces different results from cuBLAS; the correct fix is to accumulate in FP16 so both implementations round identically after every multiply-add."
+        },
+        {
+          "id": "B",
+          "text": "The kernel has a bug; two correct FP16 matmul implementations should produce bit-identical results across all accumulation orders because IEEE 754 guarantees deterministic rounding for FP16 sums up to at least K=2048."
+        },
+        {
+          "id": "C",
+          "text": "FP16 GEMM reductions over K=1024 differ across implementations due to accumulation order and rounding; realistic tolerances are ~1e-2 (atol/rtol), not FP64-scale 1e-5/1e-6."
+        },
+        {
+          "id": "D",
+          "text": "`torch.testing.assert_close` requires `check_dtype=False` to correctly compare tensors that were computed via a Tensor-Core path; adding this flag eliminates the failure regardless of numerical difference between the two outputs."
+        }
+      ],
+      "assumptions": [
+        "`x` and `w` are Gaussian-distributed FP16 tensors of moderate magnitude.",
+        "Both implementations use FP16 storage and (approximately) FP32 accumulation via Tensor Cores or their emulation."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-WARMUP-005",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Benchmark warmup / First-run cost",
+      "learningObjective": "Explain the sources of the very different timings between a single-run measurement and the amortized mean of a many-run loop, and describe a correct benchmarking discipline.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "A user benchmarks a matmul with CUDA events. The first single-run timing is 43.2 ms, but a subsequent 100-run mean is 3.4 ms per iteration. Which explanation is best supported and what is the correct benchmarking practice?",
+      "codeSnippet": "import torch\n\nx = torch.randn(4096, 4096, device=\"cuda\")\nw = torch.randn(4096, 4096, device=\"cuda\")\n\nstart = torch.cuda.Event(enable_timing=True)\nend   = torch.cuda.Event(enable_timing=True)\n\n# Single run\nstart.record()\ny = x @ w\nend.record()\ntorch.cuda.synchronize()\nprint(f\"single-run: {start.elapsed_time(end):.3f} ms\")\n\n# 100 runs\nstart.record()\nfor _ in range(100):\n    y = x @ w\nend.record()\ntorch.cuda.synchronize()\nprint(f\"100-run mean: {start.elapsed_time(end) / 100:.3f} ms\")\n\n# Output:\n#   single-run: 43.2 ms\n#   100-run mean: 3.4 ms",
+      "profileData": "single-run: 43.2 ms; 100-run mean: 3.4 ms",
+      "options": [
+        {
+          "id": "A",
+          "text": "First-run cost includes one-time setup (cuBLAS handle init, algo selection/autotune, kernel loading); benchmark should warm up and report a robust statistic (median) over remaining runs."
+        },
+        {
+          "id": "B",
+          "text": "`start.elapsed_time(end)` returns the cumulative time between events, not the last kernel; the 100-run mean is thus miscomputed by dividing by 100 and cannot be interpreted as per-iteration cost in any meaningful way."
+        },
+        {
+          "id": "C",
+          "text": "Modern GPUs cache kernel results across launches; the 2nd through 100th runs return the same output without recomputation, so the loop measurement effectively times cache lookup latency rather than actual matmul execution."
+        },
+        {
+          "id": "D",
+          "text": "The 100-run version invokes `torch.compile` automatically after 10 iterations and benefits from a fused kernel that the single run does not use, since PyTorch's runtime silently promotes hot loops to compiled variants for throughput."
+        }
+      ],
+      "assumptions": [
+        "PyTorch's default cuBLAS backend is used, not TensorRT or a custom kernel.",
+        "There is no explicit `torch.compile` in the code."
+      ],
+      "version": 1
+    }
+  ]
+}
