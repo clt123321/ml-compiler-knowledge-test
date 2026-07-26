@@ -21,18 +21,33 @@
   },
   "stem": "Which statements about non-determinism on GPU ML workloads are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "Reductions implemented with cross-block `atomicAdd` on floats are non-associative and can produce different low-order bits across runs even with the same input, because the order of concurrent atomic operations is not fixed." },
-    { "id": "B", "text": "Setting `torch.use_deterministic_algorithms(True)` and seeding RNGs is sufficient to guarantee bit-identical outputs across GPU model changes (A100 → H100); once the flag is set, PyTorch reroutes any non-deterministic op through a deterministic kernel that is cross-architecture identical." },
-    { "id": "C", "text": "cuDNN convolution algorithm selection (via benchmark mode) can pick different algorithms across runs with the same input; disabling benchmark mode (or using `torch.backends.cudnn.deterministic = True`) locks the algorithm choice and reduces one source of non-determinism." },
-    { "id": "D", "text": "Even with all determinism flags enabled, changing the number of GPU threads (e.g., via CUDA_VISIBLE_DEVICES or a different job allocation) can change the parallel reduction shape and thus low-order bits; determinism is only guaranteed for identical execution configurations." }
+    {
+      "id": "A",
+      "text": "Even with all determinism flags enabled, changing the number of GPU threads (e.g., via CUDA_VISIBLE_DEVICES or a different job allocation) can change the parallel reduction shape and thus low-order bits; determinism is only guaranteed for identical execution configurations."
+    },
+    {
+      "id": "B",
+      "text": "Reductions implemented with cross-block `atomicAdd` on floats are non-associative and can produce different low-order bits across runs even with the same input, because the order of concurrent atomic operations is not fixed."
+    },
+    {
+      "id": "C",
+      "text": "Setting `torch.use_deterministic_algorithms(True)` and seeding RNGs is sufficient to guarantee bit-identical outputs across GPU model changes (A100 → H100); once the flag is set, PyTorch reroutes any non-deterministic op through a deterministic kernel that is cross-architecture identical."
+    },
+    {
+      "id": "D",
+      "text": "cuDNN convolution algorithm selection (via benchmark mode) can pick different algorithms across runs with the same input; disabling benchmark mode (or using `torch.backends.cudnn.deterministic = True`) locks the algorithm choice and reduces one source of non-determinism."
+    }
   ],
-  "correctAnswers": ["A", "C"],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
   "explanation": "A: atomicAdd on floats is a classic source of non-determinism due to non-associative addition and unspecified atomic ordering. C: cuDNN benchmark mode picks different algorithms across runs; deterministic mode locks it. B is wrong: PyTorch's deterministic-algorithms flag guarantees run-to-run reproducibility on the same GPU/software stack, not cross-architecture bit-identity. D is wrong: changing CUDA_VISIBLE_DEVICES / job allocation does not by itself alter a single-GPU workload's reduction shape; the option conflates 'different device' with 'different execution config' in a way that is not how the flag interacts with hardware.",
   "optionExplanations": {
-    "A": "Correct: cross-block atomicAdd is a known non-determinism source.",
-    "B": "Wrong: cross-architecture bit-identity is not a guarantee.",
-    "C": "Correct: cuDNN benchmark mode is a known non-determinism source; deterministic mode addresses it.",
-    "D": "Wrong: the option conflates 'different device count' with 'different reduction shape'; changing visible devices does not by itself alter kernel launch config within a single-GPU workload."
+    "A": "Wrong: the option conflates 'different device count' with 'different reduction shape'; changing visible devices does not by itself alter kernel launch config within a single-GPU workload.",
+    "B": "Correct: cross-block atomicAdd is a known non-determinism source.",
+    "C": "Wrong: cross-architecture bit-identity is not a guarantee.",
+    "D": "Correct: cuDNN benchmark mode is a known non-determinism source; deterministic mode addresses it."
   },
   "assumptions": [
     "Standard PyTorch 2.0+ with cuDNN backend for convolutions."
@@ -41,14 +56,29 @@
     "Does not imply determinism is free; deterministic kernels are often slower.",
     "Does not imply seed control is unnecessary; RNG seed is orthogonal to op determinism."
   ],
-  "misconceptionTags": ["cross_arch_determinism_myth"],
+  "misconceptionTags": [
+    "cross_arch_determinism_myth"
+  ],
   "distractorRationales": {
-    "B": "Overstates deterministic-algorithms guarantee.",
-    "D": "Imprecise mechanism attribution."
+    "A": "Imprecise mechanism attribution.",
+    "C": "Overstates deterministic-algorithms guarantee."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-profiler", "locator": "torch.use_deterministic_algorithms and reproducibility notes", "supports": ["A", "C"] },
-    { "ref": "DOC:cuda-guide", "locator": "atomic operations and ordering", "supports": ["A"] }
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "torch.use_deterministic_algorithms and reproducibility notes",
+      "supports": [
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "atomic operations and ordering",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

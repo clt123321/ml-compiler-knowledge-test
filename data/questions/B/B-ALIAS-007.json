@@ -18,18 +18,34 @@
   },
   "stem": "Which of the following statements about alias analysis in a compiler are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "A sound alias analysis is a may-analysis: when it says two pointers 'may alias', the compiler must assume they could point to the same location. A conservative may-alias answer never breaks correctness but may inhibit optimizations." },
-    { "id": "B", "text": "A must-alias answer is strictly stronger than may-alias: 'p and q must alias' means every execution has *p and *q referring to the same location, enabling optimizations like store-to-load forwarding across the pointers." },
-    { "id": "C", "text": "Reporting 'no-alias' when two pointers actually may alias is a soundness bug in alias analysis; downstream passes (e.g., CSE, LICM) can miscompile programs based on the false no-alias claim." },
-    { "id": "D", "text": "Any imprecise alias analysis can be safely replaced by 'always no-alias' because most optimizations conservatively re-verify the aliasing before applying." }
+    {
+      "id": "A",
+      "text": "Any imprecise alias analysis can be safely replaced by 'always no-alias' because most optimizations conservatively re-verify the aliasing before applying."
+    },
+    {
+      "id": "B",
+      "text": "A sound alias analysis is a may-analysis: when it says two pointers 'may alias', the compiler must assume they could point to the same location. A conservative may-alias answer never breaks correctness but may inhibit optimizations."
+    },
+    {
+      "id": "C",
+      "text": "A must-alias answer is strictly stronger than may-alias: 'p and q must alias' means every execution has *p and *q referring to the same location, enabling optimizations like store-to-load forwarding across the pointers."
+    },
+    {
+      "id": "D",
+      "text": "Reporting 'no-alias' when two pointers actually may alias is a soundness bug in alias analysis; downstream passes (e.g., CSE, LICM) can miscompile programs based on the false no-alias claim."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
   "explanation": "A: sound alias analyses are may-analyses (over-approximation). B: must-alias is strictly stronger; it certifies aliasing in every execution and enables optimizations like store forwarding. C: false no-alias is a soundness bug; passes that depend on it may commute stores or eliminate loads incorrectly. D is wrong: downstream passes trust the analysis; they don't re-verify. 'Always no-alias' is unsound and will miscompile programs where pointers do alias.",
   "optionExplanations": {
-    "A": "Correct: sound alias analysis is a may-analysis / over-approximation.",
-    "B": "Correct: must-alias is a stronger, useful certification.",
-    "C": "Correct: false no-alias is a soundness bug affecting many optimizations.",
-    "D": "Wrong: passes trust the analysis; unsound 'always no-alias' will miscompile programs."
+    "A": "Wrong: passes trust the analysis; unsound 'always no-alias' will miscompile programs.",
+    "B": "Correct: sound alias analysis is a may-analysis / over-approximation.",
+    "C": "Correct: must-alias is a stronger, useful certification.",
+    "D": "Correct: false no-alias is a soundness bug affecting many optimizations."
   },
   "assumptions": [
     "Standard alias-analysis framework (may-alias / no-alias / must-alias)."
@@ -38,14 +54,41 @@
     "Does not imply may-alias is useless; it correctly bounds behavior even when pointers actually don't alias.",
     "Does not imply must-alias is common; must-alias is typically only proved for trivial cases (same SSA name, obvious constants)."
   ],
-  "misconceptionTags": ["may_alias_vs_no_alias", "soundness_direction"],
+  "misconceptionTags": [
+    "may_alias_vs_no_alias",
+    "soundness_direction"
+  ],
   "distractorRationales": {
-    "D": "Fabricates a re-verification step that does not exist in practice."
+    "A": "Fabricates a re-verification step that does not exist in practice."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Alias analysis chapter", "supports": ["A", "B", "C"] },
-    { "ref": "BOOK:appel", "locator": "Pointer analysis chapter", "supports": ["A", "B", "C"] },
-    { "ref": "DOC:llvm-langref", "locator": "Memory model, alias analysis interface", "supports": ["A", "B", "C"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Alias analysis chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Pointer analysis chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:llvm-langref",
+      "locator": "Memory model, alias analysis interface",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

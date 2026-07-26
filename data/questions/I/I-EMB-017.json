@@ -18,24 +18,60 @@
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["V", "D"], ["B", "N"], ["B", "N", "D"]],
-    "dtypes": ["float16", "int64", "float16"],
-    "layouts": ["contiguous", "contiguous", "contiguous"]
+    "shapes": [
+      [
+        "V",
+        "D"
+      ],
+      [
+        "B",
+        "N"
+      ],
+      [
+        "B",
+        "N",
+        "D"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "int64",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "The input embedding layer takes an int64 index tensor [B, N] and gathers rows from a weight table [V, D] (vocabulary V, hidden dim D). Which characterization of this kernel is correct?",
   "options": [
-    { "id": "A", "text": "It is a gather kernel with irregular but coalesced-per-row access: each of the B*N indices induces one contiguous read of D floats from the [V, D] table. FLOPs are zero; runtime is bandwidth-bound on the D-element rows read from the embedding table." },
-    { "id": "B", "text": "It is functionally equivalent to a GEMM between a one-hot [B, N, V] input and the [V, D] table; a good implementation actually forms this one-hot and calls a sparse-GEMM primitive, which is faster than a hand-written gather kernel." },
-    { "id": "C", "text": "It is a reduction kernel that sums the embedding rows selected by all B*N indices; the output is [D] per batch item, and the runtime is dominated by the reduction depth log2(B*N)." },
-    { "id": "D", "text": "It is a random-access read of individual elements: for each output element out[b, n, d] the kernel reads a single scalar table[idx[b,n], d], so global memory transactions are uncoalesced by design and the kernel is latency-bound." }
+    {
+      "id": "A",
+      "text": "It is a random-access read of individual elements: for each output element out[b, n, d] the kernel reads a single scalar table[idx[b,n], d], so global memory transactions are uncoalesced by design and the kernel is latency-bound."
+    },
+    {
+      "id": "B",
+      "text": "It is functionally equivalent to a GEMM between a one-hot [B, N, V] input and the [V, D] table; a good implementation actually forms this one-hot and calls a sparse-GEMM primitive, which is faster than a hand-written gather kernel."
+    },
+    {
+      "id": "C",
+      "text": "It is a reduction kernel that sums the embedding rows selected by all B*N indices; the output is [D] per batch item, and the runtime is dominated by the reduction depth log2(B*N)."
+    },
+    {
+      "id": "D",
+      "text": "It is a gather kernel with irregular but coalesced-per-row access: each of the B*N indices induces one contiguous read of D floats from the [V, D] table. FLOPs are zero; runtime is bandwidth-bound on the D-element rows read from the embedding table."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Input embedding = weight[indices[b, n]] gives a [B, N, D] output. Each of the B*N indices induces one contiguous read of D floats from the corresponding row of weight[V, D]. Within a warp, threads collaboratively load a single row (or a subset of rows) with coalesced accesses per row, but the row selection across warps is irregular. Zero FLOPs; strictly bandwidth-bound on the D bytes per index. The output side is also a coalesced write of D elements per token.",
   "optionExplanations": {
-    "A": "Correct: gather with per-row coalesced access.",
+    "A": "Wrong: within a row, threads read contiguous D floats — coalesced. Only the choice of row is data-dependent.",
     "B": "Wrong: no framework materializes the one-hot; the gather primitive is far more efficient.",
     "C": "Wrong: embedding is a gather, not a reduction; the output has shape [B, N, D], not [D].",
-    "D": "Wrong: within a row, threads read contiguous D floats — coalesced. Only the choice of row is data-dependent."
+    "D": "Correct: gather with per-row coalesced access."
   },
   "assumptions": [
     "Standard row-major embedding weight [V, D].",
@@ -45,15 +81,30 @@
     "Does not imply the backward is also just a gather; it is a scatter-add / segment-sum on the weight gradient.",
     "Does not imply that embedding lookup is always the bottleneck; on modern LLMs it is typically a small fraction of runtime."
   ],
-  "misconceptionTags": ["embedding_as_gemm_myth", "embedding_as_reduction_myth"],
+  "misconceptionTags": [
+    "embedding_as_gemm_myth",
+    "embedding_as_reduction_myth"
+  ],
   "distractorRationales": {
+    "A": "Confuses row selection irregularity with per-element uncoalesced access.",
     "B": "Fabricates one-hot materialization.",
-    "C": "Wrong output shape.",
-    "D": "Confuses row selection irregularity with per-element uncoalesced access."
+    "C": "Wrong output shape."
   },
   "sourceRefs": [
-    { "ref": "BOOK:pmpp4", "locator": "Gather patterns and coalescing", "supports": ["A"] },
-    { "ref": "BOOK:sze-eff", "locator": "Embedding operator memory pattern", "supports": ["A"] }
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Gather patterns and coalescing",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Embedding operator memory pattern",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

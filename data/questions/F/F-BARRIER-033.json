@@ -34,22 +34,22 @@
     },
     {
       "id": "C",
-      "text": "`__syncthreads()` is a block-wide barrier synchronizing all threads in a thread block; `__syncwarp(mask)` synchronizes only the specified lanes within a warp. On Volta+ (with Independent Thread Scheduling), explicit `__syncwarp` is often required between warp-shuffle operations that used to be implicitly convergent."
+      "text": "Neither `__syncthreads()` nor `__syncwarp()` is required on Volta+, because Independent Thread Scheduling automatically ensures memory visibility and lane convergence at every instruction boundary."
     },
     {
       "id": "D",
-      "text": "Neither `__syncthreads()` nor `__syncwarp()` is required on Volta+, because Independent Thread Scheduling automatically ensures memory visibility and lane convergence at every instruction boundary."
+      "text": "`__syncthreads()` is a block-wide barrier synchronizing all threads in a thread block; `__syncwarp(mask)` synchronizes only the specified lanes within a warp. On Volta+ (with Independent Thread Scheduling), explicit `__syncwarp` is often required between warp-shuffle operations that used to be implicitly convergent."
     }
   ],
   "correctAnswers": [
-    "C"
+    "D"
   ],
   "explanation": "`__syncthreads()`: block-wide barrier + memory-fence for the block; all threads must reach the same call. `__syncwarp(mask)`: warp-scope barrier restricted to lanes in `mask` (default 0xffffffff = all lanes). Volta+ Independent Thread Scheduling allows lanes within a warp to advance their program counters independently, breaking pre-Volta implicit-convergence assumptions; therefore, warp-level primitives (`__shfl_*`, `__ballot_sync`, etc.) must use the `_sync` variants and often need explicit `__syncwarp()` between them to guarantee convergence.",
   "optionExplanations": {
-    "C": "Correct: block-wide vs warp-scope; Volta+ requires explicit warp sync.",
-    "B": "Wrong: distinct primitives with different scopes.",
     "A": "Wrong: scopes are swapped.",
-    "D": "Wrong: ITS does not eliminate the need for synchronization."
+    "B": "Wrong: distinct primitives with different scopes.",
+    "C": "Wrong: ITS does not eliminate the need for synchronization.",
+    "D": "Correct: block-wide vs warp-scope; Volta+ requires explicit warp sync."
   },
   "assumptions": [
     "CUDA 11+ toolchain and Volta+ or newer target."
@@ -63,16 +63,16 @@
     "its_removes_sync_myth"
   ],
   "distractorRationales": {
-    "B": "Wrong claim of identical semantics.",
     "A": "Swaps scopes.",
-    "D": "Denies the need for explicit sync."
+    "B": "Wrong claim of identical semantics.",
+    "C": "Denies the need for explicit sync."
   },
   "sourceRefs": [
     {
       "ref": "DOC:cuda-guide",
       "locator": "Synchronization Functions; Independent Thread Scheduling notes",
       "supports": [
-        "C"
+        "D"
       ]
     }
   ],

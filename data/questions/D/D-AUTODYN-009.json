@@ -25,11 +25,11 @@
   "options": [
     {
       "id": "A",
-      "text": "Automatic dynamic promotion is a Dynamo mechanism: after observing enough distinct sizes for a dim, the dim is marked dynamic and re-traced symbolically, so subsequent new sizes hit the symbolic-shape compilation without further recompiles for that dim."
+      "text": "The log is a bug: automatic dynamic promotion does not exist. The user must always call `mark_dynamic` manually to avoid per-size recompiles. In this reading, the log excerpt is a bug caused by a stale build: automatic dynamic-shape promotion does not exist in current stable releases, and users must always call `torch._dynamo.mark_dynamic` manually on each varying dim to avoid per-size recompiles."
     },
     {
       "id": "B",
-      "text": "The log is a bug: automatic dynamic promotion does not exist. The user must always call `mark_dynamic` manually to avoid per-size recompiles. In this reading, the log excerpt is a bug caused by a stale build: automatic dynamic-shape promotion does not exist in current stable releases, and users must always call `torch._dynamo.mark_dynamic` manually on each varying dim to avoid per-size recompiles."
+      "text": "Automatic dynamic promotion is a Dynamo mechanism: after observing enough distinct sizes for a dim, the dim is marked dynamic and re-traced symbolically, so subsequent new sizes hit the symbolic-shape compilation without further recompiles for that dim."
     },
     {
       "id": "C",
@@ -41,12 +41,12 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "B"
   ],
   "explanation": "PyTorch's automatic dynamic-shape behavior tracks how many distinct sizes have been observed per dim; once the threshold is reached, the dim is marked dynamic and the function is re-traced with a SymInt for that dim, yielding a symbolic-shape compilation that serves subsequent sizes. This behavior is enabled by default in current releases. It is not a fallback to eager, not a runtime parameterization of the specialized kernel, and not a bug.",
   "optionExplanations": {
-    "A": "Correct: describes automatic-dynamic promotion as documented.",
-    "B": "Wrong: the feature exists and is enabled by default.",
+    "A": "Wrong: the feature exists and is enabled by default.",
+    "B": "Correct: describes automatic-dynamic promotion as documented.",
     "C": "Wrong: symbolic tracing is exactly what happens; no eager fallback for the dim.",
     "D": "Wrong: the promotion causes a re-trace with SymInt, not a runtime parameterization of the old kernel."
   },
@@ -63,7 +63,7 @@
     "auto_dynamic_reuses_specialized_kernel"
   ],
   "distractorRationales": {
-    "B": "Wrong denial of the feature.",
+    "A": "Wrong denial of the feature.",
     "C": "Wrong mechanism (eager fallback).",
     "D": "Wrong mechanism (runtime shape argument)."
   },
@@ -72,14 +72,14 @@
       "ref": "DOC:torch-compile",
       "locator": "Dynamic shapes; automatic dynamic behavior",
       "supports": [
-        "A"
+        "B"
       ]
     },
     {
       "ref": "DOC:torch-dynamo",
       "locator": "Recompile-then-promote behavior",
       "supports": [
-        "A"
+        "B"
       ]
     }
   ],

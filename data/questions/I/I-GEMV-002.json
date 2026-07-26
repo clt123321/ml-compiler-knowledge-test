@@ -11,30 +11,65 @@
     "vendor": "NVIDIA",
     "architecture": "any modern data-center GPU",
     "device": "GPU",
-    "requiredFeatures": ["HBM"]
+    "requiredFeatures": [
+      "HBM"
+    ]
   },
   "softwareContext": {
     "framework": "CUDA",
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["M", "N"], ["N"], ["M"]],
-    "dtypes": ["float16", "float16", "float16"],
-    "layouts": ["row-major", "contiguous", "contiguous"]
+    "shapes": [
+      [
+        "M",
+        "N"
+      ],
+      [
+        "N"
+      ],
+      [
+        "M"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "row-major",
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "For y = A @ x where A is [M, N] and x is [N], both FP16, what is the correct classification of a well-implemented GEMV on modern GPUs, and why?",
   "options": [
-    { "id": "A", "text": "Compute-bound: GEMV performs 2*M*N flops with M*N loads, giving arithmetic intensity of about 2 flops/byte for FP16, which sits comfortably above modern GPU ridge points and therefore saturates tensor-core throughput." },
-    { "id": "B", "text": "Compute-bound when N is large: as N grows, the intensity per output row grows linearly with N, so long inner dimensions push GEMV into the compute-limited regime regardless of dtype or memory system." },
-    { "id": "C", "text": "Memory-bound: each output element reuses x lightly (N reads) but A is streamed with essentially no reuse, so intensity is ≈ 1 flop/byte for FP16, well below the ridge point of modern GPUs; runtime is dominated by HBM bandwidth of A." },
-    { "id": "D", "text": "Latency-bound: the reduction across N introduces a long serial dependency chain on each output row, and this dependency, not memory or compute, determines runtime on modern out-of-order GPU pipelines." }
+    {
+      "id": "A",
+      "text": "Memory-bound: each output element reuses x lightly (N reads) but A is streamed with essentially no reuse, so intensity is ≈ 1 flop/byte for FP16, well below the ridge point of modern GPUs; runtime is dominated by HBM bandwidth of A."
+    },
+    {
+      "id": "B",
+      "text": "Compute-bound when N is large: as N grows, the intensity per output row grows linearly with N, so long inner dimensions push GEMV into the compute-limited regime regardless of dtype or memory system."
+    },
+    {
+      "id": "C",
+      "text": "Compute-bound: GEMV performs 2*M*N flops with M*N loads, giving arithmetic intensity of about 2 flops/byte for FP16, which sits comfortably above modern GPU ridge points and therefore saturates tensor-core throughput."
+    },
+    {
+      "id": "D",
+      "text": "Latency-bound: the reduction across N introduces a long serial dependency chain on each output row, and this dependency, not memory or compute, determines runtime on modern out-of-order GPU pipelines."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "GEMV reads A (M*N elements) once with no reuse, x (N elements) with M reuses (trivially cached), and writes y (M elements). Total flops = 2*M*N; total bytes ≈ M*N*sizeof(dtype). For FP16 that is ~1 flop/byte — far below the ridge point (~50-100 flops/byte on modern GPUs). GEMV is therefore memory-bandwidth bound; the bottleneck is streaming A from HBM. Parallelism (one warp per row, warp-shuffle reductions) does not change this; it only realizes the memory-bound ceiling.",
   "optionExplanations": {
-    "C": "Correct: matches roofline analysis for GEMV — bandwidth of A dominates.",
-    "A": "Wrong: 1 flop/byte is well below the ridge point; GEMV cannot be compute-bound on modern GPUs.",
+    "A": "Correct: matches roofline analysis for GEMV — bandwidth of A dominates.",
     "B": "Wrong: intensity does not grow with N; both flops and bytes scale linearly with N, so the ratio is constant.",
+    "C": "Wrong: 1 flop/byte is well below the ridge point; GEMV cannot be compute-bound on modern GPUs.",
     "D": "Wrong: within a row the reduction is a short fixed-depth log(N) tree; runtime is dominated by streaming A, not by reduction latency."
   },
   "assumptions": [
@@ -45,15 +80,30 @@
     "Does not imply that GEMV can never benefit from tensor cores; batched GEMV (GEMM with small N) can, but that changes the problem.",
     "Does not imply that FP16 is always the best choice; INT8 GEMV cuts bandwidth further at the cost of quantization overhead."
   ],
-  "misconceptionTags": ["gemv_compute_bound_myth", "intensity_grows_with_N"],
+  "misconceptionTags": [
+    "gemv_compute_bound_myth",
+    "intensity_grows_with_N"
+  ],
   "distractorRationales": {
-    "A": "Overstates GEMV intensity.",
     "B": "Confuses linear scaling with intensity growth.",
+    "C": "Overstates GEMV intensity.",
     "D": "Wrong bottleneck class."
   },
   "sourceRefs": [
-    { "ref": "BOOK:pmpp4", "locator": "GEMV / reduction discussion", "supports": ["C"] },
-    { "ref": "BOOK:sze-eff", "locator": "Roofline and DNN operator classification", "supports": ["C"] }
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "GEMV / reduction discussion",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Roofline and DNN operator classification",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

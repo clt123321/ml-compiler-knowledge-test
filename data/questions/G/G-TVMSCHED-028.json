@@ -22,20 +22,34 @@
   "irSnippet": "# TensorIR schedule primitives (simplified)\ni, j, k = sch.get_loops(block)\nio, ii = sch.split(i, factors=[None, 32])       # split loop i into outer and inner\nsch.reorder(io, k, ii, j)                        # reorder loops (must preserve dependences)\nsch.vectorize(ii)                                # vectorize the inner-32 loop\nsch.bind(io, 'blockIdx.x')                       # map to a GPU block dimension\nsch.parallel(k)                                  # parallelize k across threads",
   "stem": "Which of the following statements about the TensorIR schedule primitives above are TRUE? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "`split` is always legal because it only relabels the iteration space; the composition `factors=[None, 32]` decomposes `i` into `i = io * 32 + ii` and does not require dependence analysis." },
-    { "id": "B", "text": "`reorder` is legal only when the new order does not violate any dependence in the loop nest; TVM's schedule primitive rejects reorderings that would reverse a true dependence." },
-    { "id": "C", "text": "`vectorize` requires that the target loop's iterations are independent (no cross-iteration write dependence) and that the loop's trip count is compatible with the target's vector width." },
-    { "id": "D", "text": "`bind` to `blockIdx.x` is legal for any loop; TVM will emit correct code even if the loop has cross-iteration writes into shared state." },
-    { "id": "E", "text": "`parallel` is a semantically-neutral tag: it never affects correctness, only performance." }
+    {
+      "id": "A",
+      "text": "`bind` to `blockIdx.x` is legal for any loop; TVM will emit correct code even if the loop has cross-iteration writes into shared state."
+    },
+    {
+      "id": "B",
+      "text": "`split` is always legal because it only relabels the iteration space; the composition `factors=[None, 32]` decomposes `i` into `i = io * 32 + ii` and does not require dependence analysis."
+    },
+    {
+      "id": "C",
+      "text": "`reorder` is legal only when the new order does not violate any dependence in the loop nest; TVM's schedule primitive rejects reorderings that would reverse a true dependence."
+    },
+    {
+      "id": "D",
+      "text": "`vectorize` requires that the target loop's iterations are independent (no cross-iteration write dependence) and that the loop's trip count is compatible with the target's vector width."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
   "explanation": "A: `split` is a syntactic reindexing of the iteration space; it produces `io * 32 + ii == i` and preserves all dependences by construction. B: `reorder` is checked by TVM against the block's read/write signature and iteration-domain dependences; illegal reorderings are rejected. C: `vectorize` requires independent iterations (SIMD lanes cannot serialize) and a trip count divisible by the vector width or masked handling. D is false: `bind` to a thread axis requires the block's iterations to be independent w.r.t. the target axis; otherwise cross-thread races occur. E is false: `parallel` requires the same independence property; misapplied, it introduces races.",
   "optionExplanations": {
-    "A": "Correct: split is a pure reindexing.",
-    "B": "Correct: reorder requires dependence preservation.",
-    "C": "Correct: vectorize requires independence.",
-    "D": "Wrong: bind to a thread axis has independence preconditions.",
-    "E": "Wrong: parallel is not semantically neutral; races can arise."
+    "A": "Wrong: bind to a thread axis has independence preconditions.",
+    "B": "Correct: split is a pure reindexing.",
+    "C": "Correct: reorder requires dependence preservation.",
+    "D": "Correct: vectorize requires independence."
   },
   "assumptions": [
     "The TensorIR block metadata correctly describes reads and writes.",
@@ -45,13 +59,23 @@
     "Does not imply all splits produce correct code once combined with subsequent primitives; downstream primitives (like vectorize) still have their own preconditions.",
     "Does not imply MetaSchedule's search never generates illegal candidates internally — it may, but the primitives reject them at application."
   ],
-  "misconceptionTags": ["parallel_semantically_neutral", "bind_no_dependence_check"],
+  "misconceptionTags": [
+    "parallel_semantically_neutral",
+    "bind_no_dependence_check"
+  ],
   "distractorRationales": {
-    "D": "Confuses tagging with dependence-aware binding.",
-    "E": "Confuses tagging with independence."
+    "A": "Confuses tagging with dependence-aware binding."
   },
   "sourceRefs": [
-    { "ref": "DOC:tvm-relax", "locator": "TensorIR schedule primitive reference", "supports": ["A", "B", "C"] }
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "TensorIR schedule primitive reference",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

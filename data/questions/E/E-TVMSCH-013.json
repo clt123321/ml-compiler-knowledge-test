@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "sm_80+ (via TensorIR CUDA codegen)",
     "device": "GPU",
-    "requiredFeatures": ["threadIdx/blockIdx mapping"]
+    "requiredFeatures": [
+      "threadIdx/blockIdx mapping"
+    ]
   },
   "softwareContext": {
     "framework": "TVM",
@@ -22,18 +24,34 @@
   "stem": "You have a TensorIR PrimFunc computing `C = A + B` with a single loop `for i in range(N)`. Which of the following schedule sequences are consistent with the semantics of TensorIR schedule primitives? (Select all that apply.)",
   "irSnippet": "@T.prim_func\ndef vec_add(A: T.Buffer((N,), \"float32\"), B: T.Buffer((N,), \"float32\"),\n            C: T.Buffer((N,), \"float32\")):\n    for i in range(N):\n        with T.block(\"C\"):\n            vi = T.axis.spatial(N, i)\n            C[vi] = A[vi] + B[vi]",
   "options": [
-    { "id": "A", "text": "`sch.split(loop=i, factors=[None, 256])` produces two nested loops `(io, ii)` with `ii` size 256 and `io` size `ceildiv(N, 256)`; then `sch.bind(io, 'blockIdx.x')` and `sch.bind(ii, 'threadIdx.x')` map the two loops to the CUDA launch grid, producing a canonical vector-add kernel." },
-    { "id": "B", "text": "`sch.cache_read(block='C', read_buffer_index=0, storage_scope='shared')` inserts a shared-memory staging buffer between the load of `A` and its use in the C block, without changing the mathematical result." },
-    { "id": "C", "text": "`sch.vectorize(loop=i)` is guaranteed to succeed on any loop regardless of the loop's extent, alignment, or the underlying target; TensorIR will silently emit scalar code if vectorization is impossible." },
-    { "id": "D", "text": "`sch.bind(loop=i, thread_axis='threadIdx.x')` may be applied without any prior split; this is a valid legalization that turns a single serial loop into a per-thread compute where each thread handles one element and blockDim is set to the loop's extent." }
+    {
+      "id": "A",
+      "text": "`sch.vectorize(loop=i)` is guaranteed to succeed on any loop regardless of the loop's extent, alignment, or the underlying target; TensorIR will silently emit scalar code if vectorization is impossible."
+    },
+    {
+      "id": "B",
+      "text": "`sch.bind(loop=i, thread_axis='threadIdx.x')` may be applied without any prior split; this is a valid legalization that turns a single serial loop into a per-thread compute where each thread handles one element and blockDim is set to the loop's extent."
+    },
+    {
+      "id": "C",
+      "text": "`sch.split(loop=i, factors=[None, 256])` produces two nested loops `(io, ii)` with `ii` size 256 and `io` size `ceildiv(N, 256)`; then `sch.bind(io, 'blockIdx.x')` and `sch.bind(ii, 'threadIdx.x')` map the two loops to the CUDA launch grid, producing a canonical vector-add kernel."
+    },
+    {
+      "id": "D",
+      "text": "`sch.cache_read(block='C', read_buffer_index=0, storage_scope='shared')` inserts a shared-memory staging buffer between the load of `A` and its use in the C block, without changing the mathematical result."
+    }
   ],
-  "correctAnswers": ["A", "B", "D"],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
   "explanation": "A: `split` + `bind` is the canonical GPU schedule for a 1-D loop. B: `cache_read` inserts an intermediate buffer at the given storage scope, preserving compute semantics. C is wrong: `vectorize` requires the loop extent to divide the target vector width (and no cross-iteration dependencies); it may fail with an explicit error, not silently downgrade. D: `bind` directly on a 1-D loop is legal — the loop extent becomes the thread count. This is common for simple element-wise kernels; whether it is efficient is a separate concern.",
   "optionExplanations": {
-    "A": "Correct: canonical `split` + `bind(blockIdx, threadIdx)` GPU schedule.",
-    "B": "Correct: `cache_read` inserts a scoped staging buffer.",
-    "C": "Wrong: `vectorize` is not universally applicable; it errors when preconditions fail.",
-    "D": "Correct: `bind` on a single loop is legal legalization."
+    "A": "Wrong: `vectorize` is not universally applicable; it errors when preconditions fail.",
+    "B": "Correct: `bind` on a single loop is legal legalization.",
+    "C": "Correct: canonical `split` + `bind(blockIdx, threadIdx)` GPU schedule.",
+    "D": "Correct: `cache_read` inserts a scoped staging buffer."
   },
   "assumptions": [
     "Standard TensorIR schedule primitive semantics as documented.",
@@ -43,12 +61,23 @@
     "Does not imply every valid schedule is performant; correctness and performance are separate.",
     "Does not imply that `cache_read` always improves performance; it may hurt for tiny buffers."
   ],
-  "misconceptionTags": ["vectorize_always_ok_myth", "bind_requires_split_myth"],
+  "misconceptionTags": [
+    "vectorize_always_ok_myth",
+    "bind_requires_split_myth"
+  ],
   "distractorRationales": {
-    "C": "Overstates `vectorize`'s applicability."
+    "A": "Overstates `vectorize`'s applicability."
   },
   "sourceRefs": [
-    { "ref": "DOC:tvm-relax", "locator": "TensorIR schedule primitives — split, bind, cache_read, vectorize", "supports": ["A", "B", "D"] }
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "TensorIR schedule primitives — split, bind, cache_read, vectorize",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

@@ -18,16 +18,30 @@
   },
   "stem": "In deep-learning compilers, 'kernel selection' typically refers to which activity?",
   "options": [
-    { "id": "A", "text": "Choosing, for each operator instance in the graph, a concrete implementation (library call, generated kernel, or fused template) based on operator type, shape, dtype, layout, and target hardware — with an optional cost model or measurement-based ranking." },
-    { "id": "B", "text": "Choosing the physical filename of the shared library that will provide the CUDA runtime; this happens at link time and is independent of the model." },
-    { "id": "C", "text": "Choosing whether to run each iteration of a loop on the CPU or GPU based on runtime input size, decided at every launch by the executor." },
-    { "id": "D", "text": "Choosing which weights of the model to prune before compilation; kernel selection is another name for structured pruning." }
+    {
+      "id": "A",
+      "text": "Choosing the physical filename of the shared library that will provide the CUDA runtime; this happens at link time and is independent of the model."
+    },
+    {
+      "id": "B",
+      "text": "Choosing, for each operator instance in the graph, a concrete implementation (library call, generated kernel, or fused template) based on operator type, shape, dtype, layout, and target hardware — with an optional cost model or measurement-based ranking."
+    },
+    {
+      "id": "C",
+      "text": "Choosing whether to run each iteration of a loop on the CPU or GPU based on runtime input size, decided at every launch by the executor."
+    },
+    {
+      "id": "D",
+      "text": "Choosing which weights of the model to prune before compilation; kernel selection is another name for structured pruning."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "Kernel selection is the compile-time (or ahead-of-inference) step that maps each op-instance (with its concrete shape, dtype, layout, and target attributes) to a specific implementation from a catalog. Choices commonly include: (i) a hand-tuned library call like cuBLAS/cuDNN, (ii) a generated kernel from Triton/TensorIR/TIR templates, and (iii) a fused template with pointwise epilogues. The selection may be driven by a static cost model, a learned cost model, or by direct measurement. Option B refers to link-time library resolution, unrelated. Option C describes runtime device dispatch. Option D describes pruning, unrelated.",
   "optionExplanations": {
-    "A": "Correct: matches the standard use of the term in TVM, TorchInductor, TensorRT.",
-    "B": "Wrong: link-time confusion.",
+    "A": "Wrong: link-time confusion.",
+    "B": "Correct: matches the standard use of the term in TVM, TorchInductor, TensorRT.",
     "C": "Wrong: runtime dispatch confusion.",
     "D": "Wrong: pruning confusion."
   },
@@ -39,15 +53,29 @@
     "Does not imply kernel selection is trivial; the search space can be very large.",
     "Does not imply the selected kernel is optimal — the cost model may be approximate."
   ],
-  "misconceptionTags": ["kernel_selection_runtime_dispatch"],
+  "misconceptionTags": [
+    "kernel_selection_runtime_dispatch"
+  ],
   "distractorRationales": {
-    "B": "Confuses with link-time resolution.",
+    "A": "Confuses with link-time resolution.",
     "C": "Confuses with runtime device dispatch.",
     "D": "Unrelated concept."
   },
   "sourceRefs": [
-    { "ref": "DOC:tvm-relax", "locator": "MetaSchedule kernel selection and dispatch", "supports": ["A"] },
-    { "ref": "DOC:torch-inductor", "locator": "Kernel selection between ATen, Triton, and CPU C++ templates", "supports": ["A"] }
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "MetaSchedule kernel selection and dispatch",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Kernel selection between ATen, Triton, and CPU C++ templates",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

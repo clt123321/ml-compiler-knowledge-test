@@ -20,23 +20,52 @@
     "stability": "version_sensitive"
   },
   "tensorContext": {
-    "shapes": [[1024, 1024], [1024, 1024]],
-    "dtypes": ["float32", "float32"],
-    "layouts": ["contiguous", "contiguous"]
+    "shapes": [
+      [
+        1024,
+        1024
+      ],
+      [
+        1024,
+        1024
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "Consider the following compiled function. `x` and `y` are CUDA FP32 tensors with identical shape `[1024, 1024]` and contiguous layout. Under standard PyTorch 2.3-2.5 defaults, roughly how many CUDA kernels does the compiled version launch per call, and why?",
   "codeSnippet": "import torch\n\n@torch.compile\ndef f(x, y):\n    a = x * 2.0\n    b = a + y\n    c = b.relu()\n    return c\n\nx = torch.randn(1024, 1024, device=\"cuda\")\ny = torch.randn(1024, 1024, device=\"cuda\")\nout = f(x, y)  # first call warms up compilation",
   "options": [
-    { "id": "A", "text": "1 kernel: mul, add, relu share an iteration space with no reduction or side effects, so Inductor emits a single fused Triton kernel." },
-    { "id": "B", "text": "3 kernels — one per pointwise op — because TorchInductor does not fuse pointwise ops that use different scalar constants such as `2.0` in the first mul, since constants participate in guard hashing between fusion candidates." },
-    { "id": "C", "text": "0 kernels: TorchInductor lowers pointwise ops to CPU C++ code even for CUDA inputs when they can be evaluated eagerly, and the host-side execution reads back the CUDA tensors for element-wise processing on the CPU." },
-    { "id": "D", "text": "4 kernels: one for each of mul, add, relu, plus a separate materialization kernel to place the fused result into the output tensor because Inductor emits explicit copy kernels for aliasing safety." }
+    {
+      "id": "A",
+      "text": "3 kernels — one per pointwise op — because TorchInductor does not fuse pointwise ops that use different scalar constants such as `2.0` in the first mul, since constants participate in guard hashing between fusion candidates."
+    },
+    {
+      "id": "B",
+      "text": "1 kernel: mul, add, relu share an iteration space with no reduction or side effects, so Inductor emits a single fused Triton kernel."
+    },
+    {
+      "id": "C",
+      "text": "0 kernels: TorchInductor lowers pointwise ops to CPU C++ code even for CUDA inputs when they can be evaluated eagerly, and the host-side execution reads back the CUDA tensors for element-wise processing on the CPU."
+    },
+    {
+      "id": "D",
+      "text": "4 kernels: one for each of mul, add, relu, plus a separate materialization kernel to place the fused result into the output tensor because Inductor emits explicit copy kernels for aliasing safety."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "TorchInductor's scheduler fuses pointwise producer-consumer chains that share an iteration space. For CUDA inputs, the generated code is a Triton kernel that computes `relu(x*2 + y)` per element in one launch, reading `x` and `y` from global memory and writing `c` back once. Intermediate tensors `a` and `b` are not materialized in HBM.",
   "optionExplanations": {
-    "A": "Correct: standard TorchInductor pointwise fusion for CUDA tensors.",
-    "B": "Wrong: constant scalars (like 2.0) are folded into the Triton kernel and do not prevent fusion.",
+    "A": "Wrong: constant scalars (like 2.0) are folded into the Triton kernel and do not prevent fusion.",
+    "B": "Correct: standard TorchInductor pointwise fusion for CUDA tensors.",
     "C": "Wrong: CUDA inputs are lowered to Triton (or CUDA C++ codegen), not CPU C++.",
     "D": "Wrong: there is no separate materialization kernel; the fused kernel writes directly to `c`."
   },
@@ -48,15 +77,30 @@
     "Does not imply that all torch.compile programs produce a single kernel; reductions or unsupported ops break fusion boundaries.",
     "Does not imply that the fused kernel achieves peak throughput; performance still depends on memory-bound characteristics."
   ],
-  "misconceptionTags": ["fusion_boundary_confusion", "cpu_backend_confusion"],
+  "misconceptionTags": [
+    "fusion_boundary_confusion",
+    "cpu_backend_confusion"
+  ],
   "distractorRationales": {
-    "B": "Confuses constant folding with fusion-blocking factors.",
+    "A": "Confuses constant folding with fusion-blocking factors.",
     "C": "Wrong backend claim.",
     "D": "Adds a spurious materialization kernel."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-inductor", "locator": "Pointwise fusion / scheduler docs", "supports": ["A"] },
-    { "ref": "PAPER:pytorch2", "locator": "Inductor design, pointwise/reduction fusion", "supports": ["A"] }
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Pointwise fusion / scheduler docs",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Inductor design, pointwise/reduction fusion",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

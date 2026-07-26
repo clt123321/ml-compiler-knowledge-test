@@ -19,18 +19,34 @@
   },
   "stem": "Select all correct statements about kernel fusion in transformer inference. (Choose all that apply.)",
   "options": [
-    { "id": "A", "text": "Fusion primarily reduces HBM roundtrips of intermediate tensors and amortizes kernel-launch overhead; the FLOP count of the fused operations is unchanged." },
-    { "id": "B", "text": "Producer-consumer fusion (e.g., pointwise ops on the output of a GEMM) is straightforward, but fusing across a reduction boundary (e.g., across softmax) requires restructuring the tiling and typically only pays off under specific tile-size constraints." },
-    { "id": "C", "text": "Kernel fusion always improves latency because it eliminates all HBM traffic between the fused ops; there is no configuration in which fusion hurts performance." },
-    { "id": "D", "text": "Aggressive fusion can hurt occupancy by inflating per-thread register footprint; when register pressure spills to local memory, the fused kernel may be slower than the un-fused version." }
+    {
+      "id": "A",
+      "text": "Kernel fusion always improves latency because it eliminates all HBM traffic between the fused ops; there is no configuration in which fusion hurts performance."
+    },
+    {
+      "id": "B",
+      "text": "Aggressive fusion can hurt occupancy by inflating per-thread register footprint; when register pressure spills to local memory, the fused kernel may be slower than the un-fused version."
+    },
+    {
+      "id": "C",
+      "text": "Fusion primarily reduces HBM roundtrips of intermediate tensors and amortizes kernel-launch overhead; the FLOP count of the fused operations is unchanged."
+    },
+    {
+      "id": "D",
+      "text": "Producer-consumer fusion (e.g., pointwise ops on the output of a GEMM) is straightforward, but fusing across a reduction boundary (e.g., across softmax) requires restructuring the tiling and typically only pays off under specific tile-size constraints."
+    }
   ],
-  "correctAnswers": ["A", "B", "D"],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
   "explanation": "A is correct: fusion reduces HBM roundtrips and launch overhead; it does not change FLOPs. B is correct: pointwise-producer/consumer fusion is easy; fusing across reductions is much harder and shape-dependent. D is correct: fusion increases register footprint and can cause spills. C is wrong: fusion is not universally free — register spills, reduced occupancy, and worse tile shapes can make a fused kernel slower.",
   "optionExplanations": {
-    "A": "Correct: fusion reduces HBM traffic and launch overhead.",
-    "B": "Correct: reduction-boundary fusion is hard and conditional.",
-    "D": "Correct: register pressure can undo the gains.",
-    "C": "Wrong: fusion has real costs; not universally beneficial."
+    "A": "Wrong: fusion has real costs; not universally beneficial.",
+    "B": "Correct: register pressure can undo the gains.",
+    "C": "Correct: fusion reduces HBM traffic and launch overhead.",
+    "D": "Correct: reduction-boundary fusion is hard and conditional."
   },
   "assumptions": [
     "'Fusion' means combining multiple logical ops into a single kernel launch.",
@@ -40,13 +56,31 @@
     "Does not imply un-fused kernels are ever better on typical shapes; when register pressure is fine, fusion wins.",
     "Does not imply fusion decisions are static; auto-tuners typically evaluate multiple fusion configurations."
   ],
-  "misconceptionTags": ["fusion_free_myth", "fusion_zero_hbm_myth"],
+  "misconceptionTags": [
+    "fusion_free_myth",
+    "fusion_zero_hbm_myth"
+  ],
   "distractorRationales": {
-    "C": "Denies all fusion downsides."
+    "A": "Denies all fusion downsides."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-inductor", "locator": "Fusion boundary and register pressure", "supports": ["A", "B", "D"] },
-    { "ref": "DOC:cuda-best", "locator": "Kernel fusion trade-offs", "supports": ["A", "D"] }
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Fusion boundary and register pressure",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Kernel fusion trade-offs",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

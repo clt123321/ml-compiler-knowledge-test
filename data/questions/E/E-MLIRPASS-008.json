@@ -21,7 +21,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The PassManager runs all registered passes in parallel by default; users must explicitly opt out of parallelism to guarantee ordering, since MLIR provides no sequential pipeline semantics."
+      "text": "Each Pass declares the Op type it runs on (e.g., `ModuleOp` or `func.func`); the PassManager runs a pass over every matching Op in the IR, and nested pass managers can be composed to run inner passes on inner ops (e.g., a `func.func` pipeline nested inside a `ModuleOp` pipeline)."
     },
     {
       "id": "B",
@@ -29,7 +29,7 @@
     },
     {
       "id": "C",
-      "text": "Each Pass declares the Op type it runs on (e.g., `ModuleOp` or `func.func`); the PassManager runs a pass over every matching Op in the IR, and nested pass managers can be composed to run inner passes on inner ops (e.g., a `func.func` pipeline nested inside a `ModuleOp` pipeline)."
+      "text": "The PassManager runs all registered passes in parallel by default; users must explicitly opt out of parallelism to guarantee ordering, since MLIR provides no sequential pipeline semantics."
     },
     {
       "id": "D",
@@ -37,13 +37,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "MLIR Passes are scoped to a specific Op type (typically `ModuleOp` or `FunctionOpInterface` / `func.func`). The PassManager iterates the pass over each matching Op in the IR. Nested pass managers allow structuring inner pipelines: e.g., a top-level `PassManager<ModuleOp>` with a nested `OpPassManager<func::FuncOp>` that runs a set of per-function passes. This nesting is the standard way to organize MLIR pipelines and to enable per-op parallel execution when opted-in.",
   "optionExplanations": {
-    "C": "Correct: op-scoping and nested pass managers are the standard MLIR PassManager design.",
+    "A": "Correct: op-scoping and nested pass managers are the standard MLIR PassManager design.",
     "B": "Wrong: many passes are scoped to `func.func` directly.",
-    "A": "Wrong: passes run sequentially in declared order by default; parallelism across ops of the same nested level is an opt-in.",
+    "C": "Wrong: passes run sequentially in declared order by default; parallelism across ops of the same nested level is an opt-in.",
     "D": "Wrong: pass scoping is a real verified constraint, not documentation."
   },
   "assumptions": [
@@ -59,7 +59,7 @@
   ],
   "distractorRationales": {
     "B": "Under-represents op scoping.",
-    "A": "Wrong claim about default parallelism.",
+    "C": "Wrong claim about default parallelism.",
     "D": "Wrong claim that scope is only a hint."
   },
   "sourceRefs": [
@@ -67,7 +67,7 @@
       "ref": "DOC:mlir-langref",
       "locator": "Pass Infrastructure — nesting, op-scoped passes",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

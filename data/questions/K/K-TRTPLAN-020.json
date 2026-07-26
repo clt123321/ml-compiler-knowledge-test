@@ -19,18 +19,34 @@
   },
   "stem": "Which statements about the portability of a serialized TensorRT engine (plan file) are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "A plan file built for one GPU compute capability (e.g., sm_80, A100) is not guaranteed to run on a different one (e.g., sm_90, H100); the builder emits kernels for the target architecture used at build time." },
-    { "id": "B", "text": "A plan file built with TensorRT major version X is not generally deserializable by a TensorRT runtime of major version Y ≠ X, because plan serialization is not backward/forward compatible across major versions." },
-    { "id": "C", "text": "Dynamic input shape ranges (optimization profiles) supported by the runtime are baked into the plan at build time; if the runtime feeds a shape outside the built ranges the engine cannot execute it and must be rebuilt." },
-    { "id": "D", "text": "The plan file is a wrapper around the ONNX file it was built from; deleting the ONNX file makes the plan invalid because the runtime re-parses ONNX on deserialization." }
+    {
+      "id": "A",
+      "text": "Dynamic input shape ranges (optimization profiles) supported by the runtime are baked into the plan at build time; if the runtime feeds a shape outside the built ranges the engine cannot execute it and must be rebuilt."
+    },
+    {
+      "id": "B",
+      "text": "The plan file is a wrapper around the ONNX file it was built from; deleting the ONNX file makes the plan invalid because the runtime re-parses ONNX on deserialization."
+    },
+    {
+      "id": "C",
+      "text": "A plan file built for one GPU compute capability (e.g., sm_80, A100) is not guaranteed to run on a different one (e.g., sm_90, H100); the builder emits kernels for the target architecture used at build time."
+    },
+    {
+      "id": "D",
+      "text": "A plan file built with TensorRT major version X is not generally deserializable by a TensorRT runtime of major version Y ≠ X, because plan serialization is not backward/forward compatible across major versions."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
   "explanation": "Plan files are architecture-specific (A), TensorRT-major-version-specific (B), and shape-range-specific (C). D is false: the plan is self-contained — it does not require the source ONNX at runtime.",
   "optionExplanations": {
-    "A": "Correct: TensorRT documentation states plans are compute-capability-specific.",
-    "B": "Correct: cross-major-version compatibility is not guaranteed.",
-    "C": "Correct: optimization profiles are baked in at build.",
-    "D": "Wrong: the plan is self-contained and does not need the source ONNX."
+    "A": "Correct: optimization profiles are baked in at build.",
+    "B": "Wrong: the plan is self-contained and does not need the source ONNX.",
+    "C": "Correct: TensorRT documentation states plans are compute-capability-specific.",
+    "D": "Correct: cross-major-version compatibility is not guaranteed."
   },
   "assumptions": [
     "Standard TensorRT deployment without explicit version-compatibility mode enabled."
@@ -39,12 +55,23 @@
     "Does not imply cross-arch is never possible; TensorRT has optional 'hardware compatibility' modes that trade performance for wider portability.",
     "Does not imply cross-minor-version is broken; minor-version compatibility is typically maintained."
   ],
-  "misconceptionTags": ["engine_needs_onnx", "cross_arch_myth"],
+  "misconceptionTags": [
+    "engine_needs_onnx",
+    "cross_arch_myth"
+  ],
   "distractorRationales": {
-    "D": "Fabricates dependency on the source file."
+    "B": "Fabricates dependency on the source file."
   },
   "sourceRefs": [
-    { "ref": "DOC:trt", "locator": "Engine portability, compute capability, version compatibility, optimization profiles", "supports": ["A", "B", "C"] }
+    {
+      "ref": "DOC:trt",
+      "locator": "Engine portability, compute capability, version compatibility, optimization profiles",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

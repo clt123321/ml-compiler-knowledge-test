@@ -28,7 +28,7 @@
     },
     {
       "id": "B",
-      "text": "The mask is unused at runtime; Inductor emits it only for debug and it is stripped from the compiled PTX, so no tail handling occurs. Under this framing, the generated Triton kernel actually performs three separate GPU launches — one for the load, one for the arithmetic, and one for the store — because Triton does not support fusing memory ops and arithmetic ops in a single kernel; the excerpt is only the middle launch."
+      "text": "The generated kernel launches with block size `XBLOCK` per program, computes a masked load / arithmetic / masked store per element, and fuses the multiply and add into one kernel; the mask (`xindex < xnumel`) handles the tail of the tensor when `xnumel` is not a multiple of `XBLOCK`. Under this account, the kernel exits early if any element in the current block would cross the tensor boundary; the last `xnumel % XBLOCK` elements are therefore silently left unwritten in the output tensor and the caller must zero the output buffer manually before invocation."
     },
     {
       "id": "C",
@@ -36,18 +36,18 @@
     },
     {
       "id": "D",
-      "text": "The generated kernel launches with block size `XBLOCK` per program, computes a masked load / arithmetic / masked store per element, and fuses the multiply and add into one kernel; the mask (`xindex < xnumel`) handles the tail of the tensor when `xnumel` is not a multiple of `XBLOCK`. Under this account, the kernel exits early if any element in the current block would cross the tensor boundary; the last `xnumel % XBLOCK` elements are therefore silently left unwritten in the output tensor and the caller must zero the output buffer manually before invocation."
+      "text": "The mask is unused at runtime; Inductor emits it only for debug and it is stripped from the compiled PTX, so no tail handling occurs. Under this framing, the generated Triton kernel actually performs three separate GPU launches — one for the load, one for the arithmetic, and one for the store — because Triton does not support fusing memory ops and arithmetic ops in a single kernel; the excerpt is only the middle launch."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "The generated Triton kernel launches one program per `XBLOCK` elements, computes indices from `program_id * XBLOCK + arange(0, XBLOCK)`, masks out-of-bounds lanes, loads, performs the fused multiply-add in registers, and stores back — a single kernel per fused pointwise chain. The mask handles the tail so `xnumel` need not be a multiple of `XBLOCK`. It does not split into multiple launches and does not silently drop elements.",
   "optionExplanations": {
-    "D": "Correct: matches the standard Inductor+Triton pointwise codegen.",
     "A": "Wrong: Triton kernels combine loads, arithmetic, and stores in one kernel routinely.",
-    "B": "Wrong: masks are executed at runtime to handle the tail.",
-    "C": "Wrong: masking preserves correctness rather than silently dropping elements."
+    "B": "Correct: matches the standard Inductor+Triton pointwise codegen.",
+    "C": "Wrong: masking preserves correctness rather than silently dropping elements.",
+    "D": "Wrong: masks are executed at runtime to handle the tail."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 with default Inductor Triton backend on CUDA.",
@@ -63,22 +63,22 @@
   ],
   "distractorRationales": {
     "A": "Wrong claim about kernel decomposition.",
-    "B": "Wrong claim about masks.",
-    "C": "Wrong claim about tail handling."
+    "C": "Wrong claim about tail handling.",
+    "D": "Wrong claim about masks."
   },
   "sourceRefs": [
     {
       "ref": "DOC:torch-inductor",
       "locator": "Generated Triton kernel structure; TORCH_LOGS=output_code",
       "supports": [
-        "D"
+        "B"
       ]
     },
     {
       "ref": "DOC:triton",
       "locator": "Triton program IDs, blocks, masks",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

@@ -18,18 +18,32 @@
   },
   "stem": "Loop unrolling is often described as a 'free' optimization that reduces loop-overhead instructions. Which situation most clearly illustrates when unrolling is counter-productive?",
   "options": [
-    { "id": "A", "text": "A tight inner loop over a large array where the loop-overhead instructions (increment, compare, branch) already fit within a single instruction issue slot per iteration; unrolling 8× triples the object-code size, evicts hot code from the L1 instruction cache, and materially slows the surrounding function." },
-    { "id": "B", "text": "A tight inner loop with a very small trip count (e.g., 4); unrolling by the exact trip count is illegal because it duplicates side effects and violates SSA form." },
-    { "id": "C", "text": "A GPU kernel where the compiler cannot statically determine the trip count; unrolling is impossible in that case, so no performance question arises." },
-    { "id": "D", "text": "A loop with data-dependent memory accesses; unrolling never helps because the CPU cannot prefetch data-dependent addresses." }
+    {
+      "id": "A",
+      "text": "A loop with data-dependent memory accesses; unrolling never helps because the CPU cannot prefetch data-dependent addresses."
+    },
+    {
+      "id": "B",
+      "text": "A tight inner loop with a very small trip count (e.g., 4); unrolling by the exact trip count is illegal because it duplicates side effects and violates SSA form."
+    },
+    {
+      "id": "C",
+      "text": "A GPU kernel where the compiler cannot statically determine the trip count; unrolling is impossible in that case, so no performance question arises."
+    },
+    {
+      "id": "D",
+      "text": "A tight inner loop over a large array where the loop-overhead instructions (increment, compare, branch) already fit within a single instruction issue slot per iteration; unrolling 8× triples the object-code size, evicts hot code from the L1 instruction cache, and materially slows the surrounding function."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "The canonical downside of unrolling is code bloat leading to instruction-cache pressure and, on GPUs, higher register pressure and spills. When the loop body is already small enough that overhead is negligible relative to the body's work, aggressive unrolling only inflates code size without a compensating throughput gain. Option B is wrong: fully unrolling a fixed small trip-count loop is a standard and legal transformation. Option C is wrong: 'impossible' is not a performance argument. Option D is wrong: unrolling can help with data-dependent accesses when it exposes ILP between independent lanes.",
   "optionExplanations": {
-    "A": "Correct: code-bloat and I-cache pressure are the classic anti-unrolling scenarios.",
+    "A": "Wrong: unrolling can expose ILP even under data-dependent accesses.",
     "B": "Wrong: full unroll of small fixed trip counts is legal and standard.",
     "C": "Wrong: statically-unknown trip counts prevent unrolling, but the question is about when it hurts, not when it's impossible.",
-    "D": "Wrong: unrolling can expose ILP even under data-dependent accesses."
+    "D": "Correct: code-bloat and I-cache pressure are the classic anti-unrolling scenarios."
   },
   "assumptions": [
     "The 'unrolled 8×' body substantially increases the number of instructions in the outer function.",
@@ -39,15 +53,30 @@
     "Does not imply unrolling is generally bad; a moderate unroll factor (2-4) often helps for reduction and pointer chase loops.",
     "Does not imply the compiler cannot back off; production compilers use heuristics based on I-cache and register budgets."
   ],
-  "misconceptionTags": ["unroll_free_lunch", "unroll_illegal_small_trip"],
+  "misconceptionTags": [
+    "unroll_free_lunch",
+    "unroll_illegal_small_trip"
+  ],
   "distractorRationales": {
+    "A": "Overgeneralizes 'never helps' for data-dependent accesses.",
     "B": "Confuses full-unroll (legal) with a fictitious SSA violation.",
-    "C": "Confuses impossibility with performance harm.",
-    "D": "Overgeneralizes 'never helps' for data-dependent accesses."
+    "C": "Confuses impossibility with performance harm."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Loop unrolling: benefits and code-size trade-off", "supports": ["A"] },
-    { "ref": "DOC:cuda-best", "locator": "Register pressure and unrolling guidance", "supports": ["A"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Loop unrolling: benefits and code-size trade-off",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Register pressure and unrolling guidance",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

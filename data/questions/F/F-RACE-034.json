@@ -38,7 +38,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The write `smem[tid] = x[tid]` is atomic per lane, so no synchronization is needed; the CUDA runtime automatically inserts a barrier before any subsequent shared-memory read."
+      "text": "Without a `__syncthreads()` between the write `smem[tid] = x[tid]` and the read `smem[tid - 1]`, there is a race: thread `tid` may read `smem[tid - 1]` before thread `tid - 1` has written it. The fix is to insert `__syncthreads()` immediately after the shared-memory store."
     },
     {
       "id": "B",
@@ -50,18 +50,18 @@
     },
     {
       "id": "D",
-      "text": "Without a `__syncthreads()` between the write `smem[tid] = x[tid]` and the read `smem[tid - 1]`, there is a race: thread `tid` may read `smem[tid - 1]` before thread `tid - 1` has written it. The fix is to insert `__syncthreads()` immediately after the shared-memory store."
+      "text": "The write `smem[tid] = x[tid]` is atomic per lane, so no synchronization is needed; the CUDA runtime automatically inserts a barrier before any subsequent shared-memory read."
     }
   ],
   "correctAnswers": [
-    "D"
+    "A"
   ],
   "explanation": "Classic SMEM race: writes by different threads (`smem[tid] = x[tid]`) must be visible before any thread reads a value written by a different thread (`smem[tid - 1]`). Without `__syncthreads()`, thread `tid` may reach the read before thread `tid - 1` has performed its write, producing undefined values. Lockstep-within-warp is not sufficient on Volta+ (ITS) and not guaranteed as a portable assumption; the correct fix is `__syncthreads()`. Choice C fabricates a zero-init requirement; SMEM is uninitialized. Choice D denies the shared-memory data race.",
   "optionExplanations": {
-    "D": "Correct: missing __syncthreads causes SMEM read-before-write race.",
+    "A": "Correct: missing __syncthreads causes SMEM read-before-write race.",
     "B": "Wrong: lockstep-within-warp is not portable; and cross-warp reads still race.",
     "C": "Wrong: SMEM is not zero-initialized.",
-    "A": "Wrong: no automatic barrier is inserted."
+    "D": "Wrong: no automatic barrier is inserted."
   },
   "assumptions": [
     "blockDim.x = 256 (multi-warp block).",
@@ -78,21 +78,21 @@
   "distractorRationales": {
     "B": "Relies on non-portable lockstep behavior.",
     "C": "Fabricates SMEM zero-init requirement.",
-    "A": "Denies the race condition."
+    "D": "Denies the race condition."
   },
   "sourceRefs": [
     {
       "ref": "DOC:cuda-guide",
       "locator": "Shared Memory — synchronization and memory model",
       "supports": [
-        "D"
+        "A"
       ]
     },
     {
       "ref": "BOOK:pmpp4",
       "locator": "Shared memory and synchronization chapter",
       "supports": [
-        "D"
+        "A"
       ]
     }
   ],

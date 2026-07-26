@@ -18,20 +18,32 @@
   },
   "stem": "A compiler considers fusing producer `T = f(A)` (pointwise) into consumer `Y = reduce_sum(T, axis=1)`. It observes that `T` is also consumed by a second, independent op `Z = g(T)` (pointwise). Which statement about this vertical fusion is correct?",
   "options": [
-    { "id": "A", "text": "Fusion is always legal and always beneficial because vertical fusion is semantics-preserving by construction; the compiler simply inlines `f` inside the reduction loop." },
-    { "id": "B", "text": "Fusion into the reduction is legal (semantics preserved), but if `T` remains materialized for the second consumer `Z`, the fused kernel will re-execute `f` for each element inside the reduction while `Z` still reads the original `T`; the compiler must either duplicate the compute or forgo the fusion." },
-    { "id": "C", "text": "Fusion is illegal because a reduction changes the shape of `T` and pointwise ops cannot be fused into shape-changing ops." },
-    { "id": "D", "text": "Fusion is legal only if `f` is bijective; otherwise the compiler cannot recover the original `T` for the second consumer." },
-    { "id": "E", "text": "Fusion is legal only when the reduction axis is the last (contiguous) axis; otherwise the resulting loop nest violates SSA form." }
+    {
+      "id": "A",
+      "text": "Fusion is always legal and always beneficial because vertical fusion is semantics-preserving by construction; the compiler simply inlines `f` inside the reduction loop."
+    },
+    {
+      "id": "B",
+      "text": "Fusion is legal only if `f` is bijective; otherwise the compiler cannot recover the original `T` for the second consumer."
+    },
+    {
+      "id": "C",
+      "text": "Fusion is illegal because a reduction changes the shape of `T` and pointwise ops cannot be fused into shape-changing ops."
+    },
+    {
+      "id": "D",
+      "text": "Fusion into the reduction is legal (semantics preserved), but if `T` remains materialized for the second consumer `Z`, the fused kernel will re-execute `f` for each element inside the reduction while `Z` still reads the original `T`; the compiler must either duplicate the compute or forgo the fusion."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Vertical fusion inlines the producer computation inside the consumer's iteration space. If `T` has a second consumer that still needs the materialized tensor, three outcomes are possible: (1) recompute `f` inside the fused reduction while also computing `T` separately for `Z` (increases FLOPs); (2) keep `T` materialized and fuse only around it (defeats the memory-saving purpose); (3) fuse both consumers into the same kernel (only possible when their iteration spaces are compatible). Shape change is not a legality issue; bijectivity is irrelevant; SSA form is unrelated to reduction-axis position.",
   "optionExplanations": {
     "A": "Wrong: fusion legality is preserved, but 'always beneficial' ignores the recompute-vs-materialize trade-off when producers have multiple consumers.",
-    "B": "Correct: this is the canonical multi-consumer fusion dilemma discussed in TVM and Halide.",
+    "B": "Wrong: bijectivity has no bearing; recompute or duplicate-consumer strategies solve the multi-consumer case.",
     "C": "Wrong: pointwise-into-reduction is a standard fusion pattern; shape change of the output does not block it.",
-    "D": "Wrong: bijectivity has no bearing; recompute or duplicate-consumer strategies solve the multi-consumer case.",
-    "E": "Wrong: reduction-axis position affects performance and layout but not fusion legality or SSA."
+    "D": "Correct: this is the canonical multi-consumer fusion dilemma discussed in TVM and Halide."
   },
   "assumptions": [
     "Both `f` and `g` are pure (no side effects).",
@@ -40,16 +52,30 @@
   "nonImplications": [
     "Does not imply that re-computation is always worse than materialization; when `T` is large and `f` is cheap, recompute can win."
   ],
-  "misconceptionTags": ["multi_consumer_fusion", "shape_change_blocks_fusion"],
+  "misconceptionTags": [
+    "multi_consumer_fusion",
+    "shape_change_blocks_fusion"
+  ],
   "distractorRationales": {
     "A": "Overgeneralizes vertical fusion benefit.",
-    "C": "Confuses shape-changing output with fusion legality.",
-    "D": "Introduces irrelevant bijectivity condition.",
-    "E": "Confuses reduction-axis choice with SSA / legality."
+    "B": "Introduces irrelevant bijectivity condition.",
+    "C": "Confuses shape-changing output with fusion legality."
   },
   "sourceRefs": [
-    { "ref": "PAPER:tvm", "locator": "Operator fusion; producer-consumer pattern", "supports": ["B"] },
-    { "ref": "PAPER:halide", "locator": "Schedule primitives: compute_at / store_at trade-offs", "supports": ["B"] }
+    {
+      "ref": "PAPER:tvm",
+      "locator": "Operator fusion; producer-consumer pattern",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:halide",
+      "locator": "Schedule primitives: compute_at / store_at trade-offs",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

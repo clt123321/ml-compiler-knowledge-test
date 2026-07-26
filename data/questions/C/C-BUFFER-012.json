@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Tensor form has value semantics (immutable SSA values; each op produces a fresh tensor); memref form has reference semantics (ops write into named buffers). Bufferization assigns buffers and inserts allocations/copies as needed to preserve semantics. Under this reading, the bufferization pass is unnecessary and is included in MLIR only for symmetry with earlier prototype dialects rather than to resolve any real semantic difference between the two levels."
+      "text": "Tensor and memref forms are semantically identical; the only difference is textual. Bufferization is a printing pass that renames tensors to memrefs without altering the IR's data model. Under this interpretation, the pass could be safely dropped from any production pipeline without affecting correctness or code quality of the emitted kernels, since both forms would be equivalent to the codegen backend."
     },
     {
       "id": "B",
@@ -30,7 +30,7 @@
     },
     {
       "id": "C",
-      "text": "Tensor and memref forms are semantically identical; the only difference is textual. Bufferization is a printing pass that renames tensors to memrefs without altering the IR's data model. Under this interpretation, the pass could be safely dropped from any production pipeline without affecting correctness or code quality of the emitted kernels, since both forms would be equivalent to the codegen backend."
+      "text": "Tensor form has value semantics (immutable SSA values; each op produces a fresh tensor); memref form has reference semantics (ops write into named buffers). Bufferization assigns buffers and inserts allocations/copies as needed to preserve semantics. Under this reading, the bufferization pass is unnecessary and is included in MLIR only for symmetry with earlier prototype dialects rather than to resolve any real semantic difference between the two levels."
     },
     {
       "id": "D",
@@ -38,13 +38,13 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "C"
   ],
   "explanation": "In MLIR, `tensor<...>` is an SSA value with value semantics: each producing op yields a fresh, immutable tensor and no in-place update is expressible at that level. `memref<...>` has reference semantics: ops write into named memory locations. Bufferization is the pass that lowers tensor-form IR to memref-form IR, assigning buffers, inserting allocations, and inserting copies where required to preserve the tensor-level dataflow (e.g., when two consumers observe different versions of a value).",
   "optionExplanations": {
+    "A": "Wrong: the difference is semantic (value vs. reference), not textual.",
     "B": "Wrong: swaps the two semantics.",
-    "A": "Correct: standard MLIR terminology.",
-    "C": "Wrong: the difference is semantic (value vs. reference), not textual.",
+    "C": "Correct: standard MLIR terminology.",
     "D": "Wrong: both forms exist for all targets; the choice is about optimization stage."
   },
   "assumptions": [
@@ -59,8 +59,8 @@
     "bufferization_is_rename"
   ],
   "distractorRationales": {
+    "A": "Trivializes bufferization.",
     "B": "Swaps value/reference semantics.",
-    "C": "Trivializes bufferization.",
     "D": "Wrong claim about device-specific dialects."
   },
   "sourceRefs": [
@@ -68,14 +68,14 @@
       "ref": "DOC:mlir-langref",
       "locator": "Tensor and MemRef types; bufferization semantics",
       "supports": [
-        "A"
+        "C"
       ]
     },
     {
       "ref": "PAPER:mlir",
       "locator": "Type system: value vs. reference semantics",
       "supports": [
-        "A"
+        "C"
       ]
     }
   ],

@@ -21,18 +21,34 @@
   },
   "stem": "Select all correct statements about PagedAttention's design. (Choose all that apply.)",
   "options": [
-    { "id": "A", "text": "PagedAttention uses fixed-size KV blocks (e.g., 16 tokens per block) and a per-sequence block table mapping logical positions to physical block indices; internal waste per sequence is bounded by block_size - 1 tokens." },
-    { "id": "B", "text": "The block-table indirection allows different sequences to share physical blocks — used to implement prefix caching (across requests) and beam-search fork points (within a request)." },
-    { "id": "C", "text": "PagedAttention decompresses KV blocks on-the-fly from a lossy quantized format; the 'paged' name refers to lossy compression pages, not memory blocks." },
-    { "id": "D", "text": "PagedAttention is compatible with FlashAttention-style tiled softmax: the paged attention kernel loads blocks into SMEM via the block table and runs the same online-softmax math. The paging overhead is a small per-block table lookup, not a per-element cost." }
+    {
+      "id": "A",
+      "text": "The block-table indirection allows different sequences to share physical blocks — used to implement prefix caching (across requests) and beam-search fork points (within a request)."
+    },
+    {
+      "id": "B",
+      "text": "PagedAttention decompresses KV blocks on-the-fly from a lossy quantized format; the 'paged' name refers to lossy compression pages, not memory blocks."
+    },
+    {
+      "id": "C",
+      "text": "PagedAttention is compatible with FlashAttention-style tiled softmax: the paged attention kernel loads blocks into SMEM via the block table and runs the same online-softmax math. The paging overhead is a small per-block table lookup, not a per-element cost."
+    },
+    {
+      "id": "D",
+      "text": "PagedAttention uses fixed-size KV blocks (e.g., 16 tokens per block) and a per-sequence block table mapping logical positions to physical block indices; internal waste per sequence is bounded by block_size - 1 tokens."
+    }
   ],
-  "correctAnswers": ["A", "B", "D"],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
   "explanation": "A is correct: fixed-size blocks with a per-sequence block table are the core design; internal waste is bounded by block size. B is correct: sharing physical blocks is exactly what enables prefix caching and beam-search efficient forks. D is correct: PagedAttention adds indirection without changing the underlying attention math. C is wrong: paging is a memory layout technique, not compression; PagedAttention KV is stored at full precision by default.",
   "optionExplanations": {
-    "A": "Correct: fixed blocks + block table + bounded internal waste.",
-    "B": "Correct: sharing enables prefix caching + beam search.",
-    "D": "Correct: block-table lookup as the only overhead vs FlashAttention.",
-    "C": "Wrong: paging is not quantization/compression."
+    "A": "Correct: sharing enables prefix caching + beam search.",
+    "B": "Wrong: paging is not quantization/compression.",
+    "C": "Correct: block-table lookup as the only overhead vs FlashAttention.",
+    "D": "Correct: fixed blocks + block table + bounded internal waste."
   },
   "assumptions": [
     "PagedAttention as in vLLM (not a hypothetical variant).",
@@ -42,13 +58,32 @@
     "Does not imply zero overhead vs FlashAttention with contiguous KV.",
     "Does not imply block sharing is free of correctness constraints; copy-on-write is needed when shared blocks diverge."
   ],
-  "misconceptionTags": ["paged_kv_compression_myth", "paged_kv_no_sharing_myth"],
+  "misconceptionTags": [
+    "paged_kv_compression_myth",
+    "paged_kv_no_sharing_myth"
+  ],
   "distractorRationales": {
-    "C": "Confuses paging with compression."
+    "B": "Confuses paging with compression."
   },
   "sourceRefs": [
-    { "ref": "PAPER:vllm", "locator": "Sec 3 — design; Sec 4 — sharing", "supports": ["A", "B", "D"] },
-    { "ref": "DOC:vllm", "locator": "PagedAttention design", "supports": ["A", "B", "D"] }
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 3 — design; Sec 4 — sharing",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "PagedAttention design",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

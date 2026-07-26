@@ -21,7 +21,7 @@
   "options": [
     {
       "id": "A",
-      "text": "It replaces the need for framework-specific tracing tools; any framework that emits StableHLO no longer needs its own graph capture mechanism (TorchDynamo, JAX's tracer, TF's tf.function)."
+      "text": "It decouples the release cycles of frameworks (PyTorch, JAX, TensorFlow) and compilers (XLA, IREE, ...): each side can evolve independently as long as they respect the StableHLO version compatibility contract, avoiding an O(frameworks × compilers) integration matrix and enabling shared optimization work."
     },
     {
       "id": "B",
@@ -29,7 +29,7 @@
     },
     {
       "id": "C",
-      "text": "It decouples the release cycles of frameworks (PyTorch, JAX, TensorFlow) and compilers (XLA, IREE, ...): each side can evolve independently as long as they respect the StableHLO version compatibility contract, avoiding an O(frameworks × compilers) integration matrix and enabling shared optimization work."
+      "text": "It replaces the need for framework-specific tracing tools; any framework that emits StableHLO no longer needs its own graph capture mechanism (TorchDynamo, JAX's tracer, TF's tf.function)."
     },
     {
       "id": "D",
@@ -37,13 +37,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "The core design motivation for StableHLO (and similar interchange IRs) is to decouple the release cadence of ML frameworks from that of compiler backends. Without a stable contract, each new framework release risks breaking downstream compilers and vice versa — leading to a combinatorial integration burden (O(frameworks × compilers)). A versioned operator set with compatibility guarantees lets each side ship independently and share common optimization/backend infrastructure.",
   "optionExplanations": {
-    "C": "Correct: portability contract that reduces combinatorial integration cost.",
+    "A": "Correct: portability contract that reduces combinatorial integration cost.",
     "B": "Wrong: StableHLO does not mandate bit-identical numerics across frameworks/backends.",
-    "A": "Wrong: frameworks still need their own capture tools; StableHLO is only the target IR.",
+    "C": "Wrong: frameworks still need their own capture tools; StableHLO is only the target IR.",
     "D": "Wrong: StableHLO is not tied to Python source access."
   },
   "assumptions": [
@@ -59,7 +59,7 @@
   ],
   "distractorRationales": {
     "B": "Confuses semantic portability with bit-identical numerics.",
-    "A": "Confuses interchange IR with tracing tools.",
+    "C": "Confuses interchange IR with tracing tools.",
     "D": "Wrong claim about Python source dependency."
   },
   "sourceRefs": [
@@ -67,7 +67,7 @@
       "ref": "DOC:stablehlo",
       "locator": "StableHLO project rationale and compatibility spec",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

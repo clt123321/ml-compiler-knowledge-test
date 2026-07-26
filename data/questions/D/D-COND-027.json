@@ -23,31 +23,31 @@
   "options": [
     {
       "id": "A",
-      "text": "Only `torch.cond` preserves the correct data-dependent semantics; `torch.where` is semantically incorrect for any data-dependent selection and should never be used to replace an `if` branch."
+      "text": "Both are compiler-friendly under torch.compile: `torch.where` is expressible in Inductor as pointwise select; `torch.cond` is captured as a control-flow op and preserved through torch.export as well."
     },
     {
       "id": "B",
-      "text": "`torch.where` evaluates both branches (elementwise or shape-compatible tensors) and selects per element; it is a good rewrite when both arms are cheap and produce compatible-shape outputs."
+      "text": "Only `torch.cond` preserves the correct data-dependent semantics; `torch.where` is semantically incorrect for any data-dependent selection and should never be used to replace an `if` branch."
     },
     {
       "id": "C",
-      "text": "`torch.cond` captures each arm as a subgraph (only one arm runs at runtime), which is preferable when arms are expensive or have side effects that should not both execute."
+      "text": "`torch.where` evaluates both branches (elementwise or shape-compatible tensors) and selects per element; it is a good rewrite when both arms are cheap and produce compatible-shape outputs."
     },
     {
       "id": "D",
-      "text": "Both are compiler-friendly under torch.compile: `torch.where` is expressible in Inductor as pointwise select; `torch.cond` is captured as a control-flow op and preserved through torch.export as well."
+      "text": "`torch.cond` captures each arm as a subgraph (only one arm runs at runtime), which is preferable when arms are expensive or have side effects that should not both execute."
     }
   ],
   "correctAnswers": [
-    "B",
+    "A",
     "C",
     "D"
   ],
   "explanation": "A: `torch.where` computes both arms and selects per element — appropriate when both arms are cheap. B: `torch.cond` captures each arm as a subgraph and only one runs at execution time — appropriate when arms are expensive or have differing side effects. D: both are compile-friendly (Inductor lowers `torch.where` to a pointwise select; `torch.cond` is preserved as a control-flow op). C is wrong: `torch.where` is a valid, semantically-correct selection when both arms produce shape-compatible outputs; it evaluates eagerly but selects per element with the same semantics as a data-parallel if.",
   "optionExplanations": {
-    "B": "Correct.",
+    "A": "Correct.",
+    "B": "Wrong: torch.where has correct selection semantics.",
     "C": "Correct.",
-    "A": "Wrong: torch.where has correct selection semantics.",
     "D": "Correct."
   },
   "assumptions": [
@@ -62,14 +62,14 @@
     "where_semantically_incorrect"
   ],
   "distractorRationales": {
-    "A": "Wrong claim about semantics."
+    "B": "Wrong claim about semantics."
   },
   "sourceRefs": [
     {
       "ref": "DOC:torch-dynamo",
       "locator": "torch.cond and torch.where usage; data-dependent branches",
       "supports": [
-        "B",
+        "A",
         "C",
         "D"
       ]
@@ -78,7 +78,7 @@
       "ref": "DOC:torch-export",
       "locator": "torch.cond preserved through export",
       "supports": [
-        "D"
+        "A"
       ]
     }
   ],

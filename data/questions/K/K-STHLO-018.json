@@ -19,17 +19,31 @@
   },
   "stem": "How is StableHLO positioned in the OpenXLA / IREE ecosystem?",
   "options": [
-    { "id": "A", "text": "StableHLO is a versioned, stable operator set (specified as an MLIR dialect) intended to serve as a portable IR between ML frameworks and compilers, providing forward/backward compatibility guarantees so that a producer and a consumer built at different times can still interoperate." },
-    { "id": "B", "text": "StableHLO is the low-level LLVM IR that XLA compiles its HLO into during backend code generation; it exposes hardware-specific instructions and is not intended to be portable across accelerators." },
-    { "id": "C", "text": "StableHLO is a runtime engine that executes MLIR modules directly on GPU without any additional lowering; it replaces XLA's Runtime and cannot be used with any other backend such as IREE." },
-    { "id": "D", "text": "StableHLO is a version-agnostic Python DSL layered on top of PyTorch; it converts arbitrary Python control flow into JAX-style pure functions at import time and requires no compiler." }
+    {
+      "id": "A",
+      "text": "StableHLO is a runtime engine that executes MLIR modules directly on GPU without any additional lowering; it replaces XLA's Runtime and cannot be used with any other backend such as IREE."
+    },
+    {
+      "id": "B",
+      "text": "StableHLO is the low-level LLVM IR that XLA compiles its HLO into during backend code generation; it exposes hardware-specific instructions and is not intended to be portable across accelerators."
+    },
+    {
+      "id": "C",
+      "text": "StableHLO is a versioned, stable operator set (specified as an MLIR dialect) intended to serve as a portable IR between ML frameworks and compilers, providing forward/backward compatibility guarantees so that a producer and a consumer built at different times can still interoperate."
+    },
+    {
+      "id": "D",
+      "text": "StableHLO is a version-agnostic Python DSL layered on top of PyTorch; it converts arbitrary Python control flow into JAX-style pure functions at import time and requires no compiler."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "StableHLO is an MLIR dialect specifying a stable set of ML operators with explicit versioning and compatibility guarantees. Its purpose is to be the interchange layer between framework front-ends and downstream compilers (XLA, IREE, or others), so a model serialized in StableHLO by one version of a framework can be consumed by a compiler shipped at a different time.",
   "optionExplanations": {
-    "A": "Correct: matches the StableHLO project mission.",
+    "A": "Wrong: it is not a runtime; downstream compilers still lower to their own backends.",
     "B": "Wrong: StableHLO is a high-level ML operator dialect, not LLVM IR.",
-    "C": "Wrong: it is not a runtime; downstream compilers still lower to their own backends.",
+    "C": "Correct: matches the StableHLO project mission.",
     "D": "Wrong: it is an IR dialect, not a Python DSL."
   },
   "assumptions": [
@@ -39,14 +53,23 @@
     "Does not imply StableHLO covers every op needed by every model; some ops still require framework-specific extensions.",
     "Does not imply StableHLO replaces HLO entirely; XLA still consumes it and may lower via HLO internally."
   ],
-  "misconceptionTags": ["stablehlo_vs_llvm", "stablehlo_as_runtime"],
+  "misconceptionTags": [
+    "stablehlo_vs_llvm",
+    "stablehlo_as_runtime"
+  ],
   "distractorRationales": {
+    "A": "Confuses IR with runtime.",
     "B": "Confuses StableHLO with LLVM IR.",
-    "C": "Confuses IR with runtime.",
     "D": "Fabricates DSL nature."
   },
   "sourceRefs": [
-    { "ref": "DOC:stablehlo", "locator": "StableHLO overview and compatibility guarantees", "supports": ["A"] }
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "StableHLO overview and compatibility guarantees",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

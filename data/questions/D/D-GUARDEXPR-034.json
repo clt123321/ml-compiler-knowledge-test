@@ -28,7 +28,7 @@
     },
     {
       "id": "B",
-      "text": "`dynamic=True` should always accept any size; the log is spurious and can be ignored, and no rewrite is needed. Under this framing, `.view` is unrelated to the guard message; the failure is caused by `sum(dim=-1)` on a non-power-of-two length, which is a known limitation of Inductor's Triton reductions and requires padding the reduction dim to a power of two."
+      "text": "The tracer derived a divisibility constraint (`s0 % 8 == 0`) from `.view(-1, 8)`; when a size that violates the constraint arrives, the guard fails and PyTorch either specializes on that new size or errors, depending on config. Fixes: pad the input to a multiple of 8, or rewrite the `.view` to a shape-safe form (e.g., use `.reshape` with explicit padding, or handle the tail separately). Under this account, the correct fix is to disable dynamic tracing entirely via `dynamic=False`, which bypasses divisibility constraints because the compiled kernel is specialized per observed size and therefore never derives symbolic constraints from ops like `.view`."
     },
     {
       "id": "C",
@@ -36,18 +36,18 @@
     },
     {
       "id": "D",
-      "text": "The tracer derived a divisibility constraint (`s0 % 8 == 0`) from `.view(-1, 8)`; when a size that violates the constraint arrives, the guard fails and PyTorch either specializes on that new size or errors, depending on config. Fixes: pad the input to a multiple of 8, or rewrite the `.view` to a shape-safe form (e.g., use `.reshape` with explicit padding, or handle the tail separately). Under this account, the correct fix is to disable dynamic tracing entirely via `dynamic=False`, which bypasses divisibility constraints because the compiled kernel is specialized per observed size and therefore never derives symbolic constraints from ops like `.view`."
+      "text": "`dynamic=True` should always accept any size; the log is spurious and can be ignored, and no rewrite is needed. Under this framing, `.view` is unrelated to the guard message; the failure is caused by `sum(dim=-1)` on a non-power-of-two length, which is a known limitation of Inductor's Triton reductions and requires padding the reduction dim to a power of two."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "`.view(-1, 8)` requires the total element count to be divisible by 8; the tracer derives this divisibility constraint on the corresponding symbolic dim and installs a guard. When a call violates the constraint, symbolic tracing cannot proceed under the same graph — the runtime either specializes (recompile) or errors, depending on config. Correct fixes address the constraint: pad to a multiple of 8, or restructure to a shape-safe form. `dynamic=False` would specialize per size (still not accepting any size in one graph), and the other diagnoses are wrong.",
   "optionExplanations": {
-    "D": "Correct: identifies the divisibility constraint from .view and gives valid remediations.",
     "A": "Wrong: `sum(dim=-1)` supports non-power-of-two lengths.",
-    "B": "Wrong: dynamic=True still enforces constraints derivable from ops.",
-    "C": "Wrong: `dynamic=False` specializes but does not sidestep the .view divisibility for a single call — each call still needs a compatible shape."
+    "B": "Correct: identifies the divisibility constraint from .view and gives valid remediations.",
+    "C": "Wrong: `dynamic=False` specializes but does not sidestep the .view divisibility for a single call — each call still needs a compatible shape.",
+    "D": "Wrong: dynamic=True still enforces constraints derivable from ops."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 with symbolic-shape tracing.",
@@ -63,22 +63,22 @@
   ],
   "distractorRationales": {
     "A": "Wrong causal attribution.",
-    "B": "Wrong claim about dynamic=True accepting any shape.",
-    "C": "Wrong claim that dynamic=False bypasses shape constraints."
+    "C": "Wrong claim that dynamic=False bypasses shape constraints.",
+    "D": "Wrong claim about dynamic=True accepting any shape."
   },
   "sourceRefs": [
     {
       "ref": "DOC:torch-dynamo",
       "locator": "Symbolic shape assertions from ops; guard failures",
       "supports": [
-        "D"
+        "B"
       ]
     },
     {
       "ref": "DOC:torch-compile",
       "locator": "Dynamic shape constraints and remediation",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

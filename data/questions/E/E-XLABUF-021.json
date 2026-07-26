@@ -21,7 +21,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Buffer assignment is a runtime pass executed on every step of the model; it is not part of static compilation and produces different assignments each iteration."
+      "text": "XLA's buffer assignment maps HLO SSA values to physical buffers, allowing values with disjoint liveness to share the same buffer and enabling in-place execution when the compiler can prove the input value is no longer needed after the operation."
     },
     {
       "id": "B",
@@ -29,7 +29,7 @@
     },
     {
       "id": "C",
-      "text": "XLA's buffer assignment maps HLO SSA values to physical buffers, allowing values with disjoint liveness to share the same buffer and enabling in-place execution when the compiler can prove the input value is no longer needed after the operation."
+      "text": "Buffer assignment is a runtime pass executed on every step of the model; it is not part of static compilation and produces different assignments each iteration."
     },
     {
       "id": "D",
@@ -37,13 +37,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "XLA's Buffer Assignment is a compile-time analysis/rewriting pass that decides physical buffer layout for HLO values. It performs liveness analysis, allows disjoint values to share buffers (reducing peak memory), and lets ops execute in-place when the compiler proves the input's value is no longer used elsewhere after the op (e.g., single-use elementwise updates). This static analysis is much more effective than runtime allocator behavior alone, and the resulting buffer assignment is baked into the compiled program.",
   "optionExplanations": {
-    "C": "Correct: static liveness + buffer sharing + in-place opportunities.",
+    "A": "Correct: static liveness + buffer sharing + in-place opportunities.",
     "B": "Wrong: buffer sharing between disjoint-liveness values is core to the pass.",
-    "A": "Wrong: buffer assignment is a compile-time pass.",
+    "C": "Wrong: buffer assignment is a compile-time pass.",
     "D": "Wrong: XLA does support in-place execution when analysis allows."
   },
   "assumptions": [
@@ -59,7 +59,7 @@
   ],
   "distractorRationales": {
     "B": "Ignores buffer sharing.",
-    "A": "Confuses compile-time with runtime.",
+    "C": "Confuses compile-time with runtime.",
     "D": "Wrong claim about in-place support."
   },
   "sourceRefs": [
@@ -67,7 +67,7 @@
       "ref": "DOC:stablehlo",
       "locator": "XLA buffer assignment pass documentation",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

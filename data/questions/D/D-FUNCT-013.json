@@ -24,11 +24,11 @@
   "options": [
     {
       "id": "A",
-      "text": "Functionalization pretends the view `v` is an independent tensor, applies `add_` to it, and discards the mutation; downstream ops see the original `x`, so the returned sum reflects the pre-mutation value. Under this reading, functionalization pretends the view `v` is an independent tensor with its own storage, applies `add_` to it in a scratch buffer, and discards the resulting mutation; downstream ops see the original untouched `x`, so the returned sum reflects the pre-mutation value."
+      "text": "Functionalization models the view's mutation as an update of the underlying tensor: it produces an SSA value `x_new = torch.ops.aten.select_scatter_or_slice_scatter(x, v_new)` and threads `x_new` through subsequent ops; the compiled region returns the mutated `x` so runtime write-back preserves external semantics."
     },
     {
       "id": "B",
-      "text": "Functionalization models the view's mutation as an update of the underlying tensor: it produces an SSA value `x_new = torch.ops.aten.select_scatter_or_slice_scatter(x, v_new)` and threads `x_new` through subsequent ops; the compiled region returns the mutated `x` so runtime write-back preserves external semantics."
+      "text": "Functionalization pretends the view `v` is an independent tensor, applies `add_` to it, and discards the mutation; downstream ops see the original `x`, so the returned sum reflects the pre-mutation value. Under this reading, functionalization pretends the view `v` is an independent tensor with its own storage, applies `add_` to it in a scratch buffer, and discards the resulting mutation; downstream ops see the original untouched `x`, so the returned sum reflects the pre-mutation value."
     },
     {
       "id": "C",
@@ -40,12 +40,12 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "A"
   ],
   "explanation": "Functionalization handles view+mutation by modeling the mutation as an update of the underlying tensor via scatter-style ops (e.g., `slice_scatter`, `select_scatter`, `index_put`). Downstream ops consume the new SSA value that reflects the update. To preserve external mutation semantics (caller's `x` sees the change), the compiled region returns the mutated tensor(s) and the runtime wrapper writes them back onto the input. This does not silently discard the mutation, does not error out, and does not fall back to eager per-op.",
   "optionExplanations": {
-    "A": "Wrong: functionalization must preserve the mutation, not discard it.",
-    "B": "Correct: matches how functionalization treats aliased in-place updates.",
+    "A": "Correct: matches how functionalization treats aliased in-place updates.",
+    "B": "Wrong: functionalization must preserve the mutation, not discard it.",
     "C": "Wrong: view+mutation is supported by functionalization.",
     "D": "Wrong: no per-op Python fallback is inserted."
   },
@@ -62,7 +62,7 @@
     "view_mutation_forces_error"
   ],
   "distractorRationales": {
-    "A": "Wrong claim of discarded mutation.",
+    "B": "Wrong claim of discarded mutation.",
     "C": "Wrong claim of error.",
     "D": "Wrong mechanism (per-op Python fallback)."
   },
@@ -71,14 +71,14 @@
       "ref": "PAPER:pytorch2",
       "locator": "Functionalization of aliased mutations",
       "supports": [
-        "B"
+        "A"
       ]
     },
     {
       "ref": "DOC:torch-compile",
       "locator": "Functionalization and mutation semantics",
       "supports": [
-        "B"
+        "A"
       ]
     }
   ],

@@ -19,17 +19,31 @@
   },
   "stem": "In GSPMD / XLA-style SPMD, a job runs on 32 GPUs organized as a Device Mesh of shape [8, 4] with named axes ('data', 'model'). Which statement about the Mesh abstraction is correct?",
   "options": [
-    { "id": "A", "text": "The Device Mesh is a physical topology descriptor: axes must be named to match the underlying NVLink/PCIe layout, and changing axis assignments requires physically recabling the cluster." },
-    { "id": "B", "text": "Once axes are named 'data' and 'model', the compiler forbids sharding any tensor along the 'model' axis if it is also sharded along the 'data' axis; sharding must be exclusive to a single mesh axis." },
-    { "id": "C", "text": "The Device Mesh is a logical grid: sharding specs reference axis names, and the runtime is free to map mesh coordinates to physical devices in different ways (e.g. to align an axis with fast NVLink links)." },
-    { "id": "D", "text": "The Mesh is a NCCL runtime object; the compiler IR does not represent it, so all mesh-related decisions happen at runtime and cannot influence which collectives are inserted." }
+    {
+      "id": "A",
+      "text": "The Device Mesh is a logical grid: sharding specs reference axis names, and the runtime is free to map mesh coordinates to physical devices in different ways (e.g. to align an axis with fast NVLink links)."
+    },
+    {
+      "id": "B",
+      "text": "Once axes are named 'data' and 'model', the compiler forbids sharding any tensor along the 'model' axis if it is also sharded along the 'data' axis; sharding must be exclusive to a single mesh axis."
+    },
+    {
+      "id": "C",
+      "text": "The Device Mesh is a physical topology descriptor: axes must be named to match the underlying NVLink/PCIe layout, and changing axis assignments requires physically recabling the cluster."
+    },
+    {
+      "id": "D",
+      "text": "The Mesh is a NCCL runtime object; the compiler IR does not represent it, so all mesh-related decisions happen at runtime and cannot influence which collectives are inserted."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "The Device Mesh is a logical named-axis abstraction. Sharding specs reference axis names (e.g. sharding a weight along 'model'); the runtime chooses how to map mesh coordinates to physical devices, typically to align high-bandwidth axes (like 'model' which sees frequent AllReduces) with fast intra-node links. A is a physical-topology confusion. B is wrong: a tensor can be sharded along multiple axes simultaneously (e.g. sharded on both 'data' and 'model'). D is wrong: the mesh is a compile-time IR concept that drives partitioning.",
   "optionExplanations": {
-    "A": "Wrong: mesh axes do not represent physical wiring.",
+    "A": "Correct: mesh is logical; physical mapping is separate.",
     "B": "Wrong: multi-axis sharding is common and supported.",
-    "C": "Correct: mesh is logical; physical mapping is separate.",
+    "C": "Wrong: mesh axes do not represent physical wiring.",
     "D": "Wrong: the mesh is represented at the IR / compile-time level."
   },
   "assumptions": [
@@ -39,15 +53,30 @@
     "Does not imply that any mapping performs equally well; aligning collectives with fast links matters.",
     "Does not imply that mesh shape can be changed mid-execution."
   ],
-  "misconceptionTags": ["mesh_physical_confusion", "single_axis_shard_only"],
+  "misconceptionTags": [
+    "mesh_physical_confusion",
+    "single_axis_shard_only"
+  ],
   "distractorRationales": {
-    "A": "Physical-topology fallacy.",
     "B": "Overly restrictive sharding rule.",
+    "C": "Physical-topology fallacy.",
     "D": "Ignores the compiler-level role of the mesh."
   },
   "sourceRefs": [
-    { "ref": "PAPER:gspmd", "locator": "§3 mesh abstraction and sharding specs", "supports": ["C"] },
-    { "ref": "DOC:stablehlo", "locator": "Sharding specs referencing named mesh axes", "supports": ["C"] }
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§3 mesh abstraction and sharding specs",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "Sharding specs referencing named mesh axes",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

@@ -19,18 +19,33 @@
   },
   "stem": "A top-2 MoE model with E=8 experts replaces a dense FFN block. Select all correct statements. (Choose all that apply.)",
   "options": [
-    { "id": "A", "text": "The total parameter count scales linearly with E (all E experts have their own weight matrices), and the compute per token scales with E as well because the router must compute a gating score against every expert." },
-    { "id": "B", "text": "Total parameter count scales linearly with E, but compute per token is roughly constant in E (top-k activated) plus a small O(E) gating cost. This is why MoE gives parameter-to-flop leverage." },
-    { "id": "C", "text": "In serving, load imbalance across experts is a real problem: with random routing the variance of tokens-per-expert scales as sqrt(B*N/E), which can cause hot experts to bottleneck the batched matmul. Capacity limits or expert-parallel load-balancing are needed." },
-    { "id": "D", "text": "MoE inference is always memory-bandwidth bound because every forward pass must load all E experts' weights from HBM; expert parallelism does not help because it only distributes the weight-loading cost, not the parameter footprint." }
+    {
+      "id": "A",
+      "text": "MoE inference is always memory-bandwidth bound because every forward pass must load all E experts' weights from HBM; expert parallelism does not help because it only distributes the weight-loading cost, not the parameter footprint."
+    },
+    {
+      "id": "B",
+      "text": "The total parameter count scales linearly with E (all E experts have their own weight matrices), and the compute per token scales with E as well because the router must compute a gating score against every expert."
+    },
+    {
+      "id": "C",
+      "text": "Total parameter count scales linearly with E, but compute per token is roughly constant in E (top-k activated) plus a small O(E) gating cost. This is why MoE gives parameter-to-flop leverage."
+    },
+    {
+      "id": "D",
+      "text": "In serving, load imbalance across experts is a real problem: with random routing the variance of tokens-per-expert scales as sqrt(B*N/E), which can cause hot experts to bottleneck the batched matmul. Capacity limits or expert-parallel load-balancing are needed."
+    }
   ],
-  "correctAnswers": ["B", "C"],
+  "correctAnswers": [
+    "C",
+    "D"
+  ],
   "explanation": "B is correct: activated compute is essentially k * (MLP FLOPs) per token, independent of E; only the router's O(D * E) gating adds an O(E) term. C is correct: routing skew is a well-documented serving problem addressed by capacity factors and load balancing. A is wrong: activated compute is O(k), not O(E). D is wrong: only the k selected experts' weights are actually needed on each device per token; expert parallelism distributes both weight storage and per-token weight-load bandwidth, provided routing keeps tokens local to the expert.",
   "optionExplanations": {
-    "B": "Correct: parameter scales with E, activated compute stays at O(k).",
-    "C": "Correct: routing skew is a real serving problem.",
-    "A": "Wrong: overstates compute cost.",
-    "D": "Wrong: expert parallelism does help by distributing weights."
+    "A": "Wrong: expert parallelism does help by distributing weights.",
+    "B": "Wrong: overstates compute cost.",
+    "C": "Correct: parameter scales with E, activated compute stays at O(k).",
+    "D": "Correct: routing skew is a real serving problem."
   },
   "assumptions": [
     "Top-k MoE with k << E.",
@@ -40,14 +55,31 @@
     "Does not imply MoE is always faster than dense at equal parameter count; imbalance and communication overheads can eat the win.",
     "Does not imply MoE quality equals dense at equal parameter count; it usually differs."
   ],
-  "misconceptionTags": ["moe_compute_scales_with_E", "moe_ep_useless_myth"],
+  "misconceptionTags": [
+    "moe_compute_scales_with_E",
+    "moe_ep_useless_myth"
+  ],
   "distractorRationales": {
-    "A": "Overstates compute cost.",
-    "D": "Denies EP's practical benefits."
+    "A": "Denies EP's practical benefits.",
+    "B": "Overstates compute cost."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "MoE — parameter/compute leverage", "supports": ["B", "C"] },
-    { "ref": "DOC:vllm", "locator": "MoE serving and expert parallelism", "supports": ["B", "C"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "MoE — parameter/compute leverage",
+      "supports": [
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "MoE serving and expert parallelism",
+      "supports": [
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

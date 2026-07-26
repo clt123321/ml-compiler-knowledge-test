@@ -19,18 +19,32 @@
   },
   "stem": "Which statement about ONNX shape inference and dynamic dimensions is correct?",
   "options": [
-    { "id": "A", "text": "ONNX supports symbolic (named) dynamic dimensions on tensor shapes; `onnx.shape_inference` propagates concrete or symbolic shape/dtype information through the graph where op rules allow it, and unresolved dimensions remain symbolic — consumers use this info for planning but do not require full staticity." },
-    { "id": "B", "text": "ONNX shape inference always produces fully static shapes; any op that cannot be statically resolved is deleted from the graph before serialization." },
-    { "id": "C", "text": "ONNX has no shape inference mechanism; every runtime must implement its own inference from scratch, and the model file never contains any type/shape annotations." },
-    { "id": "D", "text": "ONNX represents dynamic dimensions by encoding a runtime `Tensor<int64>` shape argument as an implicit first input to every op, replacing the static shape annotation." }
+    {
+      "id": "A",
+      "text": "ONNX represents dynamic dimensions by encoding a runtime `Tensor<int64>` shape argument as an implicit first input to every op, replacing the static shape annotation."
+    },
+    {
+      "id": "B",
+      "text": "ONNX shape inference always produces fully static shapes; any op that cannot be statically resolved is deleted from the graph before serialization."
+    },
+    {
+      "id": "C",
+      "text": "ONNX has no shape inference mechanism; every runtime must implement its own inference from scratch, and the model file never contains any type/shape annotations."
+    },
+    {
+      "id": "D",
+      "text": "ONNX supports symbolic (named) dynamic dimensions on tensor shapes; `onnx.shape_inference` propagates concrete or symbolic shape/dtype information through the graph where op rules allow it, and unresolved dimensions remain symbolic — consumers use this info for planning but do not require full staticity."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "ONNX supports symbolic dynamic dimensions (named as strings in the `TensorShapeProto`) alongside concrete integers. Shape inference (`onnx.shape_inference`) walks the graph applying op-specific inference rules, propagating shapes and dtypes to intermediate values where possible; unresolved dimensions remain symbolic (or unknown). Consumers use this info for buffer planning, kernel selection, or converting to a downstream compiler that specializes further.",
   "optionExplanations": {
-    "A": "Correct: named dynamic dims + partial shape inference is the standard ONNX approach.",
+    "A": "Wrong: shape is a metadata annotation on values, not an input-tensor mechanism.",
     "B": "Wrong: ONNX does not require full staticity.",
     "C": "Wrong: ONNX has a documented shape-inference API and per-op rules.",
-    "D": "Wrong: shape is a metadata annotation on values, not an input-tensor mechanism."
+    "D": "Correct: named dynamic dims + partial shape inference is the standard ONNX approach."
   },
   "assumptions": [
     "ONNX shape inference API and TensorShapeProto as documented."
@@ -39,14 +53,23 @@
     "Does not imply shape inference solves every case; some ops require constant folding to resolve shapes.",
     "Does not imply symbolic dims are equivalent to concrete dims for all downstream tools."
   ],
-  "misconceptionTags": ["onnx_static_only_myth", "onnx_no_shape_infer_myth"],
+  "misconceptionTags": [
+    "onnx_static_only_myth",
+    "onnx_no_shape_infer_myth"
+  ],
   "distractorRationales": {
+    "A": "Fabricates a hidden shape-input mechanism.",
     "B": "Wrong claim of fully static requirement.",
-    "C": "Wrong claim of no shape-inference API.",
-    "D": "Fabricates a hidden shape-input mechanism."
+    "C": "Wrong claim of no shape-inference API."
   },
   "sourceRefs": [
-    { "ref": "DOC:onnx", "locator": "Shape inference API; TensorShapeProto symbolic dimensions", "supports": ["A"] }
+    {
+      "ref": "DOC:onnx",
+      "locator": "Shape inference API; TensorShapeProto symbolic dimensions",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

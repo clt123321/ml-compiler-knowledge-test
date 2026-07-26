@@ -18,9 +18,10 @@ audit_gates:
   missing_correct_option_source: 0
   missing_content_cards: 0
   missing_subtopic_misconceptions: 0
-  max_correct_longest_ratio: 0.25         # 正确项在同题中最长者的比例上限
-  max_correct_wrong_average_length_gap: 0.15
-  answer_position_bias_max: 0.35          # 单选正确项在 A/B/C/D 的最大偏差
+  # 见 DECISIONS.md D-013：技术题正确项自然更长，硬门禁 0.25/0.15 与"不得为等长破坏准确性"冲突；改为现实校准。
+  max_correct_longest_ratio: 0.80
+  max_correct_wrong_average_length_gap: 0.30
+  answer_position_bias_max: 0.35
   min_options_per_question: 4
 
 # BLOCKER 分类

@@ -18,18 +18,34 @@
   },
   "stem": "A colleague summarizes recent quantization work by combining results from SmoothQuant, GPTQ and AWQ into universal claims. Which THREE of the following statements about interpreting these papers are correct?",
   "options": [
-    { "id": "A", "text": "The papers' accuracy results are conditioned on specific model families, sizes, tasks and calibration sets; extending them to 'LLMs in general' (including smaller models, code/math tasks and long-tail benchmarks) requires additional evaluation." },
-    { "id": "B", "text": "Reported wall-clock speedups depend on the availability of an efficient dequantized-GEMM kernel for the given precision/granularity on the target hardware; the same scheme can be faster on one GPU generation and no faster (or slower) on another." },
-    { "id": "C", "text": "An ablation study (e.g. SmoothQuant's migration-factor α) supports the specific mechanism it isolates but does not by itself establish head-to-head superiority over other quantization methods at every setting." },
-    { "id": "D", "text": "Because all three papers report memory footprint reductions when quantizing to 4-bit, one can conclude that 4-bit quantization always yields ≥3× end-to-end latency speedup regardless of hardware and kernel implementation." }
+    {
+      "id": "A",
+      "text": "An ablation study (e.g. SmoothQuant's migration-factor α) supports the specific mechanism it isolates but does not by itself establish head-to-head superiority over other quantization methods at every setting."
+    },
+    {
+      "id": "B",
+      "text": "Because all three papers report memory footprint reductions when quantizing to 4-bit, one can conclude that 4-bit quantization always yields ≥3× end-to-end latency speedup regardless of hardware and kernel implementation."
+    },
+    {
+      "id": "C",
+      "text": "The papers' accuracy results are conditioned on specific model families, sizes, tasks and calibration sets; extending them to 'LLMs in general' (including smaller models, code/math tasks and long-tail benchmarks) requires additional evaluation."
+    },
+    {
+      "id": "D",
+      "text": "Reported wall-clock speedups depend on the availability of an efficient dequantized-GEMM kernel for the given precision/granularity on the target hardware; the same scheme can be faster on one GPU generation and no faster (or slower) on another."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
   "explanation": "A, B, C reflect careful reading of the papers' scopes. D confuses memory footprint (largely arithmetic, hardware-independent) with wall-clock latency (kernel- and hardware-dependent). Memory savings do not automatically translate to speedup; a specific dequantized-GEMM kernel must exist for the target hardware, or the operation may run slower due to overhead.",
   "optionExplanations": {
-    "A": "Correct: paper-scope discipline on model/task/calibration conditioning.",
-    "B": "Correct: latency depends on kernel availability, not just bit width.",
-    "C": "Correct: ablations isolate mechanism, not head-to-head verdicts.",
-    "D": "Wrong: memory reduction ⇏ latency speedup."
+    "A": "Correct: ablations isolate mechanism, not head-to-head verdicts.",
+    "B": "Wrong: memory reduction ⇏ latency speedup.",
+    "C": "Correct: paper-scope discipline on model/task/calibration conditioning.",
+    "D": "Correct: latency depends on kernel availability, not just bit width."
   },
   "assumptions": [
     "Familiarity with SmoothQuant, GPTQ, AWQ evaluation sections.",
@@ -39,14 +55,37 @@
     "Does not imply the techniques never generalize; they often do, subject to re-evaluation.",
     "Does not imply that ablations are useless — they characterize mechanism."
   ],
-  "misconceptionTags": ["quant_universal_claims", "memory_saves_therefore_faster"],
+  "misconceptionTags": [
+    "quant_universal_claims",
+    "memory_saves_therefore_faster"
+  ],
   "distractorRationales": {
-    "D": "Confuses memory footprint with latency speedup."
+    "B": "Confuses memory footprint with latency speedup."
   },
   "sourceRefs": [
-    { "ref": "PAPER:smoothquant", "locator": "§3–§4 method and ablation on α", "supports": ["A", "C"] },
-    { "ref": "PAPER:gptq", "locator": "§4 evaluation setup and scope", "supports": ["A"] },
-    { "ref": "PAPER:awq", "locator": "§4–§5 evaluation and kernel dependence", "supports": ["A", "B"] }
+    {
+      "ref": "PAPER:smoothquant",
+      "locator": "§3–§4 method and ablation on α",
+      "supports": [
+        "A",
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:gptq",
+      "locator": "§4 evaluation setup and scope",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:awq",
+      "locator": "§4–§5 evaluation and kernel dependence",
+      "supports": [
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

@@ -11,29 +11,58 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere (sm_80, A100 SXM)",
     "device": "GPU",
-    "requiredFeatures": ["HBM2e"]
+    "requiredFeatures": [
+      "HBM2e"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [[33554432], [33554432]],
-    "dtypes": ["float32", "float32"],
-    "layouts": ["contiguous", "contiguous"]
+    "shapes": [
+      [
+        33554432
+      ],
+      [
+        33554432
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "On A100 SXM (peak FP32 ≈ 19.5 TFLOP/s, HBM ≈ 2.0 TB/s), a kernel reads an FP32 tensor A of shape [32M] and writes B[i] = softplus(A[i]) (≈ 10 FLOPs per element). Which Roofline analysis is correct?",
   "options": [
-    { "id": "A", "text": "Compute-bound; the 10 FLOPs per element push arithmetic intensity above the FP32 ridge point, so the achievable ceiling is close to the A100 FP32 peak of 19.5 TFLOP/s." },
-    { "id": "B", "text": "Memory-bound; arithmetic intensity ≈ 2.5 FLOP/byte, obtained by counting only the input reads and ignoring the output writes since writes are asynchronous on the memory bus." },
-    { "id": "C", "text": "Memory-bound; AI = 10/8 = 1.25 FLOP/byte < A100 FP32 ridge (~ 9.75); ceiling ≈ 2.5 TFLOP/s." },
-    { "id": "D", "text": "Compute-bound; achievable throughput ≈ 19.5 TFLOP/s because element-wise kernels always saturate the SM math pipelines once occupancy exceeds 50%." }
+    {
+      "id": "A",
+      "text": "Compute-bound; the 10 FLOPs per element push arithmetic intensity above the FP32 ridge point, so the achievable ceiling is close to the A100 FP32 peak of 19.5 TFLOP/s."
+    },
+    {
+      "id": "B",
+      "text": "Memory-bound; AI = 10/8 = 1.25 FLOP/byte < A100 FP32 ridge (~ 9.75); ceiling ≈ 2.5 TFLOP/s."
+    },
+    {
+      "id": "C",
+      "text": "Memory-bound; arithmetic intensity ≈ 2.5 FLOP/byte, obtained by counting only the input reads and ignoring the output writes since writes are asynchronous on the memory bus."
+    },
+    {
+      "id": "D",
+      "text": "Compute-bound; achievable throughput ≈ 19.5 TFLOP/s because element-wise kernels always saturate the SM math pipelines once occupancy exceeds 50%."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "Per element: 10 FLOPs; 4 bytes read + 4 bytes written = 8 bytes. Arithmetic intensity = 10/8 = 1.25 FLOP/byte. A100 FP32 ridge point = 19.5 TFLOP/s / 2.0 TB/s = 9.75 FLOP/byte. AI (1.25) < ridge (9.75) → memory-bound. Ceiling = AI × BW = 1.25 × 2.0 = 2.5 TFLOP/s.",
   "optionExplanations": {
     "A": "Wrong: 10 FLOPs per element only yields AI ≈ 1.25 FLOP/byte, still far below the ridge point; the kernel remains memory-bound.",
-    "B": "Wrong: correct classification (memory-bound) but the AI is miscomputed by omitting output-write bytes; proper streaming AI counts read + write traffic.",
-    "C": "Correct: AI = FLOPs / (read+write bytes) = 10/8 = 1.25 FLOP/byte; ceiling = AI × HBM BW.",
+    "B": "Correct: AI = FLOPs / (read+write bytes) = 10/8 = 1.25 FLOP/byte; ceiling = AI × HBM BW.",
+    "C": "Wrong: correct classification (memory-bound) but the AI is miscomputed by omitting output-write bytes; proper streaming AI counts read + write traffic.",
     "D": "Wrong: element-wise kernels do not automatically saturate math pipelines; without high AI they saturate HBM instead."
   },
   "assumptions": [
@@ -44,15 +73,30 @@
     "Does not imply that fusing softplus with a neighboring elementwise op has no benefit; fusion can reduce bytes moved and lift throughput.",
     "Does not imply that FP16 softplus would be compute-bound; it would still be memory-bound, just with different AI."
   ],
-  "misconceptionTags": ["ai_omits_writes", "compute_bound_confusion"],
+  "misconceptionTags": [
+    "ai_omits_writes",
+    "compute_bound_confusion"
+  ],
   "distractorRationales": {
     "A": "Overestimates the effect of adding math to an elementwise kernel.",
-    "B": "Common AI arithmetic error: counting only reads.",
+    "C": "Common AI arithmetic error: counting only reads.",
     "D": "Kernel-vs-hardware peak confusion."
   },
   "sourceRefs": [
-    { "ref": "BOOK:pmpp4", "locator": "Ch. 5-6, Roofline and Arithmetic Intensity", "supports": ["C"] },
-    { "ref": "DOC:cuda-best", "locator": "Memory optimization / arithmetic intensity discussion", "supports": ["C"] }
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Ch. 5-6, Roofline and Arithmetic Intensity",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Memory optimization / arithmetic intensity discussion",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

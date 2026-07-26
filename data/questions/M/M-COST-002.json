@@ -11,24 +11,40 @@
     "vendor": "generic",
     "architecture": "Ring topology (e.g. NVLink ring, InfiniBand ring)",
     "device": "generic",
-    "requiredFeatures": ["symmetric point-to-point bandwidth BW between neighbors"]
+    "requiredFeatures": [
+      "symmetric point-to-point bandwidth BW between neighbors"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
   },
   "stem": "A tensor of S bytes is AllReduce-summed over N ranks via the ring algorithm (ReduceScatter + AllGather), on a ring where each neighbor link has effective bandwidth BW. Ignoring the fixed latency term, which expression best approximates the per-rank bandwidth-limited time?",
   "options": [
-    { "id": "A", "text": "S / BW, because the tensor is only transmitted once around the ring." },
-    { "id": "B", "text": "2·(N-1)/N · S / BW, from ReduceScatter (N-1)/N · S and AllGather (N-1)/N · S." },
-    { "id": "C", "text": "N · S / BW, because each rank has to forward the full tensor to every other rank." },
-    { "id": "D", "text": "log₂(N) · S / BW, because the ring implements a recursive halving reduction internally." }
+    {
+      "id": "A",
+      "text": "S / BW, because the tensor is only transmitted once around the ring."
+    },
+    {
+      "id": "B",
+      "text": "N · S / BW, because each rank has to forward the full tensor to every other rank."
+    },
+    {
+      "id": "C",
+      "text": "2·(N-1)/N · S / BW, from ReduceScatter (N-1)/N · S and AllGather (N-1)/N · S."
+    },
+    {
+      "id": "D",
+      "text": "log₂(N) · S / BW, because the ring implements a recursive halving reduction internally."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "The ring algorithm splits the payload into N chunks. During ReduceScatter, each chunk travels through N-1 hops but each rank only sends/receives (N-1)/N · S bytes total. AllGather then propagates the reduced chunks through another (N-1)/N · S bytes. Total bandwidth cost per rank ≈ 2·(N-1)/N · S, approaching 2S for large N; not S, not N·S, and not log₂(N)·S.",
   "optionExplanations": {
     "A": "Wrong: the tensor is transmitted twice (once during reduce-scatter and once during all-gather).",
-    "B": "Correct: the classical ring-AllReduce bandwidth cost.",
-    "C": "Wrong: describes a naive scheme where each rank sends the whole tensor to each of N-1 peers.",
+    "B": "Wrong: describes a naive scheme where each rank sends the whole tensor to each of N-1 peers.",
+    "C": "Correct: the classical ring-AllReduce bandwidth cost.",
     "D": "Wrong: log₂(N) scaling belongs to recursive halving / doubling on a hypercube-like topology, not to a ring."
   },
   "assumptions": [
@@ -39,15 +55,29 @@
     "Does not imply the wall-clock time is independent of N (the latency term α·2(N-1) still scales with N).",
     "Does not imply that ring is optimal for all N and S; for very small S the latency-dominated regime favors trees."
   ],
-  "misconceptionTags": ["ring_allreduce_cost"],
+  "misconceptionTags": [
+    "ring_allreduce_cost"
+  ],
   "distractorRationales": {
     "A": "Undercounts by a factor of ~2(N-1)/N.",
-    "C": "Confuses ring with an all-to-all broadcast.",
+    "B": "Confuses ring with an all-to-all broadcast.",
     "D": "Confuses ring with recursive halving/doubling."
   },
   "sourceRefs": [
-    { "ref": "BOOK:hp6", "locator": "Ch. 6 collective communication cost analysis", "supports": ["B"] },
-    { "ref": "PAPER:gspmd", "locator": "§3 cost analysis of collective primitives", "supports": ["B"] }
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 6 collective communication cost analysis",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§3 cost analysis of collective primitives",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

@@ -18,17 +18,31 @@
   },
   "stem": "In SSA form, why are def-use chains typically simpler and cheaper to compute than in a non-SSA IR?",
   "options": [
-    { "id": "A", "text": "Because each SSA name has exactly one textual definition, every use points unambiguously to that unique def; there is no reaching-definitions problem to solve to associate uses with their defs." },
-    { "id": "B", "text": "Because SSA merges phi values at runtime into a single memory slot, the def-use graph collapses to a linear list." },
-    { "id": "C", "text": "Because SSA prohibits loops, def-use chains cannot cross backedges." },
-    { "id": "D", "text": "Because SSA form guarantees that any use is reachable from every def, making the chains trivially total." }
+    {
+      "id": "A",
+      "text": "Because SSA prohibits loops, def-use chains cannot cross backedges."
+    },
+    {
+      "id": "B",
+      "text": "Because SSA merges phi values at runtime into a single memory slot, the def-use graph collapses to a linear list."
+    },
+    {
+      "id": "C",
+      "text": "Because each SSA name has exactly one textual definition, every use points unambiguously to that unique def; there is no reaching-definitions problem to solve to associate uses with their defs."
+    },
+    {
+      "id": "D",
+      "text": "Because SSA form guarantees that any use is reachable from every def, making the chains trivially total."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "SSA guarantees a unique textual definition per name, so each use has a single unambiguous def. In non-SSA IR, reaching-definitions analysis is needed to determine which of possibly many textual definitions of a variable can reach a use. Options B, C, D contain incorrect claims about SSA semantics.",
   "optionExplanations": {
-    "A": "Correct: unique-definition property makes def-use chains direct.",
+    "A": "Wrong: SSA supports loops (via loop-header phis).",
     "B": "Wrong: SSA does not merge phi values into single memory slots; phi is an IR construct.",
-    "C": "Wrong: SSA supports loops (via loop-header phis).",
+    "C": "Correct: unique-definition property makes def-use chains direct.",
     "D": "Wrong: SSA doesn't guarantee every use is reachable from every def; each use has one unique reaching def."
   },
   "assumptions": [
@@ -38,15 +52,30 @@
     "Does not imply def-use chains are free to build in SSA; they still require a linear scan.",
     "Does not imply non-SSA def-use analysis is infeasible; it just requires a dataflow analysis pass."
   ],
-  "misconceptionTags": ["ssa_no_loops_myth", "def_use_totality_confusion"],
+  "misconceptionTags": [
+    "ssa_no_loops_myth",
+    "def_use_totality_confusion"
+  ],
   "distractorRationales": {
+    "A": "Falsely claims SSA disallows loops.",
     "B": "Falsely describes phi's semantics.",
-    "C": "Falsely claims SSA disallows loops.",
     "D": "Overstates reachability guarantees."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "SSA chapter, def-use chain construction", "supports": ["A"] },
-    { "ref": "BOOK:appel", "locator": "SSA chapter", "supports": ["A"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "SSA chapter, def-use chain construction",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "SSA chapter",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

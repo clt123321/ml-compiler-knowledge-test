@@ -19,18 +19,33 @@
   },
   "stem": "Which statements about host/device synchronization in a CUDA runtime are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "`cudaStreamSynchronize(stream)` blocks the calling host thread until all previously enqueued work on `stream` has completed, but does not affect work on other streams." },
-    { "id": "B", "text": "`cudaDeviceSynchronize()` waits for all streams on the current device to drain; overusing it in a hot loop serializes host and device and defeats stream-level overlap." },
-    { "id": "C", "text": "A `cudaMemcpyAsync` on the default stream is guaranteed to be fully overlapped with any kernel executing on another user-created stream, even without explicit event synchronization or the use of pinned host memory." },
-    { "id": "D", "text": "Under legacy default-stream semantics, `cudaMemcpy` (blocking) can be issued while a kernel is executing on a user-created stream and always returns immediately without waiting for that kernel — the two operations proceed independently." }
+    {
+      "id": "A",
+      "text": "Under legacy default-stream semantics, `cudaMemcpy` (blocking) can be issued while a kernel is executing on a user-created stream and always returns immediately without waiting for that kernel — the two operations proceed independently."
+    },
+    {
+      "id": "B",
+      "text": "`cudaStreamSynchronize(stream)` blocks the calling host thread until all previously enqueued work on `stream` has completed, but does not affect work on other streams."
+    },
+    {
+      "id": "C",
+      "text": "`cudaDeviceSynchronize()` waits for all streams on the current device to drain; overusing it in a hot loop serializes host and device and defeats stream-level overlap."
+    },
+    {
+      "id": "D",
+      "text": "A `cudaMemcpyAsync` on the default stream is guaranteed to be fully overlapped with any kernel executing on another user-created stream, even without explicit event synchronization or the use of pinned host memory."
+    }
   ],
-  "correctAnswers": ["A", "B"],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
   "explanation": "A and B state the documented behavior of `cudaStreamSynchronize` and `cudaDeviceSynchronize`. C is wrong because overlap requires pinned host memory (page-locked) and appropriate stream separation — async doesn't guarantee overlap by itself. D reverses default-stream semantics: under legacy default-stream behavior, work on the default stream synchronizes with all other streams on the device (`cudaMemcpy` is blocking and will wait for prior work).",
   "optionExplanations": {
-    "A": "Correct: matches `cudaStreamSynchronize` semantics.",
-    "B": "Correct: overusing device-wide sync serializes execution.",
-    "C": "Wrong: async is necessary but not sufficient for overlap — pinned memory and correct stream placement are also required.",
-    "D": "Wrong: legacy default stream synchronizes with other streams; the blocking `cudaMemcpy` will wait for the kernel."
+    "A": "Wrong: legacy default stream synchronizes with other streams; the blocking `cudaMemcpy` will wait for the kernel.",
+    "B": "Correct: matches `cudaStreamSynchronize` semantics.",
+    "C": "Correct: overusing device-wide sync serializes execution.",
+    "D": "Wrong: async is necessary but not sufficient for overlap — pinned memory and correct stream placement are also required."
   },
   "assumptions": [
     "CUDA runtime API in its documented behavior; legacy default-stream mode unless otherwise specified.",
@@ -40,14 +55,31 @@
     "Does not imply per-thread default stream (`--default-stream per-thread`) has the same semantics; that mode changes the default-stream synchronization behavior.",
     "Does not imply pinned memory is always desirable; it consumes physical RAM."
   ],
-  "misconceptionTags": ["async_implies_overlap", "default_stream_semantics"],
+  "misconceptionTags": [
+    "async_implies_overlap",
+    "default_stream_semantics"
+  ],
   "distractorRationales": {
-    "C": "Confuses async API with overlap guarantee.",
-    "D": "Reverses default-stream semantics."
+    "A": "Reverses default-stream semantics.",
+    "D": "Confuses async API with overlap guarantee."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "Stream synchronization semantics; default stream behavior", "supports": ["A", "B"] },
-    { "ref": "DOC:cuda-best", "locator": "Asynchronous memcpy and pinned memory requirement", "supports": ["A", "B"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Stream synchronization semantics; default stream behavior",
+      "supports": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Asynchronous memcpy and pinned memory requirement",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

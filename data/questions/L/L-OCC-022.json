@@ -20,17 +20,31 @@
   "stem": "Nsight Compute reports the following metrics for a compute-heavy FP16 GEMM kernel on A100. Which diagnosis best matches the data?",
   "profileData": "Kernel: hgemm_128x128\n  SM Utilization      : 96 %\n  Achieved Occupancy  : 0.30\n  DRAM Throughput     : 25 % of peak\n  L2 Hit Rate         : 65 %\n  Warp Stall Reason (top-1): Not Selected (waiting for issue slot)\n  Registers per thread: 168\n  Shared memory per block: 96 KB",
   "options": [
-    { "id": "A", "text": "Low occupancy (0.30) is the bottleneck; force lower register usage to raise occupancy to 1.0, which will unlock roughly 3× speedup as more warps become resident on each SM." },
-    { "id": "B", "text": "The kernel is memory-bound; the 25% DRAM throughput plus 65% L2 hit rate indicate the kernel is saturating HBM through L2; reducing register usage would only worsen the situation by evicting more L2 data through spills." },
-    { "id": "C", "text": "SM utilization is 96% and stall reason is 'not selected' (issue slot pressure), indicating the SMs are saturated with the current small number of resident warps — occupancy 0.30 is intentional (large tiles need many registers/shared memory) and reflects the standard trade-off in high-performance GEMM. The kernel is close to optimal and lowering register usage would not help." },
-    { "id": "D", "text": "The kernel is achieving 0.30 × 96% = 28.8% of peak; scaling occupancy to 1.0 would give 96% peak, which is the standard optimization target for any GEMM on any GPU generation." }
+    {
+      "id": "A",
+      "text": "Low occupancy (0.30) is the bottleneck; force lower register usage to raise occupancy to 1.0, which will unlock roughly 3× speedup as more warps become resident on each SM."
+    },
+    {
+      "id": "B",
+      "text": "SM utilization is 96% and stall reason is 'not selected' (issue slot pressure), indicating the SMs are saturated with the current small number of resident warps — occupancy 0.30 is intentional (large tiles need many registers/shared memory) and reflects the standard trade-off in high-performance GEMM. The kernel is close to optimal and lowering register usage would not help."
+    },
+    {
+      "id": "C",
+      "text": "The kernel is memory-bound; the 25% DRAM throughput plus 65% L2 hit rate indicate the kernel is saturating HBM through L2; reducing register usage would only worsen the situation by evicting more L2 data through spills."
+    },
+    {
+      "id": "D",
+      "text": "The kernel is achieving 0.30 × 96% = 28.8% of peak; scaling occupancy to 1.0 would give 96% peak, which is the standard optimization target for any GEMM on any GPU generation."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "High-performance GEMM kernels use large tiles that consume many registers and shared memory per block. This deliberately caps occupancy at a low fraction, but SMs remain fully busy (96% utilization) because each warp does much more work per iteration. Stall reason 'not selected' means warps are waiting only for an issue slot, not for memory. Raising occupancy by reducing register usage would force smaller tiles, more memory traffic, and typically worse GEMM throughput. Options A/B/D misread the metrics.",
   "optionExplanations": {
     "A": "Wrong: raising occupancy doesn't help when SM is already 96% utilized.",
-    "B": "Wrong: 25% DRAM throughput is not saturation; the top stall is not a memory reason.",
-    "C": "Correct: occupancy-vs-tile-size trade-off is standard in GEMM design.",
+    "B": "Correct: occupancy-vs-tile-size trade-off is standard in GEMM design.",
+    "C": "Wrong: 25% DRAM throughput is not saturation; the top stall is not a memory reason.",
     "D": "Wrong: linearly combining occupancy and SM utilization is not how peak performance is computed."
   },
   "assumptions": [
@@ -41,15 +55,29 @@
     "Does not imply low occupancy is always fine; for latency-bound (memory-latency) kernels, higher occupancy usually helps hide latency.",
     "Does not imply the kernel is at peak throughput; other Nsight sections (SoL, math pipe utilization) would need to confirm."
   ],
-  "misconceptionTags": ["occupancy_equals_perf"],
+  "misconceptionTags": [
+    "occupancy_equals_perf"
+  ],
   "distractorRationales": {
     "A": "Occupancy myth.",
-    "B": "Misreads DRAM saturation.",
+    "C": "Misreads DRAM saturation.",
     "D": "Fabricates multiplicative peak formula."
   },
   "sourceRefs": [
-    { "ref": "DOC:ncu", "locator": "Occupancy analysis and stall reasons", "supports": ["C"] },
-    { "ref": "BOOK:pmpp4", "locator": "GEMM tiling and occupancy trade-offs", "supports": ["C"] }
+    {
+      "ref": "DOC:ncu",
+      "locator": "Occupancy analysis and stall reasons",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "GEMM tiling and occupancy trade-offs",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

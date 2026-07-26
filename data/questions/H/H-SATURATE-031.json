@@ -18,16 +18,30 @@
   },
   "stem": "During INT8 quantization, a value exceeds the representable range (e.g., quantize(x/s) = 200 > 127). Which is the correct comparison of saturation vs. wrap-around handling?",
   "options": [
-    { "id": "A", "text": "Saturation clamps the out-of-range value to the boundary (200 → 127); this loses information about the extreme but preserves ordinal relationships and is the mathematically-desired behavior for neural-network quantization. Wrap-around uses modular arithmetic (200 → 200-256 = -56); it turns a large positive into a moderately-negative value, which is catastrophic for signal-carrying activations." },
-    { "id": "B", "text": "Saturation and wrap-around are equivalent modulo a sign flip; both preserve the underlying signal." },
-    { "id": "C", "text": "Wrap-around is the mathematically-desired behavior because it preserves the exact bit-count of the value." },
-    { "id": "D", "text": "Saturation is only used for weights; activations always use wrap-around because it is what CUDA integer instructions default to." }
+    {
+      "id": "A",
+      "text": "Saturation and wrap-around are equivalent modulo a sign flip; both preserve the underlying signal."
+    },
+    {
+      "id": "B",
+      "text": "Saturation clamps the out-of-range value to the boundary (200 → 127); this loses information about the extreme but preserves ordinal relationships and is the mathematically-desired behavior for neural-network quantization. Wrap-around uses modular arithmetic (200 → 200-256 = -56); it turns a large positive into a moderately-negative value, which is catastrophic for signal-carrying activations."
+    },
+    {
+      "id": "C",
+      "text": "Wrap-around is the mathematically-desired behavior because it preserves the exact bit-count of the value."
+    },
+    {
+      "id": "D",
+      "text": "Saturation is only used for weights; activations always use wrap-around because it is what CUDA integer instructions default to."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "Saturation clamps out-of-range results to the nearest representable extreme, preserving monotonicity of the mapping and avoiding catastrophic sign flips. Wrap-around (two's-complement modular arithmetic) is the default behavior of raw integer arithmetic on most hardware; if applied naively during quantization, it produces values that are semantically nonsensical (a large positive becomes a large negative). Quantization frameworks (TensorRT, PyTorch, ONNX Q/DQ, cuDNN) all use saturation. Options B, C, D are unrelated or wrong.",
   "optionExplanations": {
-    "A": "Correct: saturation preserves ordinal semantics; wrap-around is catastrophic.",
-    "B": "Wrong: they are qualitatively different.",
+    "A": "Wrong: they are qualitatively different.",
+    "B": "Correct: saturation preserves ordinal semantics; wrap-around is catastrophic.",
     "C": "Wrong: bit-count preservation is irrelevant to signal preservation.",
     "D": "Wrong: saturation is used for both weights and activations."
   },
@@ -38,15 +52,29 @@
     "Does not imply saturation is free — repeated saturation on many activations indicates a scale choice problem.",
     "Does not imply wrap-around is never used — some cryptographic or checksum contexts require it."
   ],
-  "misconceptionTags": ["saturation_vs_wrap"],
+  "misconceptionTags": [
+    "saturation_vs_wrap"
+  ],
   "distractorRationales": {
-    "B": "Denies real semantic difference.",
+    "A": "Denies real semantic difference.",
     "C": "Irrelevant criterion.",
     "D": "Fabricates a weight/activation asymmetry."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "TensorRT INT8 saturation semantics", "supports": ["A"] },
-    { "ref": "BOOK:sze-eff", "locator": "Saturation in DNN quantization", "supports": ["A"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "TensorRT INT8 saturation semantics",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Saturation in DNN quantization",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

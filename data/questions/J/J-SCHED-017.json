@@ -11,7 +11,9 @@
     "vendor": "generic",
     "architecture": "any modern GPU",
     "device": "GPU",
-    "requiredFeatures": ["host memory for optional swap"]
+    "requiredFeatures": [
+      "host memory for optional swap"
+    ]
   },
   "softwareContext": {
     "framework": "vLLM / SGLang / TRT-LLM",
@@ -21,18 +23,32 @@
   },
   "stem": "In a serving system running near KV-cache capacity, a burst of new prefill requests arrives. Which description of the scheduler's response is correct for vLLM-style continuous batching + paged KV?",
   "options": [
-    { "id": "A", "text": "The scheduler admits all new requests immediately and rewrites older sequences' KV cache in-place with the new prefill data; this is safe because older KV entries can always be recomputed later at negligible cost by re-prefilling those sequences." },
-    { "id": "B", "text": "The scheduler rejects all new requests until the cache pressure drops; ongoing decode continues unaffected. New requests receive an HTTP 503 response after a short timeout." },
-    { "id": "C", "text": "The scheduler compacts the KV cache by moving all blocks to contiguous memory, which frees up fragmented space for the new prefills; this defragmentation is fast because it uses async DMA copies within HBM." },
-    { "id": "D", "text": "The scheduler preempts one or more ongoing sequences (typically the ones with least urgency by policy) — either dropping their KV cache to be recomputed later, or swapping their KV blocks to host memory — and admits the new prefills into the freed KV blocks. Preempted sequences are resumed when capacity is available; this trades their added latency for aggregate throughput." }
+    {
+      "id": "A",
+      "text": "The scheduler admits all new requests immediately and rewrites older sequences' KV cache in-place with the new prefill data; this is safe because older KV entries can always be recomputed later at negligible cost by re-prefilling those sequences."
+    },
+    {
+      "id": "B",
+      "text": "The scheduler preempts one or more ongoing sequences (typically the ones with least urgency by policy) — either dropping their KV cache to be recomputed later, or swapping their KV blocks to host memory — and admits the new prefills into the freed KV blocks. Preempted sequences are resumed when capacity is available; this trades their added latency for aggregate throughput."
+    },
+    {
+      "id": "C",
+      "text": "The scheduler compacts the KV cache by moving all blocks to contiguous memory, which frees up fragmented space for the new prefills; this defragmentation is fast because it uses async DMA copies within HBM."
+    },
+    {
+      "id": "D",
+      "text": "The scheduler rejects all new requests until the cache pressure drops; ongoing decode continues unaffected. New requests receive an HTTP 503 response after a short timeout."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "Modern schedulers (Orca-inspired, implemented in vLLM/SGLang/TRT-LLM) manage KV cache pressure via preemption: when a new prefill's KV requirement plus existing KV exceeds capacity, the scheduler preempts (evicts or swaps to host memory) some ongoing sequences to admit new work. Recomputation-on-resume vs swap-to-host is a policy choice: recompute is simple but pays prefill cost twice for the preempted sequences; swap-to-host avoids recompute at the cost of PCIe traffic. Both policies are needed depending on prompt length and PCIe bandwidth.",
   "optionExplanations": {
-    "D": "Correct: preempt-and-resume with recompute or swap.",
     "A": "Wrong: in-place overwrite would corrupt other sequences.",
-    "B": "Wrong: outright rejection is a coarse and suboptimal response.",
-    "C": "Wrong: paged KV avoids external fragmentation by design; compaction is not necessary."
+    "B": "Correct: preempt-and-resume with recompute or swap.",
+    "C": "Wrong: paged KV avoids external fragmentation by design; compaction is not necessary.",
+    "D": "Wrong: outright rejection is a coarse and suboptimal response."
   },
   "assumptions": [
     "Paged KV cache with a block-level allocator.",
@@ -42,15 +58,30 @@
     "Does not imply preemption is free; it adds tail latency to preempted requests.",
     "Does not imply every serving stack chooses the same preemption policy."
   ],
-  "misconceptionTags": ["sched_overwrite_myth", "sched_compaction_myth"],
+  "misconceptionTags": [
+    "sched_overwrite_myth",
+    "sched_compaction_myth"
+  ],
   "distractorRationales": {
     "A": "Corrupts sequences.",
-    "B": "Coarse policy that hurts fairness.",
-    "C": "Paged KV eliminates external fragmentation, making compaction unnecessary."
+    "C": "Paged KV eliminates external fragmentation, making compaction unnecessary.",
+    "D": "Coarse policy that hurts fairness."
   },
   "sourceRefs": [
-    { "ref": "PAPER:vllm", "locator": "Sec 4 — scheduler and swap policies", "supports": ["D"] },
-    { "ref": "PAPER:orca", "locator": "Sec 4 — request scheduling", "supports": ["D"] }
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 4 — scheduler and swap policies",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:orca",
+      "locator": "Sec 4 — request scheduling",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

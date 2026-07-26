@@ -24,11 +24,11 @@
   "options": [
     {
       "id": "A",
-      "text": "A persistent kernel launches one block per work item (like a normal kernel) but marks it as `__persistent__` in nvcc so the runtime keeps its context resident between launches for faster subsequent invocations."
+      "text": "A persistent kernel launches a fixed number of blocks (typically = SM count × blocks-per-SM) and loops internally over work items pulled from a global queue (e.g., via `atomicAdd` on a counter). It avoids repeated kernel launches for many small work items, amortizes tail-effect load imbalance, and gives the kernel authority over scheduling — at the cost of foregoing the CUDA runtime's dynamic block placement."
     },
     {
       "id": "B",
-      "text": "A persistent kernel launches a fixed number of blocks (typically = SM count × blocks-per-SM) and loops internally over work items pulled from a global queue (e.g., via `atomicAdd` on a counter). It avoids repeated kernel launches for many small work items, amortizes tail-effect load imbalance, and gives the kernel authority over scheduling — at the cost of foregoing the CUDA runtime's dynamic block placement."
+      "text": "A persistent kernel launches one block per work item (like a normal kernel) but marks it as `__persistent__` in nvcc so the runtime keeps its context resident between launches for faster subsequent invocations."
     },
     {
       "id": "C",
@@ -40,12 +40,12 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "A"
   ],
   "explanation": "The persistent-kernel pattern is common in LLM decoding, GEMM libraries, and other systems that need to amortize kernel launch overhead across many similar work items. Launch a fixed number of blocks matched to hardware occupancy; internally each block loops pulling the next work item from a queue (usually `atomicAdd` on a global counter). Benefits: no launch overhead per item, better load balance for uneven work items, single kernel invocation for many items. Cost: manual scheduling logic; missing the runtime's dynamic block placement across kernels.",
   "optionExplanations": {
-    "B": "Correct: fixed block count × internal loop over work items.",
-    "A": "Wrong: no `__persistent__` keyword; not a runtime residency feature.",
+    "A": "Correct: fixed block count × internal loop over work items.",
+    "B": "Wrong: no `__persistent__` keyword; not a runtime residency feature.",
     "C": "Wrong: no `cudaKillKernel` API; kernels self-terminate via exit condition.",
     "D": "Wrong: no dependence on Grace-Hopper CPUs."
   },
@@ -61,7 +61,7 @@
     "cuda_kill_api_myth"
   ],
   "distractorRationales": {
-    "A": "Fabricates a `__persistent__` attribute.",
+    "B": "Fabricates a `__persistent__` attribute.",
     "C": "Fabricates a kill API.",
     "D": "Fabricates hardware dependency."
   },
@@ -70,14 +70,14 @@
       "ref": "BOOK:pmpp4",
       "locator": "Persistent-thread / work-stealing pattern",
       "supports": [
-        "B"
+        "A"
       ]
     },
     {
       "ref": "DOC:cuda-best",
       "locator": "Kernel launch overhead and amortization strategies",
       "supports": [
-        "B"
+        "A"
       ]
     }
   ],

@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Warps are software-only abstractions imposed by nvcc for readability; the underlying hardware schedules individual threads independently, and warp-level primitives (shuffles, votes) are software emulations."
+      "text": "A warp is a group of 32 threads (`warpSize == 32`) that the SM schedules as a single instruction issue unit; all 32 lanes execute the same instruction on their respective data (SIMT), with per-lane predication used when a branch would otherwise diverge."
     },
     {
       "id": "B",
@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "A warp is a group of 32 threads (`warpSize == 32`) that the SM schedules as a single instruction issue unit; all 32 lanes execute the same instruction on their respective data (SIMT), with per-lane predication used when a branch would otherwise diverge."
+      "text": "Warps are software-only abstractions imposed by nvcc for readability; the underlying hardware schedules individual threads independently, and warp-level primitives (shuffles, votes) are software emulations."
     },
     {
       "id": "D",
@@ -40,13 +40,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "A warp is 32 threads on all current NVIDIA architectures; the SM's warp scheduler issues one instruction per warp per cycle (per scheduler; modern SMs have multiple schedulers). SIMT means every lane executes the same instruction; when a branch would diverge, lanes are predicated off, resulting in serialization of the divergent paths. The 32-thread size is a fixed hardware property (`warpSize == 32`). Warp-level primitives (`__shfl_*_sync`, `__any_sync`, etc.) map to actual hardware operations. Choice B is fabricated; warp size has been 32 for the entirety of NVIDIA's CUDA lineup.",
   "optionExplanations": {
-    "C": "Correct: warp = 32 threads; SIMT + predication for divergence.",
+    "A": "Correct: warp = 32 threads; SIMT + predication for divergence.",
     "B": "Wrong: warpSize has been 32 on all NVIDIA CUDA GPUs.",
-    "A": "Wrong: warps are a hardware concept; primitives use real HW ops.",
+    "C": "Wrong: warps are a hardware concept; primitives use real HW ops.",
     "D": "Wrong: SIMT executes 32 lanes in parallel; not round-robin."
   },
   "assumptions": [
@@ -62,7 +62,7 @@
   ],
   "distractorRationales": {
     "B": "Fabricates variable warp size on NVIDIA.",
-    "A": "Denies hardware reality of warps.",
+    "C": "Denies hardware reality of warps.",
     "D": "Confuses SIMT parallel issue with serial round-robin."
   },
   "sourceRefs": [
@@ -70,14 +70,14 @@
       "ref": "DOC:cuda-guide",
       "locator": "Execution Model — warps, SIMT, scheduler",
       "supports": [
-        "C"
+        "A"
       ]
     },
     {
       "ref": "BOOK:pmpp4",
       "locator": "Warp scheduling chapter",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

@@ -31,22 +31,22 @@
     },
     {
       "id": "C",
-      "text": "Relax exists solely to add automatic differentiation to TVM; it does not change how shapes, calls, or tensor programs are represented compared to Relay."
+      "text": "Relax is a graph-level IR designed to (i) natively support symbolic/dynamic shapes as first-class values, (ii) unify graph-level and tensor-level IRs by cross-calling PrimFunc via TensorIR, and (iii) enable Python-native metaprogramming and staged transformation — capabilities that Relay's typed functional core could not cleanly express."
     },
     {
       "id": "D",
-      "text": "Relax is a graph-level IR designed to (i) natively support symbolic/dynamic shapes as first-class values, (ii) unify graph-level and tensor-level IRs by cross-calling PrimFunc via TensorIR, and (iii) enable Python-native metaprogramming and staged transformation — capabilities that Relay's typed functional core could not cleanly express."
+      "text": "Relax exists solely to add automatic differentiation to TVM; it does not change how shapes, calls, or tensor programs are represented compared to Relay."
     }
   ],
   "correctAnswers": [
-    "D"
+    "C"
   ],
   "explanation": "Relax was introduced in the TVM Unity effort to address Relay's limitations for modern DL: static-shape-first typing, poor cross-level integration with TensorIR, and difficulty expressing meta-schedule-driven or Python-native transformations. Relax makes symbolic shape a first-class citizen (shape variables and constraints), supports calling PrimFunc (TensorIR) directly for tensor-level compute, and integrates with Python-native metaprogramming via TVMScript. Relax coexists with TensorIR rather than replacing it; both live inside the same IRModule.",
   "optionExplanations": {
-    "D": "Correct: matches Relax's documented design goals.",
+    "A": "Wrong: Relax still uses IRModule with functions and calls.",
     "B": "Wrong: Relax and TensorIR are complementary, not one replacing the other.",
-    "C": "Wrong: AD is not the primary Relax motivation; shape/dataflow are.",
-    "A": "Wrong: Relax still uses IRModule with functions and calls."
+    "C": "Correct: matches Relax's documented design goals.",
+    "D": "Wrong: AD is not the primary Relax motivation; shape/dataflow are."
   },
   "assumptions": [
     "TVM Unity / Relax reflects the design goals documented on tvm.apache.org."
@@ -60,23 +60,23 @@
     "relax_only_autodiff_myth"
   ],
   "distractorRationales": {
+    "A": "Wrong claim that Relax removes module/function structure.",
     "B": "Confuses graph-level and tensor-level roles.",
-    "C": "Under-represents the shape and dataflow motivation.",
-    "A": "Wrong claim that Relax removes module/function structure."
+    "D": "Under-represents the shape and dataflow motivation."
   },
   "sourceRefs": [
     {
       "ref": "DOC:tvm-relax",
       "locator": "Relax and TensorIR overview; Unity vision",
       "supports": [
-        "D"
+        "C"
       ]
     },
     {
       "ref": "PAPER:tvm",
       "locator": "TVM OSDI 2018 — background on the original TVM stack",
       "supports": [
-        "D"
+        "C"
       ]
     }
   ],

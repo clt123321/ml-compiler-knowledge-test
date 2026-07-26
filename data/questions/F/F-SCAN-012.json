@@ -38,7 +38,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Blelloch has depth O(N/2) and work O(N); it is faster than Hillis-Steele on serial architectures but not on GPUs, where Hillis-Steele's O(N log N) work is preferred."
+      "text": "Hillis-Steele has depth O(log N) but does O(N log N) work; Blelloch has depth O(log N) and does O(N) work. Blelloch is 'work-efficient': asymptotically fewer operations, but its access pattern is more complex and often needs bank-conflict-avoiding padding on shared memory."
     },
     {
       "id": "B",
@@ -50,18 +50,18 @@
     },
     {
       "id": "D",
-      "text": "Hillis-Steele has depth O(log N) but does O(N log N) work; Blelloch has depth O(log N) and does O(N) work. Blelloch is 'work-efficient': asymptotically fewer operations, but its access pattern is more complex and often needs bank-conflict-avoiding padding on shared memory."
+      "text": "Blelloch has depth O(N/2) and work O(N); it is faster than Hillis-Steele on serial architectures but not on GPUs, where Hillis-Steele's O(N log N) work is preferred."
     }
   ],
   "correctAnswers": [
-    "D"
+    "A"
   ],
   "explanation": "Hillis-Steele scan: at each of log N steps, thread `t` adds the value from `t - offset` — total work per element is O(log N), so total work is O(N log N). Blelloch (balanced tree) scan: up-sweep builds partial sums, down-sweep propagates prefixes; both phases have log N depth, but each thread participates in only a fraction of the tree — total work is O(N). On GPUs, Blelloch is 'work-efficient' (fewer ops), but its non-uniform access pattern requires care with shared-memory bank conflicts (padding trick). Hillis-Steele is simpler and can win in practice on small N due to its uniform access pattern.",
   "optionExplanations": {
-    "D": "Correct: work vs depth trade-off; Blelloch is work-efficient but pattern-heavier.",
+    "A": "Correct: work vs depth trade-off; Blelloch is work-efficient but pattern-heavier.",
     "B": "Wrong: work costs differ (O(N log N) vs O(N)).",
     "C": "Wrong: both require associativity; commutativity is not the differentiator.",
-    "A": "Wrong: Blelloch depth is O(log N), not O(N)."
+    "D": "Wrong: Blelloch depth is O(log N), not O(N)."
   },
   "assumptions": [
     "Both algorithms use shared memory with `__syncthreads()`.",
@@ -78,21 +78,21 @@
   "distractorRationales": {
     "B": "Ignores different work complexities.",
     "C": "Confuses commutativity with associativity.",
-    "A": "Wrong Blelloch depth."
+    "D": "Wrong Blelloch depth."
   },
   "sourceRefs": [
     {
       "ref": "BOOK:pmpp4",
       "locator": "Scan/Prefix-sum chapter — Hillis-Steele vs Blelloch",
       "supports": [
-        "D"
+        "A"
       ]
     },
     {
       "ref": "DOC:cuda-best",
       "locator": "Parallel prefix sum background",
       "supports": [
-        "D"
+        "A"
       ]
     }
   ],

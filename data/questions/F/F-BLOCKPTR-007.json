@@ -44,11 +44,11 @@
     },
     {
       "id": "B",
-      "text": "`tl.make_block_ptr` builds a structured pointer describing a `[BM, BN]` tile inside an `[M, N]` tensor; `boundary_check=(0, 1)` tells `tl.load` to mask both axes so out-of-range lanes are safely zeroed; `order=(1, 0)` declares axis 1 as the fastest-varying, matching row-major storage."
+      "text": "`boundary_check=(0, 1)` disables masking on both axes (0 means 'no check on axis 0', 1 means 'no check on axis 1'); users who want masking must specify `boundary_check=None`."
     },
     {
       "id": "C",
-      "text": "`boundary_check=(0, 1)` disables masking on both axes (0 means 'no check on axis 0', 1 means 'no check on axis 1'); users who want masking must specify `boundary_check=None`."
+      "text": "`tl.make_block_ptr` builds a structured pointer describing a `[BM, BN]` tile inside an `[M, N]` tensor; `boundary_check=(0, 1)` tells `tl.load` to mask both axes so out-of-range lanes are safely zeroed; `order=(1, 0)` declares axis 1 as the fastest-varying, matching row-major storage."
     },
     {
       "id": "D",
@@ -56,13 +56,13 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "C"
   ],
   "explanation": "`tl.make_block_ptr` is a structured pointer constructor that describes a `[block_shape]` tile inside a base tensor of `shape` with given `strides` at a starting `offsets` (in element units). The `order` tuple specifies the memory-layout order (fastest-varying axis first when reading right-to-left, or equivalently: which axis is innermost). `tl.load(block_ptr, boundary_check=(0, 1))` masks lanes that fall outside the tensor along the listed axes and substitutes zeros. It is a higher-level, boundary-aware alternative to raw pointer arithmetic, and lets the Triton compiler emit better vectorized loads on Ampere+.",
   "optionExplanations": {
-    "B": "Correct: structured tile access + boundary check + memory order.",
     "A": "Wrong: `tl.make_block_ptr` does not allocate shared memory; it produces a structured pointer.",
-    "C": "Wrong: `boundary_check=(0, 1)` enables checks on both axes, not disables them.",
+    "B": "Wrong: `boundary_check=(0, 1)` enables checks on both axes, not disables them.",
+    "C": "Correct: structured tile access + boundary check + memory order.",
     "D": "Wrong: `order` describes memory layout, not endianness."
   },
   "assumptions": [
@@ -79,7 +79,7 @@
   ],
   "distractorRationales": {
     "A": "Confuses structured pointer with SMEM allocation.",
-    "C": "Inverts the meaning of `boundary_check`.",
+    "B": "Inverts the meaning of `boundary_check`.",
     "D": "Fabricates endianness semantics."
   },
   "sourceRefs": [
@@ -87,7 +87,7 @@
       "ref": "DOC:triton",
       "locator": "tl.make_block_ptr, tl.load boundary_check, order parameter",
       "supports": [
-        "B"
+        "C"
       ]
     }
   ],

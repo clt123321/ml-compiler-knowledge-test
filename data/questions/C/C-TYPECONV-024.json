@@ -22,11 +22,11 @@
   "options": [
     {
       "id": "A",
-      "text": "The materialization callbacks provide the driver with a way to insert real ops that legalize `unrealized_conversion_cast` at boundaries where converted and unconverted values meet, so the final IR has no unrealized casts left."
+      "text": "`addSourceMaterialization` and `addTargetMaterialization` are debug-only hooks that the driver ignores in production; the `unrealized_conversion_cast` op stays in the IR permanently as an implicit reinterpretation."
     },
     {
       "id": "B",
-      "text": "`addSourceMaterialization` and `addTargetMaterialization` are debug-only hooks that the driver ignores in production; the `unrealized_conversion_cast` op stays in the IR permanently as an implicit reinterpretation."
+      "text": "The materialization callbacks provide the driver with a way to insert real ops that legalize `unrealized_conversion_cast` at boundaries where converted and unconverted values meet, so the final IR has no unrealized casts left."
     },
     {
       "id": "C",
@@ -38,12 +38,12 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "B"
   ],
   "explanation": "In MLIR's Dialect Conversion framework, when a converted value must feed an unconverted op (or vice versa), the driver inserts a temporary `builtin.unrealized_conversion_cast` at the boundary. The TypeConverter's `addSourceMaterialization` and `addTargetMaterialization` hooks provide the driver with real ops to legalize these casts (for example, `bufferization.to_tensor` / `bufferization.to_memref`). At the end of a successful conversion, no unrealized casts should remain.",
   "optionExplanations": {
-    "B": "Wrong: unrealized casts are transient and should be resolved by materializations.",
-    "A": "Correct: exactly describes their role.",
+    "A": "Wrong: unrealized casts are transient and should be resolved by materializations.",
+    "B": "Correct: exactly describes their role.",
     "C": "Wrong: materialization inserts ops, not textual renames.",
     "D": "Wrong: the same framework covers arbitrary type conversions."
   },
@@ -60,7 +60,7 @@
     "materialization_renames"
   ],
   "distractorRationales": {
-    "B": "Understates the role of materializations.",
+    "A": "Understates the role of materializations.",
     "C": "Wrong mechanism (rename vs. insert).",
     "D": "Wrong scope claim."
   },
@@ -69,14 +69,14 @@
       "ref": "DOC:mlir-dialect-conversion",
       "locator": "TypeConverter materializations; unrealized_conversion_cast",
       "supports": [
-        "A"
+        "B"
       ]
     },
     {
       "ref": "DOC:mlir-langref",
       "locator": "builtin.unrealized_conversion_cast semantics",
       "supports": [
-        "A"
+        "B"
       ]
     }
   ],

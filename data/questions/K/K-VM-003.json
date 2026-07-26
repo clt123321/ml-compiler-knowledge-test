@@ -19,18 +19,32 @@
   },
   "stem": "TVM Relax and IREE both ship 'virtual machine' style runtimes that interpret compiled bytecode rather than emitting a single monolithic native function. Which motivation best explains this design?",
   "options": [
-    { "id": "A", "text": "Interpreting bytecode is faster than native execution because the VM bypasses the operating-system's process scheduling, letting each op run at higher priority than in a native binary." },
-    { "id": "B", "text": "A VM lets the runtime express host-side control flow (if/while, dynamic shape branches, allocator calls, external function invocation) around a set of precompiled kernels, decoupling model control flow from any single native ABI." },
-    { "id": "C", "text": "A VM is mandatory whenever the target is a GPU because GPU code cannot be dispatched from natively compiled host code and must be issued through a bytecode interpreter." },
-    { "id": "D", "text": "A VM eliminates the need for a memory allocator by executing every op in a single pre-allocated buffer, which is the reason VM-based runtimes have lower memory footprints than native ones." }
+    {
+      "id": "A",
+      "text": "Interpreting bytecode is faster than native execution because the VM bypasses the operating-system's process scheduling, letting each op run at higher priority than in a native binary."
+    },
+    {
+      "id": "B",
+      "text": "A VM eliminates the need for a memory allocator by executing every op in a single pre-allocated buffer, which is the reason VM-based runtimes have lower memory footprints than native ones."
+    },
+    {
+      "id": "C",
+      "text": "A VM is mandatory whenever the target is a GPU because GPU code cannot be dispatched from natively compiled host code and must be issued through a bytecode interpreter."
+    },
+    {
+      "id": "D",
+      "text": "A VM lets the runtime express host-side control flow (if/while, dynamic shape branches, allocator calls, external function invocation) around a set of precompiled kernels, decoupling model control flow from any single native ABI."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "A bytecode VM is used to represent the host-side program: control flow, dynamic shape dispatch, allocator/free ops, external calls, and invocation of precompiled device kernels. This keeps the model portable across host targets (x86, aarch64, wasm), simplifies serialization (the VM program is a data artifact), and separates the fixed set of kernels from the flexible host program. Compute kernels themselves are still native code.",
   "optionExplanations": {
     "A": "Wrong: interpreted bytecode is not faster than native code per se; the VM is chosen for portability and expressiveness, not raw throughput.",
-    "B": "Correct: describes the standard motivation used in the TVM Relax and IREE design docs.",
+    "B": "Wrong: VMs still call into allocators; they do not remove the need for allocation.",
     "C": "Wrong: native binaries can and do dispatch GPU kernels (e.g., CUDA runtime API from C++).",
-    "D": "Wrong: VMs still call into allocators; they do not remove the need for allocation."
+    "D": "Correct: describes the standard motivation used in the TVM Relax and IREE design docs."
   },
   "assumptions": [
     "The VM in question is a coarse-grained bytecode VM that dispatches kernels, not a fine-grained instruction VM like the JVM."
@@ -39,15 +53,30 @@
     "Does not imply that AOT-native artifacts (e.g., AOTInductor .so) are inferior; they trade portability for lower host overhead.",
     "Does not imply the VM is always the bottleneck; for large models kernel time dwarfs VM overhead."
   ],
-  "misconceptionTags": ["vm_speed_myth", "vm_replaces_allocator"],
+  "misconceptionTags": [
+    "vm_speed_myth",
+    "vm_replaces_allocator"
+  ],
   "distractorRationales": {
     "A": "Wrong performance narrative.",
-    "C": "False hardware claim.",
-    "D": "Fabricates zero-allocation semantics."
+    "B": "Fabricates zero-allocation semantics.",
+    "C": "False hardware claim."
   },
   "sourceRefs": [
-    { "ref": "DOC:tvm-relax", "locator": "Relax VM design (relax.VirtualMachine, VMExecutable)", "supports": ["B"] },
-    { "ref": "DOC:iree", "locator": "IREE VM design overview", "supports": ["B"] }
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "Relax VM design (relax.VirtualMachine, VMExecutable)",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:iree",
+      "locator": "IREE VM design overview",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

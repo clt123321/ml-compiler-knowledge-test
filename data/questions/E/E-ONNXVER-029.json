@@ -21,11 +21,11 @@
   "options": [
     {
       "id": "A",
-      "text": "IR version and opset version are two names for the same field; both refer to the operator set used by the model."
+      "text": "IR version defines the on-disk protobuf schema/structural features of ModelProto (e.g., which optional fields exist); opset version defines the semantics of individual operators (e.g., what attributes Conv accepts). The two evolve independently, and a model must declare both."
     },
     {
       "id": "B",
-      "text": "IR version defines the on-disk protobuf schema/structural features of ModelProto (e.g., which optional fields exist); opset version defines the semantics of individual operators (e.g., what attributes Conv accepts). The two evolve independently, and a model must declare both."
+      "text": "IR version and opset version are two names for the same field; both refer to the operator set used by the model."
     },
     {
       "id": "C",
@@ -37,12 +37,12 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "A"
   ],
   "explanation": "ONNX has two distinct versioning axes: (1) IR version — the ModelProto schema version, defining structural/format features (e.g., what fields exist, how initializers are stored); (2) Opset version(s) — the semantic version of each operator domain. A model declares its `ir_version` and one or more `opset_import` entries. These evolve independently: adding a new opset does not typically require a new IR version, and vice versa.",
   "optionExplanations": {
-    "B": "Correct: IR version = format schema; opset version = operator semantics.",
-    "A": "Wrong: they are different fields with different roles.",
+    "A": "Correct: IR version = format schema; opset version = operator semantics.",
+    "B": "Wrong: they are different fields with different roles.",
     "C": "Wrong: IR version affects how the runtime parses the file.",
     "D": "Wrong: they are not tied numerically."
   },
@@ -57,7 +57,7 @@
     "ir_vs_opset_conflation"
   ],
   "distractorRationales": {
-    "A": "Conflates two separate versioning axes.",
+    "B": "Conflates two separate versioning axes.",
     "C": "Ignores IR version's role in parsing.",
     "D": "Fabricates a numerical equality constraint."
   },
@@ -66,7 +66,7 @@
       "ref": "DOC:onnx",
       "locator": "IR version / opset version distinction",
       "supports": [
-        "B"
+        "A"
       ]
     }
   ],

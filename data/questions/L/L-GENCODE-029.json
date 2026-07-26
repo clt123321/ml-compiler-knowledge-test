@@ -21,18 +21,33 @@
   },
   "stem": "Which statements about inspecting the generated Triton code from TorchInductor are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "The generated Triton kernel exposes the fused iteration space (block sizes, program dimensions) and the sequence of `tl.load`, arithmetic, and `tl.store` calls; seeing multiple fused elementwise ops inside one kernel confirms that Inductor's scheduler recognized producer-consumer reuse." },
-    { "id": "B", "text": "The generated Triton code alone determines steady-state performance: any two kernels with the same Triton source will run at the same latency on the same GPU regardless of tuning parameters or launch configuration." },
-    { "id": "C", "text": "Autotuning parameters (BLOCK_M, BLOCK_N, num_warps, num_stages) affect performance substantially; the generated code often includes an `@triton.autotune` decorator listing candidate configurations, and the actual runtime chooses among them on the first call." },
-    { "id": "D", "text": "The generated Triton code is the same across all PyTorch 2.x versions: TorchInductor's codegen strategy has been frozen since 2.0, so any performance change between minor versions must come from other components (allocator, dispatcher) rather than from codegen changes." }
+    {
+      "id": "A",
+      "text": "Autotuning parameters (BLOCK_M, BLOCK_N, num_warps, num_stages) affect performance substantially; the generated code often includes an `@triton.autotune` decorator listing candidate configurations, and the actual runtime chooses among them on the first call."
+    },
+    {
+      "id": "B",
+      "text": "The generated Triton code is the same across all PyTorch 2.x versions: TorchInductor's codegen strategy has been frozen since 2.0, so any performance change between minor versions must come from other components (allocator, dispatcher) rather than from codegen changes."
+    },
+    {
+      "id": "C",
+      "text": "The generated Triton kernel exposes the fused iteration space (block sizes, program dimensions) and the sequence of `tl.load`, arithmetic, and `tl.store` calls; seeing multiple fused elementwise ops inside one kernel confirms that Inductor's scheduler recognized producer-consumer reuse."
+    },
+    {
+      "id": "D",
+      "text": "The generated Triton code alone determines steady-state performance: any two kernels with the same Triton source will run at the same latency on the same GPU regardless of tuning parameters or launch configuration."
+    }
   ],
-  "correctAnswers": ["A", "C"],
+  "correctAnswers": [
+    "A",
+    "C"
+  ],
   "explanation": "A: the Triton source directly exposes fusion structure. C: autotune decorators and their configurations govern runtime performance. B is wrong: the same source can produce very different performance depending on autotune choices, and launch parameters (grid shape) also matter. D is wrong: Inductor's codegen has evolved substantially across PyTorch 2.x versions.",
   "optionExplanations": {
-    "A": "Correct: fusion structure is visible in source.",
-    "B": "Wrong: autotune selection matters.",
-    "C": "Correct: autotune governs runtime performance.",
-    "D": "Wrong: Inductor codegen evolves across versions."
+    "A": "Correct: autotune governs runtime performance.",
+    "B": "Wrong: Inductor codegen evolves across versions.",
+    "C": "Correct: fusion structure is visible in source.",
+    "D": "Wrong: autotune selection matters."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 Inductor with Triton backend on CUDA."
@@ -41,14 +56,30 @@
     "Does not imply Triton source review replaces profiling; source shows intent, profiling measures behavior.",
     "Does not imply autotune always finds the optimal config; heuristic search has limits."
   ],
-  "misconceptionTags": ["source_equals_perf_myth", "inductor_frozen_myth"],
+  "misconceptionTags": [
+    "source_equals_perf_myth",
+    "inductor_frozen_myth"
+  ],
   "distractorRationales": {
-    "B": "Ignores autotune role.",
-    "D": "Wrong about version stability."
+    "B": "Wrong about version stability.",
+    "D": "Ignores autotune role."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-inductor", "locator": "Generated Triton code and autotuning", "supports": ["A", "C"] },
-    { "ref": "DOC:triton", "locator": "@triton.autotune decorator and configurations", "supports": ["C"] }
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Generated Triton code and autotuning",
+      "supports": [
+        "A",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:triton",
+      "locator": "@triton.autotune decorator and configurations",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

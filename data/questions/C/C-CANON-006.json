@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Canonicalization performs algebraic simplifications and constant folding within a dialect to bring semantically equivalent IR into a preferred normal form; it operates within a dialect and does not change the operations' dialects."
+      "text": "Canonicalization is MLIR's dialect-conversion mechanism; it uses a Conversion Target and Type Converter to legalize illegal operations by replacing them with legal ones from a different dialect. Under this description, canonicalization essentially reuses the same machinery as `applyPartialConversion`: it walks the IR, applies the target's legality rules, and calls the type converter's materialization hooks to resolve any inserted casts."
     },
     {
       "id": "B",
@@ -30,7 +30,7 @@
     },
     {
       "id": "C",
-      "text": "Canonicalization is MLIR's dialect-conversion mechanism; it uses a Conversion Target and Type Converter to legalize illegal operations by replacing them with legal ones from a different dialect. Under this description, canonicalization essentially reuses the same machinery as `applyPartialConversion`: it walks the IR, applies the target's legality rules, and calls the type converter's materialization hooks to resolve any inserted casts."
+      "text": "Canonicalization performs algebraic simplifications and constant folding within a dialect to bring semantically equivalent IR into a preferred normal form; it operates within a dialect and does not change the operations' dialects."
     },
     {
       "id": "D",
@@ -38,13 +38,13 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "C"
   ],
   "explanation": "Canonicalization in MLIR (driven by op-local `getCanonicalizationPatterns` / fold hooks) simplifies IR into a preferred normal form: constant folding, identity elimination (`x+0`, `x*1`), and small algebraic rewrites, all within the same dialect. It is distinct from Lowering (moving to a lower-level dialect) and from Dialect Conversion / Legalization (which uses a ConversionTarget and TypeConverter to move between dialects). Functionalization is a separate concern.",
   "optionExplanations": {
-    "A": "Correct: describes canonicalization's role (fold + identity + normal form) and its scope (within-dialect).",
+    "A": "Wrong: describes dialect conversion / legalization, which is a separate mechanism.",
     "B": "Wrong: lowering moves to a lower-level dialect. Canonicalization stays in-dialect.",
-    "C": "Wrong: describes dialect conversion / legalization, which is a separate mechanism.",
+    "C": "Correct: describes canonicalization's role (fold + identity + normal form) and its scope (within-dialect).",
     "D": "Wrong: functionalization is unrelated to arith canonicalization."
   },
   "assumptions": [
@@ -59,8 +59,8 @@
     "canonicalization_confused_with_dialect_conversion"
   ],
   "distractorRationales": {
+    "A": "Confuses canonicalization with dialect conversion.",
     "B": "Confuses in-dialect canonicalization with cross-dialect lowering.",
-    "C": "Confuses canonicalization with dialect conversion.",
     "D": "Wrong pass identity."
   },
   "sourceRefs": [
@@ -68,14 +68,14 @@
       "ref": "DOC:mlir-langref",
       "locator": "Canonicalization; op fold hooks",
       "supports": [
-        "A"
+        "C"
       ]
     },
     {
       "ref": "PAPER:mlir",
       "locator": "MLIR CGO paper: canonicalization vs. lowering vs. dialect conversion",
       "supports": [
-        "A"
+        "C"
       ]
     }
   ],

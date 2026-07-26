@@ -19,16 +19,30 @@
   },
   "stem": "The GSPMD paper describes user sharding annotations as 'hints'. What is the design rationale for this choice, according to the paper?",
   "options": [
-    { "id": "A", "text": "Because sharding is dynamic (may change per step), the compiler treats annotations as advisory and re-selects sharding at each iteration based on measured runtime performance." },
-    { "id": "B", "text": "Users only annotate a small number of representative tensors; the compiler propagates sharding to the rest of the graph and inserts reshard collectives where a downstream consumer requires a different sharding than upstream produced, so annotations guide but do not exhaustively specify the partitioning." },
-    { "id": "C", "text": "GSPMD deliberately ignores user annotations on more than one tensor per op; if a user annotates multiple inputs of a matmul, the compiler will randomly pick one and drop the others to avoid conflict." },
-    { "id": "D", "text": "The compiler treats annotations as strict placement constraints and errors out whenever the propagation cannot find a global sharding consistent with every annotation, forcing the user to re-annotate." }
+    {
+      "id": "A",
+      "text": "Users only annotate a small number of representative tensors; the compiler propagates sharding to the rest of the graph and inserts reshard collectives where a downstream consumer requires a different sharding than upstream produced, so annotations guide but do not exhaustively specify the partitioning."
+    },
+    {
+      "id": "B",
+      "text": "Because sharding is dynamic (may change per step), the compiler treats annotations as advisory and re-selects sharding at each iteration based on measured runtime performance."
+    },
+    {
+      "id": "C",
+      "text": "GSPMD deliberately ignores user annotations on more than one tensor per op; if a user annotates multiple inputs of a matmul, the compiler will randomly pick one and drop the others to avoid conflict."
+    },
+    {
+      "id": "D",
+      "text": "The compiler treats annotations as strict placement constraints and errors out whenever the propagation cannot find a global sharding consistent with every annotation, forcing the user to re-annotate."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "GSPMD's design intent is to keep the user interface lightweight: annotations mark a few strategic tensors, and the compiler propagates. Where downstream ops need a different sharding, the partitioner inserts reshard collectives rather than requiring the user to annotate every tensor or matching them exactly across boundaries. A invents a runtime re-selection mechanism. C fabricates a drop-annotations policy. D treats annotations as strict constraints, which conflicts with the paper's reshard-insertion design.",
   "optionExplanations": {
-    "A": "Wrong: no runtime re-selection is described.",
-    "B": "Correct: the paper's stated role of annotations as sparse hints, resolved by propagation and reshard insertion.",
+    "A": "Correct: the paper's stated role of annotations as sparse hints, resolved by propagation and reshard insertion.",
+    "B": "Wrong: no runtime re-selection is described.",
     "C": "Wrong: no drop-multiple-annotations policy exists.",
     "D": "Wrong: reshards exist precisely so strict-matching is not required."
   },
@@ -40,14 +54,23 @@
     "Does not imply the partitioner ignores annotations; annotated tensors' shardings are respected at their declaration site.",
     "Does not imply propagation is unique; heuristics choose among consistent assignments."
   ],
-  "misconceptionTags": ["annotations_as_rigid_constraints", "gspmd_runtime_reselect"],
+  "misconceptionTags": [
+    "annotations_as_rigid_constraints",
+    "gspmd_runtime_reselect"
+  ],
   "distractorRationales": {
-    "A": "Fabricates runtime-driven re-selection.",
+    "B": "Fabricates runtime-driven re-selection.",
     "C": "Fabricates drop-annotations behavior.",
     "D": "Denies reshard insertion."
   },
   "sourceRefs": [
-    { "ref": "PAPER:gspmd", "locator": "§3.2–§3.3 propagation and reshard-based resolution of annotations", "supports": ["B"] }
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§3.2–§3.3 propagation and reshard-based resolution of annotations",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

@@ -18,18 +18,33 @@
   },
   "stem": "Which statements correctly compare Just-in-Time (JIT) and Ahead-of-Time (AOT) compilation? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "JIT compilation can exploit runtime information (observed types, hot call sites, actual input shapes) to specialize code adaptively; AOT lacks this dynamic profile unless PGO or similar techniques feed profiles back before deployment." },
-    { "id": "B", "text": "AOT produces deployable artifacts with no compilation cost at runtime, avoiding warm-up latency; JIT amortizes compile time across program execution and thus has a warm-up phase." },
-    { "id": "C", "text": "JIT is inherently less optimized than AOT because it must be fast to compile; AOT compilers can spend arbitrary time on optimization." },
-    { "id": "D", "text": "JIT and AOT are mutually exclusive: a compilation pipeline can be either JIT or AOT but not combine both." }
+    {
+      "id": "A",
+      "text": "JIT and AOT are mutually exclusive: a compilation pipeline can be either JIT or AOT but not combine both."
+    },
+    {
+      "id": "B",
+      "text": "JIT compilation can exploit runtime information (observed types, hot call sites, actual input shapes) to specialize code adaptively; AOT lacks this dynamic profile unless PGO or similar techniques feed profiles back before deployment."
+    },
+    {
+      "id": "C",
+      "text": "AOT produces deployable artifacts with no compilation cost at runtime, avoiding warm-up latency; JIT amortizes compile time across program execution and thus has a warm-up phase."
+    },
+    {
+      "id": "D",
+      "text": "JIT is inherently less optimized than AOT because it must be fast to compile; AOT compilers can spend arbitrary time on optimization."
+    }
   ],
-  "correctAnswers": ["A", "B"],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
   "explanation": "A: JIT sees runtime information (observed types, hot paths); AOT lacks this unless profile-guided. B: AOT avoids runtime compilation and its warm-up latency; JIT has a warm-up phase. C is wrong: JITs (V8, HotSpot) can spend significant compile budget on hot code, and can specialize adaptively; JITs are not inherently less optimized. D is wrong: modern systems mix both — HotSpot has AOT tiers (AppCDS, native-image), PyTorch has torch.compile (JIT) alongside torch.export (AOT), and V8's Sparkplug/TurboFan use tiered JIT with AOT-ish caches.",
   "optionExplanations": {
-    "A": "Correct: JIT's key advantage is runtime information; AOT lacks it without PGO.",
-    "B": "Correct: AOT has no runtime compile cost; JIT has warm-up.",
-    "C": "Wrong: JITs can and do apply expensive optimizations to hot code; they are not inherently less optimized.",
-    "D": "Wrong: modern systems mix JIT and AOT tiers."
+    "A": "Wrong: modern systems mix JIT and AOT tiers.",
+    "B": "Correct: JIT's key advantage is runtime information; AOT lacks it without PGO.",
+    "C": "Correct: AOT has no runtime compile cost; JIT has warm-up.",
+    "D": "Wrong: JITs can and do apply expensive optimizations to hot code; they are not inherently less optimized."
   },
   "assumptions": [
     "Standard definitions of JIT and AOT in modern language runtimes and ML frameworks."
@@ -38,15 +53,39 @@
     "Does not imply JIT is always slower for cold-start; simple JITs can outperform AOT with poor profile.",
     "Does not imply AOT always produces the same code as JIT; AOT lacks runtime specialization opportunities."
   ],
-  "misconceptionTags": ["jit_always_slower_myth", "jit_aot_exclusive_myth"],
+  "misconceptionTags": [
+    "jit_always_slower_myth",
+    "jit_aot_exclusive_myth"
+  ],
   "distractorRationales": {
-    "C": "Overstates JIT compile-time constraints.",
-    "D": "Falsely treats JIT and AOT as mutually exclusive."
+    "A": "Falsely treats JIT and AOT as mutually exclusive.",
+    "D": "Overstates JIT compile-time constraints."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Compilation techniques chapter, JIT/AOT discussion", "supports": ["A", "B"] },
-    { "ref": "BOOK:appel", "locator": "Compilation pipeline discussion", "supports": ["A", "B"] },
-    { "ref": "BOOK:dragon2", "locator": "JIT compilation section", "supports": ["A", "B"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Compilation techniques chapter, JIT/AOT discussion",
+      "supports": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Compilation pipeline discussion",
+      "supports": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:dragon2",
+      "locator": "JIT compilation section",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

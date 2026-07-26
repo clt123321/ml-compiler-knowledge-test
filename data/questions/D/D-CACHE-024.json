@@ -23,32 +23,32 @@
   "options": [
     {
       "id": "A",
-      "text": "Changing the input tensor's dtype (e.g., from FP32 to FP16) between calls."
-    },
-    {
-      "id": "B",
-      "text": "Passing a tensor with the same shape, dtype, device, and stride as the previous call."
-    },
-    {
-      "id": "C",
       "text": "Restarting the Python process without any persistent-cache mechanism enabled."
     },
     {
-      "id": "D",
+      "id": "B",
       "text": "Passing a tensor on a different device (e.g., moving from `cuda:0` to `cuda:1`, or from CUDA to CPU)."
+    },
+    {
+      "id": "C",
+      "text": "Changing the input tensor's dtype (e.g., from FP32 to FP16) between calls."
+    },
+    {
+      "id": "D",
+      "text": "Passing a tensor with the same shape, dtype, device, and stride as the previous call."
     }
   ],
   "correctAnswers": [
     "A",
-    "C",
-    "D"
+    "B",
+    "C"
   ],
   "explanation": "A: dtype guards fail on dtype change, forcing recompile. B: without a persistent cache (like the FX-graph cache / Inductor cache extensions in some configs), a process restart loses the in-memory compile cache. D: device changes fail device guards. C is a cache hit: matching shape/dtype/device/stride reuses the compiled variant.",
   "optionExplanations": {
     "A": "Correct.",
+    "B": "Correct.",
     "C": "Correct.",
-    "B": "Wrong: this is exactly the cache-hit case.",
-    "D": "Correct."
+    "D": "Wrong: this is exactly the cache-hit case."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 defaults.",
@@ -62,7 +62,7 @@
     "matching_metadata_is_a_cache_miss"
   ],
   "distractorRationales": {
-    "B": "Wrong claim; matching metadata is a hit."
+    "D": "Wrong claim; matching metadata is a hit."
   },
   "sourceRefs": [
     {
@@ -70,16 +70,16 @@
       "locator": "Compilation cache and guard categories",
       "supports": [
         "A",
-        "C",
-        "D"
+        "B",
+        "C"
       ]
     },
     {
       "ref": "DOC:torch-dynamo",
       "locator": "Guards: dtype, device, stride",
       "supports": [
-        "A",
-        "D"
+        "B",
+        "C"
       ]
     }
   ],

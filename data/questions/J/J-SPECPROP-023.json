@@ -19,18 +19,33 @@
   },
   "stem": "Select all correct statements about speculative decoding. (Choose all that apply.)",
   "options": [
-    { "id": "A", "text": "When implemented with proper rejection sampling against the target model's logits, the sequences produced by speculative decoding have exactly the same distribution as target-only sampling — no quality loss." },
-    { "id": "B", "text": "Speculative decoding always speeds up inference by a factor of (k+1) — the number of proposed tokens plus one — regardless of the draft model's quality or the workload characteristics." },
-    { "id": "C", "text": "Speculative decoding is most beneficial when the target model is memory-bandwidth bound (batch-1 decode), because the extra k-token verification is essentially free compared to a single-token forward. It is less beneficial at large batch when the target is already compute-bound." },
-    { "id": "D", "text": "Speculative decoding requires the draft and target models to share weights (be identically initialized) so that rejection sampling has an easy path to bit-exact agreement; using unrelated models breaks the algorithm's correctness guarantees." }
+    {
+      "id": "A",
+      "text": "Speculative decoding always speeds up inference by a factor of (k+1) — the number of proposed tokens plus one — regardless of the draft model's quality or the workload characteristics."
+    },
+    {
+      "id": "B",
+      "text": "Speculative decoding is most beneficial when the target model is memory-bandwidth bound (batch-1 decode), because the extra k-token verification is essentially free compared to a single-token forward. It is less beneficial at large batch when the target is already compute-bound."
+    },
+    {
+      "id": "C",
+      "text": "Speculative decoding requires the draft and target models to share weights (be identically initialized) so that rejection sampling has an easy path to bit-exact agreement; using unrelated models breaks the algorithm's correctness guarantees."
+    },
+    {
+      "id": "D",
+      "text": "When implemented with proper rejection sampling against the target model's logits, the sequences produced by speculative decoding have exactly the same distribution as target-only sampling — no quality loss."
+    }
   ],
-  "correctAnswers": ["A", "C"],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
   "explanation": "A is correct: rejection sampling preserves the target sampling distribution exactly (a proved property in the original paper). C is correct: the win is largest when target-model per-step latency is dominated by fixed overheads (memory-bound decode), because verifying k tokens is only marginally more expensive than one; when target is compute-bound, the extra verification compute directly costs more. B is wrong: acceptance rate p < 1 shrinks expected accepted prefix, and draft cost eats into the win. D is wrong: correctness only requires shared vocab / tokenization; the draft can be any model.",
   "optionExplanations": {
-    "A": "Correct: sampling distribution preserved.",
-    "C": "Correct: memory-bound target maximizes the win.",
-    "B": "Wrong: ignores acceptance rate and draft cost.",
-    "D": "Wrong: draft can be arbitrary; only vocab needs to match."
+    "A": "Wrong: ignores acceptance rate and draft cost.",
+    "B": "Correct: memory-bound target maximizes the win.",
+    "C": "Wrong: draft can be arbitrary; only vocab needs to match.",
+    "D": "Correct: sampling distribution preserved."
   },
   "assumptions": [
     "'Speculative decoding' refers to Leviathan et al. 2023 style rejection sampling.",
@@ -40,13 +55,23 @@
     "Does not imply speedup is guaranteed; low acceptance rate can wipe out the win.",
     "Does not imply that alternative variants (Medusa, EAGLE) share every property; they use different draft mechanisms but similar acceptance logic."
   ],
-  "misconceptionTags": ["specdec_fixed_speedup_myth", "specdec_weight_share_myth"],
+  "misconceptionTags": [
+    "specdec_fixed_speedup_myth",
+    "specdec_weight_share_myth"
+  ],
   "distractorRationales": {
-    "B": "Ignores acceptance rate and draft cost.",
-    "D": "Fabricates a weight-sharing requirement."
+    "A": "Ignores acceptance rate and draft cost.",
+    "C": "Fabricates a weight-sharing requirement."
   },
   "sourceRefs": [
-    { "ref": "PAPER:specdecode", "locator": "Sec 3 — correctness; Sec 4 — analysis", "supports": ["A", "C"] }
+    {
+      "ref": "PAPER:specdecode",
+      "locator": "Sec 3 — correctness; Sec 4 — analysis",
+      "supports": [
+        "B",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

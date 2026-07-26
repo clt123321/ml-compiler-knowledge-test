@@ -18,20 +18,34 @@
   },
   "stem": "A compiler team claims that its scheduler achieves 'performance portability' across CPU, NVIDIA GPU, and AMD GPU targets for a workload. Which of the following are TRUE about the scope and preconditions of such a claim? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "The claim requires that a comparable per-target schedule search or tuning was performed; a single schedule string cannot be optimal across three targets without retuning or target-specific specializations." },
-    { "id": "B", "text": "'Portability' here refers to the framework's ability to *generate* good schedules across targets, not to a single artifact running on all three; retargeting the compiler is part of portability." },
-    { "id": "C", "text": "The claim's fairness depends on baseline choice: comparing the compiler's output to a vendor-tuned library on each target is more informative than comparing to a naive baseline." },
-    { "id": "D", "text": "As long as the framework reports the same peak Tensor Core utilization percentage across all three targets, the claim holds regardless of whether the underlying algorithm (e.g., FP16 GEMM vs. FP32 GEMM) differs between targets." },
-    { "id": "E", "text": "Once a workload achieves target X performance on one machine, the same schedule guarantees target-X performance on every machine of that architecture family without retuning." }
+    {
+      "id": "A",
+      "text": "The claim's fairness depends on baseline choice: comparing the compiler's output to a vendor-tuned library on each target is more informative than comparing to a naive baseline."
+    },
+    {
+      "id": "B",
+      "text": "As long as the framework reports the same peak Tensor Core utilization percentage across all three targets, the claim holds regardless of whether the underlying algorithm (e.g., FP16 GEMM vs. FP32 GEMM) differs between targets."
+    },
+    {
+      "id": "C",
+      "text": "The claim requires that a comparable per-target schedule search or tuning was performed; a single schedule string cannot be optimal across three targets without retuning or target-specific specializations."
+    },
+    {
+      "id": "D",
+      "text": "'Portability' here refers to the framework's ability to *generate* good schedules across targets, not to a single artifact running on all three; retargeting the compiler is part of portability."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
   "explanation": "A: Portability requires per-target search or specialization; one universal schedule generally cannot dominate. B: Portability is a claim about the framework, not about a single artifact. C: Baseline choice determines the informativeness of the claim; comparing to vendor libraries is the honest test. D is false: matching a utilization percentage across different algorithms is not a valid portability claim — silent algorithm swaps disguise a rewrite as portability. E is false: even within one architecture family, chip-specific bins (register file size, SM count, memory bandwidth) can flip the winner; retuning per bin is common practice.",
   "optionExplanations": {
-    "A": "Correct: per-target tuning is required.",
-    "B": "Correct: portability is a framework property, not an artifact property.",
-    "C": "Correct: honest baseline is required for a meaningful claim.",
-    "D": "Wrong: silently swapping the algorithm across targets invalidates the comparison; matching a utilization number is not the same as running the same computation.",
-    "E": "Wrong: same architecture family can require per-chip retuning."
+    "A": "Correct: honest baseline is required for a meaningful claim.",
+    "B": "Wrong: silently swapping the algorithm across targets invalidates the comparison; matching a utilization number is not the same as running the same computation.",
+    "C": "Correct: per-target tuning is required.",
+    "D": "Correct: portability is a framework property, not an artifact property."
   },
   "assumptions": [
     "The compared framework and baselines target the same numerical algorithm."
@@ -40,14 +54,32 @@
     "Does not imply portability is unattainable; it is achievable within a well-defined scope.",
     "Does not imply retuning cost is negligible — it must be part of the reported effort."
   ],
-  "misconceptionTags": ["portability_same_schedule_all_targets", "portability_ignore_baseline"],
+  "misconceptionTags": [
+    "portability_same_schedule_all_targets",
+    "portability_ignore_baseline"
+  ],
   "distractorRationales": {
-    "D": "Confuses matching a utilization percentage with a like-for-like comparison; algorithm swap invalidates portability.",
-    "E": "Ignores intra-family variability."
+    "B": "Confuses matching a utilization percentage with a like-for-like comparison; algorithm swap invalidates portability."
   },
   "sourceRefs": [
-    { "ref": "PAPER:tvm", "locator": "Cross-target evaluation methodology", "supports": ["A", "B", "C"] },
-    { "ref": "PAPER:halide", "locator": "Portability via rescheduling", "supports": ["A", "B", "C"] }
+    {
+      "ref": "PAPER:tvm",
+      "locator": "Cross-target evaluation methodology",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:halide",
+      "locator": "Portability via rescheduling",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

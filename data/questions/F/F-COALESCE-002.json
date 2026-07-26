@@ -56,7 +56,7 @@
     },
     {
       "id": "B",
-      "text": "Consecutive lanes read addresses stride*4 = 32 B apart; each 128 B L1/L2 sector delivers only 4 useful bytes per lane, so effective global BW is ~1/stride of peak (~ 1/8)."
+      "text": "The load triggers shared-memory bank conflicts because 32 threads access addresses 32 bytes apart, and sm_80's bank layout is designed for stride-1 accesses; the conflict serializes each warp into 32 transactions."
     },
     {
       "id": "C",
@@ -64,18 +64,18 @@
     },
     {
       "id": "D",
-      "text": "The load triggers shared-memory bank conflicts because 32 threads access addresses 32 bytes apart, and sm_80's bank layout is designed for stride-1 accesses; the conflict serializes each warp into 32 transactions."
+      "text": "Consecutive lanes read addresses stride*4 = 32 B apart; each 128 B L1/L2 sector delivers only 4 useful bytes per lane, so effective global BW is ~1/stride of peak (~ 1/8)."
     }
   ],
   "correctAnswers": [
-    "B"
+    "D"
   ],
   "explanation": "On sm_80, a warp's coalesced global load is optimally satisfied by 32-byte / 128-byte L1/L2 sector transactions covering a contiguous span. With stride=8 in FP32, adjacent lanes are 32 B apart; a 128-byte sector transaction now covers only 4 lanes' worth of useful data (one FP32 out of 32 B per lane). Effective bandwidth utilization is roughly `1/stride` of peak (~ 12.5% here). Masking does not remove this cost for valid lanes; there is no shared memory involved, hence no bank conflicts; and Triton does not automatically eliminate stride penalties.",
   "optionExplanations": {
     "A": "Wrong: masking suppresses OOB lanes only; strided access among valid lanes still under-utilizes each transaction.",
-    "D": "Wrong: no shared memory access appears in the code; bank conflicts only apply to `__shared__` accesses.",
+    "B": "Wrong: no shared memory access appears in the code; bank conflicts only apply to `__shared__` accesses.",
     "C": "Wrong: `cp.async` overlaps latency but does not increase per-transaction utilization; strided access still wastes bandwidth.",
-    "B": "Correct: this is the canonical coalescing loss for strided global reads."
+    "D": "Correct: this is the canonical coalescing loss for strided global reads."
   },
   "assumptions": [
     "The pointer arithmetic `in_ptr + offsets * stride` produces a strided address pattern within a warp.",
@@ -92,7 +92,7 @@
   ],
   "distractorRationales": {
     "A": "Wrong scope of `mask`.",
-    "D": "Applies SMEM concept to global memory.",
+    "B": "Applies SMEM concept to global memory.",
     "C": "Overstates `cp.async` capability."
   },
   "sourceRefs": [
@@ -100,14 +100,14 @@
       "ref": "DOC:cuda-best",
       "locator": "Coalesced access / memory-bandwidth section",
       "supports": [
-        "B"
+        "D"
       ]
     },
     {
       "ref": "BOOK:pmpp4",
       "locator": "Global memory coalescing chapter",
       "supports": [
-        "B"
+        "D"
       ]
     }
   ],

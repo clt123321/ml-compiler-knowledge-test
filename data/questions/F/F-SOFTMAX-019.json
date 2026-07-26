@@ -54,22 +54,22 @@
     },
     {
       "id": "C",
-      "text": "The subtraction is required for correctness because `tl.exp` returns undefined values for any input greater than 0; softmax's mathematical definition assumes all inputs are non-positive."
+      "text": "Subtracting `x_max` from every element is a mathematical identity for softmax (numerator and denominator both scale by e^{-x_max}); the transform prevents `tl.exp(x)` from overflowing when `x` contains large values (FP32 `exp` overflows around x ≈ 88.7)."
     },
     {
       "id": "D",
-      "text": "Subtracting `x_max` from every element is a mathematical identity for softmax (numerator and denominator both scale by e^{-x_max}); the transform prevents `tl.exp(x)` from overflowing when `x` contains large values (FP32 `exp` overflows around x ≈ 88.7)."
+      "text": "The subtraction is required for correctness because `tl.exp` returns undefined values for any input greater than 0; softmax's mathematical definition assumes all inputs are non-positive."
     }
   ],
   "correctAnswers": [
-    "D"
+    "C"
   ],
   "explanation": "The numerically stable softmax uses the identity `softmax(x)_i = exp(x_i - c) / sum_j exp(x_j - c)` for any constant `c`; taking `c = max(x)` guarantees the largest exponent is 0 and all others are ≤ 0, so `exp` cannot overflow (FP32 `exp` overflows near x ≈ 88.7 → ~1e38). Choice B fabricates a fast-path story. C is wrong: `exp` accepts positive inputs; the issue is overflow, not undefined behavior. D is wrong: `other=-inf` is the correct identity for `max` — it never influences the row's max since real values dominate; -inf lanes contribute 0 to sum after `exp` because `exp(-inf) = 0`.",
   "optionExplanations": {
-    "D": "Correct: standard numerically stable softmax formulation.",
+    "A": "Wrong: -inf is the correct identity for the max reduction.",
     "B": "Wrong: no such fast-path/slow-path split in Triton exp.",
-    "C": "Wrong: exp accepts any float; overflow is the concern.",
-    "A": "Wrong: -inf is the correct identity for the max reduction."
+    "C": "Correct: standard numerically stable softmax formulation.",
+    "D": "Wrong: exp accepts any float; overflow is the concern."
   },
   "assumptions": [
     "FP32 arithmetic on IEEE-754 hardware.",
@@ -84,23 +84,23 @@
     "softmax_stability_fastpath_myth"
   ],
   "distractorRationales": {
+    "A": "Wrong claim about -inf's effect on max.",
     "B": "Fabricates a Triton fast-path.",
-    "C": "Wrong claim about exp semantics.",
-    "A": "Wrong claim about -inf's effect on max."
+    "D": "Wrong claim about exp semantics."
   },
   "sourceRefs": [
     {
       "ref": "DOC:triton",
       "locator": "Triton softmax tutorial",
       "supports": [
-        "D"
+        "C"
       ]
     },
     {
       "ref": "DOC:cuda-guide",
       "locator": "FP32 exp range and overflow",
       "supports": [
-        "D"
+        "C"
       ]
     }
   ],

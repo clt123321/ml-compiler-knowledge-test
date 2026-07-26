@@ -19,18 +19,32 @@
   },
   "stem": "A model that previously achieved 78.5% accuracy on the validation set now reports 76.2% after a joint change (new PyTorch version, new torch.compile mode, new BF16 mixed-precision recipe, retrained weights). What is the most defensible triage plan?",
   "options": [
-    { "id": "A", "text": "Immediately blame the new torch.compile mode and revert it; if accuracy comes back that confirms the compile mode is the cause. Bisecting other axes is unnecessary because compile changes are the most common source of accuracy drift in practice." },
-    { "id": "B", "text": "Rerun the evaluation five times and average the accuracy. Accuracy drift of 2.3 percentage points is within the noise of any modern evaluation harness, so the reported regression is almost certainly a random fluctuation and no code investigation is needed." },
-    { "id": "C", "text": "Skip axis bisection and instead directly compare the softmax outputs on 10 validation samples with `torch.testing.assert_close`; any bitwise difference would identify the exact op responsible for the accuracy drop, bypassing the need for controlled experiments." },
-    { "id": "D", "text": "Bisect the axes one at a time: (1) hold everything else at old and switch back to old weights → see if accuracy recovers; (2) restore old PyTorch version; (3) disable mixed precision. This isolates which axis is responsible before any deep debugging. Only after the axis is known should we look at kernel-level differences." }
+    {
+      "id": "A",
+      "text": "Immediately blame the new torch.compile mode and revert it; if accuracy comes back that confirms the compile mode is the cause. Bisecting other axes is unnecessary because compile changes are the most common source of accuracy drift in practice."
+    },
+    {
+      "id": "B",
+      "text": "Rerun the evaluation five times and average the accuracy. Accuracy drift of 2.3 percentage points is within the noise of any modern evaluation harness, so the reported regression is almost certainly a random fluctuation and no code investigation is needed."
+    },
+    {
+      "id": "C",
+      "text": "Bisect the axes one at a time: (1) hold everything else at old and switch back to old weights → see if accuracy recovers; (2) restore old PyTorch version; (3) disable mixed precision. This isolates which axis is responsible before any deep debugging. Only after the axis is known should we look at kernel-level differences."
+    },
+    {
+      "id": "D",
+      "text": "Skip axis bisection and instead directly compare the softmax outputs on 10 validation samples with `torch.testing.assert_close`; any bitwise difference would identify the exact op responsible for the accuracy drop, bypassing the need for controlled experiments."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "The correct discipline is to bisect the confounded change into single-variable experiments. Blaming any one axis without evidence (A) risks reverting the wrong change. Attributing a 2.3-point drop to noise (B) is inappropriate without measuring variance. Bitwise comparison of softmax outputs (C) is neither guaranteed to isolate the cause nor to be zero across correct compiler transformations. Systematic bisection is the standard practice.",
   "optionExplanations": {
     "A": "Wrong: presumptive blame without evidence.",
     "B": "Wrong: 2.3-point drops rarely fall within evaluation noise on standard benchmarks; even if so, variance must be measured.",
-    "C": "Wrong: bitwise comparison does not isolate the cause.",
-    "D": "Correct: bisect confounded axes."
+    "C": "Correct: bisect confounded axes.",
+    "D": "Wrong: bitwise comparison does not isolate the cause."
   },
   "assumptions": [
     "The evaluation harness is deterministic given fixed inputs and seeds."
@@ -39,14 +53,23 @@
     "Does not imply bisection order is unique; sometimes reversing weights is the cheapest first step, sometimes disabling compile is.",
     "Does not imply per-op comparison is useless; it becomes valuable after the axis is isolated."
   ],
-  "misconceptionTags": ["presumptive_blame", "regression_as_noise"],
+  "misconceptionTags": [
+    "presumptive_blame",
+    "regression_as_noise"
+  ],
   "distractorRationales": {
     "A": "Skips isolation.",
     "B": "Underestimates the regression.",
-    "C": "Skips isolation and misuses bitwise comparison."
+    "D": "Skips isolation and misuses bitwise comparison."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-profiler", "locator": "Debug and regression workflow guidance", "supports": ["D"] }
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "Debug and regression workflow guidance",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

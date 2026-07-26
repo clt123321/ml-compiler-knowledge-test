@@ -28,7 +28,7 @@
     },
     {
       "id": "B",
-      "text": "The function runs in eager mode fully; `fullgraph=True` acts as a compile flag that requests a fully compiled graph but transparently falls back to eager when a graph break would occur."
+      "text": "TorchDynamo raises an error at call time (typically `torch._dynamo.exc.Unsupported` or a similar exception) reporting the graph break; `fullgraph=True` turns graph breaks into errors instead of splitting the graph."
     },
     {
       "id": "C",
@@ -36,18 +36,18 @@
     },
     {
       "id": "D",
-      "text": "TorchDynamo raises an error at call time (typically `torch._dynamo.exc.Unsupported` or a similar exception) reporting the graph break; `fullgraph=True` turns graph breaks into errors instead of splitting the graph."
+      "text": "The function runs in eager mode fully; `fullgraph=True` acts as a compile flag that requests a fully compiled graph but transparently falls back to eager when a graph break would occur."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "`fullgraph=True` means Dynamo must capture the entire function as a single graph; if any construct would trigger a graph break, Dynamo raises an error rather than splitting the graph. This surfaces graph-break causes to the developer for cleanup. It does not silently disable, silently fallback to eager, or produce split subgraphs — those are `fullgraph=False` behaviors.",
   "optionExplanations": {
     "A": "Wrong: fullgraph=True does not silently accept graph breaks.",
-    "B": "Wrong: no automatic eager fallback.",
-    "D": "Correct.",
-    "C": "Wrong: no split-subgraph behavior under fullgraph=True."
+    "B": "Correct.",
+    "C": "Wrong: no split-subgraph behavior under fullgraph=True.",
+    "D": "Wrong: no automatic eager fallback."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 defaults.",
@@ -63,22 +63,22 @@
   ],
   "distractorRationales": {
     "A": "Wrong claim about disabling breaks.",
-    "B": "Wrong claim about eager fallback.",
-    "C": "Wrong claim about split subgraphs."
+    "C": "Wrong claim about split subgraphs.",
+    "D": "Wrong claim about eager fallback."
   },
   "sourceRefs": [
     {
       "ref": "DOC:torch-compile",
       "locator": "fullgraph parameter behavior",
       "supports": [
-        "D"
+        "B"
       ]
     },
     {
       "ref": "DOC:torch-dynamo",
       "locator": "fullgraph=True raises on graph break",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

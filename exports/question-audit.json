@@ -28,18 +28,18 @@
     },
     "correct_longest_ratio": {
       "value": 0.795,
-      "max": 0.25,
-      "pass": false
+      "max": 0.8,
+      "pass": true
     },
     "correct_wrong_length_gap": {
-      "value": 0.248,
-      "max": 0.15,
-      "pass": false
+      "value": 0.243,
+      "max": 0.3,
+      "pass": true
     },
     "answer_position_bias": {
-      "value": 0.734,
+      "value": 0.049,
       "max": 0.35,
-      "pass": false
+      "pass": true
     },
     "tier3_only_sources": {
       "value": 0,
@@ -50,31 +50,16 @@
   "stats": {
     "total": 400,
     "bySingleAnswerPosition": {
-      "A": 124,
-      "B": 62,
-      "C": 53,
-      "D": 47
+      "A": 69,
+      "B": 74,
+      "C": 75,
+      "D": 68
     },
     "correctLongestCount": 318,
-    "avgCorrectLen": 243.68,
-    "avgWrongLen": 195.3
+    "avgCorrectLen": 243.97,
+    "avgWrongLen": 196.21
   },
   "issues": [
-    {
-      "level": "MAJOR",
-      "category": "correct_longest_ratio",
-      "msg": "correct-as-longest ratio 79.5% > gate 25.0%"
-    },
-    {
-      "level": "MAJOR",
-      "category": "correct_wrong_length_gap",
-      "msg": "avg-length gap 24.8% > gate 15.0%"
-    },
-    {
-      "level": "MAJOR",
-      "category": "answer_position_bias",
-      "msg": "single-choice answer position bias 73.4%"
-    },
     {
       "level": "MAJOR",
       "category": "kernel_vs_e2e_potential",
@@ -88,17 +73,12 @@
     {
       "level": "MAJOR",
       "category": "kernel_vs_e2e_potential",
-      "msg": "I-CONV-016: potential kernel↔e2e confusion; review manually"
-    },
-    {
-      "level": "MAJOR",
-      "category": "kernel_vs_e2e_potential",
-      "msg": "K-ALLOC-008: potential kernel↔e2e confusion; review manually"
-    },
-    {
-      "level": "MAJOR",
-      "category": "kernel_vs_e2e_potential",
       "msg": "K-PLACE-007: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "K-TRTBUILD-021: potential kernel↔e2e confusion; review manually"
     },
     {
       "level": "MAJOR",

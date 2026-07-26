@@ -21,7 +21,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Regions and Blocks are the same concept under different names; each Value is stored as an Operation's private state and cannot be referenced across operations."
+      "text": "An Operation may contain zero or more Regions; each Region contains a list of Blocks; each Block contains a list of Operations and defines Values (its arguments and results produced by operations within it). In this description, MLIR maintains a global op-to-children table separate from the IR text, and reading a nested op requires querying this side-table since the printed textual form is a projection rather than the source of truth."
     },
     {
       "id": "B",
@@ -29,7 +29,7 @@
     },
     {
       "id": "C",
-      "text": "An Operation may contain zero or more Regions; each Region contains a list of Blocks; each Block contains a list of Operations and defines Values (its arguments and results produced by operations within it). In this description, MLIR maintains a global op-to-children table separate from the IR text, and reading a nested op requires querying this side-table since the printed textual form is a projection rather than the source of truth."
+      "text": "Regions and Blocks are the same concept under different names; each Value is stored as an Operation's private state and cannot be referenced across operations."
     },
     {
       "id": "D",
@@ -37,13 +37,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "MLIR is built around a small set of orthogonal concepts: an Operation is the basic unit; each Operation can have zero or more Regions (e.g., a `func.func` has one region for its body, a `scf.for` has one region for the loop body); each Region contains a list of Blocks; each Block has arguments (SSA values) and a list of Operations. Values are the SSA edges: block arguments and operation results, referenced by other operations.",
   "optionExplanations": {
-    "C": "Correct: this is the canonical MLIR structural model.",
-    "A": "Wrong: Regions and Blocks are distinct; a Region contains Blocks. Values are cross-op SSA edges.",
+    "A": "Correct: this is the canonical MLIR structural model.",
     "B": "Wrong: nesting is via Regions, not side-tables.",
+    "C": "Wrong: Regions and Blocks are distinct; a Region contains Blocks. Values are cross-op SSA edges.",
     "D": "Wrong: Values are first-class in the IR, not a printing concern."
   },
   "assumptions": [
@@ -58,8 +58,8 @@
     "ssa_values_not_first_class"
   ],
   "distractorRationales": {
-    "A": "Merges Region and Block; misstates Value scope.",
     "B": "Wrong nesting model.",
+    "C": "Merges Region and Block; misstates Value scope.",
     "D": "Wrong claim about Value representation."
   },
   "sourceRefs": [
@@ -67,14 +67,14 @@
       "ref": "DOC:mlir-langref",
       "locator": "Structure of MLIR: Operation, Region, Block, Value",
       "supports": [
-        "C"
+        "A"
       ]
     },
     {
       "ref": "PAPER:mlir",
       "locator": "MLIR CGO'21: core IR structure",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

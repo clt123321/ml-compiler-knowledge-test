@@ -19,16 +19,30 @@
   },
   "stem": "Which statement best describes the design purpose of StableHLO?",
   "options": [
-    { "id": "A", "text": "StableHLO is a versioned operator set with a formal specification that acts as a portability contract between ML frameworks (as producers) and compilers (as consumers), providing forward/backward compatibility guarantees so framework upgrades and compiler upgrades can proceed independently." },
-    { "id": "B", "text": "StableHLO is a hardware-independent runtime that directly executes ML models on GPU/TPU/CPU without invoking any downstream compiler; it replaces XLA at the execution layer." },
-    { "id": "C", "text": "StableHLO is a Python DSL for defining new ops in JAX; it is not an IR and cannot be serialized to disk." },
-    { "id": "D", "text": "StableHLO is a strict subset of TensorFlow's SavedModel format; every StableHLO program is directly a SavedModel and vice versa." }
+    {
+      "id": "A",
+      "text": "StableHLO is a hardware-independent runtime that directly executes ML models on GPU/TPU/CPU without invoking any downstream compiler; it replaces XLA at the execution layer."
+    },
+    {
+      "id": "B",
+      "text": "StableHLO is a versioned operator set with a formal specification that acts as a portability contract between ML frameworks (as producers) and compilers (as consumers), providing forward/backward compatibility guarantees so framework upgrades and compiler upgrades can proceed independently."
+    },
+    {
+      "id": "C",
+      "text": "StableHLO is a Python DSL for defining new ops in JAX; it is not an IR and cannot be serialized to disk."
+    },
+    {
+      "id": "D",
+      "text": "StableHLO is a strict subset of TensorFlow's SavedModel format; every StableHLO program is directly a SavedModel and vice versa."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "StableHLO is the OpenXLA project's versioned, specified operator set designed to serve as a stable interchange format between framework frontends (PyTorch/JAX/TensorFlow) and compiler backends (XLA, IREE, etc.). It has a formal spec, an MLIR dialect, and versioning with forward/backward compatibility guarantees. The goal is to decouple framework release cycles from compiler release cycles.",
   "optionExplanations": {
-    "A": "Correct: portability contract with versioning and compatibility guarantees.",
-    "B": "Wrong: StableHLO is a spec/IR, not a runtime.",
+    "A": "Wrong: StableHLO is a spec/IR, not a runtime.",
+    "B": "Correct: portability contract with versioning and compatibility guarantees.",
     "C": "Wrong: it is an MLIR dialect and a serializable IR, not a Python DSL.",
     "D": "Wrong: StableHLO is not equivalent to SavedModel."
   },
@@ -39,14 +53,23 @@
     "Does not imply StableHLO covers every op; the operator set is intentionally scoped.",
     "Does not imply StableHLO removes the need for a compiler; consumers still lower it."
   ],
-  "misconceptionTags": ["stablehlo_as_runtime_myth", "stablehlo_savedmodel_conflation"],
+  "misconceptionTags": [
+    "stablehlo_as_runtime_myth",
+    "stablehlo_savedmodel_conflation"
+  ],
   "distractorRationales": {
-    "B": "Confuses IR with runtime.",
+    "A": "Confuses IR with runtime.",
     "C": "Confuses IR with a Python DSL.",
     "D": "Confuses interchange formats."
   },
   "sourceRefs": [
-    { "ref": "DOC:stablehlo", "locator": "StableHLO spec / compatibility guarantees", "supports": ["A"] }
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "StableHLO spec / compatibility guarantees",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

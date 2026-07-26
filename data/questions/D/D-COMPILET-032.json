@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The short script must be slower because torch.compile always adds runtime overhead per call; long runs are faster only because CUDA gets warmer over time."
+      "text": "The short script's runtime is dominated by torch.compile's compile-time cost (including max-autotune's kernel-selection search), which is a one-time cost amortized only over enough steps; the long training run amortizes the same cost across many steps and enjoys the steady-state speedup. Under this account, torch.compile's overhead comes from Python's GIL becoming a bottleneck under the compiler's instrumentation of every bytecode; long-running loops eventually release the GIL through checkpointing hooks and thereby amortize the observed slowdown."
     },
     {
       "id": "B",
@@ -36,18 +36,18 @@
     },
     {
       "id": "D",
-      "text": "The short script's runtime is dominated by torch.compile's compile-time cost (including max-autotune's kernel-selection search), which is a one-time cost amortized only over enough steps; the long training run amortizes the same cost across many steps and enjoys the steady-state speedup. Under this account, torch.compile's overhead comes from Python's GIL becoming a bottleneck under the compiler's instrumentation of every bytecode; long-running loops eventually release the GIL through checkpointing hooks and thereby amortize the observed slowdown."
+      "text": "The short script must be slower because torch.compile always adds runtime overhead per call; long runs are faster only because CUDA gets warmer over time."
     }
   ],
   "correctAnswers": [
-    "D"
+    "A"
   ],
   "explanation": "torch.compile has a compile-time cost (tracing, AOTAutograd, Inductor codegen, and — under max-autotune — a kernel-selection search) that must be amortized to see a net speedup. Short-running scripts often pay more in compile time than they save at runtime, especially under max-autotune. Long-running training loops amortize this cost over many steps and typically win. The other options misattribute the effect (per-call overhead, precision, GIL).",
   "optionExplanations": {
-    "D": "Correct: amortization framing consistent with observed timings.",
-    "A": "Wrong: torch.compile does not add per-call overhead of that magnitude to steady state.",
+    "A": "Correct: amortization framing consistent with observed timings.",
     "B": "Wrong: max-autotune does not sacrifice numerical accuracy for speed.",
-    "C": "Wrong: GIL is unrelated to this specific effect."
+    "C": "Wrong: GIL is unrelated to this specific effect.",
+    "D": "Wrong: torch.compile does not add per-call overhead of that magnitude to steady state."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5.",
@@ -62,23 +62,23 @@
     "compile_adds_per_call_overhead"
   ],
   "distractorRationales": {
-    "A": "Wrong claim about steady-state per-call overhead.",
     "B": "Wrong accuracy claim.",
-    "C": "Wrong GIL claim."
+    "C": "Wrong GIL claim.",
+    "D": "Wrong claim about steady-state per-call overhead."
   },
   "sourceRefs": [
     {
       "ref": "DOC:torch-compile",
       "locator": "Compile-time cost and amortization",
       "supports": [
-        "D"
+        "A"
       ]
     },
     {
       "ref": "PAPER:pytorch2",
       "locator": "Compile time discussion",
       "supports": [
-        "D"
+        "A"
       ]
     }
   ],

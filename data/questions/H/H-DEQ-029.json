@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere",
     "device": "GPU",
-    "requiredFeatures": ["FP16 Tensor Core"]
+    "requiredFeatures": [
+      "FP16 Tensor Core"
+    ]
   },
   "softwareContext": {
     "framework": "Triton / CUDA W4A16 kernel",
@@ -20,16 +22,30 @@
   "codeSnippet": "// Pseudo-code for W4A16 inner loop, one K-block of BLOCK_K = 128 INT4 weights per row.\n// weights_packed: two INT4 values per byte, symmetric per-group scale (group_size 128).\n// scale: shape (out_rows, K / 128), FP16.\n// Loading one 64-byte chunk (128 INT4 values).\n\nuint8_t packed[64];   // 64 bytes = 128 INT4 weights\nload_from_gmem(packed, weights_packed + row * K_bytes + kg * 64);\n\nhalf w[128];\nfor (int i = 0; i < 64; ++i) {\n    int lo = (int8_t)((packed[i] << 4) >> 4);   // sign-extend low nibble to int8 in [-8,7]\n    int hi = (int8_t)(packed[i]) >> 4;          // sign-extend high nibble\n    w[2*i    ] = __int2half_rn(lo);\n    w[2*i + 1] = __int2half_rn(hi);\n}\n// Apply per-group scale (one scalar for this entire 128-element block).\nhalf s = scale[row * (K/128) + kg];\nfor (int i = 0; i < 128; ++i) w[i] = __hmul(w[i], s);\n// w[128] is now dequantized FP16 weights; feed to FP16 Tensor Core.",
   "stem": "The W4A16 inner-loop pseudo-code above shows the standard 'dequant-in-register' sequence. Which is a correct description of what it does and why it works with FP16 Tensor Cores?",
   "options": [
-    { "id": "A", "text": "It unpacks two 4-bit weights per byte (sign-extending each nibble to signed int), converts to FP16, then multiplies by the group's FP16 scale to reconstruct the FP16 weight vector; the resulting FP16 vector is fed to an FP16 Tensor Core matmul. HBM traffic is reduced by ~4× vs FP16 storage while compute stays on standard FP16 Tensor Cores." },
-    { "id": "B", "text": "It uses INT4 Tensor Cores directly; the `__int2half_rn` cast is a no-op emitted by the compiler and is not executed on hardware." },
-    { "id": "C", "text": "It applies the scale before conversion to FP16, mixing integer arithmetic with FP16 without any explicit conversion; the final FP16 Tensor Core silently interprets the bit pattern as FP16." },
-    { "id": "D", "text": "It performs the entire GEMM in INT4 without any conversion; the scale is applied only at the end of the K-loop, once per output element." }
+    {
+      "id": "A",
+      "text": "It uses INT4 Tensor Cores directly; the `__int2half_rn` cast is a no-op emitted by the compiler and is not executed on hardware."
+    },
+    {
+      "id": "B",
+      "text": "It unpacks two 4-bit weights per byte (sign-extending each nibble to signed int), converts to FP16, then multiplies by the group's FP16 scale to reconstruct the FP16 weight vector; the resulting FP16 vector is fed to an FP16 Tensor Core matmul. HBM traffic is reduced by ~4× vs FP16 storage while compute stays on standard FP16 Tensor Cores."
+    },
+    {
+      "id": "C",
+      "text": "It applies the scale before conversion to FP16, mixing integer arithmetic with FP16 without any explicit conversion; the final FP16 Tensor Core silently interprets the bit pattern as FP16."
+    },
+    {
+      "id": "D",
+      "text": "It performs the entire GEMM in INT4 without any conversion; the scale is applied only at the end of the K-loop, once per output element."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "The snippet is the canonical W4A16 dequant-in-register pattern: (1) load packed INT4 bytes from HBM, (2) unpack via nibble sign-extension into signed int, (3) convert to FP16 (`__int2half_rn` is a real conversion instruction), (4) multiply by the group's FP16 scale to reconstruct the FP16 weight, (5) feed to an FP16 Tensor Core matmul. HBM traffic drops by ~4× because packed INT4 is stored, but compute uses standard FP16 Tensor Cores (no INT4 Tensor Core is required). Option B fabricates a no-op conversion. Option C misdescribes the numerical composition. Option D wrongly claims INT4 GEMM, which would require INT4 Tensor Core hardware.",
   "optionExplanations": {
-    "A": "Correct: standard W4A16 dequant-in-register + FP16 TC.",
-    "B": "Wrong: conversion is a real instruction, not a no-op.",
+    "A": "Wrong: conversion is a real instruction, not a no-op.",
+    "B": "Correct: standard W4A16 dequant-in-register + FP16 TC.",
     "C": "Wrong: cannot compute with mixed integer / FP16 without explicit conversion.",
     "D": "Wrong: INT4 GEMM requires INT4 Tensor Core hardware not used here."
   },
@@ -42,15 +58,30 @@
     "Does not imply the dequant + scale is free — it adds a small number of ops per weight; in bandwidth-bound regimes this is negligible.",
     "Does not imply the same sequence works for asymmetric per-group quantization — an extra zero-point subtraction is needed."
   ],
-  "misconceptionTags": ["w4a16_uses_int4_tc", "dequant_is_noop"],
+  "misconceptionTags": [
+    "w4a16_uses_int4_tc",
+    "dequant_is_noop"
+  ],
   "distractorRationales": {
-    "B": "Fabricates a no-op conversion.",
+    "A": "Fabricates a no-op conversion.",
     "C": "Ignores the need for explicit dtype conversion.",
     "D": "Confuses W4A16 storage with INT4 compute."
   },
   "sourceRefs": [
-    { "ref": "PAPER:awq", "locator": "W4A16 kernel description; dequant-in-register", "supports": ["A"] },
-    { "ref": "PAPER:gptq", "locator": "W4A16 deployment considerations", "supports": ["A"] }
+    {
+      "ref": "PAPER:awq",
+      "locator": "W4A16 kernel description; dequant-in-register",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:gptq",
+      "locator": "W4A16 deployment considerations",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

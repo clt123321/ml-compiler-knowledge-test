@@ -19,16 +19,30 @@
   },
   "stem": "In an ML runtime, the 'kernel registry' is best described as which of the following?",
   "options": [
-    { "id": "A", "text": "A cache of compiled kernels keyed by input pointer addresses; hits skip recompilation while misses trigger a JIT compile on the current CUDA stream." },
-    { "id": "B", "text": "A mapping from (op name, device, dtype, layout, …) to a concrete function pointer or callable that implements the op; the dispatcher consults it at run time to pick the correct backend implementation." },
-    { "id": "C", "text": "A profiling database of measured kernel latencies used by the compiler's cost model; it does not affect run-time dispatch decisions and is only consulted during autotuning." },
-    { "id": "D", "text": "A structured hardware descriptor of the physical device (SM count, warp size) that the runtime uses to select launch configurations for kernels declared as `device-agnostic`." }
+    {
+      "id": "A",
+      "text": "A mapping from (op name, device, dtype, layout, …) to a concrete function pointer or callable that implements the op; the dispatcher consults it at run time to pick the correct backend implementation."
+    },
+    {
+      "id": "B",
+      "text": "A cache of compiled kernels keyed by input pointer addresses; hits skip recompilation while misses trigger a JIT compile on the current CUDA stream."
+    },
+    {
+      "id": "C",
+      "text": "A profiling database of measured kernel latencies used by the compiler's cost model; it does not affect run-time dispatch decisions and is only consulted during autotuning."
+    },
+    {
+      "id": "D",
+      "text": "A structured hardware descriptor of the physical device (SM count, warp size) that the runtime uses to select launch configurations for kernels declared as `device-agnostic`."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "A kernel registry is a table (usually populated at library load time via registration macros or plugin discovery) that maps op signatures to implementations. When a runtime dispatches an op, it queries this registry with the current tensor descriptors to select the correct kernel — for example ONNX Runtime's `KernelRegistry`, TVM's `PackedFunc` op registry, or PyTorch's ATen dispatch table. It is a runtime data structure, not a cost model, cache, or hardware descriptor.",
   "optionExplanations": {
-    "A": "Wrong: this describes a JIT compilation cache, not a registry.",
-    "B": "Correct: standard kernel-registry semantics.",
+    "A": "Correct: standard kernel-registry semantics.",
+    "B": "Wrong: this describes a JIT compilation cache, not a registry.",
     "C": "Wrong: describes an autotuning database.",
     "D": "Wrong: describes a device capability record."
   },
@@ -39,15 +53,30 @@
     "Does not imply that the registry is a single flat table; PyTorch's dispatcher has layered dispatch keys.",
     "Does not imply registrations happen at compile time; many runtimes register kernels at library load via static initializers or plugin discovery."
   ],
-  "misconceptionTags": ["registry_vs_cache", "registry_vs_costmodel"],
+  "misconceptionTags": [
+    "registry_vs_cache",
+    "registry_vs_costmodel"
+  ],
   "distractorRationales": {
-    "A": "Confuses registry with JIT cache.",
+    "B": "Confuses registry with JIT cache.",
     "C": "Confuses registry with cost model.",
     "D": "Confuses registry with device descriptor."
   },
   "sourceRefs": [
-    { "ref": "DOC:onnx", "locator": "ONNX Runtime KernelRegistry", "supports": ["B"] },
-    { "ref": "DOC:tvm-relax", "locator": "TVM PackedFunc / global function registry", "supports": ["B"] }
+    {
+      "ref": "DOC:onnx",
+      "locator": "ONNX Runtime KernelRegistry",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "TVM PackedFunc / global function registry",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

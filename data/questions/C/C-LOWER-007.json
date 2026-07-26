@@ -26,7 +26,7 @@
     },
     {
       "id": "B",
-      "text": "The three IR forms are semantically inequivalent: the linalg-on-tensor form allows aliasing that the memref form forbids, so the lowering is only correct when no aliasing exists between A, B, and C."
+      "text": "Each lowering step preserves the computation's semantics while making previously implicit structure (buffers, loops, indexing) explicit, so that later passes can apply loop-level optimizations and generate low-level code."
     },
     {
       "id": "C",
@@ -34,18 +34,18 @@
     },
     {
       "id": "D",
-      "text": "Each lowering step preserves the computation's semantics while making previously implicit structure (buffers, loops, indexing) explicit, so that later passes can apply loop-level optimizations and generate low-level code."
+      "text": "The three IR forms are semantically inequivalent: the linalg-on-tensor form allows aliasing that the memref form forbids, so the lowering is only correct when no aliasing exists between A, B, and C."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "Progressive lowering in MLIR moves from higher-level abstractions (linalg on tensors: declarative, functional) to progressively lower ones (memref with explicit buffers; scf/affine with explicit loop nests; eventually LLVM). Each step preserves semantics but exposes more structure to enable later passes: bufferization exposes memory, loop conversion exposes iteration, and vectorization / tiling operate on the exposed structure. It is not raising, does not create aliasing hazards on its own, and does not produce Python source.",
   "optionExplanations": {
     "A": "Wrong: this is the opposite direction; lowering exposes more structure, not less.",
-    "D": "Correct: matches the standard purpose of progressive lowering in MLIR.",
-    "B": "Wrong: bufferization enforces that memrefs respect the tensor-level dataflow (via analysis / annotations); the three forms are semantically equivalent when bufferization is correct.",
-    "C": "Wrong: lowering is a compiler-internal transformation, not Python source generation."
+    "B": "Correct: matches the standard purpose of progressive lowering in MLIR.",
+    "C": "Wrong: lowering is a compiler-internal transformation, not Python source generation.",
+    "D": "Wrong: bufferization enforces that memrefs respect the tensor-level dataflow (via analysis / annotations); the three forms are semantically equivalent when bufferization is correct."
   },
   "assumptions": [
     "Bufferization has proved that the tensor-form computation can be safely realized on the given memrefs (or the compiler inserts copies to preserve semantics)."
@@ -60,22 +60,22 @@
   ],
   "distractorRationales": {
     "A": "Reverses the direction of lowering.",
-    "B": "Wrong claim about aliasing semantics of the lowering.",
-    "C": "Confuses IR lowering with source-level codegen."
+    "C": "Confuses IR lowering with source-level codegen.",
+    "D": "Wrong claim about aliasing semantics of the lowering."
   },
   "sourceRefs": [
     {
       "ref": "PAPER:mlir",
       "locator": "Progressive lowering across dialects",
       "supports": [
-        "D"
+        "B"
       ]
     },
     {
       "ref": "DOC:mlir-langref",
       "locator": "Dialect layering and lowering",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

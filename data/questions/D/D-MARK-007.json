@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "`mark_dynamic` disables all guards on the tensor and replaces them with runtime shape checks written into the compiled Triton kernel; the compiled function then dynamically dispatches to different kernel variants."
+      "text": "`mark_dynamic(x, 0)` records that dim 0 of `x` should be treated as symbolic; Dynamo traces with a SymInt for that dim and installs a symbolic-shape guard, allowing multiple sizes to share the same compiled graph."
     },
     {
       "id": "B",
@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "`mark_dynamic(x, 0)` records that dim 0 of `x` should be treated as symbolic; Dynamo traces with a SymInt for that dim and installs a symbolic-shape guard, allowing multiple sizes to share the same compiled graph."
+      "text": "`mark_dynamic` disables all guards on the tensor and replaces them with runtime shape checks written into the compiled Triton kernel; the compiled function then dynamically dispatches to different kernel variants."
     },
     {
       "id": "D",
@@ -40,13 +40,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "`torch._dynamo.mark_dynamic(t, dim)` tells Dynamo to treat that dim of `t` as symbolic during tracing rather than specializing on the observed value. This produces a compiled graph parameterized by a SymInt for that dim and installs a symbolic-shape guard consistent with the observation (e.g., ranges/relations). Subsequent calls with different sizes for that dim reuse the same graph and avoid recompilation. It does not disable all guards, does not change the tensor's rank, and is not a no-op.",
   "optionExplanations": {
-    "C": "Correct: describes mark_dynamic accurately.",
-    "A": "Wrong: mark_dynamic does not push all guards into a runtime kernel dispatch.",
+    "A": "Correct: describes mark_dynamic accurately.",
     "B": "Wrong: no rank change is performed.",
+    "C": "Wrong: mark_dynamic does not push all guards into a runtime kernel dispatch.",
     "D": "Wrong: mark_dynamic is a functional API in current releases."
   },
   "assumptions": [
@@ -61,8 +61,8 @@
     "mark_dynamic_changes_rank"
   ],
   "distractorRationales": {
-    "A": "Overstates its effect on guards.",
     "B": "Wrong mechanism.",
+    "C": "Overstates its effect on guards.",
     "D": "Wrong claim about being a no-op."
   },
   "sourceRefs": [
@@ -70,14 +70,14 @@
       "ref": "DOC:torch-compile",
       "locator": "Dynamic shapes; mark_dynamic API",
       "supports": [
-        "C"
+        "A"
       ]
     },
     {
       "ref": "DOC:torch-dynamo",
       "locator": "SymInt / symbolic-shape tracing",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

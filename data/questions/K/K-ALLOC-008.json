@@ -19,17 +19,31 @@
   },
   "stem": "Deep-learning runtimes (PyTorch, TensorFlow, TVM) implement a caching memory allocator on the GPU rather than calling `cudaMalloc`/`cudaFree` for each tensor. Which reason is the strongest?",
   "options": [
-    { "id": "A", "text": "`cudaMalloc` and `cudaFree` are synchronous with respect to all CUDA streams and take microseconds to milliseconds; calling them on every tensor allocation would serialize the stream and dominate end-to-end latency. A caching allocator amortizes this by pooling freed blocks and reusing them without touching the driver." },
-    { "id": "B", "text": "`cudaMalloc` returns memory that cannot be used as a kernel argument until a `cudaMemcpy` initializes it; a caching allocator writes zeros lazily so kernels can read uninitialized memory safely without additional API calls." },
-    { "id": "C", "text": "The CUDA driver limits the number of live allocations per process to 1024; a caching allocator sidesteps this by keeping a single large allocation for the lifetime of the process regardless of workload." },
-    { "id": "D", "text": "A caching allocator eliminates memory fragmentation entirely because it always returns exactly the requested size and rounds up to a multiple of one byte, meaning no wasted padding ever occurs across tensor lifetimes." }
+    {
+      "id": "A",
+      "text": "The CUDA driver limits the number of live allocations per process to 1024; a caching allocator sidesteps this by keeping a single large allocation for the lifetime of the process regardless of workload."
+    },
+    {
+      "id": "B",
+      "text": "`cudaMalloc` returns memory that cannot be used as a kernel argument until a `cudaMemcpy` initializes it; a caching allocator writes zeros lazily so kernels can read uninitialized memory safely without additional API calls."
+    },
+    {
+      "id": "C",
+      "text": "`cudaMalloc` and `cudaFree` are synchronous with respect to all CUDA streams and take microseconds to milliseconds; calling them on every tensor allocation would serialize the stream and dominate end-to-end latency. A caching allocator amortizes this by pooling freed blocks and reusing them without touching the driver."
+    },
+    {
+      "id": "D",
+      "text": "A caching allocator eliminates memory fragmentation entirely because it always returns exactly the requested size and rounds up to a multiple of one byte, meaning no wasted padding ever occurs across tensor lifetimes."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "`cudaMalloc`/`cudaFree` synchronize with the device and cost microseconds to milliseconds — orders of magnitude more than a well-tuned pool lookup. A caching allocator holds freed device blocks in size-classed pools and reuses them on subsequent allocation requests, avoiding the driver call in the fast path. Fragmentation is a real concern; the allocator manages it via block splitting/coalescing but does not eliminate it (D is false). B and C fabricate driver behavior.",
   "optionExplanations": {
-    "A": "Correct: this is the documented motivation for PyTorch's caching allocator and equivalent designs.",
+    "A": "Wrong: there is no such 1024-allocation limit.",
     "B": "Wrong: cudaMalloc'd memory is usable as a kernel argument; nothing forces zero-init.",
-    "C": "Wrong: there is no such 1024-allocation limit.",
+    "C": "Correct: this is the documented motivation for PyTorch's caching allocator and equivalent designs.",
     "D": "Wrong: caching allocators still have fragmentation; they mitigate it but do not eliminate it."
   },
   "assumptions": [
@@ -39,15 +53,30 @@
     "Does not imply that caching allocators are always ideal; long-running services may need periodic empty-cache calls to release memory back to the OS.",
     "Does not imply fragmentation is negligible; long training runs with variable shapes can suffer OOM from fragmentation."
   ],
-  "misconceptionTags": ["cudamalloc_free_myth", "fragmentation_free_myth"],
+  "misconceptionTags": [
+    "cudamalloc_free_myth",
+    "fragmentation_free_myth"
+  ],
   "distractorRationales": {
+    "A": "Fabricates driver limit.",
     "B": "Fabricates driver requirement.",
-    "C": "Fabricates driver limit.",
     "D": "Overstates fragmentation elimination."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "cudaMalloc/cudaFree synchronization semantics", "supports": ["A"] },
-    { "ref": "DOC:cuda-best", "locator": "Memory allocation best practices; pooling", "supports": ["A"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "cudaMalloc/cudaFree synchronization semantics",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Memory allocation best practices; pooling",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

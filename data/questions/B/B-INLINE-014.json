@@ -18,18 +18,34 @@
   },
   "stem": "Which statements about function inlining as a compiler optimization are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "Inlining eliminates the call/return overhead and enables intraprocedural optimizations (constant propagation, CSE, LICM) to see across the previous call boundary." },
-    { "id": "B", "text": "Aggressive inlining can hurt performance by inflating instruction cache footprint (icache misses), increasing register pressure, and slowing compile time; heuristics balance size and estimated benefit." },
-    { "id": "C", "text": "Recursive functions cannot be inlined at all; the compiler always emits them as separate call sites." },
-    { "id": "D", "text": "Indirect / virtual calls typically require devirtualization (via type information or profiling) before they can be inlined, since the target is not statically known." }
+    {
+      "id": "A",
+      "text": "Recursive functions cannot be inlined at all; the compiler always emits them as separate call sites."
+    },
+    {
+      "id": "B",
+      "text": "Indirect / virtual calls typically require devirtualization (via type information or profiling) before they can be inlined, since the target is not statically known."
+    },
+    {
+      "id": "C",
+      "text": "Inlining eliminates the call/return overhead and enables intraprocedural optimizations (constant propagation, CSE, LICM) to see across the previous call boundary."
+    },
+    {
+      "id": "D",
+      "text": "Aggressive inlining can hurt performance by inflating instruction cache footprint (icache misses), increasing register pressure, and slowing compile time; heuristics balance size and estimated benefit."
+    }
   ],
-  "correctAnswers": ["A", "B", "D"],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
   "explanation": "A: canonical benefit of inlining. B: canonical cost — icache pressure, register pressure, compile-time bloat. D: indirect calls need devirtualization (or PGO-guided speculative inlining) before they can be inlined. C is wrong: recursive functions CAN be inlined up to a bound (e.g., partial recursion unrolling for tail-recursive or bounded-depth cases); however, unbounded recursion prevents full inlining.",
   "optionExplanations": {
-    "A": "Correct: standard benefit.",
-    "B": "Correct: canonical costs; heuristics balance them.",
-    "C": "Wrong: bounded inlining of recursion is possible; unbounded is not.",
-    "D": "Correct: indirect calls need devirtualization first."
+    "A": "Wrong: bounded inlining of recursion is possible; unbounded is not.",
+    "B": "Correct: indirect calls need devirtualization first.",
+    "C": "Correct: standard benefit.",
+    "D": "Correct: canonical costs; heuristics balance them."
   },
   "assumptions": [
     "Standard compiler with an inlining heuristic (size/benefit model)."
@@ -38,13 +54,32 @@
     "Does not imply -O3 always inlines aggressively; heuristics may limit inlining based on caller/callee size.",
     "Does not imply all indirect calls are irrecoverable; profiling and type-based devirtualization can convert many into direct calls."
   ],
-  "misconceptionTags": ["inlining_always_wins_myth", "recursive_never_inlined"],
+  "misconceptionTags": [
+    "inlining_always_wins_myth",
+    "recursive_never_inlined"
+  ],
   "distractorRationales": {
-    "C": "Overstates the recursion barrier."
+    "A": "Overstates the recursion barrier."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Inlining chapter", "supports": ["A", "B", "D"] },
-    { "ref": "BOOK:appel", "locator": "Inlining and interprocedural analysis chapter", "supports": ["A", "B", "D"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Inlining chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Inlining and interprocedural analysis chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

@@ -27,11 +27,11 @@
     },
     {
       "id": "B",
-      "text": "TVM's Bring-Your-Own-Codegen (BYOC) and extern-op mechanisms let a Relax op be lowered to an opaque call into a target library instead of a generated PrimFunc; the compiler treats such calls as black boxes at fusion and scheduling time but still tracks shapes/dtypes at the graph level."
+      "text": "TVM cannot call any external library from a compiled Relax program; all compute must be expressed as generated PrimFunc bodies to be executable by the Relax VM."
     },
     {
       "id": "C",
-      "text": "TVM cannot call any external library from a compiled Relax program; all compute must be expressed as generated PrimFunc bodies to be executable by the Relax VM."
+      "text": "TVM's Bring-Your-Own-Codegen (BYOC) and extern-op mechanisms let a Relax op be lowered to an opaque call into a target library instead of a generated PrimFunc; the compiler treats such calls as black boxes at fusion and scheduling time but still tracks shapes/dtypes at the graph level."
     },
     {
       "id": "D",
@@ -39,13 +39,13 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "C"
   ],
   "explanation": "TVM's BYOC framework and extern-op mechanism allow a Relax op or subgraph to be lowered to an opaque call into a third-party library (cuBLAS, cuDNN, TensorRT, MKL, etc.). The compiler still knows the shape/dtype at the graph level (for verification and downstream layout planning) but does not see the library's internal loops — so the call is a black box for TensorIR-level scheduling and fusion. This coexists with generated PrimFunc code paths, and both can appear in a single compiled artifact.",
   "optionExplanations": {
-    "B": "Correct: BYOC/extern ops give opaque calls with graph-level shape/dtype visibility.",
     "A": "Wrong: external calls are not inlined into TensorIR; the library is not a PrimFunc.",
-    "C": "Wrong: external calls are supported.",
+    "B": "Wrong: external calls are supported.",
+    "C": "Correct: BYOC/extern ops give opaque calls with graph-level shape/dtype visibility.",
     "D": "Wrong: GPU libraries (cuBLAS/cuDNN/TensorRT) are core BYOC targets."
   },
   "assumptions": [
@@ -61,7 +61,7 @@
   ],
   "distractorRationales": {
     "A": "Confuses opaque calls with inlined loops.",
-    "C": "Ignores extern-op support entirely.",
+    "B": "Ignores extern-op support entirely.",
     "D": "Wrong claim that BYOC is CPU-only."
   },
   "sourceRefs": [
@@ -69,7 +69,7 @@
       "ref": "DOC:tvm-relax",
       "locator": "BYOC / external library integration",
       "supports": [
-        "B"
+        "C"
       ]
     }
   ],

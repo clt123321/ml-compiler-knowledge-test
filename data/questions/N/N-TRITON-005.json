@@ -19,18 +19,32 @@
   },
   "stem": "The Triton paper positions its programming abstraction at the 'tile' (block-of-elements) level rather than at the CUDA thread level. What is the primary design intent argued in the paper?",
   "options": [
-    { "id": "A", "text": "Programmers write kernels over blocks of elements; the compiler translates tile-level ops into per-thread PTX with coalescing, shared-memory staging and register tiling handled automatically, so users focus on block shapes and memory access patterns rather than per-thread indexing." },
-    { "id": "B", "text": "Triton is a strict superset of CUDA where every CUDA program is also a valid Triton program; the tile abstraction only adds convenience macros without changing what the programmer must reason about." },
-    { "id": "C", "text": "Triton is a runtime library that dispatches PyTorch operators to hand-written CUDA kernels; the 'tile' terminology refers to caching policies inside the dispatcher." },
-    { "id": "D", "text": "Triton targets CPUs and TPUs but not GPUs; the tile IR was designed to hide vendor-specific GPU details that the paper explicitly declines to support." }
+    {
+      "id": "A",
+      "text": "Triton targets CPUs and TPUs but not GPUs; the tile IR was designed to hide vendor-specific GPU details that the paper explicitly declines to support."
+    },
+    {
+      "id": "B",
+      "text": "Triton is a strict superset of CUDA where every CUDA program is also a valid Triton program; the tile abstraction only adds convenience macros without changing what the programmer must reason about."
+    },
+    {
+      "id": "C",
+      "text": "Triton is a runtime library that dispatches PyTorch operators to hand-written CUDA kernels; the 'tile' terminology refers to caching policies inside the dispatcher."
+    },
+    {
+      "id": "D",
+      "text": "Programmers write kernels over blocks of elements; the compiler translates tile-level ops into per-thread PTX with coalescing, shared-memory staging and register tiling handled automatically, so users focus on block shapes and memory access patterns rather than per-thread indexing."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "The Triton paper's tile-level abstraction is the key design decision: users express computation over blocks/tiles of elements; the compiler is responsible for translating those tile ops into per-thread PTX, handling coalescing, shared-memory staging and register tiling. This is a middle abstraction between raw CUDA thread programming and high-level tensor libraries, aimed at competitive performance with much less per-thread bookkeeping.",
   "optionExplanations": {
-    "A": "Correct: tile-level abstraction with compiler-emitted per-thread code.",
+    "A": "Wrong: Triton primarily targets NVIDIA GPUs.",
     "B": "Wrong: Triton is not a superset of CUDA; the user does not write per-thread code.",
     "C": "Wrong: Triton is a compiler for kernels, not a dispatcher over hand-written CUDA.",
-    "D": "Wrong: Triton primarily targets NVIDIA GPUs."
+    "D": "Correct: tile-level abstraction with compiler-emitted per-thread code."
   },
   "assumptions": [
     "Familiarity with Triton paper §2–§3."
@@ -39,14 +53,23 @@
     "Does not imply Triton beats hand-tuned CUDA on every kernel.",
     "Does not imply users can ignore memory access patterns; block shapes and offsets remain user-facing."
   ],
-  "misconceptionTags": ["triton_superset_cuda", "triton_is_dispatcher"],
+  "misconceptionTags": [
+    "triton_superset_cuda",
+    "triton_is_dispatcher"
+  ],
   "distractorRationales": {
+    "A": "Wrong hardware target.",
     "B": "Confuses tile-level abstraction with a CUDA extension.",
-    "C": "Confuses compiler with runtime dispatcher.",
-    "D": "Wrong hardware target."
+    "C": "Confuses compiler with runtime dispatcher."
   },
   "sourceRefs": [
-    { "ref": "PAPER:triton", "locator": "§2–§3 tile-level abstraction and compiler responsibilities", "supports": ["A"] }
+    {
+      "ref": "PAPER:triton",
+      "locator": "§2–§3 tile-level abstraction and compiler responsibilities",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

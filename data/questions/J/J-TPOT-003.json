@@ -19,17 +19,31 @@
   },
   "stem": "Which definition of TPOT (Time Per Output Token, also called inter-token latency) is correct?",
   "options": [
-    { "id": "A", "text": "TPOT is the average wall-clock time between consecutive output tokens after the first token, per request. It excludes TTFT and captures how fast the decode phase runs; for a request generating M tokens, total latency ≈ TTFT + (M-1) * TPOT." },
-    { "id": "B", "text": "TPOT is the server's overall tokens-per-second throughput divided by the number of concurrent requests; it is a purely server-level metric that has no per-request interpretation." },
-    { "id": "C", "text": "TPOT is the total generation time (TTFT plus all decode steps) divided by the total number of output tokens; it is therefore equal to end-to-end latency per output token including the prefill amortization." },
-    { "id": "D", "text": "TPOT is the elapsed time of the prefill phase divided by the number of prompt tokens; it measures per-prompt-token processing efficiency." }
+    {
+      "id": "A",
+      "text": "TPOT is the total generation time (TTFT plus all decode steps) divided by the total number of output tokens; it is therefore equal to end-to-end latency per output token including the prefill amortization."
+    },
+    {
+      "id": "B",
+      "text": "TPOT is the server's overall tokens-per-second throughput divided by the number of concurrent requests; it is a purely server-level metric that has no per-request interpretation."
+    },
+    {
+      "id": "C",
+      "text": "TPOT is the average wall-clock time between consecutive output tokens after the first token, per request. It excludes TTFT and captures how fast the decode phase runs; for a request generating M tokens, total latency ≈ TTFT + (M-1) * TPOT."
+    },
+    {
+      "id": "D",
+      "text": "TPOT is the elapsed time of the prefill phase divided by the number of prompt tokens; it measures per-prompt-token processing efficiency."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "TPOT (Time Per Output Token), also called inter-token latency, is the average wall-clock gap between successive output tokens after the first, per request. Total per-request latency = TTFT + (M-1) * TPOT for an M-token response. TPOT reflects decode-phase speed and is user-perceived as generation smoothness; it is directly bounded by KV-cache read bandwidth on batch-1 decode.",
   "optionExplanations": {
-    "A": "Correct: standard TPOT definition.",
+    "A": "Wrong: conflates TTFT and TPOT; TPOT excludes TTFT by convention.",
     "B": "Wrong: describes throughput per concurrent user, not TPOT.",
-    "C": "Wrong: conflates TTFT and TPOT; TPOT excludes TTFT by convention.",
+    "C": "Correct: standard TPOT definition.",
     "D": "Wrong: describes a prefill-phase efficiency metric, not TPOT."
   },
   "assumptions": [
@@ -40,15 +54,30 @@
     "Does not imply TPOT alone determines user experience; TTFT and total latency also matter.",
     "Does not imply TPOT is constant across steps; long-context decode can slow down as KV grows."
   ],
-  "misconceptionTags": ["tpot_includes_ttft", "tpot_throughput_confusion"],
+  "misconceptionTags": [
+    "tpot_includes_ttft",
+    "tpot_throughput_confusion"
+  ],
   "distractorRationales": {
+    "A": "Mixes TTFT into TPOT.",
     "B": "Confuses TPOT with throughput.",
-    "C": "Mixes TTFT into TPOT.",
     "D": "Confuses with a prefill efficiency metric."
   },
   "sourceRefs": [
-    { "ref": "DOC:vllm", "locator": "Metrics documentation", "supports": ["A"] },
-    { "ref": "DOC:trtllm", "locator": "Performance metrics", "supports": ["A"] }
+    {
+      "ref": "DOC:vllm",
+      "locator": "Metrics documentation",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:trtllm",
+      "locator": "Performance metrics",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

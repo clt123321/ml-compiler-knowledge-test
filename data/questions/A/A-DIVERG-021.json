@@ -11,7 +11,10 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere (sm_80)",
     "device": "GPU",
-    "requiredFeatures": ["warp size 32", "SIMT divergence handling"]
+    "requiredFeatures": [
+      "warp size 32",
+      "SIMT divergence handling"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
@@ -19,18 +22,33 @@
   "codeSnippet": "// Kernel dispatched with 1024 threads/block; each thread computes a per-lane path.\n__global__ void div_kernel(const float* __restrict__ x, float* __restrict__ y) {\n    int tid = blockIdx.x * blockDim.x + threadIdx.x;\n    float v = x[tid];\n    if (v > 0.0f) {\n        y[tid] = expensive_path_a(v);   // takes T_A cycles\n    } else {\n        y[tid] = expensive_path_b(v);   // takes T_B cycles\n    }\n}",
   "stem": "A CUDA kernel executes an if/else branch that produces two disjoint code paths of similar cost (T_A ≈ T_B ≈ T). Which of the following statements about divergence within a warp are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "If all 32 threads in a warp take the same side of the branch, no divergence penalty is incurred; the branch behaves like a single-path warp." },
-    { "id": "B", "text": "If the warp splits (some threads take path A, others path B), the two subsets execute serially and total warp time is approximately T_A + T_B (both paths are covered under mask), not max(T_A, T_B)." },
-    { "id": "C", "text": "Divergence is per-block, not per-warp; as long as the block executes both branches somewhere, the compiler predicates the whole block uniformly." },
-    { "id": "D", "text": "Post-Volta independent thread scheduling changes the SIMT semantics so that both branches now truly execute in parallel within a warp with no serialization cost, eliminating warp divergence entirely." }
+    {
+      "id": "A",
+      "text": "Post-Volta independent thread scheduling changes the SIMT semantics so that both branches now truly execute in parallel within a warp with no serialization cost, eliminating warp divergence entirely."
+    },
+    {
+      "id": "B",
+      "text": "If all 32 threads in a warp take the same side of the branch, no divergence penalty is incurred; the branch behaves like a single-path warp."
+    },
+    {
+      "id": "C",
+      "text": "If the warp splits (some threads take path A, others path B), the two subsets execute serially and total warp time is approximately T_A + T_B (both paths are covered under mask), not max(T_A, T_B)."
+    },
+    {
+      "id": "D",
+      "text": "Divergence is per-block, not per-warp; as long as the block executes both branches somewhere, the compiler predicates the whole block uniformly."
+    }
   ],
-  "correctAnswers": ["A", "B"],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
   "explanation": "A: SIMT divergence is only an issue when threads in the same warp take different branch sides; a uniform branch has no divergence cost. B: Under divergence, the hardware masks off threads not taking a side and executes each side in turn, so warp wall time ≈ sum of side durations under mask; only threads on each side make progress at a time. C is wrong: divergence is a warp-level property, not block-level. D is wrong: independent thread scheduling improves correctness (deadlock-freedom, reconvergence flexibility) but does not eliminate serialization of divergent paths within a warp.",
   "optionExplanations": {
-    "A": "Correct: uniform warps skip the divergence penalty entirely.",
-    "B": "Correct: divergent warps serialize the taken/not-taken sides using lane masking.",
-    "C": "Wrong: divergence is per-warp; different warps in the same block can independently take different sides without penalizing each other.",
-    "D": "Wrong: Volta+ independent thread scheduling changed reconvergence semantics but did not remove per-warp serialization of divergent branches."
+    "A": "Wrong: Volta+ independent thread scheduling changed reconvergence semantics but did not remove per-warp serialization of divergent branches.",
+    "B": "Correct: uniform warps skip the divergence penalty entirely.",
+    "C": "Correct: divergent warps serialize the taken/not-taken sides using lane masking.",
+    "D": "Wrong: divergence is per-warp; different warps in the same block can independently take different sides without penalizing each other."
   },
   "assumptions": [
     "Both branch paths have similar cost T_A ≈ T_B and neither is trivially compiled to predicated math.",
@@ -40,14 +58,31 @@
     "Does not imply that eliminating all branches always helps; small predicated branches may be cheaper than restructuring.",
     "Does not imply divergent warps waste all their bandwidth; masked-off threads still occupy warp slots but do not perform useful work during their masked-off cycles."
   ],
-  "misconceptionTags": ["divergence_block_scope_error", "volta_divergence_myth"],
+  "misconceptionTags": [
+    "divergence_block_scope_error",
+    "volta_divergence_myth"
+  ],
   "distractorRationales": {
-    "C": "Confuses warp with block scope.",
-    "D": "Version-leak misinterpretation of independent thread scheduling."
+    "A": "Version-leak misinterpretation of independent thread scheduling.",
+    "D": "Confuses warp with block scope."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "SIMT architecture, branch divergence, independent thread scheduling", "supports": ["A", "B"] },
-    { "ref": "BOOK:pmpp4", "locator": "Warp divergence chapter", "supports": ["A", "B"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "SIMT architecture, branch divergence, independent thread scheduling",
+      "supports": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Warp divergence chapter",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

@@ -20,16 +20,30 @@
   "stem": "A serving stack uses dynamic batching (each 'batch' completes fully before the next batch starts). The following aggregated metrics are observed for a workload with heterogeneous output lengths. What is the correct diagnosis?",
   "profileData": "Server: 8 concurrent requests batched per iteration.\n  Output length distribution across a batch: 15, 20, 22, 28, 30, 35, 800, 40 tokens.\n  Observed metrics (per batch):\n    - GPU utilization during first 40 decode steps: ~78%\n    - GPU utilization during decode steps 41 through 800: ~13%\n    - Wall time: 800 * ~20 ms = ~16 s\n    - Requests 1-7 (short) block waiting for request 8 to complete before returning.\n    - New arriving requests wait for the batch to finish before being scheduled.",
   "options": [
-    { "id": "A", "text": "The workload is memory-bound during long decode; the correct fix is to enable KV cache quantization to speed up decode steps 41-800, which will bring GPU utilization back up." },
-    { "id": "B", "text": "This is head-of-line blocking under request-level (static) dynamic batching: the batch is dominated by the single long request, wasting SM cycles on almost-empty batches and delaying shorter requests. The right fix is to move to continuous (iteration-level) batching so shorter requests can leave the batch and new requests can join per iteration." },
-    { "id": "C", "text": "The bottleneck is compute-bound decode; adding a smaller draft model for speculative decoding will improve utilization by generating multiple tokens per verification step." },
-    { "id": "D", "text": "This is a launch-overhead problem: 800 kernel launches per decode step create CPU-side dispatch gaps. The correct fix is CUDA Graph capture of the decode loop." }
+    {
+      "id": "A",
+      "text": "This is head-of-line blocking under request-level (static) dynamic batching: the batch is dominated by the single long request, wasting SM cycles on almost-empty batches and delaying shorter requests. The right fix is to move to continuous (iteration-level) batching so shorter requests can leave the batch and new requests can join per iteration."
+    },
+    {
+      "id": "B",
+      "text": "The workload is memory-bound during long decode; the correct fix is to enable KV cache quantization to speed up decode steps 41-800, which will bring GPU utilization back up."
+    },
+    {
+      "id": "C",
+      "text": "The bottleneck is compute-bound decode; adding a smaller draft model for speculative decoding will improve utilization by generating multiple tokens per verification step."
+    },
+    {
+      "id": "D",
+      "text": "This is a launch-overhead problem: 800 kernel launches per decode step create CPU-side dispatch gaps. The correct fix is CUDA Graph capture of the decode loop."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "The signature is textbook static-batching head-of-line blocking: after the first ~40 decode steps, only one request (the 800-token one) remains active, but the batched kernel still runs at effective batch size 1, wasting SM parallelism. All shorter requests are held in the batch until the longest finishes; new requests cannot enter until the whole batch completes. Continuous (iteration-level) batching — Orca's contribution and vLLM's core scheduler — fixes exactly this by allowing per-iteration join/leave.",
   "optionExplanations": {
-    "B": "Correct: HoL blocking under static batching, fixed by continuous batching.",
-    "A": "Wrong: KV quantization does not address the batch composition problem.",
+    "A": "Correct: HoL blocking under static batching, fixed by continuous batching.",
+    "B": "Wrong: KV quantization does not address the batch composition problem.",
     "C": "Wrong: decode is memory-bound at batch-1; spec decoding helps but does not solve the imbalance.",
     "D": "Wrong: launch overhead is not the primary cause; the batch is running one long generation."
   },
@@ -41,15 +55,30 @@
     "Does not imply KV quantization or CUDA Graphs are never useful; they are orthogonal levers.",
     "Does not imply continuous batching solves all imbalance; extreme variance still requires additional policies (preemption, chunked prefill)."
   ],
-  "misconceptionTags": ["kv_quant_solves_batching_myth", "cuda_graph_solves_batching_myth"],
+  "misconceptionTags": [
+    "kv_quant_solves_batching_myth",
+    "cuda_graph_solves_batching_myth"
+  ],
   "distractorRationales": {
-    "A": "Wrong root cause.",
+    "B": "Wrong root cause.",
     "C": "Orthogonal technique.",
     "D": "Wrong bottleneck class."
   },
   "sourceRefs": [
-    { "ref": "PAPER:orca", "locator": "Sec 3 — iteration-level scheduling motivation", "supports": ["B"] },
-    { "ref": "DOC:vllm", "locator": "Continuous batching / scheduler", "supports": ["B"] }
+    {
+      "ref": "PAPER:orca",
+      "locator": "Sec 3 — iteration-level scheduling motivation",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "Continuous batching / scheduler",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

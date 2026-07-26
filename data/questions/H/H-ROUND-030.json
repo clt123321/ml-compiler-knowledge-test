@@ -18,16 +18,30 @@
   },
   "stem": "Two commonly discussed rounding modes for quantization are round-half-to-even (RNE) and stochastic rounding. Which pair correctly describes them?",
   "options": [
-    { "id": "A", "text": "RNE rounds to the nearest representable value, with exact half-way ties broken toward the even neighbor (IEEE 754 default; deterministic). Stochastic rounding rounds up or down probabilistically in proportion to distance to each neighbor, producing an unbiased estimator that is useful for training in very low precision (e.g., BF16 or FP8 gradient accumulation)." },
-    { "id": "B", "text": "RNE and stochastic rounding produce the same values; the only difference is that stochastic rounding uses a random seed." },
-    { "id": "C", "text": "RNE always rounds down (floor); stochastic rounding always rounds up. Both are deterministic." },
-    { "id": "D", "text": "Stochastic rounding is illegal for quantization because it produces non-deterministic outputs that violate correctness testing." }
+    {
+      "id": "A",
+      "text": "RNE and stochastic rounding produce the same values; the only difference is that stochastic rounding uses a random seed."
+    },
+    {
+      "id": "B",
+      "text": "RNE rounds to the nearest representable value, with exact half-way ties broken toward the even neighbor (IEEE 754 default; deterministic). Stochastic rounding rounds up or down probabilistically in proportion to distance to each neighbor, producing an unbiased estimator that is useful for training in very low precision (e.g., BF16 or FP8 gradient accumulation)."
+    },
+    {
+      "id": "C",
+      "text": "RNE always rounds down (floor); stochastic rounding always rounds up. Both are deterministic."
+    },
+    {
+      "id": "D",
+      "text": "Stochastic rounding is illegal for quantization because it produces non-deterministic outputs that violate correctness testing."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "RNE (round-half-to-even, also called banker's rounding) is the IEEE 754 default: round to nearest and break ties toward the even neighbor. Stochastic rounding assigns a probability to each of the two neighbors proportional to distance: e.g., a value 0.7 rounds to 1 with probability 0.7 and to 0 with probability 0.3. Expectation matches the true value → unbiased. Stochastic rounding is used for low-precision training (BF16/FP8 gradient accumulation, INT-only training) to preserve small gradient updates that RNE would systematically round away. Options B, C, D misdescribe or forbid.",
   "optionExplanations": {
-    "A": "Correct: standard definitions and use cases.",
-    "B": "Wrong: they produce different values.",
+    "A": "Wrong: they produce different values.",
+    "B": "Correct: standard definitions and use cases.",
     "C": "Wrong: neither rounds always up or always down.",
     "D": "Wrong: stochastic rounding is used in production for low-precision training."
   },
@@ -39,15 +53,29 @@
     "Does not imply stochastic rounding is uniformly superior — for inference, deterministic RNE is preferred.",
     "Does not imply hardware always supports stochastic rounding; it is opt-in on some accelerators."
   ],
-  "misconceptionTags": ["rne_stochastic_confusion"],
+  "misconceptionTags": [
+    "rne_stochastic_confusion"
+  ],
   "distractorRationales": {
-    "B": "Denies real value difference.",
+    "A": "Denies real value difference.",
     "C": "Confuses rounding modes with floor/ceil.",
     "D": "Forbids a well-established technique."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "Rounding modes for quantization", "supports": ["A"] },
-    { "ref": "BOOK:pmpp4", "locator": "IEEE 754 rounding modes", "supports": ["A"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Rounding modes for quantization",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "IEEE 754 rounding modes",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

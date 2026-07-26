@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Tiling changes the compute definition (the arithmetic done at each output element) and therefore alters numerical results; correctness must be verified against a reference implementation. Under this reading, tiling in Halide/TVM changes the arithmetic performed at each output element by folding partial sums along the tile boundary; correctness must therefore be verified against a reference implementation after every tile-size change."
+      "text": "Tiling is a schedule transformation that reorders and splits the loop nest while preserving the compute expression's semantics; it does not change what is computed, only when and in what group each iteration runs, which affects locality and parallelism. In this account, tiling is a graph-level operator-fusion pass performed on the operator IR; splitting the loops is the mechanism used to fuse the matmul with adjacent pointwise ops in the graph IR, and this is the sole reason for applying tiling to a schedule."
     },
     {
       "id": "B",
@@ -30,7 +30,7 @@
     },
     {
       "id": "C",
-      "text": "Tiling is a schedule transformation that reorders and splits the loop nest while preserving the compute expression's semantics; it does not change what is computed, only when and in what group each iteration runs, which affects locality and parallelism. In this account, tiling is a graph-level operator-fusion pass performed on the operator IR; splitting the loops is the mechanism used to fuse the matmul with adjacent pointwise ops in the graph IR, and this is the sole reason for applying tiling to a schedule."
+      "text": "Tiling changes the compute definition (the arithmetic done at each output element) and therefore alters numerical results; correctness must be verified against a reference implementation. Under this reading, tiling in Halide/TVM changes the arithmetic performed at each output element by folding partial sums along the tile boundary; correctness must therefore be verified against a reference implementation after every tile-size change."
     },
     {
       "id": "D",
@@ -38,13 +38,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "In the Halide/TVM design, the compute (what to compute) is separated from the schedule (how to compute it). Tiling and reordering are schedule primitives: they restructure the loop nest to improve locality, expose parallelism, or enable vectorization, without changing the underlying computation. Correctness is preserved by construction as long as the primitives obey the dependence constraints (matmul over `k` is associative-under-FP-reordering caveats, but iteration reordering across tiles of `(i,j)` is safe).",
   "optionExplanations": {
-    "A": "Wrong: tiling is a schedule primitive; it does not change the compute expression. FP reordering caveats can appear only when the reduction dim's order changes.",
-    "C": "Correct: this is the canonical description of Halide/TVM's schedule discipline.",
+    "A": "Correct: this is the canonical description of Halide/TVM's schedule discipline.",
     "B": "Wrong: tiling is loop-level scheduling. Operator fusion is a different transformation and happens at a different IR level.",
+    "C": "Wrong: tiling is a schedule primitive; it does not change the compute expression. FP reordering caveats can appear only when the reduction dim's order changes.",
     "D": "Wrong: strength reduction reduces expensive ops to cheaper ones; that is not what tiling does."
   },
   "assumptions": [
@@ -60,8 +60,8 @@
     "tiling_is_fusion"
   ],
   "distractorRationales": {
-    "A": "Confuses schedule with compute; changes semantics claim is unsupported.",
     "B": "Conflates loop-level tiling with graph-level fusion.",
+    "C": "Confuses schedule with compute; changes semantics claim is unsupported.",
     "D": "Wrong association with strength reduction."
   },
   "sourceRefs": [
@@ -69,14 +69,14 @@
       "ref": "PAPER:halide",
       "locator": "Compute vs. schedule separation; split/reorder/tile primitives",
       "supports": [
-        "C"
+        "A"
       ]
     },
     {
       "ref": "PAPER:tvm",
       "locator": "Compute description and schedule primitives",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

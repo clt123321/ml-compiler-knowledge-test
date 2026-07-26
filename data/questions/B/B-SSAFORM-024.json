@@ -19,18 +19,32 @@
   "irSnippet": "; SSA before out-of-SSA:\nbb_merge:\n  %a = phi i32 [%x, %P1], [%y, %P2]\n  %b = phi i32 [%y, %P1], [%x, %P2]\n\n; Naive lowering inserts at end of each predecessor:\n; In %P1: a := x; b := y\n; In %P2: a := y; b := x\n; but if we later assign both phis to the same physical register class, sequential copies may lose values.",
   "stem": "During out-of-SSA translation, a compiler lowers phi functions into copies at predecessor block ends. Which statement about this lowering is correct, particularly regarding the swap / lost-copy issue?",
   "options": [
-    { "id": "A", "text": "Naive sequential copy insertion at predecessor ends can be incorrect when multiple phis form a cycle (e.g., swap: %a and %b exchange values). Correct lowering must schedule copies to respect the parallel-copy semantics of phi (all phis fire simultaneously), typically using a temporary register or scheduling algorithms like Sreedhar's or Boissinot's." },
-    { "id": "B", "text": "Out-of-SSA lowering trivially inserts one move per phi at the merge block; no predecessor-side changes are needed." },
-    { "id": "C", "text": "Out-of-SSA lowering requires all phi functions to be first converted to `select` instructions; only then can the code generator produce copies." },
-    { "id": "D", "text": "Modern optimizers avoid out-of-SSA lowering entirely by preserving phi nodes into machine code emission." }
+    {
+      "id": "A",
+      "text": "Modern optimizers avoid out-of-SSA lowering entirely by preserving phi nodes into machine code emission."
+    },
+    {
+      "id": "B",
+      "text": "Out-of-SSA lowering trivially inserts one move per phi at the merge block; no predecessor-side changes are needed."
+    },
+    {
+      "id": "C",
+      "text": "Out-of-SSA lowering requires all phi functions to be first converted to `select` instructions; only then can the code generator produce copies."
+    },
+    {
+      "id": "D",
+      "text": "Naive sequential copy insertion at predecessor ends can be incorrect when multiple phis form a cycle (e.g., swap: %a and %b exchange values). Correct lowering must schedule copies to respect the parallel-copy semantics of phi (all phis fire simultaneously), typically using a temporary register or scheduling algorithms like Sreedhar's or Boissinot's."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Phi functions have parallel-copy semantics — all phis at a block are conceptually assigned simultaneously. Naively serializing them into predecessor-block copies can miscompile swap-like patterns. Correct out-of-SSA algorithms (Sreedhar, Boissinot) either schedule copies with temporaries or use permutation-decomposition to preserve semantics. Options B, C, D contain factual errors: B ignores that phis fire from predecessor edges; C describes an unrelated substitution; D is wrong because machine code cannot express phi natively.",
   "optionExplanations": {
-    "A": "Correct: parallel-copy semantics plus swap problem require careful scheduling.",
+    "A": "Wrong: machine code has no phi instruction; SSA must be lowered before or during instruction selection.",
     "B": "Wrong: phi lowering happens at predecessor edges, not at the merge block, because each incoming value corresponds to a specific predecessor.",
     "C": "Wrong: converting phi to select requires speculating both branches; not applicable to control-flow merges with side effects.",
-    "D": "Wrong: machine code has no phi instruction; SSA must be lowered before or during instruction selection."
+    "D": "Correct: parallel-copy semantics plus swap problem require careful scheduling."
   },
   "assumptions": [
     "Standard SSA and out-of-SSA algorithms (Sreedhar, Boissinot).",
@@ -40,15 +54,30 @@
     "Does not imply out-of-SSA is the only way; SSA-based register allocation can operate directly on SSA form.",
     "Does not imply the swap problem always occurs; simple non-cyclic phi patterns lower without temporaries."
   ],
-  "misconceptionTags": ["phi_serialization_bug", "phi_native_machine_code_myth"],
+  "misconceptionTags": [
+    "phi_serialization_bug",
+    "phi_native_machine_code_myth"
+  ],
   "distractorRationales": {
+    "A": "Falsely claims machine code supports phi.",
     "B": "Ignores predecessor-edge nature of phi.",
-    "C": "Misattributes lowering to select conversion.",
-    "D": "Falsely claims machine code supports phi."
+    "C": "Misattributes lowering to select conversion."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Out-of-SSA translation chapter", "supports": ["A"] },
-    { "ref": "BOOK:appel", "locator": "SSA construction and destruction chapter", "supports": ["A"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Out-of-SSA translation chapter",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "SSA construction and destruction chapter",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

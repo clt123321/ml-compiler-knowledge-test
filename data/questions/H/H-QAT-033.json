@@ -18,17 +18,31 @@
   },
   "stem": "In quantization-aware training (QAT), the 'straight-through estimator' (STE) is used to backprop through fake-quant ops. Which best describes STE and its limitations?",
   "options": [
-    { "id": "A", "text": "STE approximates the derivative of `round` (which is zero almost everywhere) as identity on the interior of the clamp region, so gradients pass through the fake-quant op as if it were a no-op. This works well in practice for INT8 but becomes noisier at very low bit widths (INT2/INT3), motivating alternatives like PACT or LSQ that learn better step sizes." },
-    { "id": "B", "text": "STE is a mathematical identity, not an approximation; the derivative of `round` inside the clamp region actually equals 1." },
-    { "id": "C", "text": "STE is only used during inference to accelerate quantized kernels; it has no role during training." },
-    { "id": "D", "text": "STE requires the loss to be differentiable everywhere including at the quantization boundaries; if any input lands exactly on a boundary, the training run must be aborted." }
+    {
+      "id": "A",
+      "text": "STE is only used during inference to accelerate quantized kernels; it has no role during training."
+    },
+    {
+      "id": "B",
+      "text": "STE is a mathematical identity, not an approximation; the derivative of `round` inside the clamp region actually equals 1."
+    },
+    {
+      "id": "C",
+      "text": "STE approximates the derivative of `round` (which is zero almost everywhere) as identity on the interior of the clamp region, so gradients pass through the fake-quant op as if it were a no-op. This works well in practice for INT8 but becomes noisier at very low bit widths (INT2/INT3), motivating alternatives like PACT or LSQ that learn better step sizes."
+    },
+    {
+      "id": "D",
+      "text": "STE requires the loss to be differentiable everywhere including at the quantization boundaries; if any input lands exactly on a boundary, the training run must be aborted."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "STE is an approximation: because `round` has zero derivative almost everywhere and undefined derivative at half-integer points, gradient descent needs a workable surrogate. The straight-through estimator treats round's derivative as identity inside the clamp region and zero outside, letting gradients flow to preceding layers. It works well for INT8 QAT and modestly for INT4; below that, methods like PACT (learned clip point) or LSQ (learned step size) reduce STE noise. Options B, C, D misdescribe STE or its scope.",
   "optionExplanations": {
-    "A": "Correct: STE as an approximation and its bit-width sensitivity.",
+    "A": "Wrong: STE is a training-time construct.",
     "B": "Wrong: STE is an approximation, not identity.",
-    "C": "Wrong: STE is a training-time construct.",
+    "C": "Correct: STE as an approximation and its bit-width sensitivity.",
     "D": "Wrong: half-integer inputs are handled by rounding; no training abort is required."
   },
   "assumptions": [
@@ -38,14 +52,23 @@
     "Does not imply STE converges to the same optima as full-precision training — some accuracy gap can remain.",
     "Does not imply LSQ / PACT always beat STE — for INT8 they may be indistinguishable."
   ],
-  "misconceptionTags": ["ste_exact", "ste_inference_only"],
+  "misconceptionTags": [
+    "ste_exact",
+    "ste_inference_only"
+  ],
   "distractorRationales": {
+    "A": "Confuses STE with runtime.",
     "B": "Denies STE's approximation nature.",
-    "C": "Confuses STE with runtime.",
     "D": "Fabricates a fatal boundary condition."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "QAT and straight-through estimator", "supports": ["A"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "QAT and straight-through estimator",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

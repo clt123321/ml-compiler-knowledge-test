@@ -18,16 +18,30 @@
   },
   "stem": "Which row correctly gives the (sign, exponent, mantissa) bit widths for FP32, FP16, and BF16 respectively?",
   "options": [
-    { "id": "A", "text": "FP32 = (1, 8, 23), FP16 = (1, 5, 10), BF16 = (1, 8, 7)." },
-    { "id": "B", "text": "FP32 = (1, 8, 23), FP16 = (1, 8, 7), BF16 = (1, 5, 10)." },
-    { "id": "C", "text": "FP32 = (1, 10, 21), FP16 = (1, 5, 10), BF16 = (1, 4, 11)." },
-    { "id": "D", "text": "FP32 = (1, 8, 23), FP16 = (1, 5, 10), BF16 = (1, 5, 10)." }
+    {
+      "id": "A",
+      "text": "FP32 = (1, 8, 23), FP16 = (1, 8, 7), BF16 = (1, 5, 10)."
+    },
+    {
+      "id": "B",
+      "text": "FP32 = (1, 8, 23), FP16 = (1, 5, 10), BF16 = (1, 8, 7)."
+    },
+    {
+      "id": "C",
+      "text": "FP32 = (1, 10, 21), FP16 = (1, 5, 10), BF16 = (1, 4, 11)."
+    },
+    {
+      "id": "D",
+      "text": "FP32 = (1, 8, 23), FP16 = (1, 5, 10), BF16 = (1, 5, 10)."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "FP32 is IEEE 754 single: 1 sign, 8 exponent, 23 mantissa (24 bit precision with the implicit leading 1). FP16 is IEEE 754 half: 1 sign, 5 exponent, 10 mantissa. BF16 was designed with the same 8-bit exponent as FP32 (matching dynamic range) and a truncated mantissa: 1 sign, 8 exponent, 7 mantissa. BF16's rationale is dynamic-range preservation at the cost of mantissa precision.",
   "optionExplanations": {
-    "A": "Correct: standard IEEE 754 and Google BF16 layouts.",
-    "B": "Wrong: swaps FP16 and BF16 exponent widths.",
+    "A": "Wrong: swaps FP16 and BF16 exponent widths.",
+    "B": "Correct: standard IEEE 754 and Google BF16 layouts.",
     "C": "Wrong: FP32 has 8 exponent bits, not 10.",
     "D": "Wrong: BF16 differs from FP16 in exponent/mantissa split."
   },
@@ -38,15 +52,29 @@
     "Does not imply BF16 is universally superior to FP16; BF16's larger dynamic range comes with reduced mantissa precision.",
     "Does not describe FP8, TF32, or FP4 formats."
   ],
-  "misconceptionTags": ["fp16_bf16_confusion"],
+  "misconceptionTags": [
+    "fp16_bf16_confusion"
+  ],
   "distractorRationales": {
-    "B": "Common confusion between FP16 and BF16 layouts.",
+    "A": "Common confusion between FP16 and BF16 layouts.",
     "C": "Invents FP32 exponent width.",
     "D": "Treats BF16 as identical to FP16."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "Numerical formats chapter", "supports": ["A"] },
-    { "ref": "BOOK:pmpp4", "locator": "FP formats appendix", "supports": ["A"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Numerical formats chapter",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "FP formats appendix",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

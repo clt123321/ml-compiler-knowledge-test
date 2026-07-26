@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "It computes a batched matmul across three parallel dimensions `(m, n, k)`, producing a rank-3 result tensor of shape `M x N x K` — because all iterators feed the output through the `linalg.yield`."
+      "text": "It computes `C[m,n] += A[m,k] * B[k,n]` — a standard matrix multiplication with accumulation into `%C`. The `k` dimension is a reduction iterator, so contributions across `k` are summed; `m` and `n` are parallel iterators."
     },
     {
       "id": "B",
@@ -34,18 +34,18 @@
     },
     {
       "id": "D",
-      "text": "It computes `C[m,n] += A[m,k] * B[k,n]` — a standard matrix multiplication with accumulation into `%C`. The `k` dimension is a reduction iterator, so contributions across `k` are summed; `m` and `n` are parallel iterators."
+      "text": "It computes a batched matmul across three parallel dimensions `(m, n, k)`, producing a rank-3 result tensor of shape `M x N x K` — because all iterators feed the output through the `linalg.yield`."
     }
   ],
   "correctAnswers": [
-    "D"
+    "A"
   ],
   "explanation": "`linalg.generic` semantics: for each point in the iteration space defined by `iterator_types`, apply the region body using operands and results indexed by the corresponding `indexing_maps`. Parallel iterators produce independent output entries; reduction iterators accumulate into the output using the body's yielded value written back through `outs`. Here iterators `(m, n, k)` with types `[parallel, parallel, reduction]` and maps for `A[m,k]`, `B[k,n]`, `C[m,n]` yield `C[m,n] += A[m,k]*B[k,n]` — exactly matmul with `C` initialized externally.",
   "optionExplanations": {
-    "D": "Correct: standard `linalg.generic` matmul with reduction on `k`.",
+    "A": "Correct: standard `linalg.generic` matmul with reduction on `k`.",
     "B": "Wrong: `reduction` iterators explicitly sum across all values, not sample one.",
     "C": "Wrong: indexing maps are the core semantic driver and are honored.",
-    "A": "Wrong: the output shape is determined by `outs`, `tensor<MxNxf32>`, not by iteration space rank."
+    "D": "Wrong: the output shape is determined by `outs`, `tensor<MxNxf32>`, not by iteration space rank."
   },
   "assumptions": [
     "Standard `linalg.generic` semantics as documented in MLIR Linalg dialect."
@@ -61,21 +61,21 @@
   "distractorRationales": {
     "B": "Confuses reduction with random sampling.",
     "C": "Wrongly claims indexing maps are ignored.",
-    "A": "Confuses iteration-space rank with output-shape rank."
+    "D": "Confuses iteration-space rank with output-shape rank."
   },
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
       "locator": "Linalg dialect — generic op semantics",
       "supports": [
-        "D"
+        "A"
       ]
     },
     {
       "ref": "PAPER:mlir",
       "locator": "MLIR paper on Linalg dialect design",
       "supports": [
-        "D"
+        "A"
       ]
     }
   ],

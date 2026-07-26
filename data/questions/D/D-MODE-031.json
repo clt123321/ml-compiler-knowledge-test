@@ -23,32 +23,32 @@
   "options": [
     {
       "id": "A",
-      "text": "`mode='reduce-overhead'` uses CUDA Graph capture to lower per-launch dispatch and kernel-launch overhead, which is helpful for many-small-kernel workloads."
-    },
-    {
-      "id": "B",
       "text": "`mode='max-autotune'` enables aggressive kernel-selection / autotuning (e.g., trying multiple Triton block configurations) at the cost of longer compilation time."
     },
     {
-      "id": "C",
+      "id": "B",
       "text": "The default mode is functionally different from `reduce-overhead` and `max-autotune` in what it compiles; the modes tune codegen/runtime knobs rather than changing which ops are captured."
     },
     {
-      "id": "D",
+      "id": "C",
       "text": "`mode='max-autotune'` is required to enable any Triton codegen; the default mode always emits pure Python fallback for CUDA tensors. Under this framing, `mode='max-autotune'` is required to enable any Triton codegen; the default mode always emits a pure Python fallback for CUDA tensors, and reduce-overhead is a legacy alias for the default mode retained for backward compatibility with older scripts."
+    },
+    {
+      "id": "D",
+      "text": "`mode='reduce-overhead'` uses CUDA Graph capture to lower per-launch dispatch and kernel-launch overhead, which is helpful for many-small-kernel workloads."
     }
   ],
   "correctAnswers": [
     "A",
     "B",
-    "C"
+    "D"
   ],
   "explanation": "A: `reduce-overhead` uses CUDA Graph capture to lower per-launch overhead. B: `max-autotune` opts into more aggressive autotuning (multi-config Triton search, Cutlass/GEMM template exploration) with a compile-time cost. C: modes tune codegen/runtime knobs; the traced graph structure is largely unchanged. D is wrong: default mode emits Triton for CUDA tensors already; `max-autotune` is not required to enable codegen.",
   "optionExplanations": {
     "A": "Correct.",
     "B": "Correct.",
-    "C": "Correct.",
-    "D": "Wrong: default mode already uses Triton codegen for CUDA tensors."
+    "C": "Wrong: default mode already uses Triton codegen for CUDA tensors.",
+    "D": "Correct."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 mode-preset semantics.",
@@ -63,7 +63,7 @@
     "modes_change_captured_ops"
   ],
   "distractorRationales": {
-    "D": "Wrong claim about default mode."
+    "C": "Wrong claim about default mode."
   },
   "sourceRefs": [
     {
@@ -72,7 +72,7 @@
       "supports": [
         "A",
         "B",
-        "C"
+        "D"
       ]
     },
     {
@@ -80,7 +80,7 @@
       "locator": "Autotune and CUDA Graph capture",
       "supports": [
         "A",
-        "B"
+        "D"
       ]
     }
   ],

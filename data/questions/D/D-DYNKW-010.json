@@ -23,7 +23,7 @@
   "options": [
     {
       "id": "A",
-      "text": "`dynamic=True` forces the tracer to treat as many dims as possible as symbolic from the very first compile; the default may first specialize on observed shapes and only promote to dynamic after several distinct sizes are seen, saving some early compile cost but risking more early recompiles."
+      "text": "`dynamic=True` disables all compilation and forces eager execution; the default compiles once and never recompiles regardless of input shapes. In this account, `dynamic=True` disables all compilation and forces the wrapped function into eager execution for every call; the default mode compiles the function once on the first call and never recompiles it again regardless of subsequent input shapes."
     },
     {
       "id": "B",
@@ -31,7 +31,7 @@
     },
     {
       "id": "C",
-      "text": "`dynamic=True` disables all compilation and forces eager execution; the default compiles once and never recompiles regardless of input shapes. In this account, `dynamic=True` disables all compilation and forces the wrapped function into eager execution for every call; the default mode compiles the function once on the first call and never recompiles it again regardless of subsequent input shapes."
+      "text": "`dynamic=True` forces the tracer to treat as many dims as possible as symbolic from the very first compile; the default may first specialize on observed shapes and only promote to dynamic after several distinct sizes are seen, saving some early compile cost but risking more early recompiles."
     },
     {
       "id": "D",
@@ -39,13 +39,13 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "C"
   ],
   "explanation": "`dynamic=True` asks Dynamo to trace with symbolic shapes from the start, aiming for one graph that handles multiple sizes at the cost of missing size-specific optimizations. The default (`dynamic=None`) uses automatic dynamic: initially specialize on observed shapes, and after enough distinct sizes for a dim, promote that dim to dynamic. Neither disables compilation, neither changes numerical semantics, and both produce real traced graphs.",
   "optionExplanations": {
-    "A": "Correct: describes the intended contrast.",
+    "A": "Wrong: `dynamic=True` does not disable compilation.",
     "B": "Wrong: `dynamic=True` changes tracing behavior, not the compile-cache directory.",
-    "C": "Wrong: `dynamic=True` does not disable compilation.",
+    "C": "Correct: describes the intended contrast.",
     "D": "Wrong: numerical behavior is the same absent op-specific caveats."
   },
   "assumptions": [
@@ -61,8 +61,8 @@
     "dynamic_true_changes_precision"
   ],
   "distractorRationales": {
+    "A": "Wrong claim about disabling compile.",
     "B": "Wrong claim about cache-only effect.",
-    "C": "Wrong claim about disabling compile.",
     "D": "Wrong precision claim."
   },
   "sourceRefs": [
@@ -70,14 +70,14 @@
       "ref": "DOC:torch-compile",
       "locator": "dynamic argument semantics",
       "supports": [
-        "A"
+        "C"
       ]
     },
     {
       "ref": "DOC:torch-dynamo",
       "locator": "Automatic vs. explicit dynamic behavior",
       "supports": [
-        "A"
+        "C"
       ]
     }
   ],

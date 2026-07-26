@@ -19,18 +19,32 @@
   },
   "stem": "In LLM inference serving, 'KV cache quantization' primarily targets which resource?",
   "options": [
-    { "id": "A", "text": "Reducing the memory footprint of the per-request KV cache (Key and Value tensors stored across decode steps), thereby allowing longer contexts or larger batches on the same GPU memory; and, when the attention kernel reads quantized KVs, reducing attention memory bandwidth." },
-    { "id": "B", "text": "Reducing the compute cost of attention by using INT8 Tensor Cores for the KV projections." },
-    { "id": "C", "text": "Reducing the size of the model weights loaded from HBM during decode." },
-    { "id": "D", "text": "Compressing the input token embeddings before they enter the transformer blocks." }
+    {
+      "id": "A",
+      "text": "Compressing the input token embeddings before they enter the transformer blocks."
+    },
+    {
+      "id": "B",
+      "text": "Reducing the compute cost of attention by using INT8 Tensor Cores for the KV projections."
+    },
+    {
+      "id": "C",
+      "text": "Reducing the size of the model weights loaded from HBM during decode."
+    },
+    {
+      "id": "D",
+      "text": "Reducing the memory footprint of the per-request KV cache (Key and Value tensors stored across decode steps), thereby allowing longer contexts or larger batches on the same GPU memory; and, when the attention kernel reads quantized KVs, reducing attention memory bandwidth."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "In LLM inference, the KV cache is the per-request memory that stores K/V projections across all previously generated tokens; it grows linearly with sequence length. For long contexts and large batch sizes, KV cache dominates GPU memory (e.g., a 32K-context 70B model needs tens of GB per request for FP16 KV). Quantizing KV to INT8 or INT4 halves or quarters the footprint, enabling larger batches / longer contexts. If the attention kernel reads KVs at quantized precision, memory bandwidth also drops. Option B: KV compute is a small fraction of total attention work. Option C: model weights are separate. Option D: input embeddings are separate.",
   "optionExplanations": {
-    "A": "Correct: memory footprint and bandwidth of the KV cache.",
+    "A": "Wrong: input embeddings are separate.",
     "B": "Wrong: KV compute is not the target.",
     "C": "Wrong: model weights are separate.",
-    "D": "Wrong: input embeddings are separate."
+    "D": "Correct: memory footprint and bandwidth of the KV cache."
   },
   "assumptions": [
     "Standard Transformer decoder with per-token K/V caches stored across decode steps."
@@ -39,15 +53,29 @@
     "Does not imply KV quantization is free — some accuracy cost is typical.",
     "Does not imply attention kernel automatically supports quantized KVs — kernel-side support is needed."
   ],
-  "misconceptionTags": ["kv_quant_target_confusion"],
+  "misconceptionTags": [
+    "kv_quant_target_confusion"
+  ],
   "distractorRationales": {
+    "A": "Confuses KV cache with embeddings.",
     "B": "Confuses KV cache with attention compute.",
-    "C": "Confuses KV cache with model weights.",
-    "D": "Confuses KV cache with embeddings."
+    "C": "Confuses KV cache with model weights."
   },
   "sourceRefs": [
-    { "ref": "DOC:trtllm", "locator": "KV cache quantization overview", "supports": ["A"] },
-    { "ref": "BOOK:sze-eff", "locator": "KV cache memory analysis", "supports": ["A"] }
+    {
+      "ref": "DOC:trtllm",
+      "locator": "KV cache quantization overview",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "KV cache memory analysis",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

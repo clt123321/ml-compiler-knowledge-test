@@ -19,17 +19,31 @@
   },
   "stem": "An AOT-compiled artifact (e.g., AOTInductor .so, TensorRT plan loader, IREE HAL module) exposes an entry point that must be loaded by processes built with unknown compiler toolchains. Which ABI-boundary discipline is standard, and why?",
   "options": [
-    { "id": "A", "text": "The artifact exposes a C ABI (plain `extern \"C\"` functions with POD structs and opaque handles). C++ name mangling, exception ABIs, and STL types differ across compilers/versions and would break linking or crash at library boundaries." },
-    { "id": "B", "text": "The artifact exposes a mangled C++ ABI with `std::vector<Tensor>` return types because C++ standard library types are guaranteed to be layout-compatible across all major compilers (GCC, Clang, MSVC) since C++17." },
-    { "id": "C", "text": "ABI stability is unnecessary because dynamic loaders (dlopen/LoadLibrary) automatically rewrite mangled symbols to match the host process's C++ compiler, meaning any C++ boundary works." },
-    { "id": "D", "text": "The artifact must be statically linked into the host process and cannot use a dynamic library at all; ABI concerns only arise when linking, not when loading precompiled kernels." }
+    {
+      "id": "A",
+      "text": "ABI stability is unnecessary because dynamic loaders (dlopen/LoadLibrary) automatically rewrite mangled symbols to match the host process's C++ compiler, meaning any C++ boundary works."
+    },
+    {
+      "id": "B",
+      "text": "The artifact exposes a mangled C++ ABI with `std::vector<Tensor>` return types because C++ standard library types are guaranteed to be layout-compatible across all major compilers (GCC, Clang, MSVC) since C++17."
+    },
+    {
+      "id": "C",
+      "text": "The artifact exposes a C ABI (plain `extern \"C\"` functions with POD structs and opaque handles). C++ name mangling, exception ABIs, and STL types differ across compilers/versions and would break linking or crash at library boundaries."
+    },
+    {
+      "id": "D",
+      "text": "The artifact must be statically linked into the host process and cannot use a dynamic library at all; ABI concerns only arise when linking, not when loading precompiled kernels."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "C++ ABIs differ across compilers (GCC vs. MSVC), across libc++ vs libstdc++, and even across std versions. Name mangling, exception unwinding, and STL container layout are not portable. Serious dynamic-artifact stacks expose only a C ABI at the boundary: extern \"C\" entry points, POD structs, opaque handles created and destroyed on the artifact's side. Users can wrap that C ABI in a C++ facade inside the loading process, but the boundary itself is C.",
   "optionExplanations": {
-    "A": "Correct: matches the standard practice used by AOTInductor's C shim, TensorRT's C++ header + C API split, CUDA driver API, and IREE HAL C.",
+    "A": "Wrong: dynamic loaders do not rewrite mangled symbols; a mangled-symbol mismatch causes load-time or runtime linkage failure.",
     "B": "Wrong: `std::vector<T>` is not ABI-stable across compilers or STL implementations; passing it across .so boundaries is a known source of undefined behavior.",
-    "C": "Wrong: dynamic loaders do not rewrite mangled symbols; a mangled-symbol mismatch causes load-time or runtime linkage failure.",
+    "C": "Correct: matches the standard practice used by AOTInductor's C shim, TensorRT's C++ header + C API split, CUDA driver API, and IREE HAL C.",
     "D": "Wrong: dynamic libraries are widely used; ABI concerns are exactly why they exist and why they use C boundaries."
   },
   "assumptions": [
@@ -39,15 +53,29 @@
     "Does not imply that internal implementations must be C; only the boundary must be C.",
     "Does not imply ABI stability is only about C++; issues also arise with GPU driver ABIs, but those are shipped by vendors."
   ],
-  "misconceptionTags": ["cpp_abi_myth"],
+  "misconceptionTags": [
+    "cpp_abi_myth"
+  ],
   "distractorRationales": {
+    "A": "Fabricates a loader capability.",
     "B": "False stability claim about STL types.",
-    "C": "Fabricates a loader capability.",
     "D": "Wrong deployment claim."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-aoti", "locator": "AOTInductor C shim / stable interface", "supports": ["A"] },
-    { "ref": "DOC:trt", "locator": "TensorRT C/C++ API split; ABI notes", "supports": ["A"] }
+    {
+      "ref": "DOC:torch-aoti",
+      "locator": "AOTInductor C shim / stable interface",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:trt",
+      "locator": "TensorRT C/C++ API split; ABI notes",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

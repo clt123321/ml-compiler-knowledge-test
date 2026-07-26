@@ -21,18 +21,33 @@
   },
   "stem": "Which statements about running an AOTInductor-compiled artifact are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "The artifact exposes a C-ABI entry function; callers pass input tensors as device-memory pointers with shape/stride metadata and receive output tensors similarly, without requiring the Python runtime." },
-    { "id": "B", "text": "The artifact still requires the Inductor compiler at runtime; on first invocation Inductor is re-invoked to lower the graph, which is what allows the artifact to accept new shapes at inference time." },
-    { "id": "C", "text": "The artifact bundles the generated Triton/CUDA kernels needed to execute the model, and the runtime loads them via the shared library's loader; no separate kernel binaries need to be shipped alongside the .so." },
-    { "id": "D", "text": "The artifact automatically links against `libtorch.so` at runtime and requires the full PyTorch binary distribution to be present on the deployment machine; without libtorch the .so cannot be loaded." }
+    {
+      "id": "A",
+      "text": "The artifact automatically links against `libtorch.so` at runtime and requires the full PyTorch binary distribution to be present on the deployment machine; without libtorch the .so cannot be loaded."
+    },
+    {
+      "id": "B",
+      "text": "The artifact exposes a C-ABI entry function; callers pass input tensors as device-memory pointers with shape/stride metadata and receive output tensors similarly, without requiring the Python runtime."
+    },
+    {
+      "id": "C",
+      "text": "The artifact still requires the Inductor compiler at runtime; on first invocation Inductor is re-invoked to lower the graph, which is what allows the artifact to accept new shapes at inference time."
+    },
+    {
+      "id": "D",
+      "text": "The artifact bundles the generated Triton/CUDA kernels needed to execute the model, and the runtime loads them via the shared library's loader; no separate kernel binaries need to be shipped alongside the .so."
+    }
   ],
-  "correctAnswers": ["A", "C"],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
   "explanation": "A: AOTInductor exposes a stable C interface for driving the compiled model, without requiring Python. C: The generated kernels are bundled with the .so and dispatched by the artifact itself. B is wrong: the whole point of AOT is that Inductor is not needed at runtime; new shapes work only if the artifact was built with dynamic dims. D is wrong: AOTInductor is designed to avoid a full libtorch dependency; it links against a minimal C shim.",
   "optionExplanations": {
-    "A": "Correct: stable C interface for calling into the artifact.",
-    "B": "Wrong: Inductor is not present at runtime; artifacts run without the compiler.",
-    "C": "Correct: kernels are bundled into the artifact.",
-    "D": "Wrong: the artifact links against a minimal C shim, not full libtorch."
+    "A": "Wrong: the artifact links against a minimal C shim, not full libtorch.",
+    "B": "Correct: stable C interface for calling into the artifact.",
+    "C": "Wrong: Inductor is not present at runtime; artifacts run without the compiler.",
+    "D": "Correct: kernels are bundled into the artifact."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 AOTInductor path.",
@@ -42,13 +57,23 @@
     "Does not imply arbitrary shapes are supported; only those declared as dynamic at build time.",
     "Does not imply the C ABI has been permanently frozen; the interface is stable within a major version but may evolve."
   ],
-  "misconceptionTags": ["aoti_needs_inductor_myth", "aoti_needs_libtorch_myth"],
+  "misconceptionTags": [
+    "aoti_needs_inductor_myth",
+    "aoti_needs_libtorch_myth"
+  ],
   "distractorRationales": {
-    "B": "Contradicts AOT design.",
-    "D": "Overstates runtime dependency."
+    "A": "Overstates runtime dependency.",
+    "C": "Contradicts AOT design."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-aoti", "locator": "AOTInductor runtime and C ABI details", "supports": ["A", "C"] }
+    {
+      "ref": "DOC:torch-aoti",
+      "locator": "AOTInductor runtime and C ABI details",
+      "supports": [
+        "B",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

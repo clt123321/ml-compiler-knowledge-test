@@ -20,17 +20,31 @@
   "stem": "A custom CUDA kernel's Nsight Compute report and compiler output are shown. Which mitigation is most directly indicated?",
   "profileData": "Compiler output (nvcc --ptxas-options=-v):\n  ptxas info: Used 168 registers, 96 KB shared, 40 stack frame, 320 bytes spill stores, 480 bytes spill loads\n\nNsight Compute metrics:\n  Achieved Occupancy: 0.12\n  Warp Stall Reason (top): Long Scoreboard (memory latency)\n  L1 Local Load Traffic: 22% of L1 traffic (unusually high; local memory is where spills go)\n  DRAM Throughput: 30%\n  SM Utilization: 40%",
   "options": [
-    { "id": "A", "text": "Register spilling to local memory (evident from the 40-byte stack frame + 320/480 spill stores/loads and the abnormally high L1 local-load traffic) is causing costly memory traffic disguised as 'Long Scoreboard' stalls. Mitigations: reduce register usage via `__launch_bounds__` or `-maxrregcount`, refactor to fewer live variables, or restructure the algorithm to shrink working set." },
-    { "id": "B", "text": "The 0.12 occupancy directly bounds SM throughput; raising `blockDim` (larger blocks) will proportionally increase performance because more threads per block always means more concurrent warps hiding latency." },
-    { "id": "C", "text": "40% SM utilization indicates the kernel is under-scheduled by the GPU driver; setting CUDA_LAUNCH_BLOCKING=0 and using per-thread default streams will bring SM utilization to 100% and fix the underlying issue." },
-    { "id": "D", "text": "The kernel is memory-bound at 30% DRAM throughput; the fix is to remove the shared-memory usage entirely because shared memory competes with registers for chip area, so shrinking shared memory automatically frees more registers per thread." }
+    {
+      "id": "A",
+      "text": "40% SM utilization indicates the kernel is under-scheduled by the GPU driver; setting CUDA_LAUNCH_BLOCKING=0 and using per-thread default streams will bring SM utilization to 100% and fix the underlying issue."
+    },
+    {
+      "id": "B",
+      "text": "The 0.12 occupancy directly bounds SM throughput; raising `blockDim` (larger blocks) will proportionally increase performance because more threads per block always means more concurrent warps hiding latency."
+    },
+    {
+      "id": "C",
+      "text": "Register spilling to local memory (evident from the 40-byte stack frame + 320/480 spill stores/loads and the abnormally high L1 local-load traffic) is causing costly memory traffic disguised as 'Long Scoreboard' stalls. Mitigations: reduce register usage via `__launch_bounds__` or `-maxrregcount`, refactor to fewer live variables, or restructure the algorithm to shrink working set."
+    },
+    {
+      "id": "D",
+      "text": "The kernel is memory-bound at 30% DRAM throughput; the fix is to remove the shared-memory usage entirely because shared memory competes with registers for chip area, so shrinking shared memory automatically frees more registers per thread."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "The compiler diagnostic shows explicit register spills (stack frame + spill stores/loads). Nsight Compute confirms unusual L1 local-load traffic — local memory (in CUDA terminology) is where spilled registers live. The 'Long Scoreboard' stall is caused by these spills going through L1/L2/DRAM. Reducing register usage (via `__launch_bounds__`, refactoring, or algorithmic changes) directly addresses the root cause. B, C, D fabricate mechanisms or misdiagnose.",
   "optionExplanations": {
-    "A": "Correct: standard register-spill diagnosis and mitigation.",
+    "A": "Wrong: CUDA_LAUNCH_BLOCKING and default streams do not affect SM occupancy.",
     "B": "Wrong: raising blockDim doesn't fix per-thread register pressure.",
-    "C": "Wrong: CUDA_LAUNCH_BLOCKING and default streams do not affect SM occupancy.",
+    "C": "Correct: standard register-spill diagnosis and mitigation.",
     "D": "Wrong: shared memory and register file are separate hardware resources; removing shared memory does not free registers."
   },
   "assumptions": [
@@ -40,15 +54,30 @@
     "Does not imply `__launch_bounds__` always helps; it can force higher spills if the underlying algorithm needs many live values.",
     "Does not imply spills are always fatal; small spills can be masked by warp scheduling."
   ],
-  "misconceptionTags": ["shared_reg_confusion", "launch_blocking_myth"],
+  "misconceptionTags": [
+    "shared_reg_confusion",
+    "launch_blocking_myth"
+  ],
   "distractorRationales": {
+    "A": "Fabricates mechanism.",
     "B": "Confuses block size with register pressure.",
-    "C": "Fabricates mechanism.",
     "D": "Confuses shared memory with register file."
   },
   "sourceRefs": [
-    { "ref": "DOC:ncu", "locator": "Register pressure and local-memory traffic analysis", "supports": ["A"] },
-    { "ref": "DOC:cuda-best", "locator": "Register usage tuning; __launch_bounds__ and -maxrregcount", "supports": ["A"] }
+    {
+      "ref": "DOC:ncu",
+      "locator": "Register pressure and local-memory traffic analysis",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Register usage tuning; __launch_bounds__ and -maxrregcount",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

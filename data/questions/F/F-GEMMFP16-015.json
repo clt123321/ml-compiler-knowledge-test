@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere (sm_80) or newer",
     "device": "GPU",
-    "requiredFeatures": ["tl.dot with FP32 accumulator"]
+    "requiredFeatures": [
+      "tl.dot with FP32 accumulator"
+    ]
   },
   "softwareContext": {
     "framework": "Triton",
@@ -20,25 +22,61 @@
     "stability": "version_sensitive"
   },
   "tensorContext": {
-    "shapes": [["M", "K"], ["K", "N"], ["M", "N"]],
-    "dtypes": ["float16", "float16", "float16"],
-    "layouts": ["row_major", "row_major", "row_major"]
+    "shapes": [
+      [
+        "M",
+        "K"
+      ],
+      [
+        "K",
+        "N"
+      ],
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major",
+      "row_major"
+    ]
   },
   "stem": "Consider the Triton GEMM inner loop below. Which statements about the `tl.dot` call and accumulator precision are correct? (Select all that apply.)",
   "codeSnippet": "# A, B, C: FP16 row-major; K-loop accumulator = FP32\nacc = tl.zeros((BM, BN), dtype=tl.float32)\nfor k in range(0, K, BK):\n    a = tl.load(A_block_ptr)          # FP16, [BM, BK]\n    b = tl.load(B_block_ptr)          # FP16, [BK, BN]\n    acc += tl.dot(a, b, out_dtype=tl.float32)   # accumulate in FP32\n    A_block_ptr = tl.advance(A_block_ptr, (0, BK))\n    B_block_ptr = tl.advance(B_block_ptr, (BK, 0))\nc = acc.to(tl.float16)                # cast back to FP16 for storage\ntl.store(C_block_ptr, c)",
   "options": [
-    { "id": "A", "text": "FP32 accumulation is used to avoid catastrophic loss of precision when summing many FP16 partials: FP16's ~3-decimal-digit precision cannot faithfully represent large partial sums that arise from long K-dimension reductions." },
-    { "id": "B", "text": "On Ampere+, `tl.dot(a, b, out_dtype=tl.float32)` with FP16 inputs lowers to Tensor Core MMA instructions (mma.sync) that accept FP16 operands and produce FP32 accumulator lanes natively, matching the hardware's design." },
-    { "id": "C", "text": "Casting `acc.to(tl.float16)` at the end is guaranteed to produce a bit-identical result to running the entire kernel in FP16 including accumulation, because FP32→FP16 rounding is a no-op when values are within FP16 range." },
-    { "id": "D", "text": "FP32 accumulation is only necessary in Triton; CUDA's native `wmma`/`mma.sync` APIs are limited to FP16 accumulation and cannot mix input/accumulator precisions on Ampere or Hopper." }
+    {
+      "id": "A",
+      "text": "FP32 accumulation is only necessary in Triton; CUDA's native `wmma`/`mma.sync` APIs are limited to FP16 accumulation and cannot mix input/accumulator precisions on Ampere or Hopper."
+    },
+    {
+      "id": "B",
+      "text": "FP32 accumulation is used to avoid catastrophic loss of precision when summing many FP16 partials: FP16's ~3-decimal-digit precision cannot faithfully represent large partial sums that arise from long K-dimension reductions."
+    },
+    {
+      "id": "C",
+      "text": "On Ampere+, `tl.dot(a, b, out_dtype=tl.float32)` with FP16 inputs lowers to Tensor Core MMA instructions (mma.sync) that accept FP16 operands and produce FP32 accumulator lanes natively, matching the hardware's design."
+    },
+    {
+      "id": "D",
+      "text": "Casting `acc.to(tl.float16)` at the end is guaranteed to produce a bit-identical result to running the entire kernel in FP16 including accumulation, because FP32→FP16 rounding is a no-op when values are within FP16 range."
+    }
   ],
-  "correctAnswers": ["A", "B"],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
   "explanation": "A: FP16 has only ~11 bits of mantissa; long reductions accumulate rounding error. FP32 accumulation preserves precision. B: On sm_80+, Tensor Core `mma.sync` instructions natively accept FP16 operands with FP32 accumulator (`mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32` and similar). Triton's `tl.dot(..., out_dtype=tl.float32)` compiles to these. C is wrong: FP32-accumulate then downcast produces a different (usually much more accurate) result than FP16-accumulate. D is wrong: CUDA `wmma`/`mma.sync` explicitly support mixed-precision (FP16-in, FP32-accum) on Volta, Turing, Ampere, Hopper — that is one of Tensor Cores' key features.",
   "optionExplanations": {
-    "A": "Correct: FP32 accumulation is standard for numerical robustness.",
-    "B": "Correct: mma.sync FP16-in, FP32-accum is the hardware path on Ampere+.",
-    "C": "Wrong: FP32-accum-then-downcast ≠ full-FP16 pipeline; the intermediate precision matters.",
-    "D": "Wrong: mixed-precision Tensor Core support is a core feature of CUDA's mma APIs."
+    "A": "Wrong: mixed-precision Tensor Core support is a core feature of CUDA's mma APIs.",
+    "B": "Correct: FP32 accumulation is standard for numerical robustness.",
+    "C": "Correct: mma.sync FP16-in, FP32-accum is the hardware path on Ampere+.",
+    "D": "Wrong: FP32-accum-then-downcast ≠ full-FP16 pipeline; the intermediate precision matters."
   },
   "assumptions": [
     "Tensor Core support on the target GPU (sm_70+).",
@@ -48,14 +86,30 @@
     "Does not imply FP32 accumulation eliminates all rounding error; it dramatically reduces it but is not exact.",
     "Does not imply FP16 accumulation is always wrong; short reductions may be acceptable."
   ],
-  "misconceptionTags": ["fp16_accum_lossless_myth", "wmma_no_mixed_precision_myth"],
+  "misconceptionTags": [
+    "fp16_accum_lossless_myth",
+    "wmma_no_mixed_precision_myth"
+  ],
   "distractorRationales": {
-    "C": "Confuses same-precision cast with true mixed-precision equivalence.",
-    "D": "Fabricates a limitation of CUDA mma APIs."
+    "A": "Fabricates a limitation of CUDA mma APIs.",
+    "D": "Confuses same-precision cast with true mixed-precision equivalence."
   },
   "sourceRefs": [
-    { "ref": "DOC:triton", "locator": "tl.dot with out_dtype parameter; FP16/FP32 accumulation", "supports": ["A", "B"] },
-    { "ref": "DOC:cuda-guide", "locator": "Tensor Core / mma.sync instruction with FP16 inputs and FP32 accumulator", "supports": ["B"] }
+    {
+      "ref": "DOC:triton",
+      "locator": "tl.dot with out_dtype parameter; FP16/FP32 accumulation",
+      "supports": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Tensor Core / mma.sync instruction with FP16 inputs and FP32 accumulator",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

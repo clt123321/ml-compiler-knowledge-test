@@ -24,11 +24,11 @@
   "options": [
     {
       "id": "A",
-      "text": "The Meta implementation lets Dynamo / AOTAutograd trace the custom op without actually executing it: it propagates shape, dtype, and device without touching real data, enabling FakeTensor propagation and downstream analysis (shape guards, fusion boundaries)."
+      "text": "The Meta implementation is required by Inductor to convert the CUDA kernel into Triton code; without it, Inductor recompiles the CUDA implementation into a Triton equivalent from LLVM IR at trace time. In this reading, the Meta implementation is required by Inductor to convert the CUDA kernel into a Triton equivalent; without it, Inductor recompiles the CUDA implementation into a Triton kernel from LLVM IR at trace time using a source-to-source translator."
     },
     {
       "id": "B",
-      "text": "The Meta implementation is required by Inductor to convert the CUDA kernel into Triton code; without it, Inductor recompiles the CUDA implementation into a Triton equivalent from LLVM IR at trace time. In this reading, the Meta implementation is required by Inductor to convert the CUDA kernel into a Triton equivalent; without it, Inductor recompiles the CUDA implementation into a Triton kernel from LLVM IR at trace time using a source-to-source translator."
+      "text": "The Meta implementation lets Dynamo / AOTAutograd trace the custom op without actually executing it: it propagates shape, dtype, and device without touching real data, enabling FakeTensor propagation and downstream analysis (shape guards, fusion boundaries)."
     },
     {
       "id": "C",
@@ -40,12 +40,12 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "B"
   ],
   "explanation": "During torch.compile tracing, ops are executed on FakeTensors that model shape / dtype / device without holding real data. To trace a custom op, PyTorch calls its 'meta' implementation to propagate output shape/dtype/device symbolically. Without a meta implementation the tracer either graph-breaks or errors. The meta impl does not turn CUDA kernels into Triton and is not a TorchScript-only artifact.",
   "optionExplanations": {
-    "A": "Correct: standard reason for providing a meta impl.",
-    "B": "Wrong: meta impl does not drive Triton codegen.",
+    "A": "Wrong: meta impl does not drive Triton codegen.",
+    "B": "Correct: standard reason for providing a meta impl.",
     "C": "Wrong: torch.compile relies on meta impl.",
     "D": "Wrong: meta impls remain the standard mechanism for custom op tracing."
   },
@@ -62,7 +62,7 @@
     "meta_only_for_torchscript"
   ],
   "distractorRationales": {
-    "B": "Wrong claim about Triton codegen.",
+    "A": "Wrong claim about Triton codegen.",
     "C": "Wrong claim about TorchScript scope.",
     "D": "Wrong claim about deprecation."
   },
@@ -71,14 +71,14 @@
       "ref": "DOC:torch-compile",
       "locator": "Custom ops: meta / FakeTensor requirement",
       "supports": [
-        "A"
+        "B"
       ]
     },
     {
       "ref": "DOC:torch-dynamo",
       "locator": "FakeTensor propagation during tracing",
       "supports": [
-        "A"
+        "B"
       ]
     }
   ],

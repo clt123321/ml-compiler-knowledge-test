@@ -20,16 +20,30 @@
   "stem": "A user times a kernel on stream `s1` using events but sees inconsistent numbers depending on what runs concurrently on `s2`. Which explanation best matches the reported profile data below?",
   "profileData": "Scenario:\n  start_evt.record()   # recorded on the current (default/legacy) stream\n  kernel_A_on_s1()     # launched on stream s1\n  end_evt.record()     # recorded on the current stream, NOT on s1\n  end_evt.synchronize()\n  elapsed = start_evt.elapsed_time(end_evt)\n\nObserved:\n  When s2 is idle:  elapsed ≈ 2.5 ms (matches expected kernel A wall time)\n  When s2 runs a 100 ms independent kernel concurrently:  elapsed ≈ 100 ms",
   "options": [
-    { "id": "A", "text": "CUDA events do not have per-stream isolation; any concurrent GPU work always contributes to the elapsed time even when events are recorded correctly on the target stream, so the discrepancy is expected and cannot be fixed with better placement." },
-    { "id": "B", "text": "The events are recorded on the default (legacy) stream, not on `s1`. Under legacy default-stream semantics the default stream synchronizes with all other streams, so `end_evt.record()` waits for `s2`'s 100 ms kernel to complete before recording. Fix: record the events on `s1` (`start_evt.record(s1)` / `end_evt.record(s1)`)." },
-    { "id": "C", "text": "`elapsed_time` reports the union of GPU activity between the two events; the fix is to divide the reported value by the number of streams that had work in the interval (2 streams → divide by 2)." },
-    { "id": "D", "text": "The `synchronize()` on the end event drains the entire device; the reported 100 ms is the sum of s1 and s2 execution because synchronize serializes them. Fix: replace `end_evt.synchronize()` with `end_evt.query()` in a busy loop." }
+    {
+      "id": "A",
+      "text": "The events are recorded on the default (legacy) stream, not on `s1`. Under legacy default-stream semantics the default stream synchronizes with all other streams, so `end_evt.record()` waits for `s2`'s 100 ms kernel to complete before recording. Fix: record the events on `s1` (`start_evt.record(s1)` / `end_evt.record(s1)`)."
+    },
+    {
+      "id": "B",
+      "text": "CUDA events do not have per-stream isolation; any concurrent GPU work always contributes to the elapsed time even when events are recorded correctly on the target stream, so the discrepancy is expected and cannot be fixed with better placement."
+    },
+    {
+      "id": "C",
+      "text": "`elapsed_time` reports the union of GPU activity between the two events; the fix is to divide the reported value by the number of streams that had work in the interval (2 streams → divide by 2)."
+    },
+    {
+      "id": "D",
+      "text": "The `synchronize()` on the end event drains the entire device; the reported 100 ms is the sum of s1 and s2 execution because synchronize serializes them. Fix: replace `end_evt.synchronize()` with `end_evt.query()` in a busy loop."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "The bug is that the events are recorded on the current stream (the default/legacy stream), not on `s1`. Under legacy default-stream semantics, the default stream synchronizes with all user streams; `end_evt.record()` therefore waits for `s2`'s outstanding work as well. Recording the events on `s1` explicitly (`start_evt.record(s1)`, `end_evt.record(s1)`) isolates the measurement to `s1`'s progress. Option A is false (events are per-stream when recorded on that stream). Option C fabricates dividing semantics. Option D misattributes the cause to synchronize.",
   "optionExplanations": {
-    "A": "Wrong: correctly-placed events do isolate the target stream.",
-    "B": "Correct: default-stream event record + legacy semantics = accidental cross-stream sync.",
+    "A": "Correct: default-stream event record + legacy semantics = accidental cross-stream sync.",
+    "B": "Wrong: correctly-placed events do isolate the target stream.",
     "C": "Wrong: no such union-and-divide semantics exists.",
     "D": "Wrong: synchronize on an event only waits until that event completes, not the whole device."
   },
@@ -41,15 +55,29 @@
     "Does not imply per-thread default stream mode has the same issue; that mode changes default-stream semantics.",
     "Does not imply s2 concurrent work has zero impact; on shared resources some indirect slowdown remains, but not a 100 ms serialization."
   ],
-  "misconceptionTags": ["default_stream_event_leak"],
+  "misconceptionTags": [
+    "default_stream_event_leak"
+  ],
   "distractorRationales": {
-    "A": "Wrong general claim about events.",
+    "B": "Wrong general claim about events.",
     "C": "Fabricates division semantics.",
     "D": "Confuses event.sync scope with device sync."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "Events, default stream semantics", "supports": ["B"] },
-    { "ref": "DOC:cuda-best", "locator": "Concurrent kernel timing with events", "supports": ["B"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Events, default stream semantics",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Concurrent kernel timing with events",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

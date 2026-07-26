@@ -27,11 +27,11 @@
     },
     {
       "id": "B",
-      "text": "The compiler is a heavyweight AOT tool that produces a compact, self-describing artifact; the runtime is a small embeddable library that can be linked into edge/mobile apps without shipping the full MLIR toolchain, enabling deployment where the target device lacks the resources or licensing to host a full compiler."
+      "text": "The runtime is only used for testing during development; production deployments must re-implement the runtime themselves because IREE does not distribute a production runtime binary."
     },
     {
       "id": "C",
-      "text": "The runtime is only used for testing during development; production deployments must re-implement the runtime themselves because IREE does not distribute a production runtime binary."
+      "text": "The compiler is a heavyweight AOT tool that produces a compact, self-describing artifact; the runtime is a small embeddable library that can be linked into edge/mobile apps without shipping the full MLIR toolchain, enabling deployment where the target device lacks the resources or licensing to host a full compiler."
     },
     {
       "id": "D",
@@ -39,13 +39,13 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "C"
   ],
   "explanation": "IREE separates a heavyweight AOT compiler (which needs the full MLIR toolchain, LLVM, target libraries, etc.) from a lightweight runtime library that executes the compiled `.vmfb` bytecode. This lets edge/mobile deployments ship only the runtime + compiled artifact, without needing to host the compiler on-device. This mirrors the general 'compile once, deploy many' philosophy of AOT toolchains and is central to IREE's edge story.",
   "optionExplanations": {
-    "B": "Correct: AOT + slim runtime enables edge deployment.",
     "A": "Wrong: compiled artifacts do not need the compiler at runtime.",
-    "C": "Wrong: IREE distributes production-ready runtime libraries.",
+    "B": "Wrong: IREE distributes production-ready runtime libraries.",
+    "C": "Correct: AOT + slim runtime enables edge deployment.",
     "D": "Wrong: the separation is real and structural."
   },
   "assumptions": [
@@ -60,7 +60,7 @@
   ],
   "distractorRationales": {
     "A": "Wrong claim that runtime requires compiler.",
-    "C": "Wrong claim that runtime is dev-only.",
+    "B": "Wrong claim that runtime is dev-only.",
     "D": "Denies a real structural separation."
   },
   "sourceRefs": [
@@ -68,7 +68,7 @@
       "ref": "DOC:iree",
       "locator": "IREE compiler vs runtime separation; deployment docs",
       "supports": [
-        "B"
+        "C"
       ]
     }
   ],

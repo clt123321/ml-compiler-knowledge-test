@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere+ (sm_80+)",
     "device": "GPU",
-    "requiredFeatures": ["FP16 or BF16 Tensor Cores"]
+    "requiredFeatures": [
+      "FP16 or BF16 Tensor Cores"
+    ]
   },
   "softwareContext": {
     "framework": "PyTorch",
@@ -22,18 +24,32 @@
   "stem": "In mid-training a 7B Transformer, loss becomes NaN at step 4213 after being stable for hundreds of prior steps. Activation-hook profiling records per-layer max-abs statistics as shown. Which diagnosis is best supported?",
   "profileData": "Per-layer max(|activation|) at step 4212 (last healthy) vs step 4213 (NaN):\n  layer 22 attn_scores:  before-softmax   step 4212 = 12.4       step 4213 = 27.8\n  layer 22 attn_scores:  after-softmax    step 4212 = 0.94       step 4213 = NaN\n  layer 22 attn_probs @ V                   step 4212 = 5.1        step 4213 = NaN (propagated)\n  All prior layers (0-21):                                              finite in both steps\n  Precision: fp16 activations, fp32 master weights, GradScaler enabled",
   "options": [
-    { "id": "A", "text": "The GradScaler failed to scale the loss and gradients underflowed to zero at step 4213; disabling GradScaler will fix the NaN because zero-gradient training is stable at any precision." },
-    { "id": "B", "text": "The NaN is a numerical fluke unrelated to the profile data; retraining from an earlier checkpoint with a different seed will always resolve NaN issues without changing precision or fusing softmax." },
-    { "id": "C", "text": "Softmax over a vector with max ≈ 27.8 always overflows to Inf regardless of precision because exp(27.8) exceeds FP32 range; the fix is to switch entirely to FP64 for all training compute." },
-    { "id": "D", "text": "The attention scores at layer 22 exceeded FP16 range (max ≈ 65504) between steps 4212 and 4213, causing softmax input to overflow to Inf on one entry and produce NaN after normalization; typical fixes include upcasting attn_scores to FP32 before softmax (or using an implementation that fuses safe softmax with FP32 accumulator, e.g., FlashAttention)." }
+    {
+      "id": "A",
+      "text": "The GradScaler failed to scale the loss and gradients underflowed to zero at step 4213; disabling GradScaler will fix the NaN because zero-gradient training is stable at any precision."
+    },
+    {
+      "id": "B",
+      "text": "The attention scores at layer 22 exceeded FP16 range (max ≈ 65504) between steps 4212 and 4213, causing softmax input to overflow to Inf on one entry and produce NaN after normalization; typical fixes include upcasting attn_scores to FP32 before softmax (or using an implementation that fuses safe softmax with FP32 accumulator, e.g., FlashAttention)."
+    },
+    {
+      "id": "C",
+      "text": "Softmax over a vector with max ≈ 27.8 always overflows to Inf regardless of precision because exp(27.8) exceeds FP32 range; the fix is to switch entirely to FP64 for all training compute."
+    },
+    {
+      "id": "D",
+      "text": "The NaN is a numerical fluke unrelated to the profile data; retraining from an earlier checkpoint with a different seed will always resolve NaN issues without changing precision or fusing softmax."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "FP16 max is ~65504, and exp(27.8) ≈ 1.19e12 — well beyond FP16 range. In naive softmax implementations, an FP16 attention-score around 27+ causes exp(x) to overflow to +Inf, and the subsequent normalization produces NaN. The standard mitigation is to upcast the softmax to FP32 or use a FlashAttention-style safe softmax that subtracts the running max in higher precision. Option A misattributes to GradScaler. B is fatalistic. C falsely claims FP32 also overflows (exp(27.8) is only ~1e12, far under FP32 max ~3.4e38).",
   "optionExplanations": {
     "A": "Wrong: GradScaler manages loss scaling; it does not gate attention-score overflow.",
-    "B": "Wrong: root-cause is diagnosable and fixable.",
+    "B": "Correct: FP16 range + exp of large logit is a classic overflow-to-NaN pattern.",
     "C": "Wrong: FP32 easily represents exp(27.8) ≈ 1e12.",
-    "D": "Correct: FP16 range + exp of large logit is a classic overflow-to-NaN pattern."
+    "D": "Wrong: root-cause is diagnosable and fixable."
   },
   "assumptions": [
     "Naive softmax (no safe-softmax max-subtract) at FP16.",
@@ -43,15 +59,30 @@
     "Does not imply FlashAttention is required; any safe-softmax variant with FP32 accum works.",
     "Does not imply FP16 training is doomed; safe softmax + gradient clipping is sufficient in most cases."
   ],
-  "misconceptionTags": ["gradscaler_fixes_nan_myth", "fp32_overflow_myth"],
+  "misconceptionTags": [
+    "gradscaler_fixes_nan_myth",
+    "fp32_overflow_myth"
+  ],
   "distractorRationales": {
     "A": "Confuses gradient scaling with forward overflow.",
-    "B": "Rejects diagnostic evidence.",
-    "C": "Wrong dynamic-range claim about FP32."
+    "C": "Wrong dynamic-range claim about FP32.",
+    "D": "Rejects diagnostic evidence."
   },
   "sourceRefs": [
-    { "ref": "PAPER:flashattn", "locator": "Safe softmax with max-subtract for numerical stability", "supports": ["D"] },
-    { "ref": "DOC:cuda-best", "locator": "FP16 dynamic range and softmax stability", "supports": ["D"] }
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Safe softmax with max-subtract for numerical stability",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "FP16 dynamic range and softmax stability",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

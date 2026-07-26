@@ -19,16 +19,30 @@
   "irSnippet": "// Before fusion\nfor i in 0..N:\n    B[i] = f(A[i])                // producer loop\nfor i in 0..N:\n    C[i] = g(B[i-1], B[i], B[i+1])  // consumer with cross-iteration reads\n\n// Proposed fused loop\nfor i in 0..N:\n    B[i] = f(A[i])\n    C[i] = g(B[i-1], B[i], B[i+1])   // reads B[i-1], B[i], B[i+1]",
   "stem": "The proposed fusion above tries to combine a producer loop and a consumer loop into one. Is the fused loop semantically equivalent to the original, and why?",
   "options": [
-    { "id": "A", "text": "Yes — because both loops have the same trip count `N`, fusion is always legal regardless of the access pattern." },
-    { "id": "B", "text": "No — inside iteration `i`, the fused body reads `B[i+1]`, which has not been produced yet by iteration `i+1`; the fusion violates the flow dependence from producer to consumer." },
-    { "id": "C", "text": "Yes — because the two original loops iterate in the same order, fusion preserves semantics as long as all reads and writes touch the same array." },
-    { "id": "D", "text": "No — fusion is illegal because the two loops write to different arrays (`B` and `C`); fusion requires the write target to be identical." }
+    {
+      "id": "A",
+      "text": "No — inside iteration `i`, the fused body reads `B[i+1]`, which has not been produced yet by iteration `i+1`; the fusion violates the flow dependence from producer to consumer."
+    },
+    {
+      "id": "B",
+      "text": "Yes — because both loops have the same trip count `N`, fusion is always legal regardless of the access pattern."
+    },
+    {
+      "id": "C",
+      "text": "Yes — because the two original loops iterate in the same order, fusion preserves semantics as long as all reads and writes touch the same array."
+    },
+    {
+      "id": "D",
+      "text": "No — fusion is illegal because the two loops write to different arrays (`B` and `C`); fusion requires the write target to be identical."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "The classic legality condition for loop fusion is that no fused iteration can require a value that would be produced by a later iteration of the fused loop (no forward-crossing flow dependence). Here, iteration `i` needs `B[i+1]`, which is only defined by iteration `i+1` in the producer loop. In the fused loop, iteration `i+1` has not yet run when iteration `i` executes, so `B[i+1]` is either stale or uninitialized. Same trip count is necessary but not sufficient. Writing to different arrays is a normal fusion case, not a blocker.",
   "optionExplanations": {
-    "A": "Wrong: identical trip count is necessary but not sufficient — cross-iteration dependences can still be violated.",
-    "B": "Correct: forward-crossing flow dependence violates fusion legality.",
+    "A": "Correct: forward-crossing flow dependence violates fusion legality.",
+    "B": "Wrong: identical trip count is necessary but not sufficient — cross-iteration dependences can still be violated.",
     "C": "Wrong: same iteration order does not save fusion when a later iteration's value is needed.",
     "D": "Wrong: writing to different arrays is normal for fusion; it is the dependence structure that matters."
   },
@@ -39,14 +53,23 @@
   "nonImplications": [
     "Does not imply the fusion is unrecoverable; a shift/peel or 2-iteration lookahead buffer can restore legality."
   ],
-  "misconceptionTags": ["loop_fusion_same_trip_count_sufficient", "cross_iter_dependence"],
+  "misconceptionTags": [
+    "loop_fusion_same_trip_count_sufficient",
+    "cross_iter_dependence"
+  ],
   "distractorRationales": {
-    "A": "Ignores dependence analysis.",
+    "B": "Ignores dependence analysis.",
     "C": "Ignores forward-crossing dependence.",
     "D": "Confuses fusion with write-target identity."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Chapter on loop transformations; fusion legality via dependence graphs", "supports": ["B"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Chapter on loop transformations; fusion legality via dependence graphs",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

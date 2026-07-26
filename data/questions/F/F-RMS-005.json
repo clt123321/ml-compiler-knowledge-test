@@ -51,11 +51,11 @@
   "options": [
     {
       "id": "A",
-      "text": "Each program handles one row by loading all `N=4096` FP32 elements into registers/SRAM (~16 KB); this constrains occupancy since the full row lives in one program's tile."
+      "text": "The kernel is incorrect because `tl.sum(x * x, axis=0)` requires its own explicit `mask` argument to zero out invalid lanes; without it, tail lanes contribute stale register values and bias the computed variance upwards."
     },
     {
       "id": "B",
-      "text": "The kernel is incorrect because `tl.sum(x * x, axis=0)` requires its own explicit `mask` argument to zero out invalid lanes; without it, tail lanes contribute stale register values and bias the computed variance upwards."
+      "text": "Each program handles one row by loading all `N=4096` FP32 elements into registers/SRAM (~16 KB); this constrains occupancy since the full row lives in one program's tile."
     },
     {
       "id": "C",
@@ -67,12 +67,12 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "B"
   ],
   "explanation": "The kernel is row-parallel: one program per row, loading all N elements at once. The per-program working set is roughly N × 4 B = 16 KB for FP32, held in registers or SRAM depending on Triton's lowering. This footprint constrains how many programs can be resident per SM (occupancy). The masked load with `other=0.0` correctly zeros tail lanes, so `tl.sum(x*x)` on masked-off lanes contributes 0 (no extra `mask` argument needed on the reduction). Removing `other=0.0` does not deliver a 20% speedup, and `tl.sqrt` reciprocal lowering is not bit-identical across architectures.",
   "optionExplanations": {
-    "B": "Wrong: `other=0.0` in the load makes tail lanes contribute 0 to `x * x`, so `tl.sum` is correct without an explicit mask argument.",
-    "A": "Correct: this is the row-parallel design pattern for LN/RMSNorm; the per-program footprint sets the practical block-size ceiling.",
+    "A": "Wrong: `other=0.0` in the load makes tail lanes contribute 0 to `x * x`, so `tl.sum` is correct without an explicit mask argument.",
+    "B": "Correct: this is the row-parallel design pattern for LN/RMSNorm; the per-program footprint sets the practical block-size ceiling.",
     "C": "Wrong: the 20% claim is fabricated; whether `other` is present when the mask is always True has negligible perf impact.",
     "D": "Wrong: `1.0 / tl.sqrt(x)` may or may not lower to `rcpsqrt` depending on version/target, and PTX `rsqrt.approx` is not bit-identical across architectures or vs. IEEE-compliant `1/sqrt`."
   },
@@ -89,7 +89,7 @@
     "rcpsqrt_bit_identical_myth"
   ],
   "distractorRationales": {
-    "B": "Confuses `mask` argument on `tl.load` with a separate mask argument on `tl.sum`.",
+    "A": "Confuses `mask` argument on `tl.load` with a separate mask argument on `tl.sum`.",
     "C": "Fabricates a precise perf number.",
     "D": "Wrong claim about bit-identical numerics."
   },
@@ -98,14 +98,14 @@
       "ref": "DOC:triton",
       "locator": "tl.load / tl.sum / tl.sqrt reference and RMSNorm tutorial",
       "supports": [
-        "A"
+        "B"
       ]
     },
     {
       "ref": "DOC:cuda-guide",
       "locator": "PTX rsqrt.approx numerical behavior",
       "supports": [
-        "A"
+        "B"
       ]
     }
   ],

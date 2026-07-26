@@ -25,11 +25,11 @@
     },
     {
       "id": "B",
-      "text": "Symbolic shape uses named symbols at compile time (e.g., dim `N`) that can carry relational constraints (`N > 0`, `N % 8 == 0`); dynamic shape refers to the property that the extent is not known statically. Symbolic-shape support is one implementation technique for dynamic shapes. In this reading, the two terms are used identically throughout every compiler paper and framework documentation; there is no distinction between representation and property, and either word can be substituted for the other in any context."
+      "text": "Symbolic shape means the tensor's runtime memory is symbolic (allocated on demand); dynamic shape means the tensor's shape is fixed but the dtype changes. The two describe different tensor attributes. Under this framing, symbolic shape means the tensor's runtime memory allocation is symbolic (allocated on demand each call), while dynamic shape means the shape metadata is fixed but the dtype changes between invocations — the two describe different attributes."
     },
     {
       "id": "C",
-      "text": "Symbolic shape means the tensor's runtime memory is symbolic (allocated on demand); dynamic shape means the tensor's shape is fixed but the dtype changes. The two describe different tensor attributes. Under this framing, symbolic shape means the tensor's runtime memory allocation is symbolic (allocated on demand each call), while dynamic shape means the shape metadata is fixed but the dtype changes between invocations — the two describe different attributes."
+      "text": "Symbolic shape uses named symbols at compile time (e.g., dim `N`) that can carry relational constraints (`N > 0`, `N % 8 == 0`); dynamic shape refers to the property that the extent is not known statically. Symbolic-shape support is one implementation technique for dynamic shapes. In this reading, the two terms are used identically throughout every compiler paper and framework documentation; there is no distinction between representation and property, and either word can be substituted for the other in any context."
     },
     {
       "id": "D",
@@ -37,13 +37,13 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "C"
   ],
   "explanation": "'Dynamic shape' is a property: a dim's extent is not known at compile time. 'Symbolic shape' is a technique/representation: use named symbols at compile time (with possible constraints such as divisibility, positivity, or relations across dims) to reason about that dynamic dim. TVM Relax's symbolic shapes and PyTorch's symbolic integers (SymInt) are the same idea: a compile-time representative for an unknown-at-compile-time value that later becomes concrete at runtime. Dtype is unrelated.",
   "optionExplanations": {
-    "B": "Correct: matches the standard terminology in TVM Relax / PyTorch / MLIR discussions.",
     "A": "Wrong: the terms are related but not identical.",
-    "C": "Wrong: shape vs. memory allocation and dtype changes are unrelated dimensions.",
+    "B": "Wrong: shape vs. memory allocation and dtype changes are unrelated dimensions.",
+    "C": "Correct: matches the standard terminology in TVM Relax / PyTorch / MLIR discussions.",
     "D": "Wrong: compilers commonly use symbolic-shape reasoning to support dynamic shapes."
   },
   "assumptions": [
@@ -59,7 +59,7 @@
   ],
   "distractorRationales": {
     "A": "Merges the two.",
-    "C": "Confuses shape with allocation and dtype.",
+    "B": "Confuses shape with allocation and dtype.",
     "D": "Wrong dichotomy."
   },
   "sourceRefs": [
@@ -67,14 +67,14 @@
       "ref": "DOC:tvm-relax",
       "locator": "Symbolic shape variables in Relax",
       "supports": [
-        "B"
+        "C"
       ]
     },
     {
       "ref": "PAPER:pytorch2",
       "locator": "SymInt and symbolic shapes in PyTorch 2",
       "supports": [
-        "B"
+        "C"
       ]
     }
   ],

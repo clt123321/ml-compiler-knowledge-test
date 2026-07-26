@@ -18,18 +18,32 @@
   },
   "stem": "Which statement most precisely describes escape analysis and the optimizations it enables?",
   "options": [
-    { "id": "A", "text": "Escape analysis proves that a heap-allocated object's lifetime is bounded by its allocating function (does not escape via return, thread, or stored reference); the compiler can then stack-allocate it, scalarize its fields, or eliminate it entirely (scalar replacement of aggregates)." },
-    { "id": "B", "text": "Escape analysis proves that a variable is used outside a loop; the compiler then hoists its computation via LICM." },
-    { "id": "C", "text": "Escape analysis proves that a function does not throw exceptions; the compiler then removes exception-handling code paths." },
-    { "id": "D", "text": "Escape analysis identifies variables that need to be stored in registers rather than memory; it drives register allocation." }
+    {
+      "id": "A",
+      "text": "Escape analysis identifies variables that need to be stored in registers rather than memory; it drives register allocation."
+    },
+    {
+      "id": "B",
+      "text": "Escape analysis proves that a variable is used outside a loop; the compiler then hoists its computation via LICM."
+    },
+    {
+      "id": "C",
+      "text": "Escape analysis proves that a function does not throw exceptions; the compiler then removes exception-handling code paths."
+    },
+    {
+      "id": "D",
+      "text": "Escape analysis proves that a heap-allocated object's lifetime is bounded by its allocating function (does not escape via return, thread, or stored reference); the compiler can then stack-allocate it, scalarize its fields, or eliminate it entirely (scalar replacement of aggregates)."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Escape analysis is a program analysis that determines whether an allocated object's reference can 'escape' the scope of its allocation (via return value, thread visibility, or a store into an escaping location). Non-escaping objects can be stack-allocated (avoiding heap GC pressure), scalarized (SROA), or eliminated. Options B, C, D refer to unrelated analyses.",
   "optionExplanations": {
-    "A": "Correct: standard escape analysis definition and its enabled optimizations.",
+    "A": "Wrong: register allocation is a downstream pass; escape analysis operates at higher-level memory semantics.",
     "B": "Wrong: this describes loop-invariant analysis, not escape analysis.",
     "C": "Wrong: exception-throwing analysis is a distinct effect analysis.",
-    "D": "Wrong: register allocation is a downstream pass; escape analysis operates at higher-level memory semantics."
+    "D": "Correct: standard escape analysis definition and its enabled optimizations."
   },
   "assumptions": [
     "Language supports heap-allocated objects (e.g., Java, Go, or C++ with new/delete).",
@@ -39,15 +53,30 @@
     "Does not imply escape analysis eliminates all heap allocations; only proven non-escaping ones.",
     "Does not imply escape analysis is precise; imprecise conservative results simply prevent optimization without introducing bugs."
   ],
-  "misconceptionTags": ["escape_vs_loop_invariance", "escape_vs_regalloc"],
+  "misconceptionTags": [
+    "escape_vs_loop_invariance",
+    "escape_vs_regalloc"
+  ],
   "distractorRationales": {
+    "A": "Confuses escape with register allocation.",
     "B": "Confuses escape with loop-invariance.",
-    "C": "Confuses escape with exception analysis.",
-    "D": "Confuses escape with register allocation."
+    "C": "Confuses escape with exception analysis."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Interprocedural analysis / escape analysis chapter", "supports": ["A"] },
-    { "ref": "BOOK:appel", "locator": "Heap analysis and stack allocation optimization chapter", "supports": ["A"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Interprocedural analysis / escape analysis chapter",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Heap analysis and stack allocation optimization chapter",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

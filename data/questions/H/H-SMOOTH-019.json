@@ -18,17 +18,31 @@
   },
   "stem": "SmoothQuant enables W8A8 quantization for LLMs where naive per-tensor activation quantization fails due to outliers. Which best describes its central technique?",
   "options": [
-    { "id": "A", "text": "SmoothQuant chooses a per-channel diagonal scaling vector `s` and rewrites `Y = XW` as `Y = (X · diag(1/s)) · (diag(s) · W)`; the activation channels are 'smoothed' (outlier magnitude reduced), while the weights absorb the migrated magnitude. Since weights are easy to per-channel-quantize but activations are usually per-tensor, this makes W8A8 tractable." },
-    { "id": "B", "text": "SmoothQuant identifies outlier channels and casts them to FP16 while quantizing the rest to INT8; the resulting kernel is mixed-precision." },
-    { "id": "C", "text": "SmoothQuant applies a global smoothing filter to activation tensors before quantization, low-passing the outliers." },
-    { "id": "D", "text": "SmoothQuant retrains the model with regularization that penalizes outlier activations, producing a naturally quantization-friendly network." }
+    {
+      "id": "A",
+      "text": "SmoothQuant applies a global smoothing filter to activation tensors before quantization, low-passing the outliers."
+    },
+    {
+      "id": "B",
+      "text": "SmoothQuant identifies outlier channels and casts them to FP16 while quantizing the rest to INT8; the resulting kernel is mixed-precision."
+    },
+    {
+      "id": "C",
+      "text": "SmoothQuant chooses a per-channel diagonal scaling vector `s` and rewrites `Y = XW` as `Y = (X · diag(1/s)) · (diag(s) · W)`; the activation channels are 'smoothed' (outlier magnitude reduced), while the weights absorb the migrated magnitude. Since weights are easy to per-channel-quantize but activations are usually per-tensor, this makes W8A8 tractable."
+    },
+    {
+      "id": "D",
+      "text": "SmoothQuant retrains the model with regularization that penalizes outlier activations, producing a naturally quantization-friendly network."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "SmoothQuant's core observation: activation outliers concentrate in a small number of channels; per-tensor activation quantization suffers, but per-channel weight quantization is cheap. Multiplying activations by `diag(1/s)` (which requires `s` on their per-channel scale) and correspondingly multiplying weights by `diag(s)` is a mathematically-equivalent rewrite that pushes the outlier magnitude from activations into weights. The rewritten activations are 'smooth' (small dynamic range → good per-tensor INT8), while the rewritten weights have per-channel-magnitude variation that per-channel weight quantization already handles well. Option B describes LLM.int8, not SmoothQuant. Option C invents a filtering-based approach. Option D invents a training-based method.",
   "optionExplanations": {
-    "A": "Correct: matches the SmoothQuant paper's central technique.",
+    "A": "Wrong: SmoothQuant is a mathematical rewrite, not signal smoothing.",
     "B": "Wrong: describes LLM.int8's mixed-precision fallback.",
-    "C": "Wrong: SmoothQuant is a mathematical rewrite, not signal smoothing.",
+    "C": "Correct: matches the SmoothQuant paper's central technique.",
     "D": "Wrong: SmoothQuant is a PTQ method, not a training modification."
   },
   "assumptions": [
@@ -39,14 +53,23 @@
     "Does not imply the diagonal scaling absorbs the entire outlier — the migration factor `s` is a tunable hyperparameter balancing activation smoothness vs. weight quantization difficulty.",
     "Does not imply SmoothQuant matches every FP16 accuracy — some residual loss is typical, though small."
   ],
-  "misconceptionTags": ["smoothquant_llm_int8_confusion", "smoothquant_signal_filter"],
+  "misconceptionTags": [
+    "smoothquant_llm_int8_confusion",
+    "smoothquant_signal_filter"
+  ],
   "distractorRationales": {
+    "A": "Confuses with signal smoothing.",
     "B": "Confuses with LLM.int8.",
-    "C": "Confuses with signal smoothing.",
     "D": "Confuses with training-time methods."
   },
   "sourceRefs": [
-    { "ref": "PAPER:smoothquant", "locator": "Sections 3-4: diagonal scaling and migration factor", "supports": ["A"] }
+    {
+      "ref": "PAPER:smoothquant",
+      "locator": "Sections 3-4: diagonal scaling and migration factor",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

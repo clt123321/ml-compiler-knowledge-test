@@ -18,23 +18,53 @@
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [[16, 3, 224, 224]],
-    "dtypes": ["float32"],
-    "strides": [[150528, 50176, 224, 1]]
+    "shapes": [
+      [
+        16,
+        3,
+        224,
+        224
+      ]
+    ],
+    "dtypes": [
+      "float32"
+    ],
+    "strides": [
+      [
+        150528,
+        50176,
+        224,
+        1
+      ]
+    ]
   },
   "stem": "A 4-D tensor `x` has shape `[N=16, C=3, H=224, W=224]` and NCHW-contiguous strides `[150528, 50176, 224, 1]`. Consider producing a same-shape tensor with strides `[150528, 1, 672, 3]` (the standard `torch.channels_last` layout for NCHW-shaped tensors). Which statement about this transformation is correct?",
   "irSnippet": "// Pseudo IR (Aten-like)\n// BEFORE (NCHW contiguous)\n%x : Tensor<16x3x224x224xf32, strides=[150528,50176,224,1]>\n\n// TARGET (channels_last strides on the same logical shape)\n%y : Tensor<16x3x224x224xf32, strides=[150528,1,672,3]>\n\n// Storage index formula for element (n, c, h, w):\n//   NCHW-contiguous: n*C*H*W + c*H*W + h*W + w\n//   channels_last : n*C*H*W + h*W*C + w*C + c\n// These two orderings place different elements in a given physical byte;\n// hence a pure view (no data movement) cannot rewrite one into the other.",
   "options": [
-    { "id": "A", "text": "Not a pure view: producing `strides=[150528, 1, 672, 3]` from an NCHW-contiguous buffer requires physically reordering elements — consecutive-in-C elements sit `H*W` bytes apart in the source but must sit 1 byte apart in the target." },
-    { "id": "B", "text": "This can be expressed as a pure view (no data movement) since only the strides change; shape, dtype, and total element count are identical between source and target, and PyTorch views are precisely metadata-only transformations that repurpose the same storage." },
-    { "id": "C", "text": "`channels_last` and `NCHW` describe the same physical layout under a different logical permutation; both are metadata-equivalent and interconvert with zero runtime cost via a view that shifts the interpretation of the strides." },
-    { "id": "D", "text": "This is a shape transformation, not a stride transformation; the underlying tensor must be reshaped from `[16, 3, 224, 224]` to `[16, 224, 224, 3]` first, and `channels_last` is effectively PyTorch's shorthand for that NHWC reshape." }
+    {
+      "id": "A",
+      "text": "This can be expressed as a pure view (no data movement) since only the strides change; shape, dtype, and total element count are identical between source and target, and PyTorch views are precisely metadata-only transformations that repurpose the same storage."
+    },
+    {
+      "id": "B",
+      "text": "Not a pure view: producing `strides=[150528, 1, 672, 3]` from an NCHW-contiguous buffer requires physically reordering elements — consecutive-in-C elements sit `H*W` bytes apart in the source but must sit 1 byte apart in the target."
+    },
+    {
+      "id": "C",
+      "text": "`channels_last` and `NCHW` describe the same physical layout under a different logical permutation; both are metadata-equivalent and interconvert with zero runtime cost via a view that shifts the interpretation of the strides."
+    },
+    {
+      "id": "D",
+      "text": "This is a shape transformation, not a stride transformation; the underlying tensor must be reshaped from `[16, 3, 224, 224]` to `[16, 224, 224, 3]` first, and `channels_last` is effectively PyTorch's shorthand for that NHWC reshape."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "A view rewrites metadata (shape/strides) over the same physical bytes. In NCHW-contiguous storage the element (n, c, h, w) lives at offset `n*C*H*W + c*H*W + h*W + w`; in channels_last it lives at `n*C*H*W + h*W*C + w*C + c`. Requiring stride[C]=1 means consecutive-in-C elements are adjacent bytes; but in the NCHW buffer they are `H*W` bytes apart. No combination of view metadata can reconcile this — a memory copy is required.",
   "optionExplanations": {
-    "A": "Correct: the target strides encode a different physical element ordering than the source; a view alone cannot re-order storage.",
-    "B": "Wrong: strides do not describe how bytes are laid out in memory freely; they describe how logical coordinates map to a given physical layout. Two stride patterns can coexist only if they map to consistent byte positions.",
+    "A": "Wrong: strides do not describe how bytes are laid out in memory freely; they describe how logical coordinates map to a given physical layout. Two stride patterns can coexist only if they map to consistent byte positions.",
+    "B": "Correct: the target strides encode a different physical element ordering than the source; a view alone cannot re-order storage.",
     "C": "Wrong: the two are distinct physical layouts; convolution and other kernels benchmark differently on each because element ordering in memory differs.",
     "D": "Wrong: `channels_last` in PyTorch keeps the logical NCHW shape and only changes stride ordering; it is not a reshape to NHWC."
   },
@@ -46,15 +76,30 @@
     "Does not imply that channels_last is universally faster; performance depends on the specific op and hardware (e.g., cuDNN kernels favor channels_last for many convolutions on Ampere).",
     "Does not imply that all stride manipulations require copies — permutations that reorder logical dim indices without shifting bytes (e.g., transpose) can be views."
   ],
-  "misconceptionTags": ["view_conflates_stride_with_permutation", "layout_equals_reshape"],
+  "misconceptionTags": [
+    "view_conflates_stride_with_permutation",
+    "layout_equals_reshape"
+  ],
   "distractorRationales": {
-    "B": "Confuses stride metadata with physical layout freedom.",
+    "A": "Confuses stride metadata with physical layout freedom.",
     "C": "Ignores physical byte order.",
     "D": "Conflates PyTorch's `channels_last` (stride-only) with NHWC reshape."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Memory layout and data structures for arrays", "supports": ["A"] },
-    { "ref": "DOC:mlir-langref", "locator": "MemRef type / stride semantics", "supports": ["A"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Memory layout and data structures for arrays",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "MemRef type / stride semantics",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

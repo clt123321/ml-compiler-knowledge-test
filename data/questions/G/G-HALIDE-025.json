@@ -18,18 +18,32 @@
   },
   "stem": "The Halide paper (PLDI 2013) is famous for separating a program's algorithm (the pure functional description of what to compute) from its schedule (the description of how to compute it — loop order, tiling, storage granularity, parallelism). Which best captures the paper's design intent behind this separation?",
   "options": [
-    { "id": "A", "text": "Because a single algorithm admits many valid schedules with vastly different performance, and the best schedule depends on hardware and problem size, separating the two lets a programmer or autoscheduler explore schedules without changing the correctness-critical algorithm; the same algorithm becomes portable across CPUs, GPUs, and DSPs by rescheduling." },
-    { "id": "B", "text": "The separation was introduced only to enable static type checking of the algorithm at compile time; performance was a secondary consideration." },
-    { "id": "C", "text": "The separation was designed to allow multiple algorithms to share the same schedule; the schedule is the reusable artifact." },
-    { "id": "D", "text": "The separation matches the mathematical distinction between compilable and interpretable programs; algorithms are compiled while schedules are interpreted at runtime." }
+    {
+      "id": "A",
+      "text": "The separation matches the mathematical distinction between compilable and interpretable programs; algorithms are compiled while schedules are interpreted at runtime."
+    },
+    {
+      "id": "B",
+      "text": "The separation was introduced only to enable static type checking of the algorithm at compile time; performance was a secondary consideration."
+    },
+    {
+      "id": "C",
+      "text": "The separation was designed to allow multiple algorithms to share the same schedule; the schedule is the reusable artifact."
+    },
+    {
+      "id": "D",
+      "text": "Because a single algorithm admits many valid schedules with vastly different performance, and the best schedule depends on hardware and problem size, separating the two lets a programmer or autoscheduler explore schedules without changing the correctness-critical algorithm; the same algorithm becomes portable across CPUs, GPUs, and DSPs by rescheduling."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "The Halide paper's central contribution is exactly the observation that many valid schedules realize the same algorithm with dramatically different performance, and that the optimal schedule depends on target hardware, memory hierarchy, and image size. Coupling the algorithm and schedule (as in hand-written C code) makes portability and performance tuning painful. Separating them lets programmers write the algorithm once and iterate on schedules or use autoschedulers. Options B, C, D are inversions or unrelated framings.",
   "optionExplanations": {
-    "A": "Correct: matches the paper's abstract and introduction.",
+    "A": "Wrong: both are compiled together in Halide.",
     "B": "Wrong: type checking is not the motivation.",
     "C": "Wrong: schedules are algorithm-specific, not reusable across algorithms.",
-    "D": "Wrong: both are compiled together in Halide."
+    "D": "Correct: matches the paper's abstract and introduction."
   },
   "assumptions": [
     "The algorithm is expressible in Halide's pure functional style."
@@ -38,14 +52,23 @@
     "Does not imply that any schedule can be chosen for a given algorithm — schedule primitives have legality preconditions.",
     "Does not imply Halide's autoscheduler always finds an optimal schedule."
   ],
-  "misconceptionTags": ["halide_schedule_type_check", "halide_schedule_reusable_across_algos"],
+  "misconceptionTags": [
+    "halide_schedule_type_check",
+    "halide_schedule_reusable_across_algos"
+  ],
   "distractorRationales": {
+    "A": "Misconstrues Halide's compilation model.",
     "B": "Misattributes motivation.",
-    "C": "Reverses the algorithm-schedule specialization.",
-    "D": "Misconstrues Halide's compilation model."
+    "C": "Reverses the algorithm-schedule specialization."
   },
   "sourceRefs": [
-    { "ref": "PAPER:halide", "locator": "Abstract, Sections 1-2: separation of algorithm and schedule", "supports": ["A"] }
+    {
+      "ref": "PAPER:halide",
+      "locator": "Abstract, Sections 1-2: separation of algorithm and schedule",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

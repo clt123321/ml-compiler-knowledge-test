@@ -11,7 +11,10 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere (sm_80, A100)",
     "device": "GPU",
-    "requiredFeatures": ["L2 sector 32B", "coalesced global loads"]
+    "requiredFeatures": [
+      "L2 sector 32B",
+      "coalesced global loads"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
@@ -19,18 +22,32 @@
   "profileData": "Kernel A (coalesced 4B stride-1 load, warp of 32 threads): 128 B per transaction, 1 transaction per warp. Kernel B (stride-32 4B load with 128 B sectors): 32 sectors, 32 B each = 1024 B moved per warp.",
   "stem": "Two kernels each read 32 × 4 B = 128 useful bytes per warp. Kernel A reads contiguous 4 B elements (stride 1) and issues one 128 B coalesced transaction. Kernel B reads with stride 32 (4 B elements 128 B apart), touching 32 distinct 32 B sectors, so the memory system transfers 32 × 32 B = 1024 B per warp. Assuming HBM bandwidth is the bottleneck, what is the ratio of effective useful-bytes throughput of Kernel B to Kernel A?",
   "options": [
-    { "id": "A", "text": "1/8: Kernel B moves 8× the bytes per warp for the same useful payload, so at HBM saturation it delivers 1/8 the useful throughput." },
-    { "id": "B", "text": "1/32: because Kernel B touches 32 sectors, its effective bandwidth is 1/32 of Kernel A's; the number of distinct sectors touched is the direct multiplier." },
-    { "id": "C", "text": "1: the L2 cache absorbs the extra transactions transparently and delivers the same useful bandwidth for both patterns on A100." },
-    { "id": "D", "text": "1/4: coalesced transactions are 128 B while strided transactions are 32 B; the ratio 128/32 = 4 gives the throughput penalty." }
+    {
+      "id": "A",
+      "text": "1/4: coalesced transactions are 128 B while strided transactions are 32 B; the ratio 128/32 = 4 gives the throughput penalty."
+    },
+    {
+      "id": "B",
+      "text": "1/32: because Kernel B touches 32 sectors, its effective bandwidth is 1/32 of Kernel A's; the number of distinct sectors touched is the direct multiplier."
+    },
+    {
+      "id": "C",
+      "text": "1: the L2 cache absorbs the extra transactions transparently and delivers the same useful bandwidth for both patterns on A100."
+    },
+    {
+      "id": "D",
+      "text": "1/8: Kernel B moves 8× the bytes per warp for the same useful payload, so at HBM saturation it delivers 1/8 the useful throughput."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Effective useful bandwidth = useful bytes / bytes transferred. Kernel A: 128/128 = 1.0. Kernel B: 128/1024 = 0.125. Ratio = 0.125/1.0 = 1/8. The waste factor equals bytes moved divided by useful bytes: 1024/128 = 8. It is not 1/32 because a 32 B sector still carries 32 B (only one of which is used, but the sector itself is the minimum granularity). L2 cannot rescue a first-access pattern that pulls fresh sectors from HBM.",
   "optionExplanations": {
-    "A": "Correct: the waste factor is 1024 / 128 = 8×, so useful throughput is 1/8 of the coalesced case.",
+    "A": "Wrong: 128 vs 32 is transaction size, but Kernel B issues 32 transactions and moves 32×32 = 1024 B.",
     "B": "Wrong: the number of sectors is not the throughput divisor by itself; each sector still carries 32 B, so waste is bytes_moved / useful_bytes = 8.",
     "C": "Wrong: L2 can help on repeated access but cannot reduce first-touch HBM traffic; here each warp fetches fresh sectors.",
-    "D": "Wrong: 128 vs 32 is transaction size, but Kernel B issues 32 transactions and moves 32×32 = 1024 B."
+    "D": "Correct: the waste factor is 1024 / 128 = 8×, so useful throughput is 1/8 of the coalesced case."
   },
   "assumptions": [
     "Sector size at L2 is 32 B (typical for recent NVIDIA GPUs) and there is no cache line coalescing across the 32 accesses in Kernel B.",
@@ -41,15 +58,30 @@
     "Does not imply the actual observed slowdown will be exactly 8×; latency hiding, launch overhead, and other kernels may modulate the observed number.",
     "Does not imply Kernel B always wastes 8×; if consecutive warps happen to touch the same sectors, L2 reuse reduces effective waste."
   ],
-  "misconceptionTags": ["sector_count_as_divisor", "l2_rescue_myth"],
+  "misconceptionTags": [
+    "sector_count_as_divisor",
+    "l2_rescue_myth"
+  ],
   "distractorRationales": {
+    "A": "Uses transaction-size ratio without counting number of transactions.",
     "B": "Confuses number of sectors with the throughput divisor.",
-    "C": "Overestimates L2's ability to hide bandwidth waste.",
-    "D": "Uses transaction-size ratio without counting number of transactions."
+    "C": "Overestimates L2's ability to hide bandwidth waste."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-best", "locator": "Global memory access patterns; coalesced accesses and sector transactions", "supports": ["A"] },
-    { "ref": "BOOK:pmpp4", "locator": "Chapter on global memory coalescing", "supports": ["A"] }
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Global memory access patterns; coalesced accesses and sector transactions",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Chapter on global memory coalescing",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

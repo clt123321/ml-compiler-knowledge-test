@@ -18,17 +18,31 @@
   },
   "stem": "AutoTVM (template-based) and Ansor (template-free) both search for a good schedule of a tensor program, but they differ in what constitutes the search space. Which contrast is correct?",
   "options": [
-    { "id": "A", "text": "Template-based search requires the developer to write a schedule template with parameter placeholders (tile size, unroll factor, thread bindings); the search explores parameter combinations of a fixed template. Template-free search generates candidate schedules by combining schedule primitives directly from the tensor expression, requiring no manual template but enlarging the search space." },
-    { "id": "B", "text": "Template-based search learns the template from data; template-free search enumerates all schedules exhaustively." },
-    { "id": "C", "text": "Both approaches use the same search space; the only difference is the choice of measurement backend (simulator vs. real hardware)." },
-    { "id": "D", "text": "Template-free search always outperforms template-based search on every workload; the two are strictly dominated." }
+    {
+      "id": "A",
+      "text": "Both approaches use the same search space; the only difference is the choice of measurement backend (simulator vs. real hardware)."
+    },
+    {
+      "id": "B",
+      "text": "Template-based search learns the template from data; template-free search enumerates all schedules exhaustively."
+    },
+    {
+      "id": "C",
+      "text": "Template-based search requires the developer to write a schedule template with parameter placeholders (tile size, unroll factor, thread bindings); the search explores parameter combinations of a fixed template. Template-free search generates candidate schedules by combining schedule primitives directly from the tensor expression, requiring no manual template but enlarging the search space."
+    },
+    {
+      "id": "D",
+      "text": "Template-free search always outperforms template-based search on every workload; the two are strictly dominated."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "Template-based schedule search (AutoTVM) relies on a developer-authored schedule template with tunable parameters; the search explores those parameters. This produces a small, focused search space but requires per-operator template engineering. Template-free search (Ansor, MetaSchedule) constructs candidate schedules automatically by composing schedule primitives (split, tile, bind, unroll, vectorize) directly from the compute definition; this eliminates manual template work at the cost of a much larger search space, which is why learned cost models and evolutionary search become important. B misattributes 'learned template' to template-based. C claims equal search spaces which is inaccurate. D over-generalizes; on templated workloads AutoTVM can be competitive or better within its narrow space.",
   "optionExplanations": {
-    "A": "Correct: matches the definitions in the TVM/AutoTVM and Ansor papers.",
+    "A": "Wrong: search spaces differ substantially.",
     "B": "Wrong: template-based does not learn templates; humans write them.",
-    "C": "Wrong: search spaces differ substantially.",
+    "C": "Correct: matches the definitions in the TVM/AutoTVM and Ansor papers.",
     "D": "Wrong: template-based can win on well-templated workloads with less tuning budget."
   },
   "assumptions": [
@@ -39,15 +53,30 @@
     "Does not imply template-free search is always faster to converge; the larger space needs more measurements.",
     "Does not imply template-free eliminates all human input — the compute definition and cost-model features are still designed."
   ],
-  "misconceptionTags": ["template_free_dominates", "template_learned"],
+  "misconceptionTags": [
+    "template_free_dominates",
+    "template_learned"
+  ],
   "distractorRationales": {
+    "A": "Denies the fundamental search-space difference.",
     "B": "Confuses template authorship with template learning.",
-    "C": "Denies the fundamental search-space difference.",
     "D": "Overgeneralizes empirical results."
   },
   "sourceRefs": [
-    { "ref": "PAPER:tvm", "locator": "AutoTVM: templated schedule search", "supports": ["A"] },
-    { "ref": "PAPER:ansor", "locator": "Ansor: template-free search from compute definitions", "supports": ["A"] }
+    {
+      "ref": "PAPER:tvm",
+      "locator": "AutoTVM: templated schedule search",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Ansor: template-free search from compute definitions",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

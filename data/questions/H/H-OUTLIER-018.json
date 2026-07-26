@@ -19,16 +19,30 @@
   "profileData": "Per-tensor INT8 quantization of LLM linear layer input activations:\n  Activation distribution: ~99% of values within [-2, 2]; ~1% of values in [-50, 50] (channel-localized outliers).\n  MinMax calibration: threshold = 50 → scale s = 50 / 127 ≈ 0.394 → ~99% of values occupy only ~2 / 0.394 ≈ 5 out of 254 quantization levels.\n  Observed effect: post-quantization perplexity increases 3-5×.",
   "stem": "Per-tensor MinMax INT8 quantization on this LLM layer collapses accuracy. Which explanation is most accurate?",
   "options": [
-    { "id": "A", "text": "Outliers force the per-tensor MinMax scale to be dominated by rare extremes, leaving only ~5 quantization levels for the 99% of activations in [-2, 2]; the resulting resolution is inadequate. Per-channel activation quantization or techniques like SmoothQuant that shift the outlier magnitude to the weights address this." },
-    { "id": "B", "text": "INT8 GEMM is mathematically incapable of representing LLM activations; only FP16 works." },
-    { "id": "C", "text": "The issue is a bug in the calibration code; a correct MinMax implementation would automatically handle outliers." },
-    { "id": "D", "text": "Per-tensor MinMax is the recommended calibration for LLMs; the perplexity increase reflects an inherent property of LLM output distributions and is unrelated to outlier handling." }
+    {
+      "id": "A",
+      "text": "INT8 GEMM is mathematically incapable of representing LLM activations; only FP16 works."
+    },
+    {
+      "id": "B",
+      "text": "Outliers force the per-tensor MinMax scale to be dominated by rare extremes, leaving only ~5 quantization levels for the 99% of activations in [-2, 2]; the resulting resolution is inadequate. Per-channel activation quantization or techniques like SmoothQuant that shift the outlier magnitude to the weights address this."
+    },
+    {
+      "id": "C",
+      "text": "The issue is a bug in the calibration code; a correct MinMax implementation would automatically handle outliers."
+    },
+    {
+      "id": "D",
+      "text": "Per-tensor MinMax is the recommended calibration for LLMs; the perplexity increase reflects an inherent property of LLM output distributions and is unrelated to outlier handling."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "The scenario captures the classical LLM outlier problem (documented in LLM.int8, SmoothQuant, AWQ): a small fraction of activation channels have magnitudes far exceeding the bulk distribution, driving the per-tensor MinMax scale up and wasting quantization levels. The fix is granularity refinement (per-channel activation quantization is often infeasible for post-attention activations, but per-token or per-channel-weight + activation-migration strategies work), or algorithmic techniques like SmoothQuant that migrate the outlier magnitude to weights (which can be per-channel-quantized). Options B, C, D are misdirection or misdiagnosis.",
   "optionExplanations": {
-    "A": "Correct: standard outlier-driven MinMax failure and standard mitigations.",
-    "B": "Wrong: INT8 GEMM works for LLMs with appropriate calibration.",
+    "A": "Wrong: INT8 GEMM works for LLMs with appropriate calibration.",
+    "B": "Correct: standard outlier-driven MinMax failure and standard mitigations.",
     "C": "Wrong: correct MinMax implementation still fails on outliers; the problem is the method, not the code.",
     "D": "Wrong: MinMax is not recommended for outlier-heavy activation distributions."
   },
@@ -40,15 +54,30 @@
     "Does not imply per-channel activation quantization is always feasible — some architectures make it hard to align activation channels across ops.",
     "Does not imply SmoothQuant is the only remedy — AWQ, LLM.int8's mixed-precision fallback, and other methods exist."
   ],
-  "misconceptionTags": ["int8_unusable_for_llm", "minmax_optimal"],
+  "misconceptionTags": [
+    "int8_unusable_for_llm",
+    "minmax_optimal"
+  ],
   "distractorRationales": {
-    "B": "Overgeneralized 'unusable' claim.",
+    "A": "Overgeneralized 'unusable' claim.",
     "C": "Blames implementation for a methodological limit.",
     "D": "Inverts the standard recommendation."
   },
   "sourceRefs": [
-    { "ref": "PAPER:smoothquant", "locator": "Section on outlier characterization and migration", "supports": ["A"] },
-    { "ref": "PAPER:awq", "locator": "Salient-channel analysis and outlier discussion", "supports": ["A"] }
+    {
+      "ref": "PAPER:smoothquant",
+      "locator": "Section on outlier characterization and migration",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:awq",
+      "locator": "Salient-channel analysis and outlier discussion",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

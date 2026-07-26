@@ -19,18 +19,32 @@
   },
   "stem": "Continuous batching (also called iteration-level batching, as introduced by Orca and used by vLLM) is compared to static request-level batching. Which description of its main mechanism and benefit is correct?",
   "options": [
-    { "id": "A", "text": "Continuous batching runs each request on its own dedicated CUDA stream so that per-request scheduling decisions do not serialize across the batch; the throughput win comes from independent execution paths per request." },
-    { "id": "B", "text": "Continuous batching packs all decode requests together every step but forbids adding new requests until every existing request has produced the same number of tokens; this uniform-progress requirement preserves batching efficiency at the cost of latency." },
-    { "id": "C", "text": "Continuous batching converts autoregressive decode into a single-pass generation by predicting all output tokens simultaneously with a non-autoregressive draft model; the primary win is bypassing the sequential decode dependency." },
-    { "id": "D", "text": "At every model-forward iteration the scheduler builds a batch from currently-active requests: new requests can join and finished requests can leave between iterations without waiting for the whole batch to complete. This keeps the GPU utilized despite variable-length outputs." }
+    {
+      "id": "A",
+      "text": "Continuous batching runs each request on its own dedicated CUDA stream so that per-request scheduling decisions do not serialize across the batch; the throughput win comes from independent execution paths per request."
+    },
+    {
+      "id": "B",
+      "text": "At every model-forward iteration the scheduler builds a batch from currently-active requests: new requests can join and finished requests can leave between iterations without waiting for the whole batch to complete. This keeps the GPU utilized despite variable-length outputs."
+    },
+    {
+      "id": "C",
+      "text": "Continuous batching converts autoregressive decode into a single-pass generation by predicting all output tokens simultaneously with a non-autoregressive draft model; the primary win is bypassing the sequential decode dependency."
+    },
+    {
+      "id": "D",
+      "text": "Continuous batching packs all decode requests together every step but forbids adding new requests until every existing request has produced the same number of tokens; this uniform-progress requirement preserves batching efficiency at the cost of latency."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "Continuous (iteration-level) batching, as introduced by Orca and implemented in vLLM, rebuilds the batch at the granularity of a single model-forward iteration. New requests can join mid-flight and finished ones leave immediately, avoiding the head-of-line blocking of static batching where the whole batch waits for the longest request. This dramatically improves GPU utilization for workloads with variable-length outputs.",
   "optionExplanations": {
-    "D": "Correct: canonical continuous batching mechanism.",
     "A": "Wrong: iteration-level batching runs one shared model forward per iteration; per-request streams are irrelevant.",
-    "B": "Wrong: uniform progress is not required; that would defeat the whole point.",
-    "C": "Wrong: describes non-autoregressive generation, not continuous batching."
+    "B": "Correct: canonical continuous batching mechanism.",
+    "C": "Wrong: describes non-autoregressive generation, not continuous batching.",
+    "D": "Wrong: uniform progress is not required; that would defeat the whole point."
   },
   "assumptions": [
     "Requests share the same model but can have different sequence lengths and prompt positions.",
@@ -40,15 +54,30 @@
     "Does not imply per-token quality changes; the same math runs.",
     "Does not imply zero overhead; batch composition and KV cache management have some cost."
   ],
-  "misconceptionTags": ["cbatch_uniform_progress_myth", "cbatch_stream_myth"],
+  "misconceptionTags": [
+    "cbatch_uniform_progress_myth",
+    "cbatch_stream_myth"
+  ],
   "distractorRationales": {
     "A": "Confuses batching granularity with stream parallelism.",
-    "B": "Fabricates a uniform-progress requirement.",
-    "C": "Confuses with non-autoregressive generation."
+    "C": "Confuses with non-autoregressive generation.",
+    "D": "Fabricates a uniform-progress requirement."
   },
   "sourceRefs": [
-    { "ref": "PAPER:orca", "locator": "Sec 3-4 — iteration-level scheduling", "supports": ["D"] },
-    { "ref": "DOC:vllm", "locator": "Continuous batching architecture", "supports": ["D"] }
+    {
+      "ref": "PAPER:orca",
+      "locator": "Sec 3-4 — iteration-level scheduling",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "Continuous batching architecture",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

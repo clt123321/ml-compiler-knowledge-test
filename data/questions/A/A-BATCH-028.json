@@ -11,29 +11,64 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere (sm_80, A100 SXM)",
     "device": "GPU",
-    "requiredFeatures": ["FP16 Tensor Cores", "312 TFLOP/s FP16 peak", "2.0 TB/s HBM"]
+    "requiredFeatures": [
+      "FP16 Tensor Cores",
+      "312 TFLOP/s FP16 peak",
+      "2.0 TB/s HBM"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["B", 4096], [4096, 4096], ["B", 4096]],
-    "dtypes": ["float16", "float16", "float16"]
+    "shapes": [
+      [
+        "B",
+        4096
+      ],
+      [
+        4096,
+        4096
+      ],
+      [
+        "B",
+        4096
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ]
   },
   "stem": "For a transformer linear layer Y = X · W with W ∈ ℝ^{4096×4096} FP16 (weight streamed once), on A100 SXM (FP16 Tensor-Core peak ≈ 312 TFLOP/s, HBM ≈ 2.0 TB/s, ridge point ≈ 156 FLOP/byte). Approximately what batch/token dimension B is needed for the layer's arithmetic intensity to reach the ridge point (assuming AI ≈ B in the weight-dominated small-B regime)?",
   "options": [
-    { "id": "A", "text": "B ≈ 156 tokens: since AI ≈ B in the weight-dominated regime, B must equal the ridge point (~156 FLOP/byte) to cross into compute-bound territory." },
-    { "id": "B", "text": "B ≈ 16 tokens: because the FP16 Tensor Core is 16× faster than FP32, the required B is FLOP-peak / (16 × HBM) ≈ 16." },
-    { "id": "C", "text": "B = 1: LLM decode is always compute-bound because Tensor Cores parallelize FLOPs faster than HBM streams weights." },
-    { "id": "D", "text": "B ≈ 4096: the batch must match the hidden dimension for arithmetic intensity to saturate." }
+    {
+      "id": "A",
+      "text": "B ≈ 4096: the batch must match the hidden dimension for arithmetic intensity to saturate."
+    },
+    {
+      "id": "B",
+      "text": "B ≈ 16 tokens: because the FP16 Tensor Core is 16× faster than FP32, the required B is FLOP-peak / (16 × HBM) ≈ 16."
+    },
+    {
+      "id": "C",
+      "text": "B = 1: LLM decode is always compute-bound because Tensor Cores parallelize FLOPs faster than HBM streams weights."
+    },
+    {
+      "id": "D",
+      "text": "B ≈ 156 tokens: since AI ≈ B in the weight-dominated regime, B must equal the ridge point (~156 FLOP/byte) to cross into compute-bound territory."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "In the weight-dominated small-B regime (bytes ≈ K·N·2 for W, activations negligible), AI = (2·B·K·N) / (2·K·N + small) ≈ B FLOP/byte. Crossing the ridge point ≈ 156 FLOP/byte thus requires B ≈ 156 tokens. This matches empirical observations that LLM decode is memory-bound until continuous batching aggregates roughly this many concurrent requests. Options B, C, D contradict the analysis.",
   "optionExplanations": {
-    "A": "Correct: AI ≈ B in the weight-dominated regime; crossing ridge ≈ 156 requires B ≈ 156.",
+    "A": "Wrong: batch does not need to equal K for ridge crossing; the arithmetic depends on ridge value and AI-in-B linearity.",
     "B": "Wrong: the 16× ratio is Tensor-Core vs CUDA-core density, not related to the ridge crossing arithmetic.",
     "C": "Wrong: LLM decode with B = 1 is a classic memory-bound GEMV; not compute-bound.",
-    "D": "Wrong: batch does not need to equal K for ridge crossing; the arithmetic depends on ridge value and AI-in-B linearity."
+    "D": "Correct: AI ≈ B in the weight-dominated regime; crossing ridge ≈ 156 requires B ≈ 156."
   },
   "assumptions": [
     "AI ≈ B in the small-B, weight-dominated regime (activations negligible).",
@@ -44,15 +79,30 @@
     "Does not imply that B ≥ 156 guarantees achieved peak throughput; the compute regime is a necessary but not sufficient condition.",
     "Does not imply the same B threshold applies on H100; H100's higher FP16 peak (~989 TFLOP/s) roughly doubles the required B to stay compute-bound."
   ],
-  "misconceptionTags": ["ridge_batch_confusion", "gemv_gemm_transition_batch"],
+  "misconceptionTags": [
+    "ridge_batch_confusion",
+    "gemv_gemm_transition_batch"
+  ],
   "distractorRationales": {
+    "A": "Arbitrary K-based threshold.",
     "B": "Uses Tensor Core density ratio incorrectly.",
-    "C": "Ignores GEMV/GEMM distinction in decode.",
-    "D": "Arbitrary K-based threshold."
+    "C": "Ignores GEMV/GEMM distinction in decode."
   },
   "sourceRefs": [
-    { "ref": "BOOK:pmpp4", "locator": "Roofline batching analysis", "supports": ["A"] },
-    { "ref": "PAPER:vllm", "locator": "Motivation section: LLM decode is memory-bound at low batch", "supports": ["A"] }
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Roofline batching analysis",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Motivation section: LLM decode is memory-bound at low batch",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

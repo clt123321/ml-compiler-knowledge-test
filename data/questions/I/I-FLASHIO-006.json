@@ -11,31 +11,91 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere or newer",
     "device": "GPU",
-    "requiredFeatures": ["HBM", "large SMEM"]
+    "requiredFeatures": [
+      "HBM",
+      "large SMEM"
+    ]
   },
   "softwareContext": {
     "framework": "generic",
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["B", "H", "N", "d"], ["B", "H", "N", "d"], ["B", "H", "N", "d"], ["B", "H", "N", "N"], ["B", "H", "N", "d"]],
-    "dtypes": ["float16", "float16", "float16", "float16", "float16"],
-    "layouts": ["contiguous", "contiguous", "contiguous", "contiguous", "contiguous"]
+    "shapes": [
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ],
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ],
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ],
+      [
+        "B",
+        "H",
+        "N",
+        "N"
+      ],
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "Compare the HBM traffic of naive attention (which explicitly materializes S = QK^T in HBM before softmax and O = softmax(S)V) with FlashAttention over a single (B=1, H=1) head with sequence length N and head dim d = 64. Which comparison is correct?",
   "options": [
-    { "id": "A", "text": "Naive: O(N*d) reads/writes; FlashAttention: O(N^2) reads/writes. FlashAttention pays more HBM traffic in exchange for constant SMEM usage and lower peak register pressure." },
-    { "id": "B", "text": "Both algorithms have HBM traffic dominated by loading Q, K, V (O(N*d)) and writing O (O(N*d)); FlashAttention's benefit is entirely from fusing softmax into the matmul, not from I/O." },
-    { "id": "C", "text": "Naive attention has HBM traffic dominated by writing and re-reading S (O(N^2)), on top of loading Q, K, V, and writing O. FlashAttention keeps S entirely on-chip and its HBM traffic is O(N^2 * d / M) where M is on-chip memory per SM, reducing to roughly O(N*d) when a full K/V tile fits — much less than naive for large N." },
-    { "id": "D", "text": "Both have HBM traffic O(N^2); FlashAttention only saves compute by fusing softmax with the K, V matmul into a single kernel." }
+    {
+      "id": "A",
+      "text": "Naive: O(N*d) reads/writes; FlashAttention: O(N^2) reads/writes. FlashAttention pays more HBM traffic in exchange for constant SMEM usage and lower peak register pressure."
+    },
+    {
+      "id": "B",
+      "text": "Both algorithms have HBM traffic dominated by loading Q, K, V (O(N*d)) and writing O (O(N*d)); FlashAttention's benefit is entirely from fusing softmax into the matmul, not from I/O."
+    },
+    {
+      "id": "C",
+      "text": "Both have HBM traffic O(N^2); FlashAttention only saves compute by fusing softmax with the K, V matmul into a single kernel."
+    },
+    {
+      "id": "D",
+      "text": "Naive attention has HBM traffic dominated by writing and re-reading S (O(N^2)), on top of loading Q, K, V, and writing O. FlashAttention keeps S entirely on-chip and its HBM traffic is O(N^2 * d / M) where M is on-chip memory per SM, reducing to roughly O(N*d) when a full K/V tile fits — much less than naive for large N."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Naive attention materializes S = QK^T with shape [N, N] in HBM, so it incurs O(N^2) reads/writes for S (plus O(N*d) for Q, K, V, O). FlashAttention keeps S entirely on-chip: for a K/V tile of size B_c fitting in SMEM (size ~M), Q is streamed once per K/V tile, giving HBM I/O of O(N^2 * d / M). When M is large enough to hold K/V for the full computation, this collapses to O(N*d). The gap widens with N because the avoided O(N^2) S traffic scales quadratically.",
   "optionExplanations": {
-    "C": "Correct: FA's I/O is O(N^2 d / M), naive is Ω(N^2); FA wins as N grows.",
     "A": "Wrong: reverses the direction — naive is O(N^2), FA is much less.",
     "B": "Wrong: naive really does write/read S from HBM; that is the primary I/O cost.",
-    "D": "Wrong: FLOP count is comparable; the win is I/O, not compute."
+    "C": "Wrong: FLOP count is comparable; the win is I/O, not compute.",
+    "D": "Correct: FA's I/O is O(N^2 d / M), naive is Ω(N^2); FA wins as N grows."
   },
   "assumptions": [
     "Standard (non-fused) baseline actually writes S to HBM (as in an unoptimized softmax-then-matmul kernel).",
@@ -45,14 +105,23 @@
     "Does not imply naive attention always materializes S; some implementations already fuse softmax with the S computation but still keep row-wise stats in HBM.",
     "Does not imply that FLOP counts are equal in the backward pass; backward recomputation adds some FLOPs."
   ],
-  "misconceptionTags": ["flashattn_io_reversed", "flashattn_flops_win"],
+  "misconceptionTags": [
+    "flashattn_io_reversed",
+    "flashattn_flops_win"
+  ],
   "distractorRationales": {
     "A": "Reverses direction of I/O advantage.",
     "B": "Denies the S materialization cost.",
-    "D": "Attributes gains to compute."
+    "C": "Attributes gains to compute."
   },
   "sourceRefs": [
-    { "ref": "PAPER:flashattn", "locator": "Sec 3.2 — IO complexity analysis", "supports": ["C"] }
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Sec 3.2 — IO complexity analysis",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

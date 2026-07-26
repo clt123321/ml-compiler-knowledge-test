@@ -19,18 +19,33 @@
   },
   "stem": "Which statements about differential testing (as applied to kernel/compiler correctness) are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "Differential testing compares outputs of two independent implementations of the same specification on many (often randomly generated) inputs; it is especially effective at surfacing corner-case bugs (empty shapes, extreme values, unusual strides) that a single golden test might miss." },
-    { "id": "B", "text": "A differential-testing framework must record inputs that trigger a discrepancy so that the failure can be reproduced deterministically; without seed recording, non-deterministic failures degrade to noise and cannot be triaged." },
-    { "id": "C", "text": "Differential testing between an implementation and itself (e.g., torch.compile vs eager) always yields identical outputs by construction; any discrepancy indicates a compiler bug that must be fixed before shipping, with no room for numerical tolerance." },
-    { "id": "D", "text": "Differential testing eliminates the need for golden tests entirely because random inputs provide statistically stronger coverage than any fixed input set." }
+    {
+      "id": "A",
+      "text": "Differential testing between an implementation and itself (e.g., torch.compile vs eager) always yields identical outputs by construction; any discrepancy indicates a compiler bug that must be fixed before shipping, with no room for numerical tolerance."
+    },
+    {
+      "id": "B",
+      "text": "Differential testing eliminates the need for golden tests entirely because random inputs provide statistically stronger coverage than any fixed input set."
+    },
+    {
+      "id": "C",
+      "text": "Differential testing compares outputs of two independent implementations of the same specification on many (often randomly generated) inputs; it is especially effective at surfacing corner-case bugs (empty shapes, extreme values, unusual strides) that a single golden test might miss."
+    },
+    {
+      "id": "D",
+      "text": "A differential-testing framework must record inputs that trigger a discrepancy so that the failure can be reproduced deterministically; without seed recording, non-deterministic failures degrade to noise and cannot be triaged."
+    }
   ],
-  "correctAnswers": ["A", "B"],
+  "correctAnswers": [
+    "C",
+    "D"
+  ],
   "explanation": "A: differential testing shines at corner-case discovery via random input generation. B: reproducibility of failures requires input recording (seeds, tensor state) — this is the hallmark of usable differential testing. C is wrong: compiler transformations legitimately reorder floating-point ops and produce numerically different (though within tolerance) outputs; discrepancy in low-order bits is expected. D is wrong: golden tests remain useful for regression on known-hard inputs and for reproducibility.",
   "optionExplanations": {
-    "A": "Correct: standard scope and value proposition.",
-    "B": "Correct: reproducibility discipline is essential.",
-    "C": "Wrong: eager vs compiled comparisons expect tolerance, not bit equality.",
-    "D": "Wrong: golden and differential tests are complementary."
+    "A": "Wrong: eager vs compiled comparisons expect tolerance, not bit equality.",
+    "B": "Wrong: golden and differential tests are complementary.",
+    "C": "Correct: standard scope and value proposition.",
+    "D": "Correct: reproducibility discipline is essential."
   },
   "assumptions": [
     "The two implementations are actually independent, not two builds of the same code path."
@@ -39,14 +54,31 @@
     "Does not imply differential testing catches all bugs; some bugs are input-distribution-dependent.",
     "Does not imply golden tests are obsolete; they cover named regressions and reproducibility."
   ],
-  "misconceptionTags": ["bit_equality_myth", "diff_replaces_golden_myth"],
+  "misconceptionTags": [
+    "bit_equality_myth",
+    "diff_replaces_golden_myth"
+  ],
   "distractorRationales": {
-    "C": "Overstates numerical equality.",
-    "D": "Overstates differential testing coverage."
+    "A": "Overstates numerical equality.",
+    "B": "Overstates differential testing coverage."
   },
   "sourceRefs": [
-    { "ref": "PAPER:pytorch2", "locator": "TorchInductor validation methodology (compilation vs eager)", "supports": ["A", "B"] },
-    { "ref": "DOC:torch-profiler", "locator": "Testing utilities in torch.testing", "supports": ["A", "B"] }
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "TorchInductor validation methodology (compilation vs eager)",
+      "supports": [
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "Testing utilities in torch.testing",
+      "supports": [
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

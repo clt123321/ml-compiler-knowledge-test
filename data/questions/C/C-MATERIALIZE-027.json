@@ -25,7 +25,7 @@
     },
     {
       "id": "B",
-      "text": "Materialization is the act of realizing a tensor value into a concrete backing buffer with the requested layout, producing physical elements at physical addresses; it is the counterpart of a view, which only rewrites metadata over existing storage."
+      "text": "Materialization is synonymous with kernel launch; every time a kernel executes, its output is 'materialized' by definition. In this account, every kernel launch by definition materializes its output because the kernel writes bytes into a buffer at physical addresses; therefore avoiding materialization is equivalent to avoiding kernel launches entirely."
     },
     {
       "id": "C",
@@ -33,18 +33,18 @@
     },
     {
       "id": "D",
-      "text": "Materialization is synonymous with kernel launch; every time a kernel executes, its output is 'materialized' by definition. In this account, every kernel launch by definition materializes its output because the kernel writes bytes into a buffer at physical addresses; therefore avoiding materialization is equivalent to avoiding kernel launches entirely."
+      "text": "Materialization is the act of realizing a tensor value into a concrete backing buffer with the requested layout, producing physical elements at physical addresses; it is the counterpart of a view, which only rewrites metadata over existing storage."
     }
   ],
   "correctAnswers": [
-    "B"
+    "D"
   ],
   "explanation": "Materialization means allocating a backing buffer and writing the tensor's values into it under the requested (shape, stride, dtype, layout). It is the counterpart of a view, which is metadata-only over existing storage. Compilers work hard to avoid materializations when a computation can be re-expressed as views (transpose of a stride, fold of contiguous dims) or when fusion eliminates the need for the intermediate buffer.",
   "optionExplanations": {
     "A": "Wrong: writing metadata is a view, not a materialization.",
-    "B": "Correct: standard tensor-compiler terminology.",
+    "B": "Wrong: kernel execution and materialization are distinct concepts; a kernel may write into an already-materialized buffer.",
     "C": "Wrong: constant folding is a distinct concept (though it does produce a concrete tensor).",
-    "D": "Wrong: kernel execution and materialization are distinct concepts; a kernel may write into an already-materialized buffer."
+    "D": "Correct: standard tensor-compiler terminology."
   },
   "assumptions": [
     "The IR distinguishes tensor metadata from tensor storage."
@@ -59,22 +59,22 @@
   ],
   "distractorRationales": {
     "A": "Merges view and materialization.",
-    "C": "Wrong association with constant folding.",
-    "D": "Wrong association with kernel launch."
+    "B": "Wrong association with kernel launch.",
+    "C": "Wrong association with constant folding."
   },
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
       "locator": "MemRef materialization vs. tensor view",
       "supports": [
-        "B"
+        "D"
       ]
     },
     {
       "ref": "PAPER:tvm",
       "locator": "Buffer / storage materialization",
       "supports": [
-        "B"
+        "D"
       ]
     }
   ],

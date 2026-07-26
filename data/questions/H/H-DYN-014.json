@@ -18,17 +18,31 @@
   },
   "stem": "'Dynamic quantization' and 'static quantization' of activations differ in a specific way. Which statement is correct?",
   "options": [
-    { "id": "A", "text": "Dynamic quantization computes the activation scale (and zero-point) from the tensor's own statistics at each forward pass (per-tensor min/max or absmax); static quantization computes and freezes the scales offline via a calibration pass over representative inputs, so the scales are constants at runtime." },
-    { "id": "B", "text": "Dynamic quantization is a synonym for QAT; static quantization is a synonym for PTQ." },
-    { "id": "C", "text": "Dynamic quantization uses a different integer format (INT4) than static quantization (INT8); the term refers to the format's dynamic range." },
-    { "id": "D", "text": "Static quantization computes scales from the tensor's own statistics at each forward pass; dynamic quantization freezes them offline." }
+    {
+      "id": "A",
+      "text": "Dynamic quantization uses a different integer format (INT4) than static quantization (INT8); the term refers to the format's dynamic range."
+    },
+    {
+      "id": "B",
+      "text": "Dynamic quantization is a synonym for QAT; static quantization is a synonym for PTQ."
+    },
+    {
+      "id": "C",
+      "text": "Dynamic quantization computes the activation scale (and zero-point) from the tensor's own statistics at each forward pass (per-tensor min/max or absmax); static quantization computes and freezes the scales offline via a calibration pass over representative inputs, so the scales are constants at runtime."
+    },
+    {
+      "id": "D",
+      "text": "Static quantization computes scales from the tensor's own statistics at each forward pass; dynamic quantization freezes them offline."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "Dynamic quantization: at each forward pass, compute activation statistics (typically absmax or min/max) from the runtime tensor and derive the quant params on the fly. Static quantization: run a calibration pass on representative inputs offline, freeze the derived scales, and use those constants at runtime. Dynamic adds per-tensor reduction cost at inference; static needs a calibration corpus but avoids runtime scale calculation. Option B conflates orthogonal concepts (dynamic/static is about scale timing; PTQ/QAT is about training-time involvement). Option C invents a format-dependent meaning. Option D is the direct reverse.",
   "optionExplanations": {
-    "A": "Correct: standard definition used across TensorRT, PyTorch, TF-Lite.",
+    "A": "Wrong: format has nothing to do with dynamic vs static.",
     "B": "Wrong: dynamic/static and PTQ/QAT are orthogonal.",
-    "C": "Wrong: format has nothing to do with dynamic vs static.",
+    "C": "Correct: standard definition used across TensorRT, PyTorch, TF-Lite.",
     "D": "Wrong: reverses the definitions."
   },
   "assumptions": [
@@ -38,15 +52,30 @@
     "Does not imply dynamic quantization is always slower — for small per-tensor reductions the cost is negligible.",
     "Does not imply static quantization always yields lower accuracy — often it is more stable because scales don't drift with input distribution."
   ],
-  "misconceptionTags": ["dynamic_qat_synonym", "static_ptq_synonym"],
+  "misconceptionTags": [
+    "dynamic_qat_synonym",
+    "static_ptq_synonym"
+  ],
   "distractorRationales": {
+    "A": "Format irrelevant.",
     "B": "Cross-conflates two orthogonal axes.",
-    "C": "Format irrelevant.",
     "D": "Definition reversed."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "Dynamic vs static quantization definitions", "supports": ["A"] },
-    { "ref": "DOC:cuda-guide", "locator": "TensorRT static/dynamic quantization workflows", "supports": ["A"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Dynamic vs static quantization definitions",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "TensorRT static/dynamic quantization workflows",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

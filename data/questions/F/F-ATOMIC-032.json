@@ -43,11 +43,11 @@
   "options": [
     {
       "id": "A",
-      "text": "Kernel (X) is incorrect because `atomicAdd` returns the old value at that address, so calling it in a loop without capturing the return breaks the reduction; only (Y) produces the true sum."
+      "text": "Both kernels are correct; kernel (X) suffers heavy contention because thousands of threads target the same address, serializing at the atomic unit — kernel (Y) reduces this to one atomic per block (potentially 1000x fewer) while giving the same result modulo FP32 non-associativity."
     },
     {
       "id": "B",
-      "text": "Both kernels are correct; kernel (X) suffers heavy contention because thousands of threads target the same address, serializing at the atomic unit — kernel (Y) reduces this to one atomic per block (potentially 1000x fewer) while giving the same result modulo FP32 non-associativity."
+      "text": "Kernel (X) is incorrect because `atomicAdd` returns the old value at that address, so calling it in a loop without capturing the return breaks the reduction; only (Y) produces the true sum."
     },
     {
       "id": "C",
@@ -59,12 +59,12 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "A"
   ],
   "explanation": "Both kernels are functionally correct (same mathematical sum modulo FP non-associativity); the difference is contention. Kernel (X) issues N `atomicAdd` calls to a single address, serializing at the atomic unit — this is the canonical anti-pattern. Kernel (Y) reduces contention by factor of blockDim.x (typically 256), giving orders-of-magnitude better throughput on large N. Choice B misreads `atomicAdd` semantics (the return value is optional; it still commits the add). Choice C fabricates infinite atomic bandwidth. Choice D misdescribes `__syncthreads` behavior — it does provide the required synchronization; extra `__syncwarp` is unnecessary here.",
   "optionExplanations": {
-    "B": "Correct: (X) contention-serialized; (Y) block-local reduction + one atomic wins.",
-    "A": "Wrong: `atomicAdd` commits the add regardless of return capture.",
+    "A": "Correct: (X) contention-serialized; (Y) block-local reduction + one atomic wins.",
+    "B": "Wrong: `atomicAdd` commits the add regardless of return capture.",
     "C": "Wrong: hardware atomic bandwidth is finite.",
     "D": "Wrong: `__syncthreads()` is sufficient for block-wide SMEM sync."
   },
@@ -81,7 +81,7 @@
     "atomicadd_return_required_myth"
   ],
   "distractorRationales": {
-    "A": "Wrong claim that return value is required.",
+    "B": "Wrong claim that return value is required.",
     "C": "Fabricates atomic-unit bandwidth.",
     "D": "Wrong claim about __syncthreads insufficiency."
   },
@@ -90,14 +90,14 @@
       "ref": "DOC:cuda-guide",
       "locator": "Atomic Functions — semantics and contention",
       "supports": [
-        "B"
+        "A"
       ]
     },
     {
       "ref": "BOOK:pmpp4",
       "locator": "Reduction and atomics chapter",
       "supports": [
-        "B"
+        "A"
       ]
     }
   ],

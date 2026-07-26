@@ -23,32 +23,32 @@
   "options": [
     {
       "id": "A",
-      "text": "Inductor's default CPU backend generates C++ code (using OpenMP for parallel loops and CPU vector intrinsics for vectorization) and compiles it via a system compiler, rather than emitting Triton, which is CUDA/GPU-oriented."
-    },
-    {
-      "id": "B",
-      "text": "The CPU C++ backend and the CUDA Triton backend share the same graph-level IR (FX + Inductor lowerings) but diverge at the codegen stage, targeting different kernel languages."
-    },
-    {
-      "id": "C",
       "text": "Selecting the CPU backend is done automatically based on tensor device; a CPU-tensor input to a compiled function is compiled via the C++ backend, while a CUDA-tensor input goes to the Triton backend."
     },
     {
-      "id": "D",
+      "id": "B",
       "text": "Inductor's CPU backend transparently offloads all reductions to CUDA regardless of the input tensor device; only pointwise ops run on CPU. In this reading, Inductor's CPU backend transparently offloads any reduction op to CUDA regardless of the input tensor's device; only pointwise ops actually execute on CPU, and mixed workloads implicitly cross device boundaries during compilation."
+    },
+    {
+      "id": "C",
+      "text": "Inductor's default CPU backend generates C++ code (using OpenMP for parallel loops and CPU vector intrinsics for vectorization) and compiles it via a system compiler, rather than emitting Triton, which is CUDA/GPU-oriented."
+    },
+    {
+      "id": "D",
+      "text": "The CPU C++ backend and the CUDA Triton backend share the same graph-level IR (FX + Inductor lowerings) but diverge at the codegen stage, targeting different kernel languages."
     }
   ],
   "correctAnswers": [
     "A",
-    "B",
-    "C"
+    "C",
+    "D"
   ],
   "explanation": "A, B, D are correct: Inductor's CPU backend uses C++ with OpenMP and vector intrinsics, both backends share the graph-level IR and Inductor lowerings before diverging at codegen, and backend choice follows the device of the input tensors. C is wrong: Inductor does not silently move reductions from CPU to CUDA; device dispatch is respected.",
   "optionExplanations": {
     "A": "Correct.",
-    "B": "Correct.",
-    "D": "Wrong: no silent device offload.",
-    "C": "Correct."
+    "B": "Wrong: no silent device offload.",
+    "C": "Correct.",
+    "D": "Correct."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 defaults.",
@@ -62,7 +62,7 @@
     "cpu_offloads_reduction_to_cuda"
   ],
   "distractorRationales": {
-    "D": "Wrong device-offload claim."
+    "B": "Wrong device-offload claim."
   },
   "sourceRefs": [
     {
@@ -70,16 +70,16 @@
       "locator": "CPU C++ backend; OpenMP; vectorization",
       "supports": [
         "A",
-        "B",
-        "C"
+        "C",
+        "D"
       ]
     },
     {
       "ref": "PAPER:pytorch2",
       "locator": "Inductor codegen for CPU vs. GPU",
       "supports": [
-        "A",
-        "B"
+        "C",
+        "D"
       ]
     }
   ],

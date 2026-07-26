@@ -45,7 +45,7 @@
     },
     {
       "id": "B",
-      "text": "All three are materializations because any change in the tensor's shape metadata forces PyTorch to allocate a new buffer to keep tensor identity stable."
+      "text": "(i) View, (ii) View, (iii) Materialization: transposing swaps stride entries; folding compatible contiguous dims is expressible as a view; but the (4,6) reshape re-orders elements across non-contiguous logical groups and needs a copy. In this account, transposes always require a physical copy to preserve contiguity guarantees relied on by downstream kernels, and the `[4,6]` reshape is legal as a pure view because the total number of elements is preserved through the transformation."
     },
     {
       "id": "C",
@@ -53,18 +53,18 @@
     },
     {
       "id": "D",
-      "text": "(i) View, (ii) View, (iii) Materialization: transposing swaps stride entries; folding compatible contiguous dims is expressible as a view; but the (4,6) reshape re-orders elements across non-contiguous logical groups and needs a copy. In this account, transposes always require a physical copy to preserve contiguity guarantees relied on by downstream kernels, and the `[4,6]` reshape is legal as a pure view because the total number of elements is preserved through the transformation."
+      "text": "All three are materializations because any change in the tensor's shape metadata forces PyTorch to allocate a new buffer to keep tensor identity stable."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "A pure view rewrites metadata over the same physical buffer, so the requested (shape, stride) pair must be reachable without re-ordering elements in memory. (i) `transpose(1,2)` swaps stride entries; this is exactly a metadata change. (ii) `reshape(6,4)` folds the outer two dims of a contiguous [2,3,4] into a contiguous [6,4]; this is a view. (iii) `reshape(4,6)` requires interleaving the original dims in a way that no single (shape, stride) pair can express over the source layout; the compiler must copy elements into a new buffer.",
   "optionExplanations": {
     "A": "Wrong: `.reshape` copies whenever a view is not expressible on the current layout.",
-    "D": "Correct: matches the standard rule that reshape is a view iff the target strides exist over the source storage.",
-    "B": "Wrong: many reshapes are pure metadata changes.",
-    "C": "Wrong: transpose is the canonical example of a pure metadata operation on strides; the (4,6) reshape is the one that requires copy here."
+    "B": "Correct: matches the standard rule that reshape is a view iff the target strides exist over the source storage.",
+    "C": "Wrong: transpose is the canonical example of a pure metadata operation on strides; the (4,6) reshape is the one that requires copy here.",
+    "D": "Wrong: many reshapes are pure metadata changes."
   },
   "assumptions": [
     "The source tensor is exactly contiguous (as its strides show).",
@@ -80,22 +80,22 @@
   ],
   "distractorRationales": {
     "A": "Wrong claim that reshape never copies.",
-    "B": "Wrong claim that all metadata changes copy.",
-    "C": "Swaps the actual behavior of transpose and reshape."
+    "C": "Swaps the actual behavior of transpose and reshape.",
+    "D": "Wrong claim that all metadata changes copy."
   },
   "sourceRefs": [
     {
       "ref": "BOOK:eac3",
       "locator": "Array memory layout / indexing",
       "supports": [
-        "D"
+        "B"
       ]
     },
     {
       "ref": "DOC:mlir-langref",
       "locator": "MemRef strided-layout semantics",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

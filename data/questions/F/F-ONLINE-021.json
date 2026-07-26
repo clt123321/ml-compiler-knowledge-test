@@ -39,7 +39,7 @@
   "options": [
     {
       "id": "A",
-      "text": "`m` remains `m_prev` and `s = s_prev + s_new * exp(m_new)`; the running max is never updated after the first tile because subsequent tiles' contributions are absolutely negligible."
+      "text": "`m = max(m_prev, m_new)`; `s = s_prev * exp(m_prev - m) + s_new * exp(m_new - m)`. The old sum is rescaled by `exp(m_prev - m)` (a value in (0, 1]) to reflect the new anchor; the new tile's sum by `exp(m_new - m)`. This is exact algebra: the merged tile is anchored at the new max."
     },
     {
       "id": "B",
@@ -47,7 +47,7 @@
     },
     {
       "id": "C",
-      "text": "`m = max(m_prev, m_new)`; `s = s_prev * exp(m_prev - m) + s_new * exp(m_new - m)`. The old sum is rescaled by `exp(m_prev - m)` (a value in (0, 1]) to reflect the new anchor; the new tile's sum by `exp(m_new - m)`. This is exact algebra: the merged tile is anchored at the new max."
+      "text": "`m` remains `m_prev` and `s = s_prev + s_new * exp(m_new)`; the running max is never updated after the first tile because subsequent tiles' contributions are absolutely negligible."
     },
     {
       "id": "D",
@@ -55,13 +55,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "The online-softmax recurrence, popularized by Milakov & Gimelshein and central to FlashAttention, updates a running `(m, s)` per tile such that after processing all tiles the pair equals `(max(x_1..N), sum_i exp(x_i - max))`. When a new tile arrives, the new anchor is `m = max(m_prev, m_new)`; the previously accumulated `s_prev` was anchored at `m_prev`, so it is rescaled by `exp(m_prev - m)` (≤ 1 since m ≥ m_prev). The new tile's `s_new` (anchored at `m_new`) is rescaled by `exp(m_new - m)`. This is exact algebra, not an approximation.",
   "optionExplanations": {
-    "C": "Correct: canonical online softmax recurrence.",
+    "A": "Correct: canonical online softmax recurrence.",
     "B": "Wrong: naive sum ignores anchor rescaling and gives wrong result.",
-    "A": "Wrong: fails when a later tile has larger max.",
+    "C": "Wrong: fails when a later tile has larger max.",
     "D": "Wrong: FP32 works fine; algorithm is general-purpose."
   },
   "assumptions": [
@@ -78,7 +78,7 @@
   ],
   "distractorRationales": {
     "B": "Fabricates a naive additive recurrence.",
-    "A": "Ignores updates to the running max.",
+    "C": "Ignores updates to the running max.",
     "D": "Wrong claim about FP32/FlashAttention specificity."
   },
   "sourceRefs": [
@@ -86,14 +86,14 @@
       "ref": "PAPER:flashattn",
       "locator": "FlashAttention — online softmax formula, Sect. 3",
       "supports": [
-        "C"
+        "A"
       ]
     },
     {
       "ref": "DOC:triton",
       "locator": "FlashAttention tutorial in Triton",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

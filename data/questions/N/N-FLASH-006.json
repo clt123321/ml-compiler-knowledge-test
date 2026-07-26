@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "GPU with on-chip SRAM (e.g. A100, H100)",
     "device": "GPU",
-    "requiredFeatures": ["large enough SRAM per SM to hold attention block tiles"]
+    "requiredFeatures": [
+      "large enough SRAM per SM to hold attention block tiles"
+    ]
   },
   "softwareContext": {
     "framework": "FlashAttention (v1)",
@@ -19,18 +21,34 @@
   },
   "stem": "Which THREE of the following statements about FlashAttention (v1) are correct, per the paper?",
   "options": [
-    { "id": "A", "text": "FlashAttention computes attention block-by-block in on-chip SRAM using an online (numerically stable) softmax and never materializes the full N×N attention matrix in HBM; total HBM traffic drops from Θ(N²) to Θ(N²·d/M), where M is the SRAM budget." },
-    { "id": "B", "text": "FlashAttention produces exact attention outputs (up to floating-point ordering); it does not approximate the softmax or drop entries." },
-    { "id": "C", "text": "The speedup versus a naive attention kernel is largest in the memory-bound regime (long sequences where HBM traffic dominates) and can be smaller for very short sequences where the naive kernel is compute-bound on the SM." },
-    { "id": "D", "text": "FlashAttention's backward pass reuses the N×N attention matrix stored during the forward pass; storing this matrix is what makes the backward efficient." }
+    {
+      "id": "A",
+      "text": "The speedup versus a naive attention kernel is largest in the memory-bound regime (long sequences where HBM traffic dominates) and can be smaller for very short sequences where the naive kernel is compute-bound on the SM."
+    },
+    {
+      "id": "B",
+      "text": "FlashAttention's backward pass reuses the N×N attention matrix stored during the forward pass; storing this matrix is what makes the backward efficient."
+    },
+    {
+      "id": "C",
+      "text": "FlashAttention computes attention block-by-block in on-chip SRAM using an online (numerically stable) softmax and never materializes the full N×N attention matrix in HBM; total HBM traffic drops from Θ(N²) to Θ(N²·d/M), where M is the SRAM budget."
+    },
+    {
+      "id": "D",
+      "text": "FlashAttention produces exact attention outputs (up to floating-point ordering); it does not approximate the softmax or drop entries."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
   "explanation": "A, B, C are the core claims of the FlashAttention paper. A: IO-aware tiling + online softmax. B: exact attention (no approximation). C: speedup scales with the memory-bound regime — long N is where naive attention's Θ(N²) HBM traffic dominates, so FlashAttention gains most; for very short sequences the naive kernel may already be compute-bound and FlashAttention's tiling overhead can eat into gains. D is wrong: FlashAttention deliberately does NOT store the N×N matrix; the backward recomputes intermediates from stored per-row softmax statistics.",
   "optionExplanations": {
-    "A": "Correct: IO-aware tiling + online softmax + Θ(N²·d/M) HBM traffic.",
-    "B": "Correct: exact attention.",
-    "C": "Correct: speedup is shape-dependent; largest in the memory-bound regime.",
-    "D": "Wrong: the N×N matrix is not stored; recomputation from statistics is used."
+    "A": "Correct: speedup is shape-dependent; largest in the memory-bound regime.",
+    "B": "Wrong: the N×N matrix is not stored; recomputation from statistics is used.",
+    "C": "Correct: IO-aware tiling + online softmax + Θ(N²·d/M) HBM traffic.",
+    "D": "Correct: exact attention."
   },
   "assumptions": [
     "Familiarity with FlashAttention paper §3–§5.",
@@ -40,12 +58,24 @@
     "Does not imply the paper's specific speedup numbers (e.g. 2–4×) apply to arbitrary hardware or shapes; they are measurements on specific GPUs.",
     "Does not imply that FlashAttention beats every attention kernel; for short N some hand-tuned baselines can match it."
   ],
-  "misconceptionTags": ["flashattn_approx", "flashattn_uniform_speedup", "flashattn_stores_matrix"],
+  "misconceptionTags": [
+    "flashattn_approx",
+    "flashattn_uniform_speedup",
+    "flashattn_stores_matrix"
+  ],
   "distractorRationales": {
-    "D": "Reverses the recomputation-vs-storage design."
+    "B": "Reverses the recomputation-vs-storage design."
   },
   "sourceRefs": [
-    { "ref": "PAPER:flashattn", "locator": "§3 algorithm + §4 backward + §5 benchmarks", "supports": ["A", "B", "C"] }
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "§3 algorithm + §4 backward + §5 benchmarks",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Interchange preserves semantics iff no dependence in the original loop nest is violated by the reordering — for pure elementwise stores that read and write disjoint per-iteration locations (no loop-carried dependence), interchange is safe."
+      "text": "Interchange requires the compiler to first fully unroll one of the loops; loop interchange on rolled loops is not a supported transformation in affine IR. Under this account, interchange in an affine IR must be preceded by fully unrolling the outer loop into straight-line code; the interchange transformation is defined only on unrolled loop bodies where the induction variable has been specialized to concrete values."
     },
     {
       "id": "B",
@@ -34,18 +34,18 @@
     },
     {
       "id": "D",
-      "text": "Interchange requires the compiler to first fully unroll one of the loops; loop interchange on rolled loops is not a supported transformation in affine IR. Under this account, interchange in an affine IR must be preceded by fully unrolling the outer loop into straight-line code; the interchange transformation is defined only on unrolled loop bodies where the induction variable has been specialized to concrete values."
+      "text": "Interchange preserves semantics iff no dependence in the original loop nest is violated by the reordering — for pure elementwise stores that read and write disjoint per-iteration locations (no loop-carried dependence), interchange is safe."
     }
   ],
   "correctAnswers": [
-    "A"
+    "D"
   ],
   "explanation": "Loop interchange preserves semantics iff every dependence direction vector in the original nest remains legal after the swap. For an elementwise nest that reads B[i,j] and writes C[i,j] with disjoint iterations (no loop-carried dependence), any permutation of loops is safe. In general, dependence-vector analysis is required: a dependence with a `< , >` direction pair becomes `> , <` after interchange, which is illegal. Loop bounds and shape equalities are irrelevant to legality; unrolling is not a prerequisite.",
   "optionExplanations": {
+    "A": "Wrong: interchange operates on rolled loops directly.",
     "B": "Wrong: interchange is not always safe; loop-carried dependences can be violated.",
-    "A": "Correct: standard dependence-based legality rule for loop interchange.",
     "C": "Wrong: legality does not depend on equality of the loop trip counts.",
-    "D": "Wrong: interchange operates on rolled loops directly."
+    "D": "Correct: standard dependence-based legality rule for loop interchange."
   },
   "assumptions": [
     "The IR is affine (indices are affine functions of loop induction variables) so dependence analysis is tractable.",
@@ -60,23 +60,23 @@
     "interchange_requires_square"
   ],
   "distractorRationales": {
+    "A": "Wrong claim about unrolling.",
     "B": "Ignores dependence analysis.",
-    "C": "Wrong condition on trip counts.",
-    "D": "Wrong claim about unrolling."
+    "C": "Wrong condition on trip counts."
   },
   "sourceRefs": [
     {
       "ref": "BOOK:eac3",
       "locator": "Loop transformations and dependence testing",
       "supports": [
-        "A"
+        "D"
       ]
     },
     {
       "ref": "DOC:mlir-langref",
       "locator": "affine dialect and loop transformations",
       "supports": [
-        "A"
+        "D"
       ]
     }
   ],

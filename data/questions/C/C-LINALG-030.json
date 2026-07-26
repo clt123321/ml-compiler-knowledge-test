@@ -22,32 +22,32 @@
   "options": [
     {
       "id": "A",
-      "text": "`linalg.generic` cannot express matmul because it lacks reduction support; any reduction op must be lowered to explicit `scf.for` before `linalg.generic` can accept it."
-    },
-    {
-      "id": "B",
       "text": "The `iterator_types` list marks `m` and `n` as parallel (all iterations along these dims can execute concurrently) and `k` as reduction (iterations along this dim accumulate into the output)."
     },
     {
-      "id": "C",
+      "id": "B",
       "text": "The `indexing_maps` express how each input/output tensor is indexed as a function of the loop iterator tuple `(m, n, k)`; combined with `iterator_types`, they fully describe the iteration space of the op."
     },
     {
-      "id": "D",
+      "id": "C",
       "text": "The op's body (`^bb0`) executes a scalar `mul-add` per (m, n, k) triple, accumulating into the output; `linalg.yield` returns the new value of the output element."
+    },
+    {
+      "id": "D",
+      "text": "`linalg.generic` cannot express matmul because it lacks reduction support; any reduction op must be lowered to explicit `scf.for` before `linalg.generic` can accept it."
     }
   ],
   "correctAnswers": [
+    "A",
     "B",
-    "C",
-    "D"
+    "C"
   ],
   "explanation": "A, B, C are correct: iterator_types classify each iterator (parallel/reduction/etc.), indexing_maps say how each tensor is accessed from the iterator tuple, and the scalar body specifies per-iteration computation with `linalg.yield` returning the new value. D is wrong: `linalg.generic` supports reduction iterators natively (that is exactly what the example above uses).",
   "optionExplanations": {
+    "A": "Correct.",
     "B": "Correct.",
     "C": "Correct.",
-    "D": "Correct.",
-    "A": "Wrong: linalg.generic supports reduction iterators natively."
+    "D": "Wrong: linalg.generic supports reduction iterators natively."
   },
   "assumptions": [
     "The MLIR linalg dialect syntax as of current LangRef.",
@@ -61,24 +61,24 @@
     "linalg_no_reduction"
   ],
   "distractorRationales": {
-    "A": "Wrong claim that linalg.generic lacks reduction support."
+    "D": "Wrong claim that linalg.generic lacks reduction support."
   },
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
       "locator": "linalg dialect: linalg.generic, indexing_maps, iterator_types",
       "supports": [
+        "A",
         "B",
-        "C",
-        "D"
+        "C"
       ]
     },
     {
       "ref": "PAPER:mlir",
       "locator": "Structured ops and iteration domain",
       "supports": [
-        "B",
-        "C"
+        "A",
+        "B"
       ]
     }
   ],

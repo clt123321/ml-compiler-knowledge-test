@@ -25,11 +25,11 @@
     },
     {
       "id": "B",
-      "text": "Each element of `t` consumed by C must be producible on demand at C's iteration site; equivalently, P's per-element production and C's per-element consumption must share (or be tileable into) a common iteration space."
+      "text": "P and C must have the same op name (e.g., two `add` ops), because fusion in tensor compilers works by op-name pattern matching only. Under this framing, fusion in tensor compilers is implemented purely by textual pattern matching on op names; the scheduler looks up pairs like `(add, add)` or `(mul, add)` in a table and applies fusion iff both ops match a registered pair."
     },
     {
       "id": "C",
-      "text": "P and C must have the same op name (e.g., two `add` ops), because fusion in tensor compilers works by op-name pattern matching only. Under this framing, fusion in tensor compilers is implemented purely by textual pattern matching on op names; the scheduler looks up pairs like `(add, add)` or `(mul, add)` in a table and applies fusion iff both ops match a registered pair."
+      "text": "Each element of `t` consumed by C must be producible on demand at C's iteration site; equivalently, P's per-element production and C's per-element consumption must share (or be tileable into) a common iteration space."
     },
     {
       "id": "D",
@@ -37,13 +37,13 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "C"
   ],
   "explanation": "Fusing P and C into a single kernel that avoids materializing `t` requires that each consumed element of `t` can be produced at the moment C needs it, without global synchronization. This is expressed as sharing (or being tileable into) a common iteration space: pointwise-into-pointwise is the classic case (identical elementwise iteration); pointwise-into-reduction fits when the reduction consumes each producer element once. Cases where the consumer needs values C's iteration cannot see (e.g., all-to-all shuffles) do not fuse this way. Source language, op names, and side-effect polarity are not the governing conditions.",
   "optionExplanations": {
     "A": "Wrong: language identity is a codegen concern, not a semantic fusion condition.",
-    "B": "Correct: shared/tileable iteration space is the core condition for producer-consumer fusion.",
-    "C": "Wrong: fusion is data-dependence based, not op-name based.",
+    "B": "Wrong: fusion is data-dependence based, not op-name based.",
+    "C": "Correct: shared/tileable iteration space is the core condition for producer-consumer fusion.",
     "D": "Wrong: side-effect polarity is not the condition; both being pure is typically preferred, not opposite polarity."
   },
   "assumptions": [
@@ -60,7 +60,7 @@
   ],
   "distractorRationales": {
     "A": "Wrong sufficiency claim on language identity.",
-    "C": "Confuses fusion with pattern-matching pairs.",
+    "B": "Confuses fusion with pattern-matching pairs.",
     "D": "Wrong condition on purity polarity."
   },
   "sourceRefs": [
@@ -68,14 +68,14 @@
       "ref": "PAPER:halide",
       "locator": "compute_at / producer-consumer scheduling",
       "supports": [
-        "B"
+        "C"
       ]
     },
     {
       "ref": "PAPER:tvm",
       "locator": "Operator fusion / iteration space",
       "supports": [
-        "B"
+        "C"
       ]
     }
   ],

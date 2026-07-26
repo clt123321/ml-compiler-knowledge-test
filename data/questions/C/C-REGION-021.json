@@ -21,11 +21,11 @@
   "options": [
     {
       "id": "A",
-      "text": "A Region is a metadata attribute that the parser attaches to the parent op for debug printing; the enclosed operations are actually stored in a flat global list and Regions do not affect verification. Under this framing, Regions are printed inline for readability only, and MLIR stores each nested op flat inside its parent's ordered op-list; the verifier checks op types but ignores the Region containment."
+      "text": "A Region is a container for one or more Blocks that hold operations executed under the semantics of the parent op (the loop body of `scf.for`, one of the arms of `scf.if`, etc.), giving MLIR structured control flow with local SSA scoping."
     },
     {
       "id": "B",
-      "text": "A Region is a container for one or more Blocks that hold operations executed under the semantics of the parent op (the loop body of `scf.for`, one of the arms of `scf.if`, etc.), giving MLIR structured control flow with local SSA scoping."
+      "text": "A Region is a metadata attribute that the parser attaches to the parent op for debug printing; the enclosed operations are actually stored in a flat global list and Regions do not affect verification. Under this framing, Regions are printed inline for readability only, and MLIR stores each nested op flat inside its parent's ordered op-list; the verifier checks op types but ignores the Region containment."
     },
     {
       "id": "C",
@@ -37,12 +37,12 @@
     }
   ],
   "correctAnswers": [
-    "B"
+    "A"
   ],
   "explanation": "A Region in MLIR is a first-class container for one or more Blocks executed under the semantics of the enclosing op. For `scf.for`, the region holds the loop body; for `scf.if`, the regions hold the then/else arms. Values defined outside a Region are visible inside (via SSA dominance), but each Block within the Region can also carry its own block arguments. This gives structured control flow with proper SSA scoping — distinct from CFG-style branches.",
   "optionExplanations": {
-    "A": "Wrong: regions are semantic containers, not print metadata.",
-    "B": "Correct: matches MLIR's LangRef.",
+    "A": "Correct: matches MLIR's LangRef.",
+    "B": "Wrong: regions are semantic containers, not print metadata.",
     "C": "Wrong: regions and modules are different concepts.",
     "D": "Wrong: regions are pervasive in MLIR; scf and affine ops use them centrally."
   },
@@ -58,7 +58,7 @@
     "region_equals_module"
   ],
   "distractorRationales": {
-    "A": "Understates region role.",
+    "B": "Understates region role.",
     "C": "Wrong equivalence.",
     "D": "Wrong scope claim."
   },
@@ -67,14 +67,14 @@
       "ref": "DOC:mlir-langref",
       "locator": "Region and structured control flow",
       "supports": [
-        "B"
+        "A"
       ]
     },
     {
       "ref": "PAPER:mlir",
       "locator": "MLIR CGO'21: Regions as first-class citizens",
       "supports": [
-        "B"
+        "A"
       ]
     }
   ],

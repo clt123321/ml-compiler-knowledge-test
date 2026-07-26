@@ -28,7 +28,7 @@
     },
     {
       "id": "B",
-      "text": "Mutating a Python-list-held tensor is treated as a side effect on an externally-visible object: TorchDynamo either lifts the referenced tensor into an input of the compiled region (with a write-back at the boundary) or graph-breaks around the mutation, depending on whether the list is recognized as accessible for tracing."
+      "text": "This pattern raises a compile-time error: any tensor not in the function's argument list cannot be mutated inside a compiled region under any circumstances. In this framing, this pattern raises a compile-time error: any tensor not appearing in the function's explicit argument list cannot be mutated inside a compiled region under any TorchDynamo configuration, so the code as written would fail to compile."
     },
     {
       "id": "C",
@@ -36,18 +36,18 @@
     },
     {
       "id": "D",
-      "text": "This pattern raises a compile-time error: any tensor not in the function's argument list cannot be mutated inside a compiled region under any circumstances. In this framing, this pattern raises a compile-time error: any tensor not appearing in the function's explicit argument list cannot be mutated inside a compiled region under any TorchDynamo configuration, so the code as written would fail to compile."
+      "text": "Mutating a Python-list-held tensor is treated as a side effect on an externally-visible object: TorchDynamo either lifts the referenced tensor into an input of the compiled region (with a write-back at the boundary) or graph-breaks around the mutation, depending on whether the list is recognized as accessible for tracing."
     }
   ],
   "correctAnswers": [
-    "B"
+    "D"
   ],
   "explanation": "Torch.compile treats non-input tensors reached through Python containers as external state. In practice Dynamo either lifts the tensor into the compiled region's inputs (with a runtime write-back to preserve external mutation semantics) or graph-breaks at the mutation, depending on what it can safely reason about. The mutation is not silently dropped and is not universally forbidden; but it does add boundary bookkeeping and can cause graph breaks in tricky cases.",
   "optionExplanations": {
-    "B": "Correct: describes Dynamo's handling of externally-visible tensor mutation via captured references.",
     "A": "Wrong: it is not zero-cost; boundary bookkeeping or graph breaks apply.",
+    "B": "Wrong: mutation is not universally forbidden.",
     "C": "Wrong: mutations are not silently dropped.",
-    "D": "Wrong: mutation is not universally forbidden."
+    "D": "Correct: describes Dynamo's handling of externally-visible tensor mutation via captured references."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 with default settings.",
@@ -63,22 +63,22 @@
   ],
   "distractorRationales": {
     "A": "Understates cost.",
-    "C": "Wrong claim about silent drop.",
-    "D": "Wrong claim about universal ban."
+    "B": "Wrong claim about universal ban.",
+    "C": "Wrong claim about silent drop."
   },
   "sourceRefs": [
     {
       "ref": "DOC:torch-dynamo",
       "locator": "Handling of Python side effects and captured tensors",
       "supports": [
-        "B"
+        "D"
       ]
     },
     {
       "ref": "PAPER:pytorch2",
       "locator": "Side-effect handling in TorchDynamo",
       "supports": [
-        "B"
+        "D"
       ]
     }
   ],

@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "any CUDA-capable",
     "device": "GPU",
-    "requiredFeatures": ["CUDA Graphs"]
+    "requiredFeatures": [
+      "CUDA Graphs"
+    ]
   },
   "softwareContext": {
     "framework": "generic",
@@ -19,18 +21,32 @@
   },
   "stem": "Which characterization of CUDA Graphs in LLM inference is correct?",
   "options": [
-    { "id": "A", "text": "CUDA Graphs re-order kernels for better cache reuse across a captured region; the primary benefit is fusion of adjacent kernels into a single hardware unit that runs at higher SM utilization than the individual kernels combined." },
-    { "id": "B", "text": "CUDA Graphs amortize per-kernel launch overhead by capturing a sequence of kernels once and replaying it many times. For LLM decode (many small kernels per step), replay eliminates most CPU-side dispatch cost. The limitation is that the shape and memory layout must match the captured version; batch composition changes require different graphs (or falling back to eager)." },
-    { "id": "C", "text": "CUDA Graphs are only useful for compute-bound workloads; memory-bound kernels do not benefit because their runtime is dominated by HBM traffic, not launch overhead. LLM decode is memory-bound and thus CUDA Graphs provide no wall-clock benefit." },
-    { "id": "D", "text": "CUDA Graphs automatically fuse kernels across their captured region into a smaller number of hardware kernels; the fusion is opaque to the user but is the source of the throughput improvement in inference workloads." }
+    {
+      "id": "A",
+      "text": "CUDA Graphs re-order kernels for better cache reuse across a captured region; the primary benefit is fusion of adjacent kernels into a single hardware unit that runs at higher SM utilization than the individual kernels combined."
+    },
+    {
+      "id": "B",
+      "text": "CUDA Graphs automatically fuse kernels across their captured region into a smaller number of hardware kernels; the fusion is opaque to the user but is the source of the throughput improvement in inference workloads."
+    },
+    {
+      "id": "C",
+      "text": "CUDA Graphs are only useful for compute-bound workloads; memory-bound kernels do not benefit because their runtime is dominated by HBM traffic, not launch overhead. LLM decode is memory-bound and thus CUDA Graphs provide no wall-clock benefit."
+    },
+    {
+      "id": "D",
+      "text": "CUDA Graphs amortize per-kernel launch overhead by capturing a sequence of kernels once and replaying it many times. For LLM decode (many small kernels per step), replay eliminates most CPU-side dispatch cost. The limitation is that the shape and memory layout must match the captured version; batch composition changes require different graphs (or falling back to eager)."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "CUDA Graphs let you record a sequence of kernel launches once and replay them repeatedly with a single CPU-side submit call. This amortizes launch overhead — critical for LLM decode where each step has many small kernels (attention, GEMV, norms, sampling), often 20-50 µs each with 5-20 µs of CPU dispatch between them. The limitation is capture-replay determinism: shapes, pointers, and control flow must match the captured version. In serving, this forces per-batch-shape graphs (e.g., one per common batch size) or fallback for uncommon shapes.",
   "optionExplanations": {
-    "B": "Correct: launch-overhead amortization + shape/layout constraint.",
     "A": "Wrong: CUDA Graphs do not fuse or reorder kernels; they replay them faster.",
+    "B": "Wrong: no automatic fusion; the graph is a fixed sequence of the same kernels.",
     "C": "Wrong: many small memory-bound kernels are exactly where CUDA Graphs pay off (launch gaps between them are eliminated).",
-    "D": "Wrong: no automatic fusion; the graph is a fixed sequence of the same kernels."
+    "D": "Correct: launch-overhead amortization + shape/layout constraint."
   },
   "assumptions": [
     "Standard CUDA Graphs API (capture + replay).",
@@ -40,15 +56,30 @@
     "Does not imply CUDA Graphs help every workload; large kernels dominated by their own compute see little benefit.",
     "Does not imply Graphs are incompatible with continuous batching; frameworks typically capture graphs for a set of common batch sizes."
   ],
-  "misconceptionTags": ["cuda_graph_fuses_myth", "cuda_graph_compute_only_myth"],
+  "misconceptionTags": [
+    "cuda_graph_fuses_myth",
+    "cuda_graph_compute_only_myth"
+  ],
   "distractorRationales": {
     "A": "Fabricates fusion.",
-    "C": "Wrong bottleneck conclusion.",
-    "D": "Fabricates automatic fusion."
+    "B": "Fabricates automatic fusion.",
+    "C": "Wrong bottleneck conclusion."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "CUDA Graphs — capture and replay", "supports": ["B"] },
-    { "ref": "DOC:vllm", "locator": "CUDA Graph capture for decode", "supports": ["B"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "CUDA Graphs — capture and replay",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "CUDA Graph capture for decode",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

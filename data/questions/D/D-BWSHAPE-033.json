@@ -32,22 +32,22 @@
     },
     {
       "id": "C",
-      "text": "The partitioner runs at each call site to observe runtime memory usage and decides on the fly whether to save or recompute; this is why AOTAutograd introduces variable per-call latency. Under this reading, the partitioner is disabled by default and users must invoke it manually via `torch._functorch.min_cut_partitioner` after `torch.compile` returns, otherwise the compiled backward will be structurally identical to the eager op-by-op backward."
+      "text": "The partitioner runs a min-cut / heuristic algorithm on the joint FX graph to decide which tensors to save as activations vs. recompute in the backward. Cheap-to-recompute values may be recomputed to reduce activation memory, while expensive-to-recompute values are saved. It is a compile-time decision, not a per-call runtime decision. In this account, the partitioner runs at each call site to observe runtime memory usage and decides on the fly whether to save or recompute each activation; this is why AOTAutograd is documented to introduce variable per-call latency across a training loop."
     },
     {
       "id": "D",
-      "text": "The partitioner runs a min-cut / heuristic algorithm on the joint FX graph to decide which tensors to save as activations vs. recompute in the backward. Cheap-to-recompute values may be recomputed to reduce activation memory, while expensive-to-recompute values are saved. It is a compile-time decision, not a per-call runtime decision. In this account, the partitioner runs at each call site to observe runtime memory usage and decides on the fly whether to save or recompute each activation; this is why AOTAutograd is documented to introduce variable per-call latency across a training loop."
+      "text": "The partitioner runs at each call site to observe runtime memory usage and decides on the fly whether to save or recompute; this is why AOTAutograd introduces variable per-call latency. Under this reading, the partitioner is disabled by default and users must invoke it manually via `torch._functorch.min_cut_partitioner` after `torch.compile` returns, otherwise the compiled backward will be structurally identical to the eager op-by-op backward."
     }
   ],
   "correctAnswers": [
-    "D"
+    "C"
   ],
   "explanation": "AOTAutograd's default partitioner (a min-cut-based heuristic) analyzes the joint FX graph at compile time to decide which tensors to materialize between forward and backward and which to recompute inside the backward. Cheap-to-recompute values (e.g., activations of pointwise ops) can be recomputed instead of saved, trading extra compute for reduced memory. This is a compile-time decision (not per-call), and recomputation is fully supported.",
   "optionExplanations": {
-    "D": "Correct.",
     "A": "Wrong: recompute is supported.",
     "B": "Wrong: partitioner runs by default.",
-    "C": "Wrong: it is a compile-time decision."
+    "C": "Correct.",
+    "D": "Wrong: it is a compile-time decision."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5.",
@@ -64,21 +64,21 @@
   "distractorRationales": {
     "A": "Wrong claim that recompute is unsupported.",
     "B": "Wrong claim about manual invocation.",
-    "C": "Wrong claim about per-call decision."
+    "D": "Wrong claim about per-call decision."
   },
   "sourceRefs": [
     {
       "ref": "PAPER:pytorch2",
       "locator": "AOTAutograd partitioner (min-cut) discussion",
       "supports": [
-        "D"
+        "C"
       ]
     },
     {
       "ref": "DOC:torch-compile",
       "locator": "AOTAutograd partitioner overview",
       "supports": [
-        "D"
+        "C"
       ]
     }
   ],

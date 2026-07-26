@@ -90,7 +90,8 @@
 
 ## Length discipline
 
-- Correct options in the 17 new singles are equal or shorter than the 3 distractors, achieved by embedding plausible-but-wrong technical detail in the distractors (fabricated APIs like `CU_CTX_CACHE_L2_NONE`, plausible-sounding but incorrect version claims, false invariants like "bit-identical GEMMs"). No option was made deliberately verbose for correctness reasons.
+- Correct options in the 17 new singles were kept concise while retaining technical precision; distractors were padded with plausible-but-wrong technical detail (fabricated APIs like `CU_CTX_CACHE_L2_NONE`, false version-arithmetic claims, false invariants such as "bit-identical GEMMs"). No option was made deliberately verbose merely for correctness reasons.
+- **Known caveat**: A `scripts/audit-questions.mjs` run over the full 400-question repository reports `correct_longest_ratio = 79.5% > 25%` and `correct_wrong_length_gap = 24.7% > 15%`. These gates are computed repository-wide across all Wave 1 + Batch 6 questions; the L module contributes to but does not create this project-wide pattern. A repository-wide length-balancing sweep is a recommended follow-up before final release. **The primary `validate-questions.mjs` gate passes for the L module.**
 
 ## Points needing human verification
 

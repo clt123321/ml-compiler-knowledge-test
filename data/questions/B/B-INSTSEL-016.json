@@ -11,23 +11,39 @@
     "vendor": "generic",
     "architecture": "generic target ISA",
     "device": "generic",
-    "requiredFeatures": ["target ISA with multi-operation instructions (e.g., LEA, FMA)"]
+    "requiredFeatures": [
+      "target ISA with multi-operation instructions (e.g., LEA, FMA)"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
   },
   "stem": "Which statement most precisely describes instruction selection via tree/DAG pattern matching?",
   "options": [
-    { "id": "A", "text": "The IR (or its expression trees) is tiled with patterns matching target instructions; each tile carries a cost, and the selector finds a minimum-cost covering. Multi-operation instructions (e.g., LEA, FMA) match larger tiles and typically win over sequences of simpler tiles." },
-    { "id": "B", "text": "Instruction selection assigns virtual registers to physical registers using a greedy algorithm; it precedes register allocation." },
-    { "id": "C", "text": "Instruction selection is the process of choosing which functions to inline; it operates at the call graph level." },
-    { "id": "D", "text": "Instruction selection linearizes basic blocks into a schedule that minimizes pipeline stalls." }
+    {
+      "id": "A",
+      "text": "Instruction selection assigns virtual registers to physical registers using a greedy algorithm; it precedes register allocation."
+    },
+    {
+      "id": "B",
+      "text": "The IR (or its expression trees) is tiled with patterns matching target instructions; each tile carries a cost, and the selector finds a minimum-cost covering. Multi-operation instructions (e.g., LEA, FMA) match larger tiles and typically win over sequences of simpler tiles."
+    },
+    {
+      "id": "C",
+      "text": "Instruction selection is the process of choosing which functions to inline; it operates at the call graph level."
+    },
+    {
+      "id": "D",
+      "text": "Instruction selection linearizes basic blocks into a schedule that minimizes pipeline stalls."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "Instruction selection matches IR patterns against target-instruction templates (tiles), each with a cost. Dynamic programming (Aho-Ganapathi-Tjiang, BURS, LLVM SelectionDAG) finds a minimum-cost cover of the IR. Multi-op instructions like x86 LEA (base + index*scale + disp) or FMA can cover multiple IR ops in one machine instruction, typically with lower total cost. Options B, C, D confuse instruction selection with register allocation, inlining, and scheduling respectively.",
   "optionExplanations": {
-    "A": "Correct: tree/DAG pattern tiling with cost model.",
-    "B": "Wrong: describes register allocation.",
+    "A": "Wrong: describes register allocation.",
+    "B": "Correct: tree/DAG pattern tiling with cost model.",
     "C": "Wrong: describes inlining.",
     "D": "Wrong: describes instruction scheduling."
   },
@@ -39,15 +55,30 @@
     "Does not imply DP-based selectors always find globally optimal code; local optimality is common but interacts with scheduling.",
     "Does not imply pattern selectors are the only technique; LLVM also has GlobalISel and TableGen-driven approaches."
   ],
-  "misconceptionTags": ["instsel_vs_regalloc", "instsel_vs_sched"],
+  "misconceptionTags": [
+    "instsel_vs_regalloc",
+    "instsel_vs_sched"
+  ],
   "distractorRationales": {
-    "B": "Conflates with register allocation.",
+    "A": "Conflates with register allocation.",
     "C": "Conflates with inlining.",
     "D": "Conflates with scheduling."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Instruction selection chapter", "supports": ["A"] },
-    { "ref": "BOOK:appel", "locator": "Instruction selection chapter (tree pattern matching)", "supports": ["A"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Instruction selection chapter",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Instruction selection chapter (tree pattern matching)",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

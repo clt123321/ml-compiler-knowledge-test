@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The ConversionTarget lists ops to delete; the TypeConverter is a lookup table that names replacement ops in the target dialect, and legalization succeeds only when every op is deleted. In this framing, the ConversionTarget maintains a delete-list of illegal ops that the driver removes in a first sweep, and the TypeConverter provides the exact replacement op name to insert at the matching site after deletion."
+      "text": "The ConversionTarget declares which ops / dialects are legal; the TypeConverter defines how source types are mapped to target types and inserts materializations at boundaries; legalization succeeds when all ops match the target's legality. In this reading, TypeConverter is optional and only used to attach debug metadata; MLIR handles type mismatches by inserting an implicit `unrealized_conversion_cast` that the pipeline is allowed to keep in the final IR."
     },
     {
       "id": "B",
@@ -34,18 +34,18 @@
     },
     {
       "id": "D",
-      "text": "The ConversionTarget declares which ops / dialects are legal; the TypeConverter defines how source types are mapped to target types and inserts materializations at boundaries; legalization succeeds when all ops match the target's legality. In this reading, TypeConverter is optional and only used to attach debug metadata; MLIR handles type mismatches by inserting an implicit `unrealized_conversion_cast` that the pipeline is allowed to keep in the final IR."
+      "text": "The ConversionTarget lists ops to delete; the TypeConverter is a lookup table that names replacement ops in the target dialect, and legalization succeeds only when every op is deleted. In this framing, the ConversionTarget maintains a delete-list of illegal ops that the driver removes in a first sweep, and the TypeConverter provides the exact replacement op name to insert at the matching site after deletion."
     }
   ],
   "correctAnswers": [
-    "D"
+    "A"
   ],
   "explanation": "MLIR's Dialect Conversion framework takes a ConversionTarget (declaring legal/illegal ops and dialects), a set of ConversionPatterns (rewrites), and a TypeConverter (defining how source types map to target types plus materializations for cast insertion at boundaries). The pass legalizes IR by rewriting illegal ops using patterns and inserting materializations for type boundaries; legalization succeeds when every op is legal per the target. This is distinct from Canonicalization (in-dialect fold + normal form).",
   "optionExplanations": {
-    "A": "Wrong: ConversionTarget declares legality; it does not schedule deletion. Legalization succeeds when every op is legal, not when everything is deleted.",
-    "D": "Correct: precise description of the two components' roles.",
+    "A": "Correct: precise description of the two components' roles.",
     "B": "Wrong: dialect conversion and canonicalization are distinct frameworks; conversion uses target legality + patterns explicitly.",
-    "C": "Wrong: `unrealized_conversion_cast` is inserted transiently and materializations remove it; TypeConverter is essential when types change."
+    "C": "Wrong: `unrealized_conversion_cast` is inserted transiently and materializations remove it; TypeConverter is essential when types change.",
+    "D": "Wrong: ConversionTarget declares legality; it does not schedule deletion. Legalization succeeds when every op is legal, not when everything is deleted."
   },
   "assumptions": [
     "The pipeline uses `applyPartialConversion` or `applyFullConversion` from MLIR's conversion driver."
@@ -59,23 +59,23 @@
     "type_converter_role_confusion"
   ],
   "distractorRationales": {
-    "A": "Confuses legality with deletion.",
     "B": "Merges two distinct rewrite frameworks.",
-    "C": "Understates the TypeConverter's role."
+    "C": "Understates the TypeConverter's role.",
+    "D": "Confuses legality with deletion."
   },
   "sourceRefs": [
     {
       "ref": "DOC:mlir-dialect-conversion",
       "locator": "Dialect Conversion framework: ConversionTarget, TypeConverter, materializations",
       "supports": [
-        "D"
+        "A"
       ]
     },
     {
       "ref": "DOC:mlir-langref",
       "locator": "Ops, dialects, types",
       "supports": [
-        "D"
+        "A"
       ]
     }
   ],

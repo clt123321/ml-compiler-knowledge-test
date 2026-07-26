@@ -19,18 +19,34 @@
   },
   "stem": "Which of the following statements about MLIR Dialects, Traits, and Interfaces are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "A Dialect is a registration namespace grouping related Operations, Types, and Attributes; different Dialects can coexist in one IRModule, enabling progressive lowering across levels of abstraction." },
-    { "id": "B", "text": "A Trait is compile-time metadata attached to an Op class that Pass writers can query with a static check (e.g., `SameOperandsAndResultType`, `MemoryEffects`), letting analyses and rewrites treat many Ops uniformly." },
-    { "id": "C", "text": "An Interface is a virtual method table on Ops (or Dialects/Types), letting client code call polymorphic behavior on an Op without knowing its concrete class (e.g., `InferShapedTypeOpInterface`)." },
-    { "id": "D", "text": "Once an Op is defined in one Dialect, it can never be aliased into another Dialect; therefore lowering between Dialects always requires cloning the Op and rebuilding all its uses from scratch, without leveraging any interface polymorphism." }
+    {
+      "id": "A",
+      "text": "A Trait is compile-time metadata attached to an Op class that Pass writers can query with a static check (e.g., `SameOperandsAndResultType`, `MemoryEffects`), letting analyses and rewrites treat many Ops uniformly."
+    },
+    {
+      "id": "B",
+      "text": "An Interface is a virtual method table on Ops (or Dialects/Types), letting client code call polymorphic behavior on an Op without knowing its concrete class (e.g., `InferShapedTypeOpInterface`)."
+    },
+    {
+      "id": "C",
+      "text": "Once an Op is defined in one Dialect, it can never be aliased into another Dialect; therefore lowering between Dialects always requires cloning the Op and rebuilding all its uses from scratch, without leveraging any interface polymorphism."
+    },
+    {
+      "id": "D",
+      "text": "A Dialect is a registration namespace grouping related Operations, Types, and Attributes; different Dialects can coexist in one IRModule, enabling progressive lowering across levels of abstraction."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
   "explanation": "A: Dialects are MLIR's extensibility unit: they group ops/types/attrs under a namespace and multiple dialects coexist in one module. B: Traits are static tags on Op classes; passes query them via `hasTrait<>()` and use them for verification and uniform handling. C: Interfaces provide polymorphic virtual behavior (e.g., `InferShapedTypeOpInterface`, `MemoryEffectOpInterface`). D is wrong: dialect conversion typically uses interfaces and pattern rewriting to replace Ops without cloning-from-scratch; lowering is a first-class transformation, not manual duplication.",
   "optionExplanations": {
-    "A": "Correct: Dialects group ops/types/attrs and can coexist for progressive lowering.",
-    "B": "Correct: Traits are static compile-time metadata for uniform handling.",
-    "C": "Correct: Interfaces are virtual method dispatch on Ops/Types/Dialects.",
-    "D": "Wrong: dialect conversion + patterns replace Ops using rewriter APIs; interfaces enable polymorphic legalization."
+    "A": "Correct: Traits are static compile-time metadata for uniform handling.",
+    "B": "Correct: Interfaces are virtual method dispatch on Ops/Types/Dialects.",
+    "C": "Wrong: dialect conversion + patterns replace Ops using rewriter APIs; interfaces enable polymorphic legalization.",
+    "D": "Correct: Dialects group ops/types/attrs and can coexist for progressive lowering."
   },
   "assumptions": [
     "The reader is thinking about MLIR core extensibility mechanisms, not any downstream project's naming."
@@ -39,13 +55,32 @@
     "Does not imply that Traits and Interfaces are interchangeable; Traits are static, Interfaces are virtual.",
     "Does not imply every Dialect defines Types; some dialects only add Ops on top of built-in Types."
   ],
-  "misconceptionTags": ["trait_vs_interface", "dialect_isolation_myth"],
+  "misconceptionTags": [
+    "trait_vs_interface",
+    "dialect_isolation_myth"
+  ],
   "distractorRationales": {
-    "D": "Fabricates a 'clone-from-scratch' constraint; dialect conversion is the intended mechanism."
+    "C": "Fabricates a 'clone-from-scratch' constraint; dialect conversion is the intended mechanism."
   },
   "sourceRefs": [
-    { "ref": "DOC:mlir-langref", "locator": "Dialects, Traits, Interfaces overview", "supports": ["A", "B", "C"] },
-    { "ref": "PAPER:mlir", "locator": "MLIR CGO 2021 — extensibility section", "supports": ["A", "B", "C"] }
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Dialects, Traits, Interfaces overview",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "MLIR CGO 2021 — extensibility section",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

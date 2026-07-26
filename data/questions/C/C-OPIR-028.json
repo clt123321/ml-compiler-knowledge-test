@@ -20,32 +20,32 @@
   "options": [
     {
       "id": "A",
-      "text": "XLA HLO / StableHLO and ONNX are operator-level IRs: computations are expressed as coarse-grained ops (matmul, convolution, softmax) with SSA values carrying shape and dtype annotations."
-    },
-    {
-      "id": "B",
       "text": "Graph-level passes over operator IRs commonly include shape inference, constant folding, algebraic simplification, layout choice, and operator fusion."
     },
     {
-      "id": "C",
+      "id": "B",
       "text": "TVM Relax and PyTorch FX are examples of operator-level graph IRs used before lowering to tensor-expression or loop-level IRs."
     },
     {
-      "id": "D",
+      "id": "C",
       "text": "Operator-level IRs typically expose loop iteration variables to graph-level passes, so tiling and vectorization are directly expressible at the operator IR level."
+    },
+    {
+      "id": "D",
+      "text": "XLA HLO / StableHLO and ONNX are operator-level IRs: computations are expressed as coarse-grained ops (matmul, convolution, softmax) with SSA values carrying shape and dtype annotations."
     }
   ],
   "correctAnswers": [
     "A",
     "B",
-    "C"
+    "D"
   ],
   "explanation": "A, C, D are correct: HLO/StableHLO and ONNX are operator-level IRs with typed values; Relax and FX are also operator-level IRs used before tensor/loop-level lowering; and common graph-level passes include shape inference, algebraic simplification, layout choice, constant folding, and operator fusion. B is wrong: operator-level IRs do not expose loop iteration variables — that is precisely what distinguishes them from tensor-expression / loop-level IRs.",
   "optionExplanations": {
     "A": "Correct.",
-    "D": "Wrong: exposing loops is what loop-level IRs do; operator-level IRs treat iteration implicitly.",
     "B": "Correct.",
-    "C": "Correct."
+    "C": "Wrong: exposing loops is what loop-level IRs do; operator-level IRs treat iteration implicitly.",
+    "D": "Correct."
   },
   "assumptions": [
     "The classification uses the standard three-layer IR view (operator/tensor/loop)."
@@ -58,7 +58,7 @@
     "operator_ir_exposes_loops"
   ],
   "distractorRationales": {
-    "D": "Blurs the distinction between operator-level and loop-level IRs."
+    "C": "Blurs the distinction between operator-level and loop-level IRs."
   },
   "sourceRefs": [
     {
@@ -67,7 +67,7 @@
       "supports": [
         "A",
         "B",
-        "C"
+        "D"
       ]
     },
     {
@@ -75,7 +75,7 @@
       "locator": "MLIR dialects and levels",
       "supports": [
         "A",
-        "B"
+        "D"
       ]
     },
     {
@@ -83,14 +83,14 @@
       "locator": "StableHLO operator IR",
       "supports": [
         "A",
-        "B"
+        "D"
       ]
     },
     {
       "ref": "DOC:torch-dynamo",
       "locator": "FX Graph as operator-level graph IR",
       "supports": [
-        "C"
+        "B"
       ]
     }
   ],

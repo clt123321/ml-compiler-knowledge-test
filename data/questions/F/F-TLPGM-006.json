@@ -46,7 +46,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Because `stride_n=1`, the pointer expression `offs_n[None, :] * stride_n` degenerates to a scalar; only column 0 is copied for each row in program (17, 3)."
+      "text": "Program (17, 3) copies the tile rows `[17*32 .. 17*32+31]` and columns `[3*128 .. 3*128+127]`, i.e., rows 544..575 and columns 384..511; all lanes are in-bounds (since M=2048>575 and N=1024>511), so the mask is uniformly True and no lanes are skipped."
     },
     {
       "id": "B",
@@ -54,7 +54,7 @@
     },
     {
       "id": "C",
-      "text": "Program (17, 3) copies the tile rows `[17*32 .. 17*32+31]` and columns `[3*128 .. 3*128+127]`, i.e., rows 544..575 and columns 384..511; all lanes are in-bounds (since M=2048>575 and N=1024>511), so the mask is uniformly True and no lanes are skipped."
+      "text": "Because `stride_n=1`, the pointer expression `offs_n[None, :] * stride_n` degenerates to a scalar; only column 0 is copied for each row in program (17, 3)."
     },
     {
       "id": "D",
@@ -62,13 +62,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "Standard 2D tiling in Triton: `pid_m = program_id(0)` and `pid_n = program_id(1)` return the coordinates of the program in the 2D launch grid. Per-program offsets are `pid * BLOCK + arange(0, BLOCK)`. For (17, 3) with BM=32, BN=128: row offsets are 544..575, column offsets are 384..511. With M=2048, N=1024 the tile is fully in-bounds. Row-major stride: `stride_m = N = 1024`, `stride_n = 1`; the pointer expression uses broadcasting on `[:, None]` / `[None, :]` to form a 2D `[BM, BN]` address grid. Options B/C/D fabricate incorrect behaviors.",
   "optionExplanations": {
-    "C": "Correct: standard 2D tile addressing with correct in-bounds computation.",
+    "A": "Correct: standard 2D tile addressing with correct in-bounds computation.",
     "B": "Wrong: `pid_m * BM + tl.arange(0, BM)` is standard elementwise arithmetic; there is no Python precedence issue.",
-    "A": "Wrong: `stride_n=1` does not collapse the column dimension; the arange still spans BN.",
+    "C": "Wrong: `stride_n=1` does not collapse the column dimension; the arange still spans BN.",
     "D": "Wrong: `mask_m[:, None] & mask_n[None, :]` produces a 2D `[BM, BN]` mask via broadcasting."
   },
   "assumptions": [
@@ -85,7 +85,7 @@
   ],
   "distractorRationales": {
     "B": "Fabricates a Python-precedence issue.",
-    "A": "Confuses stride value with dimension collapse.",
+    "C": "Confuses stride value with dimension collapse.",
     "D": "Wrong claim about mask shape."
   },
   "sourceRefs": [
@@ -93,7 +93,7 @@
       "ref": "DOC:triton",
       "locator": "Triton language: program_id, tl.arange, broadcasting semantics",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

@@ -22,18 +22,32 @@
   "profileData": "Run A of autotuner (100 trials): best config = C1 at 0.42 ms; C2 comes second at 0.44 ms.\nRun B (same code, same GPU, immediately after Run A): best config = C2 at 0.42 ms; C1 second at 0.45 ms.\nSingle-config replay: each of C1 and C2 individually measures at 0.42 ± 0.03 ms across 20 replays.",
   "stem": "An autotuner picks different 'best' configs across two consecutive runs. Single-config replay shows both configs measure at 0.42 ± 0.03 ms. Which is the most likely root cause and appropriate fix?",
   "options": [
-    { "id": "A", "text": "Measurement noise is on the same order as the runtime gap between C1 and C2. Any winner-take-all comparison is dominated by variance; the fix is to increase repetitions per trial and use a robust statistic (e.g., median of medians) or an equivalence band." },
-    { "id": "B", "text": "The GPU driver has a memory leak; upgrading the driver will fix the non-determinism." },
-    { "id": "C", "text": "The kernels have a genuine algorithmic difference that only manifests every other launch; C1 and C2 are actually different optima at odd- and even-numbered invocations." },
-    { "id": "D", "text": "The autotuner is using a broken random seed; setting the seed to a fixed value will make C1 and C2 report identical runtimes." }
+    {
+      "id": "A",
+      "text": "The autotuner is using a broken random seed; setting the seed to a fixed value will make C1 and C2 report identical runtimes."
+    },
+    {
+      "id": "B",
+      "text": "The GPU driver has a memory leak; upgrading the driver will fix the non-determinism."
+    },
+    {
+      "id": "C",
+      "text": "The kernels have a genuine algorithmic difference that only manifests every other launch; C1 and C2 are actually different optima at odd- and even-numbered invocations."
+    },
+    {
+      "id": "D",
+      "text": "Measurement noise is on the same order as the runtime gap between C1 and C2. Any winner-take-all comparison is dominated by variance; the fix is to increase repetitions per trial and use a robust statistic (e.g., median of medians) or an equivalence band."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "When measurement noise (±0.03 ms) is on the same order as the gap between candidates (0.02 ms), a winner-take-all comparison is essentially coin-flipping. This is the canonical problem for autotuners on real hardware: OS scheduling, GPU clock jitter, memory allocator state, and background processes contribute variance. Robust remedies include (a) increasing repetitions per trial, (b) using a statistical band and declaring a tie inside it, and (c) using median/geomean instead of mean. Options B (driver leak) and C (alternating optima) are unsupported. Option D confuses seed determinism with measurement noise — a seed affects the tuner's exploration path, not the underlying kernel runtime.",
   "optionExplanations": {
-    "A": "Correct: standard measurement-noise vs. gap analysis; the fix aligns with Ansor / AutoTVM best practices.",
+    "A": "Wrong: seeds affect tuner exploration, not kernel runtime.",
     "B": "Wrong: no evidence for a driver leak, and driver leaks would show as monotonic slowdown.",
     "C": "Wrong: physically implausible.",
-    "D": "Wrong: seeds affect tuner exploration, not kernel runtime."
+    "D": "Correct: standard measurement-noise vs. gap analysis; the fix aligns with Ansor / AutoTVM best practices."
   },
   "assumptions": [
     "No background workload runs on the same GPU during measurement.",
@@ -43,15 +57,30 @@
     "Does not imply autotuning is unusable; robust methodology tames the problem.",
     "Does not imply the gap will always be within noise; sometimes it exceeds noise and the winner is stable."
   ],
-  "misconceptionTags": ["autotune_ignore_noise", "seed_determines_runtime"],
+  "misconceptionTags": [
+    "autotune_ignore_noise",
+    "seed_determines_runtime"
+  ],
   "distractorRationales": {
+    "A": "Confuses seed determinism with kernel-runtime determinism.",
     "B": "Fabricated driver leak.",
-    "C": "Physically implausible.",
-    "D": "Confuses seed determinism with kernel-runtime determinism."
+    "C": "Physically implausible."
   },
   "sourceRefs": [
-    { "ref": "PAPER:ansor", "locator": "Measurement methodology; multi-trial statistics", "supports": ["A"] },
-    { "ref": "PAPER:tvm", "locator": "AutoTVM measurement design", "supports": ["A"] }
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Measurement methodology; multi-trial statistics",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "AutoTVM measurement design",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

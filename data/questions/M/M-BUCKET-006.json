@@ -18,18 +18,32 @@
   },
   "stem": "A model has ~2000 parameter tensors, most of them small (≤ 64 KB). A data-parallel runtime issues a separate AllReduce for each and observes that the collective phase is bottlenecked. Which best explains why grouping gradients into ~25 MB buckets improves performance, and what the primary trade-off is?",
   "options": [
-    { "id": "A", "text": "Bucketing eliminates the per-collective bandwidth term entirely because a fused AllReduce sends only one tensor's worth of bytes regardless of the payload; the trade-off is that the reduction becomes approximate at large bucket sizes." },
-    { "id": "B", "text": "Bucketing is required by NCCL: NCCL only supports one AllReduce per iteration, so all gradients must be packed into a single buffer; the trade-off is code complexity." },
-    { "id": "C", "text": "Bucketing amortizes the per-collective latency term (α) across many small tensors, better utilizing link bandwidth; the trade-off is that the collective must wait until every tensor in the bucket is produced by backward, which shrinks the overlap window with backward compute if the bucket spans too many layers." },
-    { "id": "D", "text": "Bucketing improves gradient accuracy by summing more terms before the AllReduce averages them, reducing gradient variance; the trade-off is that it delays the optimizer step." }
+    {
+      "id": "A",
+      "text": "Bucketing eliminates the per-collective bandwidth term entirely because a fused AllReduce sends only one tensor's worth of bytes regardless of the payload; the trade-off is that the reduction becomes approximate at large bucket sizes."
+    },
+    {
+      "id": "B",
+      "text": "Bucketing is required by NCCL: NCCL only supports one AllReduce per iteration, so all gradients must be packed into a single buffer; the trade-off is code complexity."
+    },
+    {
+      "id": "C",
+      "text": "Bucketing improves gradient accuracy by summing more terms before the AllReduce averages them, reducing gradient variance; the trade-off is that it delays the optimizer step."
+    },
+    {
+      "id": "D",
+      "text": "Bucketing amortizes the per-collective latency term (α) across many small tensors, better utilizing link bandwidth; the trade-off is that the collective must wait until every tensor in the bucket is produced by backward, which shrinks the overlap window with backward compute if the bucket spans too many layers."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Small tensors are in the latency-dominated regime of the α + βS cost model. Packing them into a bucket amortizes α and lets the payload dominate the wall-clock time. The main trade-off is temporal: a bucket cannot be dispatched until all its tensors are produced during backward, so overly large buckets narrow the compute/communication overlap window.",
   "optionExplanations": {
     "A": "Wrong: bucketing does not remove the bandwidth term; it moves the same bytes and remains numerically exact (up to FP ordering).",
     "B": "Wrong: NCCL supports many AllReduces per iteration.",
-    "C": "Correct: latency amortization is the mechanism; overlap-window shrinkage is the trade-off.",
-    "D": "Wrong: AllReduce is deterministic given its inputs; bucketing does not reduce gradient variance."
+    "C": "Wrong: AllReduce is deterministic given its inputs; bucketing does not reduce gradient variance.",
+    "D": "Correct: latency amortization is the mechanism; overlap-window shrinkage is the trade-off."
   },
   "assumptions": [
     "Cost model α + βS applies with a non-negligible α.",
@@ -39,15 +53,30 @@
     "Does not imply that maximally large buckets are always best.",
     "Does not imply that bucketing is unnecessary when compute/comm overlap is enabled; they are complementary."
   ],
-  "misconceptionTags": ["bucketing_removes_bw_term", "nccl_single_allreduce"],
+  "misconceptionTags": [
+    "bucketing_removes_bw_term",
+    "nccl_single_allreduce"
+  ],
   "distractorRationales": {
     "A": "Confuses latency amortization with bandwidth reduction.",
     "B": "Fabricated NCCL constraint.",
-    "D": "Confuses performance optimization with accuracy improvement."
+    "C": "Confuses performance optimization with accuracy improvement."
   },
   "sourceRefs": [
-    { "ref": "BOOK:hp6", "locator": "Ch. 6 α + βS collective communication cost model", "supports": ["C"] },
-    { "ref": "PAPER:gspmd", "locator": "§4 partitioner-driven coalescing of small collectives", "supports": ["C"] }
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 6 α + βS collective communication cost model",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§4 partitioner-driven coalescing of small collectives",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

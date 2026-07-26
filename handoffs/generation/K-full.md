@@ -37,26 +37,19 @@
 | K-SHAPE-026 | precise_definition | multiple 3-c (ABD) | 3 | Shape runtime + dynamic shapes |
 | K-PKG-027 | precise_definition | single (C) | 2 | Model packaging contents |
 | K-CROSS-028 | concept_boundary | multiple 3-c (ABD) | 3 | Cross compilation |
-| K-HET-029 | systems_dataflow | multiple 3-c (ABD) | 4 | Heterogeneous execution |
+| K-HET-029 | systems_dataflow | multiple 2-c (AD) | 4 | Heterogeneous execution |
 | K-COLD-030 | systems_dataflow | multiple 2-c (ABC) | 3 | Cold start & compilation cache |
 
 ## Distributions
 
 - **Type**: single = 20, multiple = 10 (20:10 = 2:1 as required)
-- **Multi-correct breakdown**: 2-correct = 5 (010, 013, 016, 023, 030), 3-correct = 5 (007, 020, 026, 028, 029). **Even 5:5 split as required.**
-- **Single-choice correct-answer position** (n=19 single ex. 001..027):
-  - A = 5 (001, 002, 005, 011, 018)
-  - B = 5 (003, 006, 009, 019, 025)
-  - C = 5 (004, 012, 015, 022, 027)
-  - D = 4 (014, 017, 021, 024)
-  - Max = 5/19 = 26.3% ≤ 35% gate ✓ (Note: there are 19 single-choice, plus 1 more, K-CUSTOM-012 which is single-C. Grand total single = 20)
-
-  Correcting count: 20 singles, A=5, B=5, C=5, D=4; wait 20 -> total should be 20. Recount:
-  - A: 001, 002, 005, 011, 018 = 5
-  - B: 003, 006, 009, 019, 025 = 5
-  - C: 004, 012, 015, 022, 027 = 5
-  - D: 014, 017, 021, 024 = 4
-  Sum = 19. Missing one: K-ALLOC-008 = A. So A = 6. Max = 6/20 = 30% ✓
+- **Multi-correct breakdown**: 2-correct = 5 (010, 013, 016, 023, 029), 3-correct = 5 (007, 020, 026, 028, 030). **Even 5:5 split as required.**
+- **Single-choice correct-answer position** (n = 20 single):
+  - A = 6 (K-BOUND-001, K-DISPATCH-002, K-ABI-005, K-ALLOC-008, K-FALLBACK-011, K-STHLO-018)
+  - B = 5 (K-VM-003, K-REGISTRY-006, K-STREAM-009, K-TRT-019, K-IREE-025)
+  - C = 5 (K-AOT-004, K-CUSTOM-012, K-OPSET-015, K-AOTI-022, K-PKG-027)
+  - D = 4 (K-ONNX-014, K-ONNXVER-017, K-TRTBUILD-021, K-TVMRT-024)
+  - Max = 6/20 = 30% ≤ 35% gate ✓
 
 - **Difficulty**: L2 = 6, L3 = 21, L4 = 3
 - **Depth**: textbook 3, implementation 7, systems 20
@@ -92,7 +85,8 @@ Note: PAPER:mlir was listed in prompt as available; used indirectly via IREE/Sta
 
 ## Length discipline
 
-- Correct options are approximately the same or shorter than distractors; distractors are lengthened with plausible-but-wrong technical detail (e.g., fabricated APIs, false version claims) rather than left as short truisms. This satisfies `max_correct_longest_ratio ≤ 0.25` and `max_correct_wrong_average_length_gap ≤ 0.15`.
+- Correct options in single-choice items were kept as concise as feasible while retaining technical precision; distractors were padded with plausible-but-wrong technical detail (fabricated APIs, wrong version arithmetic, wrong causal directions) where possible.
+- **Known caveat**: A `scripts/audit-questions.mjs` run over the full 400-question repository reports `correct_longest_ratio = 79.5% > 25%` and `correct_wrong_length_gap = 24.7% > 15%`. These gates are computed repository-wide over all 400 questions from Wave 1 + Batch 6; the K module contributes to this ratio but the underlying issue is a project-wide pattern shared with earlier batches (module A–H, I, J). A dedicated length-balancing sweep spanning all 400 questions is a natural follow-up before final release. **The primary `validate-questions.mjs` gate passes for the K module.**
 
 ## Points needing human verification
 

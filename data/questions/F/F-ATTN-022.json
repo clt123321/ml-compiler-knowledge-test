@@ -65,22 +65,22 @@
     },
     {
       "id": "C",
-      "text": "For each (batch, head), the naive path allocates and stores the `S × S` intermediate P (and S) in HBM: `2 * S^2 * sizeof(FP16)` bytes per (batch, head). For `S = 8192`, that is ~256 MB per (B,H) — the O(S^2) memory footprint is the dominant cost and grows quadratically with sequence length, making it infeasible for long sequences."
+      "text": "Attention is compute-bound at all sequence lengths on A100 because FP16 matmul throughput is far higher than HBM bandwidth; the O(S^2) memory issue is a theoretical concern with no practical impact."
     },
     {
       "id": "D",
-      "text": "Attention is compute-bound at all sequence lengths on A100 because FP16 matmul throughput is far higher than HBM bandwidth; the O(S^2) memory issue is a theoretical concern with no practical impact."
+      "text": "For each (batch, head), the naive path allocates and stores the `S × S` intermediate P (and S) in HBM: `2 * S^2 * sizeof(FP16)` bytes per (batch, head). For `S = 8192`, that is ~256 MB per (B,H) — the O(S^2) memory footprint is the dominant cost and grows quadratically with sequence length, making it infeasible for long sequences."
     }
   ],
   "correctAnswers": [
-    "C"
+    "D"
   ],
   "explanation": "In naive three-kernel attention, the intermediate scores `S = QK^T` (shape [S, S] per head) and the softmax output `P = softmax(S)` (same shape) must be written to and read from HBM between kernels because register/SMEM is insufficient. The size is O(S^2 * sizeof) per (batch, head). For B=1, H=1, S=8192, FP16 that is 8192*8192*2 = ~128 MB for S plus another ~128 MB for P; with many batches/heads this dominates HBM traffic and quickly becomes infeasible. This is precisely the problem FlashAttention solves via tiled online-softmax computation that never materializes S/P.",
   "optionExplanations": {
-    "C": "Correct: naive attention has O(S^2) HBM footprint per (B,H).",
-    "B": "Wrong: intermediates are per-thread partial values and cannot avoid being materialized in HBM without a tiled algorithm.",
     "A": "Wrong: FP16 doesn't imply register residency of S×S intermediates.",
-    "D": "Wrong: at large S, HBM traffic for S×S dominates."
+    "B": "Wrong: intermediates are per-thread partial values and cannot avoid being materialized in HBM without a tiled algorithm.",
+    "C": "Wrong: at large S, HBM traffic for S×S dominates.",
+    "D": "Correct: naive attention has O(S^2) HBM footprint per (B,H)."
   },
   "assumptions": [
     "Three-kernel naive implementation without tiled online-softmax.",
@@ -95,23 +95,23 @@
     "fp16_register_intermediate_myth"
   ],
   "distractorRationales": {
-    "B": "Ignores intermediate materialization in HBM.",
     "A": "Wrong claim about automatic register residency.",
-    "D": "Denies the O(S^2) memory problem."
+    "B": "Ignores intermediate materialization in HBM.",
+    "C": "Denies the O(S^2) memory problem."
   },
   "sourceRefs": [
     {
       "ref": "PAPER:flashattn",
       "locator": "FlashAttention paper — problem statement, Sect. 2",
       "supports": [
-        "C"
+        "D"
       ]
     },
     {
       "ref": "DOC:cuda-best",
       "locator": "Memory bandwidth limits",
       "supports": [
-        "C"
+        "D"
       ]
     }
   ],

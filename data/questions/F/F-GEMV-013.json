@@ -53,7 +53,7 @@
     },
     {
       "id": "B",
-      "text": "GEMV is memory-bound on A100: each output element reads K FP32 values from A plus K from x for O(K) traffic and does O(K) FLOPs (arithmetic intensity ~0.25 FLOPs/byte for FP32), well below A100's compute:bandwidth balance. The kernel's per-warp stride-32 access on A gives coalesced reads within a warp; x is loaded redundantly by every row's warp."
+      "text": "Because every warp reads all of `x`, the kernel is bottlenecked by x's shared-memory bank usage; loading `x` into `__shared__` once per block would eliminate the redundant reads."
     },
     {
       "id": "C",
@@ -61,18 +61,18 @@
     },
     {
       "id": "D",
-      "text": "Because every warp reads all of `x`, the kernel is bottlenecked by x's shared-memory bank usage; loading `x` into `__shared__` once per block would eliminate the redundant reads."
+      "text": "GEMV is memory-bound on A100: each output element reads K FP32 values from A plus K from x for O(K) traffic and does O(K) FLOPs (arithmetic intensity ~0.25 FLOPs/byte for FP32), well below A100's compute:bandwidth balance. The kernel's per-warp stride-32 access on A gives coalesced reads within a warp; x is loaded redundantly by every row's warp."
     }
   ],
   "correctAnswers": [
-    "B"
+    "D"
   ],
   "explanation": "GEMV has arithmetic intensity ~1/4 FLOP/byte for FP32 (one FMA per 4-byte load from A + amortized 4-byte load from x), which is far below any modern GPU's compute:bandwidth balance (~10-40 FLOPs/byte on A100 for FP32). It is memory-bound. Access pattern: lane `l` reads `A[row*K + l], A[row*K + l+32], ...`; consecutive lanes hit consecutive elements of the row — that is fully coalesced within each iteration. `x` is indeed read redundantly by every row (M times total); the L2 usually caches it since x is only K*4 bytes. Choice C confuses global-memory coalescing (fine here) with shared-memory bank conflicts (not applicable — no SMEM used).",
   "optionExplanations": {
-    "B": "Correct: memory-bound + coalesced A access + redundant x reads.",
     "A": "Wrong: GEMV is not compute-bound at typical K values.",
+    "B": "Wrong: no SMEM used, so no bank conflicts; but the SMEM-for-x optimization is a real strategy for block-parallel GEMV variants.",
     "C": "Wrong: consecutive lanes read consecutive elements (stride 1 within a warp iteration).",
-    "D": "Wrong: no SMEM used, so no bank conflicts; but the SMEM-for-x optimization is a real strategy for block-parallel GEMV variants."
+    "D": "Correct: memory-bound + coalesced A access + redundant x reads."
   },
   "assumptions": [
     "One warp per output row; blockDim=32.",
@@ -88,22 +88,22 @@
   ],
   "distractorRationales": {
     "A": "Fabricates a compute-bound story for GEMV.",
-    "C": "Confuses coalescing with bank conflicts.",
-    "D": "Applies SMEM concepts where no SMEM is used."
+    "B": "Applies SMEM concepts where no SMEM is used.",
+    "C": "Confuses coalescing with bank conflicts."
   },
   "sourceRefs": [
     {
       "ref": "BOOK:pmpp4",
       "locator": "GEMV / matrix-vector chapter and roofline discussion",
       "supports": [
-        "B"
+        "D"
       ]
     },
     {
       "ref": "DOC:cuda-best",
       "locator": "Memory bandwidth and coalescing",
       "supports": [
-        "B"
+        "D"
       ]
     }
   ],

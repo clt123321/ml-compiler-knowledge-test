@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere+ (sm_80+)",
     "device": "GPU",
-    "requiredFeatures": ["BF16 Tensor Cores"]
+    "requiredFeatures": [
+      "BF16 Tensor Cores"
+    ]
   },
   "softwareContext": {
     "framework": "PyTorch",
@@ -20,23 +22,52 @@
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [[2048, 4096], [4096, 4096]],
-    "dtypes": ["bfloat16", "bfloat16"],
-    "layouts": ["row_major", "row_major"]
+    "shapes": [
+      [
+        2048,
+        4096
+      ],
+      [
+        4096,
+        4096
+      ]
+    ],
+    "dtypes": [
+      "bfloat16",
+      "bfloat16"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major"
+    ]
   },
   "stem": "You compare a custom BF16 GEMM+bias kernel (with FP32 accumulator) against a reference `x @ w + b` cast to BF16 for `M=2048, K=4096, N=4096`. The naive check `torch.testing.assert_close(out_ref, out_test, atol=1e-3, rtol=1e-3)` fails on some rows. What is the most principled adjustment?",
   "codeSnippet": "x = torch.randn(2048, 4096, device=\"cuda\", dtype=torch.bfloat16)\nw = torch.randn(4096, 4096, device=\"cuda\", dtype=torch.bfloat16)\nb = torch.randn(4096,       device=\"cuda\", dtype=torch.bfloat16)\n\nout_ref = (x @ w + b).to(torch.bfloat16)          # reference\nout_test = my_bf16_gemm_bias(x, w, b)             # kernel under test (FP32 accum)\n\ntorch.testing.assert_close(out_ref, out_test, atol=1e-3, rtol=1e-3)   # fails on some rows",
   "options": [
-    { "id": "A", "text": "Raise tolerance to something like `atol=1e-2, rtol=1e-2` (BF16-scale). BF16 mantissa is only 7 bits; K=4096 accumulations amplify rounding, and different tile shapes/reduction orders in cuBLAS vs the custom kernel produce differences well above 1e-3 at large K." },
-    { "id": "B", "text": "Compare in FP32 by upcasting `out_test` to FP32 and using the FP32 tolerance `atol=1e-5, rtol=1e-6`. The dtype of the output tensor governs the achievable precision, so casting up to FP32 automatically tightens error bounds without changing the underlying kernel." },
-    { "id": "C", "text": "Sort each row of both outputs before comparing to remove accumulation-order effects; sorted-tolerance comparisons ignore permutations that arise from different tile scheduling in the two GEMMs, making BF16 GEMMs bit-comparable." },
-    { "id": "D", "text": "The failure indicates a real bug: BF16 GEMMs with FP32 accumulators are bit-identical across all implementations because Tensor Cores use a standardized rounding mode; any mismatch indicates a saturation or overflow bug that must be found." }
+    {
+      "id": "A",
+      "text": "Compare in FP32 by upcasting `out_test` to FP32 and using the FP32 tolerance `atol=1e-5, rtol=1e-6`. The dtype of the output tensor governs the achievable precision, so casting up to FP32 automatically tightens error bounds without changing the underlying kernel."
+    },
+    {
+      "id": "B",
+      "text": "Raise tolerance to something like `atol=1e-2, rtol=1e-2` (BF16-scale). BF16 mantissa is only 7 bits; K=4096 accumulations amplify rounding, and different tile shapes/reduction orders in cuBLAS vs the custom kernel produce differences well above 1e-3 at large K."
+    },
+    {
+      "id": "C",
+      "text": "Sort each row of both outputs before comparing to remove accumulation-order effects; sorted-tolerance comparisons ignore permutations that arise from different tile scheduling in the two GEMMs, making BF16 GEMMs bit-comparable."
+    },
+    {
+      "id": "D",
+      "text": "The failure indicates a real bug: BF16 GEMMs with FP32 accumulators are bit-identical across all implementations because Tensor Cores use a standardized rounding mode; any mismatch indicates a saturation or overflow bug that must be found."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "BF16 has 7-bit mantissa; K=4096 sums easily produce ULP-level differences of order 1e-2 for random Gaussian inputs, and different implementations traverse K in different tile shapes, generating different rounding-order results. The correct tolerance is BF16-scale (roughly 1e-2 atol/rtol). B is wrong: upcasting outputs after the fact does not add precision. C fabricates a sort trick. D is wrong: BF16 GEMMs are not bit-identical across implementations.",
   "optionExplanations": {
-    "A": "Correct: BF16-scale tolerance for K=4096 GEMMs.",
-    "B": "Wrong: upcasting after the reduction cannot recover lost precision.",
+    "A": "Wrong: upcasting after the reduction cannot recover lost precision.",
+    "B": "Correct: BF16-scale tolerance for K=4096 GEMMs.",
     "C": "Wrong: sorting reorders values but does not model the actual arithmetic.",
     "D": "Wrong: BF16 GEMM is not bit-reproducible across implementations."
   },
@@ -48,15 +79,30 @@
     "Does not imply 1e-2 is the right tolerance for every dtype; FP32 GEMMs are typically 1e-4 to 1e-5 range.",
     "Does not imply BF16 kernels are always numerically 'good enough'; downstream ops (softmax) may amplify these errors."
   ],
-  "misconceptionTags": ["upcast_recovers_precision_myth", "bit_reproducibility_myth"],
+  "misconceptionTags": [
+    "upcast_recovers_precision_myth",
+    "bit_reproducibility_myth"
+  ],
   "distractorRationales": {
-    "B": "Confuses post-hoc casting with in-place higher-precision.",
+    "A": "Confuses post-hoc casting with in-place higher-precision.",
     "C": "Fabricates sort trick.",
     "D": "Bit-reproducibility myth again."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-best", "locator": "Numerical accuracy and mixed-precision GEMM tolerance", "supports": ["A"] },
-    { "ref": "BOOK:pmpp4", "locator": "Reduction accumulation order and error", "supports": ["A"] }
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Numerical accuracy and mixed-precision GEMM tolerance",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Reduction accumulation order and error",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

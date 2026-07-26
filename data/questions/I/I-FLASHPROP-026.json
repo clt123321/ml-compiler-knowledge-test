@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere / Hopper",
     "device": "GPU",
-    "requiredFeatures": ["large SMEM"]
+    "requiredFeatures": [
+      "large SMEM"
+    ]
   },
   "softwareContext": {
     "framework": "generic",
@@ -19,18 +21,34 @@
   },
   "stem": "Select all statements about FlashAttention that are correct at the algorithm-and-analysis level (i.e., independent of any specific paper wall-clock number). (Choose all that apply.)",
   "options": [
-    { "id": "A", "text": "FlashAttention is exact (bitwise up to summation-order rounding, not approximate) and does not change the FLOP count of forward attention." },
-    { "id": "B", "text": "FlashAttention's asymptotic HBM I/O scales as O(N^2 d / M), where M is on-chip memory per SM; the gap versus O(N^2) baselines grows with N." },
-    { "id": "C", "text": "FlashAttention delivers a fixed wall-clock speedup (roughly 3-4x) uniformly across sequence lengths, batch sizes, and head dimensions on all modern GPUs, because it is designed to be independent of hardware configuration." },
-    { "id": "D", "text": "The backward pass of FlashAttention deliberately recomputes the softmax probabilities block-by-block from stored (m, l) statistics; this recomputation trades extra FLOPs for a much smaller HBM footprint." }
+    {
+      "id": "A",
+      "text": "FlashAttention delivers a fixed wall-clock speedup (roughly 3-4x) uniformly across sequence lengths, batch sizes, and head dimensions on all modern GPUs, because it is designed to be independent of hardware configuration."
+    },
+    {
+      "id": "B",
+      "text": "The backward pass of FlashAttention deliberately recomputes the softmax probabilities block-by-block from stored (m, l) statistics; this recomputation trades extra FLOPs for a much smaller HBM footprint."
+    },
+    {
+      "id": "C",
+      "text": "FlashAttention is exact (bitwise up to summation-order rounding, not approximate) and does not change the FLOP count of forward attention."
+    },
+    {
+      "id": "D",
+      "text": "FlashAttention's asymptotic HBM I/O scales as O(N^2 d / M), where M is on-chip memory per SM; the gap versus O(N^2) baselines grows with N."
+    }
   ],
-  "correctAnswers": ["A", "B", "D"],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
   "explanation": "A is correct: FlashAttention is exact (subject to normal rounding) and has the same forward FLOP count. B is correct: this is the paper's central I/O complexity result. D is correct: backward recomputation is a key design choice. C is wrong: this is a benchmark_leak — the paper reports specific speedups on specific hardware and shapes; treating them as universal is a common misreading. Speedup depends strongly on N, d, batch, and hardware SMEM.",
   "optionExplanations": {
-    "A": "Correct: exactness and preserved FLOP count.",
-    "B": "Correct: paper's IO complexity result.",
-    "D": "Correct: backward design.",
-    "C": "Wrong: benchmark_leak — a specific measurement is treated as a universal fact."
+    "A": "Wrong: benchmark_leak — a specific measurement is treated as a universal fact.",
+    "B": "Correct: backward design.",
+    "C": "Correct: exactness and preserved FLOP count.",
+    "D": "Correct: paper's IO complexity result."
   },
   "assumptions": [
     "'FlashAttention' refers to the FA v1/v2 exact algorithms.",
@@ -40,12 +58,23 @@
     "Does not imply FA is beneficial on all attention shapes; very small N may not benefit.",
     "Does not imply FA is the endpoint of attention optimization; ring/tree/sparse variants extend it."
   ],
-  "misconceptionTags": ["flashattn_universal_speedup", "flashattn_approximate_myth"],
+  "misconceptionTags": [
+    "flashattn_universal_speedup",
+    "flashattn_approximate_myth"
+  ],
   "distractorRationales": {
-    "C": "Turns a benchmark number into a universal claim."
+    "A": "Turns a benchmark number into a universal claim."
   },
   "sourceRefs": [
-    { "ref": "PAPER:flashattn", "locator": "Sec 3.2 IO complexity; Sec 4 experiments (scope of numbers)", "supports": ["A", "B", "D"] }
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Sec 3.2 IO complexity; Sec 4 experiments (scope of numbers)",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

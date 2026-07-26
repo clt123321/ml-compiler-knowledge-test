@@ -18,24 +18,61 @@
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["B", "N", "D"], ["D", "3*D"], ["B", "N", "3*D"]],
-    "dtypes": ["float16", "float16", "float16"],
-    "layouts": ["contiguous", "contiguous", "contiguous"]
+    "shapes": [
+      [
+        "B",
+        "N",
+        "D"
+      ],
+      [
+        "D",
+        "3*D"
+      ],
+      [
+        "B",
+        "N",
+        "3*D"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "A transformer implementation replaces three separate linear projections (X@W_Q, X@W_K, X@W_V) with a single fused GEMM X @ [W_Q | W_K | W_V] whose output is sliced into Q, K, V. Which characterization is correct?",
   "options": [
-    { "id": "A", "text": "Fusing the three projections produces different Q, K, V values compared to separate projections because the shared reduction accumulator introduces cross-projection numerical coupling; the fusion must be disabled whenever bit-exact reproducibility of separate projections is required." },
-    { "id": "B", "text": "Numerically the fused and separate projections are equivalent (up to rounding order). The primary benefit is a single kernel launch and one HBM read of X instead of three; the concatenation of the weight matrices is done offline so W is fetched once for the combined GEMM." },
-    { "id": "C", "text": "The fusion doubles compute FLOPs because the combined weight matrix is [D, 3D] rather than [D, D], turning the projection into a wider GEMM whose runtime is bounded by tensor-core issue rate rather than memory." },
-    { "id": "D", "text": "Fused QKV is only safe when H_kv = H (i.e., MHA); MQA and GQA break the fusion because Q has H heads while K, V have H_kv < H heads, so the concatenated weight matrix is no longer rectangular." }
+    {
+      "id": "A",
+      "text": "Fusing the three projections produces different Q, K, V values compared to separate projections because the shared reduction accumulator introduces cross-projection numerical coupling; the fusion must be disabled whenever bit-exact reproducibility of separate projections is required."
+    },
+    {
+      "id": "B",
+      "text": "Fused QKV is only safe when H_kv = H (i.e., MHA); MQA and GQA break the fusion because Q has H heads while K, V have H_kv < H heads, so the concatenated weight matrix is no longer rectangular."
+    },
+    {
+      "id": "C",
+      "text": "The fusion doubles compute FLOPs because the combined weight matrix is [D, 3D] rather than [D, D], turning the projection into a wider GEMM whose runtime is bounded by tensor-core issue rate rather than memory."
+    },
+    {
+      "id": "D",
+      "text": "Numerically the fused and separate projections are equivalent (up to rounding order). The primary benefit is a single kernel launch and one HBM read of X instead of three; the concatenation of the weight matrices is done offline so W is fetched once for the combined GEMM."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Concatenating [W_Q | W_K | W_V] into a single [D, 3D] weight matrix and computing X @ W in one GEMM produces the same numerical result as three separate GEMMs (up to summation order rounding). The wins are: one kernel launch (amortizes launch overhead), one HBM read of X (activation is reused across all three output slices), and better tensor-core utilization on a wider GEMM. FLOPs are unchanged. MQA/GQA are handled by concatenating a rectangular [D, D + 2*H_kv*d_head] matrix.",
   "optionExplanations": {
-    "B": "Correct: standard fused-QKV rationale.",
     "A": "Wrong: no cross-projection coupling; each output column is an independent dot product.",
+    "B": "Wrong: MQA/GQA just concatenate a differently-shaped rectangular matrix.",
     "C": "Wrong: FLOPs are 2 * B*N*D*3D total either way (sum of three separate GEMMs = one wide GEMM).",
-    "D": "Wrong: MQA/GQA just concatenate a differently-shaped rectangular matrix."
+    "D": "Correct: standard fused-QKV rationale."
   },
   "assumptions": [
     "Weights are stored contiguously as a single [D, 3D] (or [D, D + 2*H_kv*d]) tensor.",
@@ -45,15 +82,30 @@
     "Does not imply the fused kernel is always faster; on very small B*N, launch overhead is not the bottleneck.",
     "Does not imply that a fused kernel must also fuse the RoPE / bias-add / attention itself."
   ],
-  "misconceptionTags": ["fused_qkv_numerics_myth", "fused_qkv_double_flops"],
+  "misconceptionTags": [
+    "fused_qkv_numerics_myth",
+    "fused_qkv_double_flops"
+  ],
   "distractorRationales": {
     "A": "Fabricates numerical coupling.",
-    "C": "Miscounts total FLOPs.",
-    "D": "Denies applicability to MQA/GQA."
+    "B": "Denies applicability to MQA/GQA.",
+    "C": "Miscounts total FLOPs."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-best", "locator": "Kernel fusion and launch amortization", "supports": ["B"] },
-    { "ref": "BOOK:pmpp4", "locator": "GEMM launch amortization and shared-input reuse", "supports": ["B"] }
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Kernel fusion and launch amortization",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "GEMM launch amortization and shared-input reuse",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "AOTAutograd captures a joint forward+backward graph by re-running the forward under a tracer that records both directions, then partitions it into forward and backward subgraphs handed to Inductor for compilation. In this framing, AOTAutograd traces only the forward graph; the backward is always executed eagerly through PyTorch's autograd engine op-by-op, and no fused or compiled backward is produced under any torch.compile configuration."
+      "text": "AOTAutograd is a runtime scheduler that decides which ops run on GPU vs. CPU; it does not produce any graph and it is orthogonal to torch.compile. Under this reading, AOTAutograd is a runtime scheduler that decides which ops run on GPU vs. CPU based on live device pressure; it does not produce any graph and is orthogonal to torch.compile's own compilation pipeline."
     },
     {
       "id": "B",
@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "AOTAutograd is a runtime scheduler that decides which ops run on GPU vs. CPU; it does not produce any graph and it is orthogonal to torch.compile. Under this reading, AOTAutograd is a runtime scheduler that decides which ops run on GPU vs. CPU based on live device pressure; it does not produce any graph and is orthogonal to torch.compile's own compilation pipeline."
+      "text": "AOTAutograd captures a joint forward+backward graph by re-running the forward under a tracer that records both directions, then partitions it into forward and backward subgraphs handed to Inductor for compilation. In this framing, AOTAutograd traces only the forward graph; the backward is always executed eagerly through PyTorch's autograd engine op-by-op, and no fused or compiled backward is produced under any torch.compile configuration."
     },
     {
       "id": "D",
@@ -40,13 +40,13 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "C"
   ],
   "explanation": "AOTAutograd traces the forward under a tracer that also records the operations needed for the backward, producing a joint (fw+bw) FX graph. It then partitions the graph into forward and backward parts (deciding which activations to save vs. recompute) and hands each to Inductor for compilation. This is what enables a compiled backward pass in torch.compile, distinct from eager op-by-op autograd. It is not a runtime scheduler and does not manipulate Python source.",
   "optionExplanations": {
+    "A": "Wrong: not a device scheduler.",
     "B": "Wrong: the whole point of AOTAutograd is to capture the backward too.",
-    "A": "Correct: standard description of AOTAutograd's joint-graph + partitioner pipeline.",
-    "C": "Wrong: not a device scheduler.",
+    "C": "Correct: standard description of AOTAutograd's joint-graph + partitioner pipeline.",
     "D": "Wrong: no Python-source rewriting occurs."
   },
   "assumptions": [
@@ -62,8 +62,8 @@
     "aot_autograd_source_rewrite"
   ],
   "distractorRationales": {
+    "A": "Wrong role.",
     "B": "Ignores the joint-graph capture.",
-    "C": "Wrong role.",
     "D": "Wrong mechanism (source rewriting)."
   },
   "sourceRefs": [
@@ -71,14 +71,14 @@
       "ref": "PAPER:pytorch2",
       "locator": "AOTAutograd and joint graph partitioning",
       "supports": [
-        "A"
+        "C"
       ]
     },
     {
       "ref": "DOC:torch-compile",
       "locator": "AOTAutograd overview",
       "supports": [
-        "A"
+        "C"
       ]
     }
   ],

@@ -18,24 +18,65 @@
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["N", "C", "H", "W"], ["K", "C", "R", "S"], ["N", "K", "H_out", "W_out"]],
-    "dtypes": ["float16", "float16", "float16"],
-    "layouts": ["NCHW", "KCRS", "NCHW"]
+    "shapes": [
+      [
+        "N",
+        "C",
+        "H",
+        "W"
+      ],
+      [
+        "K",
+        "C",
+        "R",
+        "S"
+      ],
+      [
+        "N",
+        "K",
+        "H_out",
+        "W_out"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "NCHW",
+      "KCRS",
+      "NCHW"
+    ]
   },
   "stem": "Compare two implementation strategies for a standard 2D convolution: (1) direct convolution kernel that computes each output pixel with its own R*S*C-tap sum; (2) im2col followed by cuBLAS/GEMM. Which comparison is correct?",
   "options": [
-    { "id": "A", "text": "Both strategies have the same FLOPs, memory traffic, and peak memory; the choice is purely about kernel implementation complexity and does not affect end-to-end performance." },
-    { "id": "B", "text": "im2col strictly reduces FLOPs compared to direct convolution because it removes the redundant multiplications along the receptive field, converting the convolution into an equivalent smaller matmul." },
-    { "id": "C", "text": "Direct convolution stores overlapping receptive fields once in HBM and streams them per output; im2col requires strictly less memory because the reshaped matrix reuses input storage in place." },
-    { "id": "D", "text": "Both have the same FLOP count. im2col replicates each input pixel R*S times into a lowered matrix (extra memory and HBM traffic), then calls a highly-tuned GEMM; direct convolution avoids the replication cost but requires a custom kernel with careful data reuse. im2col is often faster in practice because the GEMM tail leverages tensor cores well." }
+    {
+      "id": "A",
+      "text": "Both have the same FLOP count. im2col replicates each input pixel R*S times into a lowered matrix (extra memory and HBM traffic), then calls a highly-tuned GEMM; direct convolution avoids the replication cost but requires a custom kernel with careful data reuse. im2col is often faster in practice because the GEMM tail leverages tensor cores well."
+    },
+    {
+      "id": "B",
+      "text": "im2col strictly reduces FLOPs compared to direct convolution because it removes the redundant multiplications along the receptive field, converting the convolution into an equivalent smaller matmul."
+    },
+    {
+      "id": "C",
+      "text": "Direct convolution stores overlapping receptive fields once in HBM and streams them per output; im2col requires strictly less memory because the reshaped matrix reuses input storage in place."
+    },
+    {
+      "id": "D",
+      "text": "Both strategies have the same FLOPs, memory traffic, and peak memory; the choice is purely about kernel implementation complexity and does not affect end-to-end performance."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "im2col does not change the FLOP count of convolution; it rearranges data so a standard GEMM can compute it. The rearrangement replicates each input pixel R*S times, inflating the intermediate tensor and its HBM traffic (a memory cost). Direct convolution avoids this replication but must be implemented carefully to reuse the input across overlapping outputs. In practice im2col + cuBLAS often wins because tuned GEMMs achieve near-peak tensor-core throughput on large matrices, whereas direct convolution kernels are harder to reach that peak on generic shapes. Implicit-GEMM convolution eliminates the explicit im2col materialization while keeping GEMM's tile structure.",
   "optionExplanations": {
-    "D": "Correct: FLOP-equal, memory-different, GEMM-quality-driven choice.",
-    "A": "Wrong: memory traffic and peak memory differ significantly.",
+    "A": "Correct: FLOP-equal, memory-different, GEMM-quality-driven choice.",
     "B": "Wrong: im2col does not reduce FLOPs; it reorders data for GEMM.",
-    "C": "Wrong: reverses the memory relationship; im2col uses more memory, not less."
+    "C": "Wrong: reverses the memory relationship; im2col uses more memory, not less.",
+    "D": "Wrong: memory traffic and peak memory differ significantly."
   },
   "assumptions": [
     "Standard 2D convolution with stride >= 1 and non-trivial R, S.",
@@ -45,15 +86,30 @@
     "Does not imply im2col is always faster; small tensor sizes or unusual strides may favor direct or FFT-based convolutions.",
     "Does not imply Winograd convolution is equivalent to im2col; Winograd trades multiplications for additions via linear transforms and does change FLOP count."
   ],
-  "misconceptionTags": ["im2col_reduces_flops_myth", "im2col_less_memory_myth"],
+  "misconceptionTags": [
+    "im2col_reduces_flops_myth",
+    "im2col_less_memory_myth"
+  ],
   "distractorRationales": {
-    "A": "Denies memory differences.",
     "B": "Wrong claim about FLOP reduction.",
-    "C": "Reverses memory direction."
+    "C": "Reverses memory direction.",
+    "D": "Denies memory differences."
   },
   "sourceRefs": [
-    { "ref": "BOOK:pmpp4", "locator": "Convolution kernels — direct and lowered variants", "supports": ["D"] },
-    { "ref": "BOOK:sze-eff", "locator": "Convolution dataflow taxonomy", "supports": ["D"] }
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Convolution kernels — direct and lowered variants",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Convolution dataflow taxonomy",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

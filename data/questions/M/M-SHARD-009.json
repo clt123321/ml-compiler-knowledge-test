@@ -19,18 +19,33 @@
   },
   "stem": "A tensor T of shape [D0, D1] lives on an N-device 1-D mesh. Consider the following reshard requests. Which TWO of the following mappings between reshard requests and required collectives are correct?",
   "options": [
-    { "id": "A", "text": "From 'sharded along D0 (each rank has [D0/N, D1])' to 'fully replicated on all ranks': the partitioner inserts an AllGather along the mesh axis." },
-    { "id": "B", "text": "From 'partial-sum on all ranks (each rank has a partially reduced [D0, D1] whose sum equals T)' to 'fully replicated': the partitioner inserts an AllReduce along the mesh axis." },
-    { "id": "C", "text": "From 'sharded along D0' to 'sharded along D1' (both along the same mesh axis): the partitioner inserts a local reshape only, since the total per-rank byte count is unchanged." },
-    { "id": "D", "text": "From 'fully replicated' to 'sharded along D0': the partitioner inserts an AllReduce (sum) followed by a local slice, in order to guarantee that no rank keeps a stale replica." }
+    {
+      "id": "A",
+      "text": "From 'sharded along D0' to 'sharded along D1' (both along the same mesh axis): the partitioner inserts a local reshape only, since the total per-rank byte count is unchanged."
+    },
+    {
+      "id": "B",
+      "text": "From 'fully replicated' to 'sharded along D0': the partitioner inserts an AllReduce (sum) followed by a local slice, in order to guarantee that no rank keeps a stale replica."
+    },
+    {
+      "id": "C",
+      "text": "From 'sharded along D0 (each rank has [D0/N, D1])' to 'fully replicated on all ranks': the partitioner inserts an AllGather along the mesh axis."
+    },
+    {
+      "id": "D",
+      "text": "From 'partial-sum on all ranks (each rank has a partially reduced [D0, D1] whose sum equals T)' to 'fully replicated': the partitioner inserts an AllReduce along the mesh axis."
+    }
   ],
-  "correctAnswers": ["A", "B"],
+  "correctAnswers": [
+    "C",
+    "D"
+  ],
   "explanation": "A and B are the canonical reshards emitted by GSPMD-style partitioners: sharded→replicated is AllGather (assembling shards); partial→replicated is AllReduce (summing partial contributions). C is wrong: changing the sharded dimension across the same mesh axis requires All-to-All (a permutation), not a local reshape. D is wrong: replicated→sharded is a local slice with no collective, since every rank already has the full tensor.",
   "optionExplanations": {
-    "A": "Correct: standard sharded→replicated reshard is AllGather.",
-    "B": "Correct: partial→replicated is AllReduce.",
-    "C": "Wrong: this requires All-to-All, not a local reshape.",
-    "D": "Wrong: replicated→sharded needs no collective, only a local slice."
+    "A": "Wrong: this requires All-to-All, not a local reshape.",
+    "B": "Wrong: replicated→sharded needs no collective, only a local slice.",
+    "C": "Correct: standard sharded→replicated reshard is AllGather.",
+    "D": "Correct: partial→replicated is AllReduce."
   },
   "assumptions": [
     "The mesh is 1-D of size N.",
@@ -40,14 +55,30 @@
     "Does not imply that the partitioner always chooses the cheapest reshard; consumer-driven decisions can propagate cost upstream.",
     "Does not imply that a partial-sum tensor is invalid — it is a valid intermediate sharding."
   ],
-  "misconceptionTags": ["reshard_confusion", "shard_shard_local"],
+  "misconceptionTags": [
+    "reshard_confusion",
+    "shard_shard_local"
+  ],
   "distractorRationales": {
-    "C": "Confuses per-rank byte count with reshard cost.",
-    "D": "Overcompensates by inserting a spurious AllReduce."
+    "A": "Confuses per-rank byte count with reshard cost.",
+    "B": "Overcompensates by inserting a spurious AllReduce."
   },
   "sourceRefs": [
-    { "ref": "PAPER:gspmd", "locator": "§3–§4 reshard emission by the partitioner", "supports": ["A", "B"] },
-    { "ref": "DOC:stablehlo", "locator": "Sharding specifications and reshard semantics", "supports": ["A"] }
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§3–§4 reshard emission by the partitioner",
+      "supports": [
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "Sharding specifications and reshard semantics",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

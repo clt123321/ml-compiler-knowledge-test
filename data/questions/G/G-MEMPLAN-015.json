@@ -18,18 +18,32 @@
   },
   "stem": "In a static tensor-program compiler (e.g., XLA, TVM Relax, TensorRT), 'memory planning' with 'buffer reuse' refers to which activity?",
   "options": [
-    { "id": "A", "text": "The compiler analyzes tensor lifetimes across the graph, groups tensors whose lifetimes do not overlap, and assigns them to the same underlying storage buffer, producing a static allocation plan that the runtime executes without per-op malloc/free." },
-    { "id": "B", "text": "The runtime allocator caches recently-freed GPU buffers and hands them out to subsequent allocations to avoid the cost of cudaMalloc; this is the entire scope of memory planning." },
-    { "id": "C", "text": "The compiler always allocates one buffer per unique tensor identity; 'buffer reuse' refers to sharing that buffer across multiple training iterations of the same model." },
-    { "id": "D", "text": "The compiler renames tensor variables via SSA renaming; each rename triggers a distinct buffer, and 'reuse' means the code generator emits fewer distinct variable names." }
+    {
+      "id": "A",
+      "text": "The compiler renames tensor variables via SSA renaming; each rename triggers a distinct buffer, and 'reuse' means the code generator emits fewer distinct variable names."
+    },
+    {
+      "id": "B",
+      "text": "The runtime allocator caches recently-freed GPU buffers and hands them out to subsequent allocations to avoid the cost of cudaMalloc; this is the entire scope of memory planning."
+    },
+    {
+      "id": "C",
+      "text": "The compiler always allocates one buffer per unique tensor identity; 'buffer reuse' refers to sharing that buffer across multiple training iterations of the same model."
+    },
+    {
+      "id": "D",
+      "text": "The compiler analyzes tensor lifetimes across the graph, groups tensors whose lifetimes do not overlap, and assigns them to the same underlying storage buffer, producing a static allocation plan that the runtime executes without per-op malloc/free."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Static memory planning is a compile-time pass over the tensor program's data-flow graph: the compiler computes the live range of every intermediate tensor, then packs them into a small set of pre-allocated buffers such that concurrently-live tensors do not share. The output is a schedule that assigns tensor → offset into an arena, so the runtime avoids per-op allocation. Option B describes a runtime allocator (like PyTorch's CachingAllocator), a different and complementary mechanism. Option C confuses per-iteration reuse (runtime concept) with the compile-time plan. Option D confuses SSA renaming with buffer assignment.",
   "optionExplanations": {
-    "A": "Correct: matches the definition in XLA's HLO buffer-assignment pass, TVM's memory planner, and TensorRT engine planning.",
+    "A": "Wrong: SSA renaming has nothing to do with physical buffer allocation.",
     "B": "Wrong: describes a caching allocator, which is a runtime mechanism.",
     "C": "Wrong: buffer reuse is intra-graph, not inter-iteration.",
-    "D": "Wrong: SSA renaming has nothing to do with physical buffer allocation."
+    "D": "Correct: matches the definition in XLA's HLO buffer-assignment pass, TVM's memory planner, and TensorRT engine planning."
   },
   "assumptions": [
     "The compiler has global visibility over the tensor program's data-flow graph.",
@@ -39,15 +53,30 @@
     "Does not imply memory planning replaces runtime allocation entirely — dynamic shapes and side-effecting operations may still require dynamic buffers.",
     "Does not imply the resulting plan is optimal in general; buffer-packing is NP-hard and compilers use heuristics."
   ],
-  "misconceptionTags": ["memory_plan_confused_with_allocator", "buffer_reuse_iteration_scope"],
+  "misconceptionTags": [
+    "memory_plan_confused_with_allocator",
+    "buffer_reuse_iteration_scope"
+  ],
   "distractorRationales": {
+    "A": "Confuses SSA with physical allocation.",
     "B": "Runtime caching, not compile-time planning.",
-    "C": "Confuses inter-iteration reuse with intra-graph reuse.",
-    "D": "Confuses SSA with physical allocation."
+    "C": "Confuses inter-iteration reuse with intra-graph reuse."
   },
   "sourceRefs": [
-    { "ref": "DOC:stablehlo", "locator": "HLO buffer assignment pass documentation", "supports": ["A"] },
-    { "ref": "DOC:tvm-relax", "locator": "Static memory planning pass", "supports": ["A"] }
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "HLO buffer assignment pass documentation",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "Static memory planning pass",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

@@ -19,18 +19,33 @@
   },
   "stem": "Which statements about heterogeneous execution (a single model spanning CPU + GPU or CPU + NPU) are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "A partitioning pass typically groups ops into 'subgraphs' assigned to one device each, minimizing cross-device edges; the runtime executes each subgraph on its device and inserts transfer ops between them." },
-    { "id": "B", "text": "Cross-device edges are essentially free on modern PCIe 4.0 and NVLink; therefore the partitioning cost model can ignore transfer cost and choose the fastest device for each op independently, giving a partition that is optimal by construction." },
-    { "id": "C", "text": "Heterogeneous execution requires all devices to share a unified virtual memory space with cache coherence; without hardware support such as CXL, correct execution is impossible on machines with discrete GPUs." },
-    { "id": "D", "text": "Some accelerators (NPUs) have restricted op coverage; the runtime must decide, on a per-op basis, whether the op runs on the NPU (fast for supported ops) or falls back to CPU/GPU (slower but universal), and the partitioning cost model must model this asymmetry." }
+    {
+      "id": "A",
+      "text": "Some accelerators (NPUs) have restricted op coverage; the runtime must decide, on a per-op basis, whether the op runs on the NPU (fast for supported ops) or falls back to CPU/GPU (slower but universal), and the partitioning cost model must model this asymmetry."
+    },
+    {
+      "id": "B",
+      "text": "A partitioning pass typically groups ops into 'subgraphs' assigned to one device each, minimizing cross-device edges; the runtime executes each subgraph on its device and inserts transfer ops between them."
+    },
+    {
+      "id": "C",
+      "text": "Cross-device edges are essentially free on modern PCIe 4.0 and NVLink; therefore the partitioning cost model can ignore transfer cost and choose the fastest device for each op independently, giving a partition that is optimal by construction."
+    },
+    {
+      "id": "D",
+      "text": "Heterogeneous execution requires all devices to share a unified virtual memory space with cache coherence; without hardware support such as CXL, correct execution is impossible on machines with discrete GPUs."
+    }
   ],
-  "correctAnswers": ["A", "D"],
+  "correctAnswers": [
+    "A",
+    "B"
+  ],
   "explanation": "A: subgraph partitioning + inserted transfers is the standard technique (ONNX Runtime execution providers, OpenVINO plugins). D: NPU-style accelerators support a subset of ops; the compiler must route unsupported ops elsewhere. C is wrong: heterogeneous execution works fine on discrete GPUs without hardware cache coherence, via explicit transfers. B is wrong: PCIe/NVLink transfers are far from free (microseconds to milliseconds for large tensors) and per-op transfer plus synchronization cost is a first-order concern in the partition cost model.",
   "optionExplanations": {
-    "A": "Correct: standard subgraph partitioning approach.",
-    "B": "Wrong: cross-device transfer and synchronization cost is significant and cannot be ignored.",
-    "C": "Wrong: cache coherence is not required; explicit transfer suffices.",
-    "D": "Correct: NPU op-coverage asymmetry is a real constraint."
+    "A": "Correct: NPU op-coverage asymmetry is a real constraint.",
+    "B": "Correct: standard subgraph partitioning approach.",
+    "C": "Wrong: cross-device transfer and synchronization cost is significant and cannot be ignored.",
+    "D": "Wrong: cache coherence is not required; explicit transfer suffices."
   },
   "assumptions": [
     "The runtime supports partitioning into per-device subgraphs and inserting explicit transfers."
@@ -39,14 +54,30 @@
     "Does not imply hardware coherence (CXL, unified memory) is never useful; it does reduce programming complexity, but is not required.",
     "Does not imply the coarsest partition is always best; extreme coarsening may under-utilize a fast device."
   ],
-  "misconceptionTags": ["coherence_required_myth", "free_transfer_myth"],
+  "misconceptionTags": [
+    "coherence_required_myth",
+    "free_transfer_myth"
+  ],
   "distractorRationales": {
-    "B": "Fabricates transfer-cost negligibility.",
-    "C": "Overstates the hardware requirement for heterogeneous execution."
+    "C": "Fabricates transfer-cost negligibility.",
+    "D": "Overstates the hardware requirement for heterogeneous execution."
   },
   "sourceRefs": [
-    { "ref": "DOC:onnx", "locator": "ONNX Runtime execution providers and subgraph partitioning", "supports": ["A", "D"] },
-    { "ref": "DOC:iree", "locator": "IREE HAL heterogeneous execution", "supports": ["A"] }
+    {
+      "ref": "DOC:onnx",
+      "locator": "ONNX Runtime execution providers and subgraph partitioning",
+      "supports": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:iree",
+      "locator": "IREE HAL heterogeneous execution",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

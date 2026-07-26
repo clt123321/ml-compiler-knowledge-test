@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The exported program accepts any pair of tensors with shape `[4, N1]` and `[4, N2]` independently within `[1, 8192]`; sharing the same `Dim` object is a naming convention only and does not constrain runtime equality."
+      "text": "The exported program accepts any pair of tensors with shape `[4, N]` and `[4, N]` for the same `N` in the range `[1, 8192]`; sharing the `seq` object across `x` and `y` enforces that both inputs' dim 1 must be equal at runtime. Under this reading, the `Dim` constraint is treated as a compile-time hint that is stripped from the graph at export completion; the exported program is fully specialized to the example shape `[4, 128]` for both inputs, and passing any other size at runtime raises an error."
     },
     {
       "id": "B",
@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "The exported program accepts any pair of tensors with shape `[4, N]` and `[4, N]` for the same `N` in the range `[1, 8192]`; sharing the `seq` object across `x` and `y` enforces that both inputs' dim 1 must be equal at runtime. Under this reading, the `Dim` constraint is treated as a compile-time hint that is stripped from the graph at export completion; the exported program is fully specialized to the example shape `[4, 128]` for both inputs, and passing any other size at runtime raises an error."
+      "text": "The exported program accepts any pair of tensors with shape `[4, N1]` and `[4, N2]` independently within `[1, 8192]`; sharing the same `Dim` object is a naming convention only and does not constrain runtime equality."
     },
     {
       "id": "D",
@@ -40,13 +40,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "In `torch.export`, sharing a `Dim` object across multiple inputs' dims semantically constrains those dims to be equal at runtime; the exported program is parameterized in a single symbolic value for that shared dim, and runtime shape mismatches (or values outside `[min, max]`) will error. If `x` and `y` used two different `Dim` objects, they would be independent.",
   "optionExplanations": {
-    "C": "Correct: shared Dim => runtime equality constraint.",
-    "A": "Wrong: Dim identity is semantic, not just naming.",
+    "A": "Correct: shared Dim => runtime equality constraint.",
     "B": "Wrong: Dim constraints are preserved in the exported program.",
+    "C": "Wrong: Dim identity is semantic, not just naming.",
     "D": "Wrong: dynamic_shapes are honored."
   },
   "assumptions": [
@@ -62,8 +62,8 @@
     "export_ignores_dynamic_shapes"
   ],
   "distractorRationales": {
-    "A": "Ignores the semantic meaning of Dim identity.",
     "B": "Wrong claim about stripping.",
+    "C": "Ignores the semantic meaning of Dim identity.",
     "D": "Wrong claim that dynamic_shapes are ignored."
   },
   "sourceRefs": [
@@ -71,7 +71,7 @@
       "ref": "DOC:torch-export",
       "locator": "Dim, dynamic_shapes, shared dim constraints",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

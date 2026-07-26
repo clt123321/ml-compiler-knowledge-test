@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere and newer",
     "device": "GPU",
-    "requiredFeatures": ["Tensor Core"]
+    "requiredFeatures": [
+      "Tensor Core"
+    ]
   },
   "softwareContext": {
     "framework": "CUDA / cuBLAS / cuDNN",
@@ -19,18 +21,32 @@
   },
   "stem": "TF32 (TensorFloat-32) is a numerical format used by NVIDIA Tensor Cores starting with Ampere. Which best describes TF32?",
   "options": [
-    { "id": "A", "text": "TF32 is a 19-bit internal Tensor Core input format: 1 sign, 8 exponent (FP32 range), 10 mantissa (FP16 precision). Storage remains FP32; only the Tensor Core multiplier truncates mantissa on input. Accumulation is FP32." },
-    { "id": "B", "text": "TF32 is a 32-bit format equivalent to FP32; the name is a marketing rebrand with no numerical difference." },
-    { "id": "C", "text": "TF32 is a 16-bit format identical to BF16; the '32' refers to the accumulator width." },
-    { "id": "D", "text": "TF32 is a 24-bit format used by CPU vector units for machine-learning workloads; it is unrelated to GPU Tensor Cores." }
+    {
+      "id": "A",
+      "text": "TF32 is a 24-bit format used by CPU vector units for machine-learning workloads; it is unrelated to GPU Tensor Cores."
+    },
+    {
+      "id": "B",
+      "text": "TF32 is a 32-bit format equivalent to FP32; the name is a marketing rebrand with no numerical difference."
+    },
+    {
+      "id": "C",
+      "text": "TF32 is a 16-bit format identical to BF16; the '32' refers to the accumulator width."
+    },
+    {
+      "id": "D",
+      "text": "TF32 is a 19-bit internal Tensor Core input format: 1 sign, 8 exponent (FP32 range), 10 mantissa (FP16 precision). Storage remains FP32; only the Tensor Core multiplier truncates mantissa on input. Accumulation is FP32."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "TF32 is a Tensor Core input format: 8-bit exponent (FP32 dynamic range) with 10-bit mantissa (FP16 precision), totaling 19 bits internally. Storage in memory remains FP32; the truncation happens as inputs enter the Tensor Core multiplier. The accumulator stays FP32. This gives roughly 8-16× the compute throughput of pure FP32 while preserving FP32 range for training. TF32 is the default matmul mode for FP32 tensors on Ampere+ when `torch.backends.cuda.matmul.allow_tf32 = True`. Options B, C, D misrepresent the format.",
   "optionExplanations": {
-    "A": "Correct: matches NVIDIA's TF32 documentation.",
+    "A": "Wrong: TF32 is a GPU Tensor Core format.",
     "B": "Wrong: TF32 has different mantissa precision from FP32.",
     "C": "Wrong: TF32 is not identical to BF16 (different mantissa width).",
-    "D": "Wrong: TF32 is a GPU Tensor Core format."
+    "D": "Correct: matches NVIDIA's TF32 documentation."
   },
   "assumptions": [
     "The reader is on Ampere or newer NVIDIA GPUs."
@@ -39,15 +55,30 @@
     "Does not imply TF32 matches FP32 accuracy bit-for-bit — the mantissa truncation is observable in numerical tests.",
     "Does not imply TF32 is used automatically for all FP32 tensors — a flag controls it in PyTorch and other frameworks."
   ],
-  "misconceptionTags": ["tf32_equals_fp32", "tf32_equals_bf16"],
+  "misconceptionTags": [
+    "tf32_equals_fp32",
+    "tf32_equals_bf16"
+  ],
   "distractorRationales": {
+    "A": "Misattributes format origin.",
     "B": "Ignores mantissa truncation.",
-    "C": "Confuses TF32 with BF16.",
-    "D": "Misattributes format origin."
+    "C": "Confuses TF32 with BF16."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "Ampere Tensor Core TF32 format documentation", "supports": ["A"] },
-    { "ref": "BOOK:sze-eff", "locator": "Reduced-precision Tensor Core formats", "supports": ["A"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Ampere Tensor Core TF32 format documentation",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Reduced-precision Tensor Core formats",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

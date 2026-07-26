@@ -18,18 +18,32 @@
   },
   "stem": "'Post-training quantization' (PTQ) and 'quantization-aware training' (QAT) refer to which distinction?",
   "options": [
-    { "id": "A", "text": "PTQ quantizes a pre-trained FP model without retraining, using a calibration set to determine scales; QAT inserts fake-quantization ops during training so the model learns weights that are robust to the quantization noise, typically achieving higher accuracy at low bit widths." },
-    { "id": "B", "text": "PTQ and QAT differ only in the numerical format used (PTQ = INT8, QAT = INT4); the training process is identical." },
-    { "id": "C", "text": "PTQ quantizes only weights; QAT quantizes only activations." },
-    { "id": "D", "text": "PTQ is a runtime technique that quantizes model weights on-the-fly during serving; QAT precomputes quantization parameters offline." }
+    {
+      "id": "A",
+      "text": "PTQ is a runtime technique that quantizes model weights on-the-fly during serving; QAT precomputes quantization parameters offline."
+    },
+    {
+      "id": "B",
+      "text": "PTQ and QAT differ only in the numerical format used (PTQ = INT8, QAT = INT4); the training process is identical."
+    },
+    {
+      "id": "C",
+      "text": "PTQ quantizes only weights; QAT quantizes only activations."
+    },
+    {
+      "id": "D",
+      "text": "PTQ quantizes a pre-trained FP model without retraining, using a calibration set to determine scales; QAT inserts fake-quantization ops during training so the model learns weights that are robust to the quantization noise, typically achieving higher accuracy at low bit widths."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "PTQ takes an already-trained FP model and produces a quantized model without further training, using a calibration set to determine quantization parameters (scales, zero-points, sometimes weight-optimization like GPTQ/AWQ). QAT inserts fake-quantization operators into the training graph so gradient descent finds weights that survive the eventual quantization; the model learns to cope with quantization noise. QAT typically wins at low bit widths (INT4 or below) or on sensitive layers, at the cost of a training run. Options B, C, D are unrelated or reversed.",
   "optionExplanations": {
-    "A": "Correct: standard PTQ/QAT distinction.",
+    "A": "Wrong: PTQ is offline (calibration + freeze); this option reverses the training/runtime axis.",
     "B": "Wrong: distinction is process, not format.",
     "C": "Wrong: both quantize weights (and often activations).",
-    "D": "Wrong: PTQ is offline (calibration + freeze); this option reverses the training/runtime axis."
+    "D": "Correct: standard PTQ/QAT distinction."
   },
   "assumptions": [
     "Standard framework terminology (TensorRT, PyTorch, TF-Lite)."
@@ -38,15 +52,29 @@
     "Does not imply QAT is always better — for INT8, PTQ often matches QAT accuracy.",
     "Does not imply PTQ is training-free in all cases; GPTQ / AWQ do run per-layer optimization that is not full retraining."
   ],
-  "misconceptionTags": ["ptq_qat_format_confusion"],
+  "misconceptionTags": [
+    "ptq_qat_format_confusion"
+  ],
   "distractorRationales": {
+    "A": "Timing confusion.",
     "B": "Format confusion.",
-    "C": "Wrong axis confusion.",
-    "D": "Timing confusion."
+    "C": "Wrong axis confusion."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "PTQ vs QAT definitions", "supports": ["A"] },
-    { "ref": "PAPER:gptq", "locator": "PTQ context and comparison to QAT", "supports": ["A"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "PTQ vs QAT definitions",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:gptq",
+      "locator": "PTQ context and comparison to QAT",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

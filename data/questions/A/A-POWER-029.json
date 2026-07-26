@@ -11,7 +11,10 @@
     "vendor": "NVIDIA",
     "architecture": "generic data-center GPU with TDP power cap",
     "device": "GPU",
-    "requiredFeatures": ["dynamic voltage/frequency scaling", "TDP cap"]
+    "requiredFeatures": [
+      "dynamic voltage/frequency scaling",
+      "TDP cap"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
@@ -19,18 +22,32 @@
   "profileData": "Burst FP16 GEMM (first 100 ms): 300 TFLOP/s. Sustained FP16 GEMM (steady state after 30 s): 240 TFLOP/s. GPU reports Power Limit = 400 W and Perf State drop from P0 to P2 during the sustained run.",
   "stem": "Nsight Systems shows a data-center GPU reaching 300 TFLOP/s in a short FP16 GEMM burst, but sustained throughput over 30 s stabilizes at 240 TFLOP/s. GPU telemetry reports a TDP cap of 400 W and a performance-state drop from P0 to P2. Which explanation best fits the data?",
   "options": [
-    { "id": "A", "text": "Sustained power/thermal constraints throttle SM clock frequency to keep total power at or below TDP; short bursts can exceed sustained power via thermal headroom, but the long-run steady state respects the cap, reducing achievable throughput." },
-    { "id": "B", "text": "HBM bandwidth increases during the burst and decreases at steady state, so the gap is memory-bandwidth-related rather than power-related." },
-    { "id": "C", "text": "Nsight Systems mismeasures the burst throughput by 20% due to profiler overhead; the sustained figure is the true value at both phases." },
-    { "id": "D", "text": "PCIe bandwidth reduction under thermal load caps GPU compute; sustained throughput drops because the PCIe link cannot deliver enough data." }
+    {
+      "id": "A",
+      "text": "PCIe bandwidth reduction under thermal load caps GPU compute; sustained throughput drops because the PCIe link cannot deliver enough data."
+    },
+    {
+      "id": "B",
+      "text": "HBM bandwidth increases during the burst and decreases at steady state, so the gap is memory-bandwidth-related rather than power-related."
+    },
+    {
+      "id": "C",
+      "text": "Nsight Systems mismeasures the burst throughput by 20% due to profiler overhead; the sustained figure is the true value at both phases."
+    },
+    {
+      "id": "D",
+      "text": "Sustained power/thermal constraints throttle SM clock frequency to keep total power at or below TDP; short bursts can exceed sustained power via thermal headroom, but the long-run steady state respects the cap, reducing achievable throughput."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "Data-center GPUs use dynamic voltage/frequency scaling (DVFS) to keep power within the TDP cap. Short bursts can exceed the sustained power draw thanks to thermal capacity, but as the die heats up and rolling averages approach the TDP cap, the driver reduces clocks (Perf State P0 → P2). The GEMM is compute-bound, so throughput drops proportionally. Options B, C, D contradict the profile or introduce fictional causes.",
   "optionExplanations": {
-    "A": "Correct: TDP-driven DVFS reduces sustained clocks, cutting compute throughput.",
+    "A": "Wrong: PCIe bandwidth applies to host-device transfers; a resident GEMM does not need PCIe traffic to run.",
     "B": "Wrong: HBM bandwidth is set by the memory subsystem and does not fluctuate meaningfully across burst vs steady state in this way. The kernel is compute-bound, so HBM is not the bottleneck.",
     "C": "Wrong: profiler overhead does not systematically bias burst measurements by 20%; both phases are captured similarly.",
-    "D": "Wrong: PCIe bandwidth applies to host-device transfers; a resident GEMM does not need PCIe traffic to run."
+    "D": "Correct: TDP-driven DVFS reduces sustained clocks, cutting compute throughput."
   },
   "assumptions": [
     "Kernel is compute-bound (large square GEMM) so throughput tracks compute frequency.",
@@ -41,15 +58,30 @@
     "Does not imply that all GPUs behave identically; some SKUs allow higher sustained power via improved cooling or firmware.",
     "Does not imply power capping is the only cause of sustained-vs-burst gaps; measurement noise, background jobs, and JIT compilation can also contribute."
   ],
-  "misconceptionTags": ["dvfs_throttle_direction", "hbm_bandwidth_myth_thermal"],
+  "misconceptionTags": [
+    "dvfs_throttle_direction",
+    "hbm_bandwidth_myth_thermal"
+  ],
   "distractorRationales": {
+    "A": "Introduces irrelevant PCIe bottleneck.",
     "B": "Fabricates HBM bandwidth thermal dependency.",
-    "C": "Attributes real physical effect to profiler noise.",
-    "D": "Introduces irrelevant PCIe bottleneck."
+    "C": "Attributes real physical effect to profiler noise."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-best", "locator": "Performance tuning under thermal/power constraints; DVFS discussion", "supports": ["A"] },
-    { "ref": "BOOK:hp6", "locator": "Power and energy chapters; DVFS", "supports": ["A"] }
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Performance tuning under thermal/power constraints; DVFS discussion",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Power and energy chapters; DVFS",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

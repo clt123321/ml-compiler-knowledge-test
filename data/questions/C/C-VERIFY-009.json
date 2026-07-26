@@ -30,22 +30,22 @@
     },
     {
       "id": "C",
-      "text": "The verifier reports a well-formedness violation: the op's operand shapes are incompatible per the op's ODS constraints. Because the mismatched IR was produced by pass P, this is a bug in P, not in user code. Under this framing, MLIR verifiers only check that the SSA graph has no cycles between op operands and results; the error message about operand shape compatibility must therefore originate from a user-provided assertion or a downstream analysis, not the built-in verifier."
+      "text": "Verifier errors always indicate a source-language type error; the responsible party is the front-end that produced the initial IR, regardless of intervening passes. In this account, verifier errors always indicate a source-language type error; the responsible party is the front-end that produced the initial IR, and intervening passes are innocent because passes are required to preserve well-formedness by construction."
     },
     {
       "id": "D",
-      "text": "Verifier errors always indicate a source-language type error; the responsible party is the front-end that produced the initial IR, regardless of intervening passes. In this account, verifier errors always indicate a source-language type error; the responsible party is the front-end that produced the initial IR, and intervening passes are innocent because passes are required to preserve well-formedness by construction."
+      "text": "The verifier reports a well-formedness violation: the op's operand shapes are incompatible per the op's ODS constraints. Because the mismatched IR was produced by pass P, this is a bug in P, not in user code. Under this framing, MLIR verifiers only check that the SSA graph has no cycles between op operands and results; the error message about operand shape compatibility must therefore originate from a user-provided assertion or a downstream analysis, not the built-in verifier."
     }
   ],
   "correctAnswers": [
-    "C"
+    "D"
   ],
   "explanation": "MLIR ops declare invariants (via ODS traits and custom verifiers) that the IR must satisfy — e.g., matching shapes, matching types, well-formed regions. The verifier runs before/after passes to catch violations. If a pass produces IR that fails the verifier, the pass has broken an invariant; the error is a compiler-side bug (an invalid transformation), not a runtime or user-code error. Verifiers do much more than cycle checks in the SSA graph.",
   "optionExplanations": {
     "A": "Wrong: verifier failures are compile-time correctness signals; deferring to runtime abandons IR correctness.",
-    "C": "Correct: describes both the meaning of the verifier and the correct diagnostic conclusion.",
     "B": "Wrong: MLIR verifiers check op-level invariants (shapes, region structure, result count, etc.).",
-    "D": "Wrong: if the front-end IR verified but a later pass fails it, the responsible party is the pass."
+    "C": "Wrong: if the front-end IR verified but a later pass fails it, the responsible party is the pass.",
+    "D": "Correct: describes both the meaning of the verifier and the correct diagnostic conclusion."
   },
   "assumptions": [
     "The initial IR passed the verifier before pass P ran.",
@@ -62,21 +62,21 @@
   "distractorRationales": {
     "A": "Confuses IR verifier with runtime error tolerance.",
     "B": "Understates verifier scope.",
-    "D": "Blames the wrong party when a pass introduces the invariant break."
+    "C": "Blames the wrong party when a pass introduces the invariant break."
   },
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
       "locator": "Op verifiers / ODS invariants / verifier passes",
       "supports": [
-        "C"
+        "D"
       ]
     },
     {
       "ref": "PAPER:mlir",
       "locator": "MLIR CGO'21: op verification via ODS",
       "supports": [
-        "C"
+        "D"
       ]
     }
   ],

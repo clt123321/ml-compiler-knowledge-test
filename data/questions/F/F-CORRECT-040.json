@@ -60,22 +60,22 @@
     },
     {
       "id": "C",
-      "text": "The discrepancy is due to CUDA's non-determinism; the same kernel will produce a different result each run, so absolute tolerance measurement is meaningless and the test should use `torch.testing.assert_close(atol=inf, rtol=inf)` to always pass."
+      "text": "The discrepancy is consistent with expected FP16-input matmul precision: FP16 has ~11 mantissa bits (~3 decimal digits), so per-element rounding accumulates over K=4096 reductions. The observed rtol ~1e-3 is a reasonable tolerance for FP16-input GEMM against an FP32-input reference; the kernel is likely correct."
     },
     {
       "id": "D",
-      "text": "The discrepancy is consistent with expected FP16-input matmul precision: FP16 has ~11 mantissa bits (~3 decimal digits), so per-element rounding accumulates over K=4096 reductions. The observed rtol ~1e-3 is a reasonable tolerance for FP16-input GEMM against an FP32-input reference; the kernel is likely correct."
+      "text": "The discrepancy is due to CUDA's non-determinism; the same kernel will produce a different result each run, so absolute tolerance measurement is meaningless and the test should use `torch.testing.assert_close(atol=inf, rtol=inf)` to always pass."
     }
   ],
   "correctAnswers": [
-    "D"
+    "C"
   ],
   "explanation": "The kernel takes FP16 inputs and accumulates in FP32; the reference upcasts inputs to FP32 first (no FP16 rounding). The primary error source is FP16 input rounding — each of 4096 accumulated products contributes a small error, and errors partially cancel but do not vanish. Empirically, FP16-input matmul is expected to differ from FP32-input matmul by roughly rtol ~1e-3 at moderate K, which matches the observation. Choice B is wrong: FP32 accumulation reduces but does not eliminate FP16-input rounding. C fabricates non-determinism and rejects tolerance testing. D partially points at a real issue (TF32 on Ampere for `float()` inputs would introduce error), but the observed error is dominated by FP16 rounding.",
   "optionExplanations": {
-    "D": "Correct: rtol ~1e-3 is consistent with FP16-input matmul error at K=4096.",
+    "A": "Wrong: while TF32 default on Ampere can complicate references, the FP16-input error dominates here.",
     "B": "Wrong: FP32 accum does not restore FP16-input precision.",
-    "C": "Wrong: modern GPU matmul is largely deterministic per algorithm; tolerance is the right tool.",
-    "A": "Wrong: while TF32 default on Ampere can complicate references, the FP16-input error dominates here."
+    "C": "Correct: rtol ~1e-3 is consistent with FP16-input matmul error at K=4096.",
+    "D": "Wrong: modern GPU matmul is largely deterministic per algorithm; tolerance is the right tool."
   },
   "assumptions": [
     "FP16 has ~11 mantissa bits (relative machine epsilon ~9.77e-4).",
@@ -91,23 +91,23 @@
     "gpu_matmul_nondeterminism_myth"
   ],
   "distractorRationales": {
+    "A": "Wrong attribution of the error source.",
     "B": "Confuses accumulator precision with input precision.",
-    "C": "Fabricates general GPU matmul non-determinism.",
-    "A": "Wrong attribution of the error source."
+    "D": "Fabricates general GPU matmul non-determinism."
   },
   "sourceRefs": [
     {
       "ref": "DOC:cuda-guide",
       "locator": "IEEE-754 floating-point behavior and mixed precision matmul",
       "supports": [
-        "D"
+        "C"
       ]
     },
     {
       "ref": "DOC:triton",
       "locator": "Triton matmul tutorial and tolerance guidance",
       "supports": [
-        "D"
+        "C"
       ]
     }
   ],

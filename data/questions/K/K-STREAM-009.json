@@ -19,17 +19,31 @@
   },
   "stem": "Which statement most accurately describes CUDA streams and events in the context of an ML runtime that overlaps kernel execution with data transfers?",
   "options": [
-    { "id": "A", "text": "A stream represents a physical hardware queue with a fixed one-to-one binding to a specific SM group; events are per-SM performance counters that record occupancy and warp-stall statistics for later Nsight analysis." },
-    { "id": "B", "text": "A stream is an in-order queue of operations on the device — work enqueued on the same stream executes in order, work on different streams may execute concurrently; events are recorded on streams as synchronization markers that other streams (or the host) can wait on." },
-    { "id": "C", "text": "A stream is a mutable shared buffer that host and device both read/write; events are memory fences that flush the L2 cache to global memory before subsequent kernels begin executing on the same device." },
-    { "id": "D", "text": "Streams and events are optional debugging APIs whose only function is to expose timing information to profilers; kernel execution order is instead determined by the CUDA driver's global scheduler regardless of stream assignment." }
+    {
+      "id": "A",
+      "text": "A stream represents a physical hardware queue with a fixed one-to-one binding to a specific SM group; events are per-SM performance counters that record occupancy and warp-stall statistics for later Nsight analysis."
+    },
+    {
+      "id": "B",
+      "text": "A stream is a mutable shared buffer that host and device both read/write; events are memory fences that flush the L2 cache to global memory before subsequent kernels begin executing on the same device."
+    },
+    {
+      "id": "C",
+      "text": "A stream is an in-order queue of operations on the device — work enqueued on the same stream executes in order, work on different streams may execute concurrently; events are recorded on streams as synchronization markers that other streams (or the host) can wait on."
+    },
+    {
+      "id": "D",
+      "text": "Streams and events are optional debugging APIs whose only function is to expose timing information to profilers; kernel execution order is instead determined by the CUDA driver's global scheduler regardless of stream assignment."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "A CUDA stream is an in-order queue of device operations. Operations within the same stream execute in issue order; operations across different streams may overlap (subject to hardware and driver policies). CUDA events are recorded on streams (`cudaEventRecord(event, stream)`) and act as synchronization markers — another stream can wait on the event, or the host can block until it completes. Overlapping copy-and-compute uses one stream for H2D and another for the kernel, synchronized by events.",
   "optionExplanations": {
     "A": "Wrong: streams are logical queues, not physical SM bindings; events are not performance counters.",
-    "B": "Correct: matches the CUDA C++ Programming Guide description of streams and events.",
-    "C": "Wrong: streams are not shared host/device buffers, and events are not L2 fences.",
+    "B": "Wrong: streams are not shared host/device buffers, and events are not L2 fences.",
+    "C": "Correct: matches the CUDA C++ Programming Guide description of streams and events.",
     "D": "Wrong: streams determine execution order (within-stream in-order); they are not debug-only."
   },
   "assumptions": [
@@ -39,15 +53,30 @@
     "Does not imply cross-stream ops always run concurrently; concurrency depends on GPU resources and dependencies.",
     "Does not imply events replace `cudaStreamSynchronize`; both are valid tools for different granularities."
   ],
-  "misconceptionTags": ["stream_hardware_binding_myth", "event_l2_fence_myth"],
+  "misconceptionTags": [
+    "stream_hardware_binding_myth",
+    "event_l2_fence_myth"
+  ],
   "distractorRationales": {
     "A": "False hardware binding claim.",
-    "C": "Fabricates stream/event semantics.",
+    "B": "Fabricates stream/event semantics.",
     "D": "Wrong scope of streams."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "Streams and Events chapter", "supports": ["B"] },
-    { "ref": "DOC:cuda-best", "locator": "Concurrent kernel execution and overlap using streams", "supports": ["B"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Streams and Events chapter",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Concurrent kernel execution and overlap using streams",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

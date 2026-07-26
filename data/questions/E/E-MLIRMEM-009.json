@@ -25,7 +25,7 @@
     },
     {
       "id": "B",
-      "text": "A 4×8 tensor value in memory space 3 with a non-standard SSA numbering; the `strided<[8,1], offset:0>` clause is documentation only and does not affect the address computation, which is always row-major for `memref`."
+      "text": "A 4×8 buffer of f32 in memory space 3 (typically GPU shared/workgroup memory), row-major (stride [8, 1]) with offset 0; the element `[i, j]` lives at linear address `i*8 + j` from the base pointer."
     },
     {
       "id": "C",
@@ -33,18 +33,18 @@
     },
     {
       "id": "D",
-      "text": "A 4×8 buffer of f32 in memory space 3 (typically GPU shared/workgroup memory), row-major (stride [8, 1]) with offset 0; the element `[i, j]` lives at linear address `i*8 + j` from the base pointer."
+      "text": "A 4×8 tensor value in memory space 3 with a non-standard SSA numbering; the `strided<[8,1], offset:0>` clause is documentation only and does not affect the address computation, which is always row-major for `memref`."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "MLIR memref type: `memref<shape, layout, memory_space>`. `strided<[8, 1], offset: 0>` explicitly encodes the linear-index computation: element `[i, j]` at `offset + i*8 + j*1 = i*8 + j` (in element units, not bytes). Strides `[8, 1]` for a 4×8 buffer is exactly the standard row-major contiguous layout. The trailing integer `3` is the memory space attribute — semantically it is a discriminator (e.g., 0 = global, 3 = shared in GPU lowerings), a static classification of which memory the buffer lives in.",
   "optionExplanations": {
-    "D": "Correct: row-major stride [8,1] on 4×8 with memory space 3.",
-    "B": "Wrong: the strided clause is semantic, not documentation.",
+    "A": "Wrong: [8, 1] is row-major (fastest-varying last), not column-major.",
+    "B": "Correct: row-major stride [8,1] on 4×8 with memory space 3.",
     "C": "Wrong: strides are in element units, and memory-space is a static discriminator not a runtime ID.",
-    "A": "Wrong: [8, 1] is row-major (fastest-varying last), not column-major."
+    "D": "Wrong: the strided clause is semantic, not documentation."
   },
   "assumptions": [
     "MLIR memref strides are in element units unless documented otherwise.",
@@ -59,16 +59,16 @@
     "memory_space_runtime_id_myth"
   ],
   "distractorRationales": {
-    "B": "Ignores the strided clause's semantics.",
+    "A": "Inverts row-major vs column-major reading.",
     "C": "Wrong stride units and wrong memory-space model.",
-    "A": "Inverts row-major vs column-major reading."
+    "D": "Ignores the strided clause's semantics."
   },
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
       "locator": "MemRef Type — strides, offset, memory space",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

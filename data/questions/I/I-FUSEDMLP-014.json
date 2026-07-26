@@ -18,22 +18,65 @@
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["B", "N", "D"], ["D", "F"], ["F", "D"], ["B", "N", "D"]],
-    "dtypes": ["float16", "float16", "float16", "float16"],
-    "layouts": ["contiguous", "contiguous", "contiguous", "contiguous"]
+    "shapes": [
+      [
+        "B",
+        "N",
+        "D"
+      ],
+      [
+        "D",
+        "F"
+      ],
+      [
+        "F",
+        "D"
+      ],
+      [
+        "B",
+        "N",
+        "D"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "A standard MLP block computes y = down(activation(up(x))) with intermediate size F. For x shape [B, N, D] and F > D, which fusion strategy is most consistent with how modern LLM inference kernels are structured?",
   "options": [
-    { "id": "A", "text": "Fuse up + activation + down into a single kernel that never materializes the [B, N, F] intermediate in HBM, using a K-block reduction over the intermediate dim to stream partial outputs directly into y. Because F is a reduction dim, this fusion is a producer-consumer along a shared iteration space." },
-    { "id": "B", "text": "Fuse up + activation into one kernel (writing intermediate a of shape [B, N, F] to HBM) and keep down as a separate GEMM. The [B, N, F] tensor is written and read once, which is acceptable because the down GEMM is a big matmul that would not fuse with an elementwise activation without hurting its tile design." },
-    { "id": "C", "text": "Do not fuse anything: three separate kernel launches (up GEMM, activation, down GEMM) let each op run its optimal tile shape and give the profiler cleaner boundaries; fusion of any pair uniformly slows the block due to register pressure." },
-    { "id": "D", "text": "Fuse up + down into a single kernel by concatenating W_up and W_down^T into one weight matrix, then apply the activation last. This yields one GEMM with concatenated weights and one final elementwise activation." }
+    {
+      "id": "A",
+      "text": "Fuse up + activation into one kernel (writing intermediate a of shape [B, N, F] to HBM) and keep down as a separate GEMM. The [B, N, F] tensor is written and read once, which is acceptable because the down GEMM is a big matmul that would not fuse with an elementwise activation without hurting its tile design."
+    },
+    {
+      "id": "B",
+      "text": "Fuse up + activation + down into a single kernel that never materializes the [B, N, F] intermediate in HBM, using a K-block reduction over the intermediate dim to stream partial outputs directly into y. Because F is a reduction dim, this fusion is a producer-consumer along a shared iteration space."
+    },
+    {
+      "id": "C",
+      "text": "Do not fuse anything: three separate kernel launches (up GEMM, activation, down GEMM) let each op run its optimal tile shape and give the profiler cleaner boundaries; fusion of any pair uniformly slows the block due to register pressure."
+    },
+    {
+      "id": "D",
+      "text": "Fuse up + down into a single kernel by concatenating W_up and W_down^T into one weight matrix, then apply the activation last. This yields one GEMM with concatenated weights and one final elementwise activation."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "up + activation is a classic producer-consumer fusion: the activation is elementwise on the [B, N, F] intermediate a, so both share the same iteration space and combine cleanly into one kernel. down is a separate GEMM: fusing it with the elementwise activation would force down's tile design to also handle the elementwise transform, and — crucially — down accumulates over the F dimension, so it cannot avoid reading a. Skipping the a materialization to HBM would require a K-reduction fusion that changes down's tiling and is rarely a win for standard MLPs (it is used by more specialized techniques like producer-consumer fused MLP with persistent kernels). The standard, robust choice is: fuse up + activation, keep down separate.",
   "optionExplanations": {
-    "B": "Correct: the mainstream production fusion boundary.",
-    "A": "Wrong: attractive on paper but hard in practice — the K-reduction fusion changes down's tile design and rarely wins on standard MLP shapes.",
+    "A": "Correct: the mainstream production fusion boundary.",
+    "B": "Wrong: attractive on paper but hard in practice — the K-reduction fusion changes down's tile design and rarely wins on standard MLP shapes.",
     "C": "Wrong: fusing up + activation is a well-known, robust win.",
     "D": "Wrong: cannot concatenate weights of different reduction axes into one GEMM (up reduces over D, down reduces over F)."
   },
@@ -45,15 +88,30 @@
     "Does not imply that no framework fuses down; some specialized inference libraries do implement full-block fusion.",
     "Does not imply that writing [B, N, F] to HBM is free; on very small B*N the fused up+act is memory-bound and might even benefit from further fusion."
   ],
-  "misconceptionTags": ["mlp_full_fusion_myth", "mlp_no_fusion_myth"],
+  "misconceptionTags": [
+    "mlp_full_fusion_myth",
+    "mlp_no_fusion_myth"
+  ],
   "distractorRationales": {
-    "A": "Overstates the feasibility of full-block MLP fusion.",
+    "B": "Overstates the feasibility of full-block MLP fusion.",
     "C": "Denies well-known fusion wins.",
     "D": "Incoherent — reduction axes differ."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-inductor", "locator": "Pointwise + reduction fusion boundaries", "supports": ["B"] },
-    { "ref": "DOC:cuda-best", "locator": "Elementwise-with-GEMM fusion boundaries", "supports": ["B"] }
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Pointwise + reduction fusion boundaries",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Elementwise-with-GEMM fusion boundaries",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

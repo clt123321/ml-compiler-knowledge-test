@@ -25,7 +25,7 @@
     },
     {
       "id": "B",
-      "text": "Shape inference is a runtime-only concern; graph IRs do not carry shape annotations, so no static inference is possible before the first execution. In this account, shape inference reliably yields concrete integer shapes for every value in the graph even under dynamic input, by choosing the median observed value from a small warm-up run and hard-coding it into the compiled artifact."
+      "text": "Shape inference propagates per-op shape rules from inputs to outputs; with `x: [N, D]` and `w: [D, D]`, `y = matmul(x, w)` gives `[N, D]`. Extents like `N` remain symbolic when not known statically; concretization to actual integers happens at runtime (or via specialization). In this reading, shape inference only succeeds when all input shapes are fully static integers; introducing any symbolic dim causes the inference pass to abort and drop all previously-inferred shape annotations from the graph."
     },
     {
       "id": "C",
@@ -33,18 +33,18 @@
     },
     {
       "id": "D",
-      "text": "Shape inference propagates per-op shape rules from inputs to outputs; with `x: [N, D]` and `w: [D, D]`, `y = matmul(x, w)` gives `[N, D]`. Extents like `N` remain symbolic when not known statically; concretization to actual integers happens at runtime (or via specialization). In this reading, shape inference only succeeds when all input shapes are fully static integers; introducing any symbolic dim causes the inference pass to abort and drop all previously-inferred shape annotations from the graph."
+      "text": "Shape inference is a runtime-only concern; graph IRs do not carry shape annotations, so no static inference is possible before the first execution. In this account, shape inference reliably yields concrete integer shapes for every value in the graph even under dynamic input, by choosing the median observed value from a small warm-up run and hard-coding it into the compiled artifact."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "Graph-level shape inference propagates per-op shape rules from inputs to outputs. When inputs contain symbolic dims (as in Relax / ONNX with dynamic dims), the inferred outputs are symbolic expressions in those dims (e.g., `matmul([N,D],[D,D]) -> [N,D]`). Concretization occurs at runtime (or at specialization time). The pass does not need to abort on symbolic inputs, does not hard-code medians, and is not runtime-only.",
   "optionExplanations": {
-    "D": "Correct: describes symbolic shape propagation.",
     "A": "Wrong: shape inference does not invent concrete values.",
-    "B": "Wrong: graph IRs commonly carry shape annotations statically.",
-    "C": "Wrong: shape inference handles symbolic dims by producing symbolic outputs."
+    "B": "Correct: describes symbolic shape propagation.",
+    "C": "Wrong: shape inference handles symbolic dims by producing symbolic outputs.",
+    "D": "Wrong: graph IRs commonly carry shape annotations statically."
   },
   "assumptions": [
     "The IR supports symbolic dim variables (as ONNX, Relax, or MLIR shape do)."
@@ -59,22 +59,22 @@
   ],
   "distractorRationales": {
     "A": "Fabricates concrete numbers.",
-    "B": "Wrong claim about graph annotations.",
-    "C": "Wrong claim about abort on symbolic dims."
+    "C": "Wrong claim about abort on symbolic dims.",
+    "D": "Wrong claim about graph annotations."
   },
   "sourceRefs": [
     {
       "ref": "DOC:stablehlo",
       "locator": "Shape inference and dynamic dims",
       "supports": [
-        "D"
+        "B"
       ]
     },
     {
       "ref": "DOC:tvm-relax",
       "locator": "Symbolic shape propagation in Relax",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

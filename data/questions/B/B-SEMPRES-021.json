@@ -18,18 +18,34 @@
   },
   "stem": "Which statements about semantic preservation in compiler optimization are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "An optimization is semantics-preserving if the optimized program has an observable-behavior set that is a subset of the source program's observable-behavior set (under the source language's semantics), typically allowing implementation-defined behaviors and some nondeterminism." },
-    { "id": "B", "text": "Flags like `-ffast-math` explicitly relax IEEE-754 semantics (associativity, NaN/Inf handling), allowing reassociation and other transformations that are not strictly semantics-preserving; using them may change numerical results." },
-    { "id": "C", "text": "For undefined behavior (UB) in the source language (e.g., signed overflow in C, out-of-bounds access), the compiler is free to assume UB does not occur; optimizations may exploit this to eliminate branches or code paths, which can produce surprising behavior when UB does occur." },
-    { "id": "D", "text": "Semantic preservation is always trivially satisfied by any optimization that reduces the number of instructions; fewer instructions cannot possibly change behavior." }
+    {
+      "id": "A",
+      "text": "For undefined behavior (UB) in the source language (e.g., signed overflow in C, out-of-bounds access), the compiler is free to assume UB does not occur; optimizations may exploit this to eliminate branches or code paths, which can produce surprising behavior when UB does occur."
+    },
+    {
+      "id": "B",
+      "text": "Semantic preservation is always trivially satisfied by any optimization that reduces the number of instructions; fewer instructions cannot possibly change behavior."
+    },
+    {
+      "id": "C",
+      "text": "An optimization is semantics-preserving if the optimized program has an observable-behavior set that is a subset of the source program's observable-behavior set (under the source language's semantics), typically allowing implementation-defined behaviors and some nondeterminism."
+    },
+    {
+      "id": "D",
+      "text": "Flags like `-ffast-math` explicitly relax IEEE-754 semantics (associativity, NaN/Inf handling), allowing reassociation and other transformations that are not strictly semantics-preserving; using them may change numerical results."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
   "explanation": "A: standard framing of semantic preservation as behavior refinement. B: canonical example of an intentional soundness relaxation for FP arithmetic. C: UB-based optimization is a known pattern in C/C++ that can surprise users. D is wrong: reducing instructions does not guarantee behavior preservation (removing a store can change observed memory; removing a call can skip side effects).",
   "optionExplanations": {
-    "A": "Correct: canonical definition of semantics-preserving optimization.",
-    "B": "Correct: -ffast-math and similar flags explicitly relax FP semantics.",
-    "C": "Correct: UB assumptions enable aggressive optimizations that can surprise developers.",
-    "D": "Wrong: fewer instructions can absolutely change behavior (dropping stores, calls, exceptions)."
+    "A": "Correct: UB assumptions enable aggressive optimizations that can surprise developers.",
+    "B": "Wrong: fewer instructions can absolutely change behavior (dropping stores, calls, exceptions).",
+    "C": "Correct: canonical definition of semantics-preserving optimization.",
+    "D": "Correct: -ffast-math and similar flags explicitly relax FP semantics."
   },
   "assumptions": [
     "Standard C/C++ semantics with defined observable behavior; language variants with different semantic models may allow different optimizations."
@@ -38,14 +54,41 @@
     "Does not imply -ffast-math is unsafe in all contexts; deep-learning training routinely uses it or its GPU equivalents.",
     "Does not imply the compiler always warns when UB is assumed; it typically does not."
   ],
-  "misconceptionTags": ["fewer_ops_safer_myth", "ub_optimization_awareness"],
+  "misconceptionTags": [
+    "fewer_ops_safer_myth",
+    "ub_optimization_awareness"
+  ],
   "distractorRationales": {
-    "D": "Falsely claims instruction reduction implies behavior preservation."
+    "B": "Falsely claims instruction reduction implies behavior preservation."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Semantics preservation and optimization correctness", "supports": ["A", "B", "C"] },
-    { "ref": "BOOK:appel", "locator": "Optimization correctness discussion", "supports": ["A", "B", "C"] },
-    { "ref": "DOC:llvm-langref", "locator": "Fast-math flags, UB semantics, poison values", "supports": ["A", "B", "C"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Semantics preservation and optimization correctness",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Optimization correctness discussion",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:llvm-langref",
+      "locator": "Fast-math flags, UB semantics, poison values",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

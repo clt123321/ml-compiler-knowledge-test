@@ -22,11 +22,11 @@
   "options": [
     {
       "id": "A",
-      "text": "DCE may remove only the pure `arith.addf` because it has no observable side effects and its result is dead. Neither `linalg.copy` nor `linalg.matmul` can be removed: both have write side effects, and the copy's write to %B is externally observable through the function's memref argument. In this account, once escape analysis has confirmed the buffers are visible outside the function, aggressive DCE simply relies on the alias-analysis conservatism to determine that removing the copy is a valid transformation."
+      "text": "DCE may remove `linalg.copy` (its result appears unused inside the function) and the pure `arith.addf` (unused); `linalg.matmul` must stay because its result escapes."
     },
     {
       "id": "B",
-      "text": "DCE may remove `linalg.copy` (its result appears unused inside the function) and the pure `arith.addf` (unused); `linalg.matmul` must stay because its result escapes."
+      "text": "DCE may remove only the pure `arith.addf` because it has no observable side effects and its result is dead. Neither `linalg.copy` nor `linalg.matmul` can be removed: both have write side effects, and the copy's write to %B is externally observable through the function's memref argument. In this account, once escape analysis has confirmed the buffers are visible outside the function, aggressive DCE simply relies on the alias-analysis conservatism to determine that removing the copy is a valid transformation."
     },
     {
       "id": "C",
@@ -38,12 +38,12 @@
     }
   ],
   "correctAnswers": [
-    "A"
+    "B"
   ],
   "explanation": "DCE removes computations whose results are dead and that have no side effects. In an IR with memref writes, a store to a memref is a side effect: if the memref is a function argument or otherwise reachable outside the pass's SSA horizon, removing the store is unsound. `linalg.copy` writes to %B (a caller-owned memref) — externally observable — so it must stay. `linalg.matmul` writes to %C and %C is returned — clearly live. Only the pure `arith.addf` with a dead SSA result can be safely removed.",
   "optionExplanations": {
-    "B": "Wrong: it treats `linalg.copy` as dead. But the copy writes to a function-argument memref, which is externally observable.",
-    "A": "Correct: DCE respects memory side effects and only removes the pure, dead SSA op.",
+    "A": "Wrong: it treats `linalg.copy` as dead. But the copy writes to a function-argument memref, which is externally observable.",
+    "B": "Correct: DCE respects memory side effects and only removes the pure, dead SSA op.",
     "C": "Wrong: elides observable writes; violates program semantics.",
     "D": "Wrong: reverses the rule about SSA-value liveness and memory-store elimination."
   },
@@ -60,7 +60,7 @@
     "memref_store_always_dead"
   ],
   "distractorRationales": {
-    "B": "Ignores that the copy's write is observable.",
+    "A": "Ignores that the copy's write is observable.",
     "C": "Elides observable writes.",
     "D": "Inverts DCE's rule."
   },
@@ -69,14 +69,14 @@
       "ref": "BOOK:eac3",
       "locator": "Dead code elimination; observable side effects",
       "supports": [
-        "A"
+        "B"
       ]
     },
     {
       "ref": "DOC:mlir-langref",
       "locator": "MemoryEffects interface; op purity",
       "supports": [
-        "A"
+        "B"
       ]
     }
   ],

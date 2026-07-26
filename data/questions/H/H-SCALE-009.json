@@ -18,16 +18,30 @@
   },
   "stem": "For an affine (asymmetric) quantizer with scale `s > 0` and zero-point `z` mapping real value `x` to integer `q`, which pair correctly gives the quantize and dequantize formulas?",
   "options": [
-    { "id": "A", "text": "quantize: `q = round(x / s) + z`; dequantize: `x_hat = (q - z) * s`." },
-    { "id": "B", "text": "quantize: `q = round(x * s) + z`; dequantize: `x_hat = (q - z) / s`." },
-    { "id": "C", "text": "quantize: `q = round(x / s) - z`; dequantize: `x_hat = (q + z) * s`." },
-    { "id": "D", "text": "quantize: `q = round(x + z) / s`; dequantize: `x_hat = q * s - z`." }
+    {
+      "id": "A",
+      "text": "quantize: `q = round(x * s) + z`; dequantize: `x_hat = (q - z) / s`."
+    },
+    {
+      "id": "B",
+      "text": "quantize: `q = round(x / s) + z`; dequantize: `x_hat = (q - z) * s`."
+    },
+    {
+      "id": "C",
+      "text": "quantize: `q = round(x / s) - z`; dequantize: `x_hat = (q + z) * s`."
+    },
+    {
+      "id": "D",
+      "text": "quantize: `q = round(x + z) / s`; dequantize: `x_hat = q * s - z`."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "The standard affine quantizer maps `x` to `q = round(x / s) + z` where `s` is the scale (larger real range per integer step) and `z` is the integer value that represents real zero. Dequantization inverts: `x_hat = (q - z) * s`. This is the definition used across TensorRT, PyTorch's `torch.ao.quantization`, ONNX QuantizeLinear / DequantizeLinear, and academic literature. Options B, C, D swap operators (multiplication vs. division), swap sign of z, or reorder operations incorrectly.",
   "optionExplanations": {
-    "A": "Correct: canonical affine quantizer.",
-    "B": "Wrong: multiplication and division are swapped.",
+    "A": "Wrong: multiplication and division are swapped.",
+    "B": "Correct: canonical affine quantizer.",
     "C": "Wrong: sign of z is reversed.",
     "D": "Wrong: order of operations violates the affine structure."
   },
@@ -38,15 +52,29 @@
     "Does not imply `z = 0` (symmetric quantization) is always preferred; asymmetric is common for activations.",
     "Does not imply `q` must always be clamped to the integer range; explicit clamping is a separate step."
   ],
-  "misconceptionTags": ["scale_zero_point_swap"],
+  "misconceptionTags": [
+    "scale_zero_point_swap"
+  ],
   "distractorRationales": {
-    "B": "Swaps division and multiplication.",
+    "A": "Swaps division and multiplication.",
     "C": "Sign confusion.",
     "D": "Operator ordering error."
   },
   "sourceRefs": [
-    { "ref": "DOC:onnx", "locator": "QuantizeLinear / DequantizeLinear operator spec", "supports": ["A"] },
-    { "ref": "BOOK:sze-eff", "locator": "Affine quantization definitions", "supports": ["A"] }
+    {
+      "ref": "DOC:onnx",
+      "locator": "QuantizeLinear / DequantizeLinear operator spec",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Affine quantization definitions",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

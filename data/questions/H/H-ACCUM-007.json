@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere / Hopper Tensor Core",
     "device": "GPU",
-    "requiredFeatures": ["Tensor Core (HMMA / BMMA / QMMA)"]
+    "requiredFeatures": [
+      "Tensor Core (HMMA / BMMA / QMMA)"
+    ]
   },
   "softwareContext": {
     "framework": "cuBLAS / CUTLASS",
@@ -19,20 +21,34 @@
   },
   "stem": "Regarding mixed-precision GEMM on NVIDIA Tensor Cores (e.g., FP16 or BF16 inputs with an FP32 accumulator), which of the following statements are TRUE? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "The accumulator dtype (FP32) determines the effective precision of the running sum, mitigating overflow and catastrophic cancellation compared to FP16/BF16 accumulation." },
-    { "id": "B", "text": "Downcasting the FP32 accumulator to FP16/BF16 on write introduces a rounding error per output element that can affect training stability if not accounted for." },
-    { "id": "C", "text": "Storing weights and activations in FP16/BF16 halves memory footprint and doubles memory bandwidth utilization relative to FP32 for the load path." },
-    { "id": "D", "text": "Because the accumulator is FP32, the compute throughput of mixed-precision GEMM matches pure FP32 GEMM on Tensor Cores." },
-    { "id": "E", "text": "Mixed-precision Tensor Core GEMM allows the output to skip the downcast step and directly write FP32 without any storage overhead." }
+    {
+      "id": "A",
+      "text": "Storing weights and activations in FP16/BF16 halves memory footprint and doubles memory bandwidth utilization relative to FP32 for the load path."
+    },
+    {
+      "id": "B",
+      "text": "Because the accumulator is FP32, the compute throughput of mixed-precision GEMM matches pure FP32 GEMM on Tensor Cores."
+    },
+    {
+      "id": "C",
+      "text": "The accumulator dtype (FP32) determines the effective precision of the running sum, mitigating overflow and catastrophic cancellation compared to FP16/BF16 accumulation."
+    },
+    {
+      "id": "D",
+      "text": "Downcasting the FP32 accumulator to FP16/BF16 on write introduces a rounding error per output element that can affect training stability if not accounted for."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
   "explanation": "A: FP32 accumulation is the whole point — it keeps the running sum in a numerically stable range. B: The final downcast is a per-element rounding step that adds error; for training this can matter (LayerNorm stats, etc.). C: Loading FP16/BF16 halves the memory bandwidth requirement, which is the dominant end-to-end speed-up for GEMM on Tensor Cores. D is false: FP16/BF16 Tensor Core throughput is much higher than pure FP32 (roughly 8-16× depending on generation). E is false: writing FP32 output doubles storage cost per element; the format choice is a real trade-off, not a free choice.",
   "optionExplanations": {
-    "A": "Correct: accumulator dtype drives numerical stability.",
-    "B": "Correct: downcast rounding is a real, per-element error source.",
-    "C": "Correct: bandwidth halving is central to Tensor Core speed-up.",
-    "D": "Wrong: mixed-precision Tensor Core is 8-16× faster than FP32 GEMM.",
-    "E": "Wrong: FP32 output doubles storage vs. FP16 output."
+    "A": "Correct: bandwidth halving is central to Tensor Core speed-up.",
+    "B": "Wrong: mixed-precision Tensor Core is 8-16× faster than FP32 GEMM.",
+    "C": "Correct: accumulator dtype drives numerical stability.",
+    "D": "Correct: downcast rounding is a real, per-element error source."
   },
   "assumptions": [
     "The GEMM uses standard cuBLAS or CUTLASS Tensor Core kernels."
@@ -41,14 +57,32 @@
     "Does not imply FP32 accumulator eliminates all numerical concerns — subnormal handling and non-associative order still matter.",
     "Does not imply switching output to FP32 always improves accuracy meaningfully — many workloads see negligible difference."
   ],
-  "misconceptionTags": ["mixed_precision_same_speed_as_fp32", "output_dtype_free"],
+  "misconceptionTags": [
+    "mixed_precision_same_speed_as_fp32",
+    "output_dtype_free"
+  ],
   "distractorRationales": {
-    "D": "Ignores Tensor Core throughput advantage.",
-    "E": "Ignores storage cost of FP32 output."
+    "B": "Ignores Tensor Core throughput advantage."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "Tensor Core mixed-precision GEMM semantics", "supports": ["A", "B", "C"] },
-    { "ref": "BOOK:sze-eff", "locator": "Mixed-precision training", "supports": ["A", "B", "C"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Tensor Core mixed-precision GEMM semantics",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Mixed-precision training",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

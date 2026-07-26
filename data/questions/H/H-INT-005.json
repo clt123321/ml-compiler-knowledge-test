@@ -18,17 +18,31 @@
   },
   "stem": "For symmetric quantization to signed integers, which pair correctly gives the representable range of INT8 and INT4 (using the symmetric convention that restricts the value range to be symmetric around zero, i.e., [-127, 127] and [-7, 7])?",
   "options": [
-    { "id": "A", "text": "INT8 symmetric = [-127, 127]; INT4 symmetric = [-7, 7]." },
-    { "id": "B", "text": "INT8 symmetric = [0, 255]; INT4 symmetric = [0, 15]." },
-    { "id": "C", "text": "INT8 symmetric = [-128, 128]; INT4 symmetric = [-8, 8]." },
-    { "id": "D", "text": "INT8 symmetric = [-128, 127]; INT4 symmetric = [-8, 7] (using the full two's-complement range)." }
+    {
+      "id": "A",
+      "text": "INT8 symmetric = [-128, 128]; INT4 symmetric = [-8, 8]."
+    },
+    {
+      "id": "B",
+      "text": "INT8 symmetric = [0, 255]; INT4 symmetric = [0, 15]."
+    },
+    {
+      "id": "C",
+      "text": "INT8 symmetric = [-127, 127]; INT4 symmetric = [-7, 7]."
+    },
+    {
+      "id": "D",
+      "text": "INT8 symmetric = [-128, 127]; INT4 symmetric = [-8, 7] (using the full two's-complement range)."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "Symmetric quantization intentionally sacrifices the negative extreme (-128 for INT8, -8 for INT4) to keep the range symmetric around zero, mapping the symmetric quantization scale to [-(2^(N-1)-1), 2^(N-1)-1]. This avoids the asymmetry problem that would otherwise complicate GEMM implementations. Option B is the unsigned range (UINT8/UINT4). Option C invents ranges (there is no +128 in INT8, no +8 in INT4). Option D describes the full two's-complement range but is not the symmetric convention used in quantization frameworks (which prefer symmetry).",
   "optionExplanations": {
-    "A": "Correct: standard symmetric quantization range definitions.",
+    "A": "Wrong: +128 does not exist in signed INT8.",
     "B": "Wrong: unsigned range, not signed symmetric.",
-    "C": "Wrong: +128 does not exist in signed INT8.",
+    "C": "Correct: standard symmetric quantization range definitions.",
     "D": "Wrong: describes full two's-complement, not the symmetric convention."
   },
   "assumptions": [
@@ -39,15 +53,29 @@
     "Does not imply the sacrificed value (-128 / -8) is never used; asymmetric quantization uses the full range but introduces a zero-point offset.",
     "Does not imply symmetric is always preferred; asymmetric gives one more value at the cost of more complex GEMM."
   ],
-  "misconceptionTags": ["symmetric_int8_range"],
+  "misconceptionTags": [
+    "symmetric_int8_range"
+  ],
   "distractorRationales": {
+    "A": "Invents nonexistent representable values.",
     "B": "Confuses signed with unsigned.",
-    "C": "Invents nonexistent representable values.",
     "D": "Describes full two's-complement, not symmetric convention."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "Quantization: symmetric vs. asymmetric definitions", "supports": ["A"] },
-    { "ref": "DOC:cuda-guide", "locator": "TensorRT INT8 quantization primer", "supports": ["A"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Quantization: symmetric vs. asymmetric definitions",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "TensorRT INT8 quantization primer",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

@@ -24,7 +24,7 @@
     },
     {
       "id": "B",
-      "text": "Static graph capture is always faster than eager because the graph is compiled; eager mode is only used for debugging and has no production role because it cannot fuse kernels. In this description, eager mode serializes each op as a JSON blob on the wire while static mode uses a length-prefixed protobuf, but both feed the same executor and optimization pipeline at runtime."
+      "text": "Eager runs each operation immediately as Python encounters it, with no persistent graph representation captured by default; static graph capture constructs a persistent IR before execution, enabling whole-program optimizations at the cost of trace-time restrictions. In this account, eager execution generates fresh machine code for every executed Python statement using an on-the-fly JIT, while static frameworks strip Python entirely and are typically distributed as Python-free C++ binaries."
     },
     {
       "id": "C",
@@ -32,18 +32,18 @@
     },
     {
       "id": "D",
-      "text": "Eager runs each operation immediately as Python encounters it, with no persistent graph representation captured by default; static graph capture constructs a persistent IR before execution, enabling whole-program optimizations at the cost of trace-time restrictions. In this account, eager execution generates fresh machine code for every executed Python statement using an on-the-fly JIT, while static frameworks strip Python entirely and are typically distributed as Python-free C++ binaries."
+      "text": "Static graph capture is always faster than eager because the graph is compiled; eager mode is only used for debugging and has no production role because it cannot fuse kernels. In this description, eager mode serializes each op as a JSON blob on the wire while static mode uses a length-prefixed protobuf, but both feed the same executor and optimization pipeline at runtime."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "The core distinction is when (and whether) a graph representation is constructed. Eager mode dispatches ops immediately, matching Python semantics closely; static graphs are captured before execution, allowing whole-program passes (fusion, layout choice, memory planning) but restricting what Python constructs can be used inside the traced region. Neither is universally faster nor a file-format concern; eager mode itself does not require a JIT compiler.",
   "optionExplanations": {
-    "D": "Correct: standard textbook distinction.",
     "A": "Wrong: the difference is semantic, not about file format.",
-    "B": "Wrong: eager can still be efficient (via fused ops from the framework); eager has many production uses.",
-    "C": "Wrong: eager dispatches to pre-compiled kernel implementations; no per-line JIT is required."
+    "B": "Correct: standard textbook distinction.",
+    "C": "Wrong: eager dispatches to pre-compiled kernel implementations; no per-line JIT is required.",
+    "D": "Wrong: eager can still be efficient (via fused ops from the framework); eager has many production uses."
   },
   "assumptions": [
     "The comparison is at the framework-execution level (PyTorch eager vs. TF-1 static graphs, or PyTorch eager vs. torch.compile / XLA).",
@@ -59,22 +59,22 @@
   ],
   "distractorRationales": {
     "A": "Trivializes the distinction.",
-    "B": "Overgeneralizes the performance gap.",
-    "C": "Confuses eager dispatch with per-line JIT."
+    "C": "Confuses eager dispatch with per-line JIT.",
+    "D": "Overgeneralizes the performance gap."
   },
   "sourceRefs": [
     {
       "ref": "BOOK:eac3",
       "locator": "AOT vs. JIT vs. interpretation background",
       "supports": [
-        "D"
+        "B"
       ]
     },
     {
       "ref": "PAPER:pytorch2",
       "locator": "PyTorch eager vs. compiled discussion",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

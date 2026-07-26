@@ -19,16 +19,30 @@
   },
   "stem": "In a modern ML runtime such as PyTorch's ATen or an equivalent stack, what is the primary role of an operator dispatcher?",
   "options": [
-    { "id": "A", "text": "To decide, based on the (op, device, dtype, layout, autograd key) tuple of a call, which concrete kernel implementation to invoke — i.e., to route from a logical op to a registered backend function." },
-    { "id": "B", "text": "To synchronize CPU and GPU streams before every kernel launch so that the executor can guarantee sequential consistency across otherwise-asynchronous device queues." },
-    { "id": "C", "text": "To allocate output buffers on the target device and free intermediate tensors after each op returns, replacing the caching allocator with a per-op allocator." },
-    { "id": "D", "text": "To perform compile-time fusion of ops that share tensor shapes so that the executor only sees fused kernels instead of individual operator calls." }
+    {
+      "id": "A",
+      "text": "To synchronize CPU and GPU streams before every kernel launch so that the executor can guarantee sequential consistency across otherwise-asynchronous device queues."
+    },
+    {
+      "id": "B",
+      "text": "To decide, based on the (op, device, dtype, layout, autograd key) tuple of a call, which concrete kernel implementation to invoke — i.e., to route from a logical op to a registered backend function."
+    },
+    {
+      "id": "C",
+      "text": "To allocate output buffers on the target device and free intermediate tensors after each op returns, replacing the caching allocator with a per-op allocator."
+    },
+    {
+      "id": "D",
+      "text": "To perform compile-time fusion of ops that share tensor shapes so that the executor only sees fused kernels instead of individual operator calls."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "A dispatcher is a routing layer: given an operator call at run time, it looks up the concrete implementation registered for the current (device, dtype, layout, autograd state, functorch transform, ...) — i.e., the 'dispatch key set'. The executor then issues that concrete kernel on the device. Allocation, synchronization and fusion are separate concerns (allocator, stream, compiler).",
   "optionExplanations": {
-    "A": "Correct: this is the operator-dispatch pattern found in PyTorch ATen, TensorFlow, and most runtime kernel registries.",
-    "B": "Wrong: cross-stream synchronization is not the dispatcher's job; it belongs to the runtime's stream/event API.",
+    "A": "Wrong: cross-stream synchronization is not the dispatcher's job; it belongs to the runtime's stream/event API.",
+    "B": "Correct: this is the operator-dispatch pattern found in PyTorch ATen, TensorFlow, and most runtime kernel registries.",
     "C": "Wrong: the dispatcher does not manage the allocator; allocation is done by the runtime allocator (e.g., caching allocator).",
     "D": "Wrong: fusion is a compile-time optimization; the dispatcher operates one op at a time in eager mode."
   },
@@ -39,15 +53,29 @@
     "Does not imply that the dispatcher is cheap; PyTorch's dispatcher has measurable per-op overhead that motivates tracing/compilation.",
     "Does not imply every framework has an explicit dispatcher; some fully-compiled runtimes have inlined direct calls."
   ],
-  "misconceptionTags": ["dispatcher_confusion"],
+  "misconceptionTags": [
+    "dispatcher_confusion"
+  ],
   "distractorRationales": {
-    "B": "Confuses dispatcher with stream sync.",
+    "A": "Confuses dispatcher with stream sync.",
     "C": "Confuses dispatcher with allocator.",
     "D": "Confuses dispatcher with compiler."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-compile", "locator": "PyTorch dispatcher documentation (aten dispatch keys)", "supports": ["A"] },
-    { "ref": "DOC:iree", "locator": "Op → kernel registry lookup", "supports": ["A"] }
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "PyTorch dispatcher documentation (aten dispatch keys)",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:iree",
+      "locator": "Op → kernel registry lookup",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

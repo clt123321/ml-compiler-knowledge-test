@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The compiler automatically spills registers to prevent register pressure from limiting occupancy; therefore, the effective occupancy is 100% (8 blocks × 256 threads = 2048)."
+      "text": "Registers per SM cap: 65536 / (96 * 256) = 2.66 → 2 blocks. SMEM per SM cap: 164 / 32 = 5.12 → 5 blocks. Thread-count cap: 2048 / 256 = 8 blocks. Block-count cap: 32 blocks. The binding constraint is registers → 2 blocks per SM → 512 active threads → 25% occupancy (relative to 2048 threads/SM peak)."
     },
     {
       "id": "B",
@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "Registers per SM cap: 65536 / (96 * 256) = 2.66 → 2 blocks. SMEM per SM cap: 164 / 32 = 5.12 → 5 blocks. Thread-count cap: 2048 / 256 = 8 blocks. Block-count cap: 32 blocks. The binding constraint is registers → 2 blocks per SM → 512 active threads → 25% occupancy (relative to 2048 threads/SM peak)."
+      "text": "The compiler automatically spills registers to prevent register pressure from limiting occupancy; therefore, the effective occupancy is 100% (8 blocks × 256 threads = 2048)."
     },
     {
       "id": "D",
@@ -40,13 +40,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "A"
   ],
   "explanation": "Occupancy = min(all resource limits). A100: (i) Registers/SM = 65536; per-block regs = 96 * 256 = 24576; SMs can hold floor(65536/24576) = 2 blocks. (ii) SMEM per SM ≤ 164 KB; per-block SMEM 32 KB → floor(164/32) = 5 blocks. (iii) Thread count: floor(2048/256) = 8. (iv) Block count: 32. The minimum is 2 (register-bound), so 2 blocks × 256 = 512 active threads → 25% relative occupancy. Register spill (choice C) is a real behavior, but nvcc does not silently do it just to boost occupancy — the user controls via `-maxrregcount` or `__launch_bounds__`; and spill increases traffic, hurting performance.",
   "optionExplanations": {
-    "C": "Correct: register-bound at 2 blocks/SM, 25% occupancy.",
+    "A": "Correct: register-bound at 2 blocks/SM, 25% occupancy.",
     "B": "Wrong: registers bind before SMEM in this case.",
-    "A": "Wrong: nvcc does not auto-spill for occupancy; user must opt in.",
+    "C": "Wrong: nvcc does not auto-spill for occupancy; user must opt in.",
     "D": "Wrong: block size is only one of several occupancy limiters."
   },
   "assumptions": [
@@ -63,7 +63,7 @@
   ],
   "distractorRationales": {
     "B": "Ignores register cap.",
-    "A": "Fabricates automatic register spilling.",
+    "C": "Fabricates automatic register spilling.",
     "D": "Ignores register/SMEM limits."
   },
   "sourceRefs": [
@@ -71,14 +71,14 @@
       "ref": "DOC:cuda-guide",
       "locator": "Compute Capability 8.0 resource table; Occupancy Calculator",
       "supports": [
-        "C"
+        "A"
       ]
     },
     {
       "ref": "DOC:cuda-best",
       "locator": "Occupancy chapter",
       "supports": [
-        "C"
+        "A"
       ]
     }
   ],

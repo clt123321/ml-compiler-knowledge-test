@@ -61,7 +61,7 @@
     },
     {
       "id": "B",
-      "text": "Decode-phase attention is compute-bound because MMA operations on Q and K/V dominate; the small Q tensor is negligible compared to the compute cost of the matmul."
+      "text": "Decode-phase attention is heavily memory-bound: for each generated token, Q is a single row while K and V (of length S_kv per sequence) must be fully read from HBM. Arithmetic intensity is very low, and per-step HBM traffic scales linearly with S_kv, growing over the sequence."
     },
     {
       "id": "C",
@@ -69,18 +69,18 @@
     },
     {
       "id": "D",
-      "text": "Decode-phase attention is heavily memory-bound: for each generated token, Q is a single row while K and V (of length S_kv per sequence) must be fully read from HBM. Arithmetic intensity is very low, and per-step HBM traffic scales linearly with S_kv, growing over the sequence."
+      "text": "Decode-phase attention is compute-bound because MMA operations on Q and K/V dominate; the small Q tensor is negligible compared to the compute cost of the matmul."
     }
   ],
   "correctAnswers": [
-    "D"
+    "B"
   ],
   "explanation": "Decoding generates one token at a time; Q is only 1 row per head, but K and V of length S_kv per sequence must be fully read from HBM to compute attention. The per-step HBM traffic per (batch, head) is ~2 * S_kv * D * sizeof (K + V) plus small Q/O. Arithmetic intensity is very low — this is a canonical memory-bound step in LLM decoding, and the reason KV Cache size / bandwidth is a first-order concern in serving systems (paged KV cache, KV quantization, MQA/GQA). Per-step cost grows with S_kv, so long-context decoding becomes progressively slower per token.",
   "optionExplanations": {
-    "D": "Correct: memory-bound; linear in S_kv per step.",
-    "B": "Wrong: MMA on 1×D * D×S_kv is memory-bound, not compute-bound.",
+    "A": "Wrong: no hardware compression; traffic grows with S_kv.",
+    "B": "Correct: memory-bound; linear in S_kv per step.",
     "C": "Wrong: KV Cache far exceeds L2 for long contexts.",
-    "A": "Wrong: no hardware compression; traffic grows with S_kv."
+    "D": "Wrong: MMA on 1×D * D×S_kv is memory-bound, not compute-bound."
   },
   "assumptions": [
     "Standard decode-phase attention without approximations.",
@@ -95,23 +95,23 @@
     "kv_l2_cached_myth"
   ],
   "distractorRationales": {
-    "B": "Confuses prefill and decode compute intensity.",
+    "A": "Fabricates hardware KV compression.",
     "C": "Overstates L2 capacity.",
-    "A": "Fabricates hardware KV compression."
+    "D": "Confuses prefill and decode compute intensity."
   },
   "sourceRefs": [
     {
       "ref": "PAPER:flashattn",
       "locator": "FlashAttention decoding variants and memory bandwidth analysis",
       "supports": [
-        "D"
+        "B"
       ]
     },
     {
       "ref": "BOOK:pmpp4",
       "locator": "Arithmetic intensity and memory-bound analysis",
       "supports": [
-        "D"
+        "B"
       ]
     }
   ],

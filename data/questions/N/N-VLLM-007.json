@@ -19,16 +19,30 @@
   },
   "stem": "The vLLM paper introduces PagedAttention. What problem, as stated in the paper, is PagedAttention primarily designed to solve?",
   "options": [
-    { "id": "A", "text": "It reduces attention FLOPs by paging out cold key/value entries and reloading them only when needed, cutting per-token compute for long sequences." },
-    { "id": "B", "text": "It targets KV-cache memory inefficiency: reserving one contiguous buffer per sequence sized to a worst-case length causes internal fragmentation (unused reserved slots) and external fragmentation (holes between sequences); paging KV in fixed-size blocks with a page table lets the serving system fit more concurrent sequences on the same GPU." },
-    { "id": "C", "text": "It eliminates the KV cache entirely by recomputing K and V on demand each decode step, trading extra compute for HBM savings." },
-    { "id": "D", "text": "It replaces attention with a paged Mixture-of-Experts routing scheme in which each expert operates on one memory page at a time." }
+    {
+      "id": "A",
+      "text": "It targets KV-cache memory inefficiency: reserving one contiguous buffer per sequence sized to a worst-case length causes internal fragmentation (unused reserved slots) and external fragmentation (holes between sequences); paging KV in fixed-size blocks with a page table lets the serving system fit more concurrent sequences on the same GPU."
+    },
+    {
+      "id": "B",
+      "text": "It reduces attention FLOPs by paging out cold key/value entries and reloading them only when needed, cutting per-token compute for long sequences."
+    },
+    {
+      "id": "C",
+      "text": "It eliminates the KV cache entirely by recomputing K and V on demand each decode step, trading extra compute for HBM savings."
+    },
+    {
+      "id": "D",
+      "text": "It replaces attention with a paged Mixture-of-Experts routing scheme in which each expert operates on one memory page at a time."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "The vLLM paper's central problem statement is KV-cache memory waste from worst-case contiguous reservation. PagedAttention stores KV in fixed-size blocks addressed via a per-sequence page table, dramatically reducing internal and external fragmentation and letting the server fit more concurrent sequences (larger effective batch), which raises throughput. It does not change attention FLOPs, eliminate KV cache, or introduce MoE routing.",
   "optionExplanations": {
-    "A": "Wrong: no compute reduction is claimed; the mechanism is memory management.",
-    "B": "Correct: internal+external fragmentation of KV cache is the target.",
+    "A": "Correct: internal+external fragmentation of KV cache is the target.",
+    "B": "Wrong: no compute reduction is claimed; the mechanism is memory management.",
     "C": "Wrong: KV cache is preserved, just paged.",
     "D": "Wrong: unrelated to MoE."
   },
@@ -40,14 +54,23 @@
     "Does not imply PagedAttention speedup comes from a faster attention kernel; it comes from a larger feasible batch size.",
     "Does not imply the paper's specific throughput numbers apply to arbitrary hardware / workloads."
   ],
-  "misconceptionTags": ["pagedattn_saves_flops", "pagedattn_eliminates_kv"],
+  "misconceptionTags": [
+    "pagedattn_saves_flops",
+    "pagedattn_eliminates_kv"
+  ],
   "distractorRationales": {
-    "A": "Confuses memory management with compute reduction.",
+    "B": "Confuses memory management with compute reduction.",
     "C": "Denies the existence of the KV cache.",
     "D": "Fabricates a MoE connection."
   },
   "sourceRefs": [
-    { "ref": "PAPER:vllm", "locator": "§3 KV cache fragmentation problem and PagedAttention design", "supports": ["B"] }
+    {
+      "ref": "PAPER:vllm",
+      "locator": "§3 KV cache fragmentation problem and PagedAttention design",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

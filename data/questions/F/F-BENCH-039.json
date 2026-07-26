@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "any current NVIDIA architecture",
     "device": "GPU",
-    "requiredFeatures": ["Triton runtime; torch backend for reference"]
+    "requiredFeatures": [
+      "Triton runtime; torch backend for reference"
+    ]
   },
   "softwareContext": {
     "framework": "Triton + PyTorch (for reference)",
@@ -22,18 +24,33 @@
   "stem": "Which practices are correct for testing and benchmarking a Triton kernel `my_kernel` versus a PyTorch reference on GPU? (Select all that apply.)",
   "codeSnippet": "import torch, triton\n\n# Sketch of a good benchmark harness\n# 1) Warmup:\n# for _ in range(warmup):\n#     y = my_kernel(x); torch.cuda.synchronize()\n# 2) Timed loop:\n# torch.cuda.synchronize()\n# start = torch.cuda.Event(enable_timing=True); end = torch.cuda.Event(enable_timing=True)\n# start.record()\n# for _ in range(iters):\n#     y = my_kernel(x)\n# end.record(); torch.cuda.synchronize()\n# ms_per_iter = start.elapsed_time(end) / iters\n#\n# Correctness:\n# y_ref = reference(x)   # e.g. torch.softmax, torch.matmul, etc.\n# torch.testing.assert_close(y, y_ref, rtol=..., atol=...)",
   "options": [
-    { "id": "A", "text": "A per-iteration warmup loop followed by a synchronized-timed inner loop with `torch.cuda.Event` (or equivalent) is the standard pattern; sync before start and after end prevents leaking CPU-launch time or leftover async work into the measurement." },
-    { "id": "B", "text": "Correctness must compare `my_kernel(x)` against a reference implementation with an explicit tolerance (rtol/atol) chosen for the input dtype and the kernel's expected numerical behavior; using `torch.equal` (bitwise) is generally too strict for FP kernels." },
-    { "id": "C", "text": "Timing a single kernel launch (no warmup, no loop) using Python `time.time()` is a reliable measurement because CUDA is deterministic and one launch captures the true cost." },
-    { "id": "D", "text": "Autotune-cached configs, JIT-compile time, and cudaGraph capture must always be included in the reported per-iteration latency to fairly compare against a native PyTorch op; a well-run benchmark reports first-launch latency as steady-state." }
+    {
+      "id": "A",
+      "text": "Timing a single kernel launch (no warmup, no loop) using Python `time.time()` is a reliable measurement because CUDA is deterministic and one launch captures the true cost."
+    },
+    {
+      "id": "B",
+      "text": "Autotune-cached configs, JIT-compile time, and cudaGraph capture must always be included in the reported per-iteration latency to fairly compare against a native PyTorch op; a well-run benchmark reports first-launch latency as steady-state."
+    },
+    {
+      "id": "C",
+      "text": "A per-iteration warmup loop followed by a synchronized-timed inner loop with `torch.cuda.Event` (or equivalent) is the standard pattern; sync before start and after end prevents leaking CPU-launch time or leftover async work into the measurement."
+    },
+    {
+      "id": "D",
+      "text": "Correctness must compare `my_kernel(x)` against a reference implementation with an explicit tolerance (rtol/atol) chosen for the input dtype and the kernel's expected numerical behavior; using `torch.equal` (bitwise) is generally too strict for FP kernels."
+    }
   ],
-  "correctAnswers": ["A", "B"],
+  "correctAnswers": [
+    "C",
+    "D"
+  ],
   "explanation": "A: Correct benchmark discipline — warmup, `cudaDeviceSynchronize` around the timed region, CUDA events for GPU-side timing. Skipping any of these leaks noise (CPU launch time, prior kernel completion, JIT compile). B: FP kernels rarely reproduce bitwise-identical results as their reference; `torch.testing.assert_close` with appropriate rtol/atol (FP32: rtol ~1e-5; FP16: rtol ~1e-3; per op semantics) is the standard. C is wrong: `time.time()` on a single launch measures CPU launch time and includes async completion of prior work — a well-known pitfall. D is wrong: first-launch includes autotune search + JIT compile which are usually excluded from steady-state latency reports (though they should be reported separately as compile time).",
   "optionExplanations": {
-    "A": "Correct: sync + events + warmup is the canonical pattern.",
-    "B": "Correct: FP kernels need tolerance-based comparison.",
-    "C": "Wrong: single-launch time.time() is unreliable.",
-    "D": "Wrong: first-launch compile/tune cost should not be reported as steady-state."
+    "A": "Wrong: single-launch time.time() is unreliable.",
+    "B": "Wrong: first-launch compile/tune cost should not be reported as steady-state.",
+    "C": "Correct: sync + events + warmup is the canonical pattern.",
+    "D": "Correct: FP kernels need tolerance-based comparison."
   },
   "assumptions": [
     "CUDA kernel launches are asynchronous with respect to the host by default.",
@@ -43,14 +60,30 @@
     "Does not imply CUDA events are the only correct timing primitive; nsys / ncu also work.",
     "Does not imply that steady-state alone is the right metric; for cold-start scenarios first-launch matters too, reported separately."
   ],
-  "misconceptionTags": ["time_time_single_launch_myth", "compile_time_in_steady_state_myth"],
+  "misconceptionTags": [
+    "time_time_single_launch_myth",
+    "compile_time_in_steady_state_myth"
+  ],
   "distractorRationales": {
-    "C": "Fabricates reliability of `time.time()` on a single async launch.",
-    "D": "Confuses one-time compile cost with steady-state per-iteration latency."
+    "A": "Fabricates reliability of `time.time()` on a single async launch.",
+    "B": "Confuses one-time compile cost with steady-state per-iteration latency."
   },
   "sourceRefs": [
-    { "ref": "DOC:triton", "locator": "Triton benchmarking utilities and testing guidance", "supports": ["A", "B"] },
-    { "ref": "DOC:cuda-best", "locator": "Timing methodology; async execution considerations", "supports": ["A"] }
+    {
+      "ref": "DOC:triton",
+      "locator": "Triton benchmarking utilities and testing guidance",
+      "supports": [
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Timing methodology; async execution considerations",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

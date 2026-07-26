@@ -19,18 +19,32 @@
   },
   "stem": "A user tries to load an ONNX file and gets an error about unsupported version. Which distinction between the ONNX **IR version** and the **opset version** best explains the diagnostic they should perform?",
   "options": [
-    { "id": "A", "text": "IR version and opset version are synonyms in ONNX; the diagnostic is to check `model.ir_version` and upgrade the consumer if it differs by more than 1." },
-    { "id": "B", "text": "IR version is only used for training checkpoints; inference models omit IR version entirely, so the diagnostic is to check whether the file was accidentally saved as a training checkpoint." },
-    { "id": "C", "text": "The opset version is a lower bound on IR version and always exactly one greater; the diagnostic is therefore to update the opset by +1 and re-export the model, which is guaranteed to resolve any version error." },
-    { "id": "D", "text": "The IR version governs the model file/graph format (how ModelProto, GraphProto, NodeProto are laid out); the opset version governs operator semantics. A load-time incompatibility can come from either — the consumer's ONNX library too old to parse the IR, or too old to know the declared opset — so the diagnostic must inspect both fields in `model.ir_version` and `model.opset_import`." }
+    {
+      "id": "A",
+      "text": "IR version and opset version are synonyms in ONNX; the diagnostic is to check `model.ir_version` and upgrade the consumer if it differs by more than 1."
+    },
+    {
+      "id": "B",
+      "text": "The IR version governs the model file/graph format (how ModelProto, GraphProto, NodeProto are laid out); the opset version governs operator semantics. A load-time incompatibility can come from either — the consumer's ONNX library too old to parse the IR, or too old to know the declared opset — so the diagnostic must inspect both fields in `model.ir_version` and `model.opset_import`."
+    },
+    {
+      "id": "C",
+      "text": "The opset version is a lower bound on IR version and always exactly one greater; the diagnostic is therefore to update the opset by +1 and re-export the model, which is guaranteed to resolve any version error."
+    },
+    {
+      "id": "D",
+      "text": "IR version is only used for training checkpoints; inference models omit IR version entirely, so the diagnostic is to check whether the file was accidentally saved as a training checkpoint."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "ONNX distinguishes the IR version (`ir_version`, versioning of the model protobuf format itself) from the opset version (`opset_import[i].version`, versioning of the operator schema library). Both evolve independently; a mismatch on either can make a model unloadable. The correct diagnostic looks at both. Options A/B/C fabricate relationships that do not exist in the ONNX spec.",
   "optionExplanations": {
     "A": "Wrong: IR version and opset version are separate axes.",
-    "B": "Wrong: IR version is present on all ONNX models.",
+    "B": "Correct: two-axis versioning per the ONNX specification.",
     "C": "Wrong: no such exact relationship exists.",
-    "D": "Correct: two-axis versioning per the ONNX specification."
+    "D": "Wrong: IR version is present on all ONNX models."
   },
   "assumptions": [
     "The file is a well-formed ONNX protobuf."
@@ -39,14 +53,22 @@
     "Does not imply every version mismatch is fatal; some ORT versions can be forward-compatible within an opset range.",
     "Does not imply upgrading ONNX always fixes the issue; some old runtimes are the constraint."
   ],
-  "misconceptionTags": ["ir_opset_conflation"],
+  "misconceptionTags": [
+    "ir_opset_conflation"
+  ],
   "distractorRationales": {
     "A": "Conflates two axes.",
-    "B": "Fabricates training-only IR.",
-    "C": "Fabricates version-arithmetic."
+    "C": "Fabricates version-arithmetic.",
+    "D": "Fabricates training-only IR."
   },
   "sourceRefs": [
-    { "ref": "DOC:onnx", "locator": "Versioning: IR version and opset version", "supports": ["D"] }
+    {
+      "ref": "DOC:onnx",
+      "locator": "Versioning: IR version and opset version",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

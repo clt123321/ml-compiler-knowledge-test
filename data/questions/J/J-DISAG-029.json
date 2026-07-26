@@ -11,7 +11,9 @@
     "vendor": "generic",
     "architecture": "multi-node cluster",
     "device": "GPU",
-    "requiredFeatures": ["high-speed inter-node interconnect (RDMA / NVLink Switch)"]
+    "requiredFeatures": [
+      "high-speed inter-node interconnect (RDMA / NVLink Switch)"
+    ]
   },
   "softwareContext": {
     "framework": "generic disaggregated serving",
@@ -21,18 +23,33 @@
   },
   "stem": "Select all correct statements about disaggregated prefill/decode serving. (Choose all that apply.)",
   "options": [
-    { "id": "A", "text": "Disaggregation eliminates the need for KV cache entirely because prefill's KV is only consumed by decode via the transfer, so both pools can operate stateless." },
-    { "id": "B", "text": "Disaggregation improves TPOT under mixed load compared to co-located serving because decode nodes are shielded from long prefills interrupting the decode-step cadence." },
-    { "id": "C", "text": "Disaggregation reduces total GPU count for a given SLA because each phase's pool can be sized smaller than the combined co-located pool needed to satisfy both metrics simultaneously." },
-    { "id": "D", "text": "Disaggregation adds a per-request KV cache transfer between prefill and decode pools; this transfer cost sets a floor on TTFT that co-located serving does not have. High-bandwidth interconnects (NVLink Switch, InfiniBand RDMA) are needed to keep this cost small." }
+    {
+      "id": "A",
+      "text": "Disaggregation adds a per-request KV cache transfer between prefill and decode pools; this transfer cost sets a floor on TTFT that co-located serving does not have. High-bandwidth interconnects (NVLink Switch, InfiniBand RDMA) are needed to keep this cost small."
+    },
+    {
+      "id": "B",
+      "text": "Disaggregation eliminates the need for KV cache entirely because prefill's KV is only consumed by decode via the transfer, so both pools can operate stateless."
+    },
+    {
+      "id": "C",
+      "text": "Disaggregation improves TPOT under mixed load compared to co-located serving because decode nodes are shielded from long prefills interrupting the decode-step cadence."
+    },
+    {
+      "id": "D",
+      "text": "Disaggregation reduces total GPU count for a given SLA because each phase's pool can be sized smaller than the combined co-located pool needed to satisfy both metrics simultaneously."
+    }
   ],
-  "correctAnswers": ["B", "D"],
+  "correctAnswers": [
+    "A",
+    "C"
+  ],
   "explanation": "B is correct: shielding decode from prefill contention is the primary TPOT benefit of disaggregation. D is correct: the KV transfer is a real overhead added by disaggregation; high-bandwidth interconnects are needed. A is wrong: KV cache is still needed on decode nodes; it is just transferred instead of created locally. C is wrong: total GPU count is not universally reduced; disaggregation improves phase-scheduling flexibility but does not fundamentally lower compute demand.",
   "optionExplanations": {
-    "B": "Correct: TPOT protection.",
-    "D": "Correct: transfer overhead is a real new cost.",
-    "A": "Wrong: KV still needed on decode side.",
-    "C": "Wrong: disaggregation does not reduce total compute; may increase it slightly."
+    "A": "Correct: transfer overhead is a real new cost.",
+    "B": "Wrong: KV still needed on decode side.",
+    "C": "Correct: TPOT protection.",
+    "D": "Wrong: disaggregation does not reduce total compute; may increase it slightly."
   },
   "assumptions": [
     "Disaggregation refers to physically separate prefill and decode GPU pools.",
@@ -42,14 +59,30 @@
     "Does not imply disaggregation is always the right architecture; small clusters may not benefit.",
     "Does not imply that co-located serving cannot mitigate prefill-decode interference (chunked prefill helps too)."
   ],
-  "misconceptionTags": ["disagg_no_kv_myth", "disagg_saves_gpus_myth"],
+  "misconceptionTags": [
+    "disagg_no_kv_myth",
+    "disagg_saves_gpus_myth"
+  ],
   "distractorRationales": {
-    "A": "Denies KV cache on decode side.",
-    "C": "Fabricates GPU cost reduction."
+    "B": "Denies KV cache on decode side.",
+    "D": "Fabricates GPU cost reduction."
   },
   "sourceRefs": [
-    { "ref": "DOC:trtllm", "locator": "Disaggregated serving", "supports": ["B", "D"] },
-    { "ref": "PAPER:orca", "locator": "Prefill/decode scheduling discussion", "supports": ["B"] }
+    {
+      "ref": "DOC:trtllm",
+      "locator": "Disaggregated serving",
+      "supports": [
+        "A",
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:orca",
+      "locator": "Prefill/decode scheduling discussion",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

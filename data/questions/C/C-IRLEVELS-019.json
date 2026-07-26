@@ -20,32 +20,32 @@
   "options": [
     {
       "id": "A",
-      "text": "Graph-level IR performs coarse-grained optimizations (op fusion, constant folding, layout choices, shape inference) treating ops as atomic; it does not itself expose loop structure."
-    },
-    {
-      "id": "B",
       "text": "Compilers that use all three levels always require the user to author their program in the loop-level IR first; the graph and tensor layers are derived by structure-recovery passes that undo the loop nesting."
     },
     {
-      "id": "C",
+      "id": "B",
       "text": "Tensor-expression-level IR expresses per-element computation via structured ops (e.g., linalg.generic) or explicit tensor expressions; it is the natural layer for tiling, vectorization decisions, and mapping to hardware intrinsics like tensor cores."
     },
     {
-      "id": "D",
+      "id": "C",
       "text": "Loop-level IR makes iteration variables and memory accesses fully explicit, enabling low-level transformations (unrolling, software pipelining, register allocation) before codegen to LLVM/PTX."
+    },
+    {
+      "id": "D",
+      "text": "Graph-level IR performs coarse-grained optimizations (op fusion, constant folding, layout choices, shape inference) treating ops as atomic; it does not itself expose loop structure."
     }
   ],
   "correctAnswers": [
-    "A",
+    "B",
     "C",
     "D"
   ],
   "explanation": "The three-layer IR model is: (Graph) coarse-grained ops with shape/dtype; enables graph-level fusion, constant folding, layout, and shape inference. (Tensor) structured ops expressing per-element compute; the layer where tiling and hardware-intrinsic mapping fit naturally. (Loop) explicit loop nests and memory accesses; the layer where unrolling, vectorization, and register scheduling apply. Programs are authored at the graph (or framework) layer and lowered downward — not upward from loops.",
   "optionExplanations": {
-    "A": "Correct.",
+    "A": "Wrong: authoring is at the graph/framework level; the flow is top-down (graph -> tensor -> loop).",
+    "B": "Correct.",
     "C": "Correct.",
-    "D": "Correct.",
-    "B": "Wrong: authoring is at the graph/framework level; the flow is top-down (graph -> tensor -> loop)."
+    "D": "Correct."
   },
   "assumptions": [
     "The compiler follows a common three-layer decomposition; some frameworks collapse or split further."
@@ -58,22 +58,22 @@
     "ir_layer_flow_reversed"
   ],
   "distractorRationales": {
-    "B": "Reverses the direction of lowering."
+    "A": "Reverses the direction of lowering."
   },
   "sourceRefs": [
     {
       "ref": "PAPER:tvm",
       "locator": "TVM: graph-level and tensor-level IR",
       "supports": [
-        "A",
-        "C"
+        "B",
+        "D"
       ]
     },
     {
       "ref": "PAPER:mlir",
       "locator": "MLIR: dialect layering",
       "supports": [
-        "A",
+        "B",
         "C",
         "D"
       ]
@@ -82,8 +82,8 @@
       "ref": "DOC:mlir-langref",
       "locator": "Linalg / Affine / SCF dialects",
       "supports": [
-        "C",
-        "D"
+        "B",
+        "C"
       ]
     }
   ],

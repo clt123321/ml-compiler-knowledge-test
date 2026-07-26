@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere/Hopper CUDA runtime",
     "device": "GPU",
-    "requiredFeatures": ["CUDA driver launch cost ~ 5–10 μs per kernel"]
+    "requiredFeatures": [
+      "CUDA driver launch cost ~ 5–10 μs per kernel"
+    ]
   },
   "softwareContext": {
     "framework": "CUDA runtime",
@@ -19,18 +21,34 @@
   },
   "stem": "Kernel launch overhead is typically ~5–10 μs on NVIDIA GPUs. Consider a training/inference loop dispatching many small kernels. Which of the following statements are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "If a kernel executes for 2 μs and launch overhead is 5 μs, launch overhead dominates the wall time even at 100% GPU utilization; the effective GPU throughput is well below the kernel's peak." },
-    { "id": "B", "text": "CUDA Graphs capture a sequence of kernel launches once and replay them with a single API call, amortizing launch overhead across many small kernels." },
-    { "id": "C", "text": "Kernel launch overhead is fully hidden by cudaStreamSynchronize because the CPU launch API is asynchronous; therefore small kernels do not suffer from launch overhead in practice." },
-    { "id": "D", "text": "Kernel fusion reduces per-op launch cost by combining multiple element-wise kernels into a single kernel, trading potential register pressure for a lower total launch count." }
+    {
+      "id": "A",
+      "text": "Kernel launch overhead is fully hidden by cudaStreamSynchronize because the CPU launch API is asynchronous; therefore small kernels do not suffer from launch overhead in practice."
+    },
+    {
+      "id": "B",
+      "text": "Kernel fusion reduces per-op launch cost by combining multiple element-wise kernels into a single kernel, trading potential register pressure for a lower total launch count."
+    },
+    {
+      "id": "C",
+      "text": "If a kernel executes for 2 μs and launch overhead is 5 μs, launch overhead dominates the wall time even at 100% GPU utilization; the effective GPU throughput is well below the kernel's peak."
+    },
+    {
+      "id": "D",
+      "text": "CUDA Graphs capture a sequence of kernel launches once and replay them with a single API call, amortizing launch overhead across many small kernels."
+    }
   ],
-  "correctAnswers": ["A", "B", "D"],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
   "explanation": "A: When kernel duration < launch overhead, wall time is dominated by the CPU-side launch cost. This is the classic small-kernel regime. B: CUDA Graphs is precisely the mitigation: capture once, replay with a single graph-launch call, amortizing per-kernel overhead across the whole graph. D: Kernel fusion reduces the count of launches (also reduces HBM traffic when fused ops share operands). C is wrong: asynchronous launch does not eliminate the CPU cost of issuing a launch; every kernel still costs ~5–10 μs of CPU time. The GPU cannot begin work until the launch has been submitted.",
   "optionExplanations": {
-    "A": "Correct: when launch overhead > kernel time, the loop is CPU-bound on launches; the GPU sits idle much of the time.",
-    "B": "Correct: CUDA Graphs is the documented mechanism for amortizing per-launch overhead.",
-    "C": "Wrong: asynchronous launch means the CPU does not wait for kernel completion, but the launch itself still consumes CPU time and imposes a lower bound on inter-kernel spacing.",
-    "D": "Correct: kernel fusion cuts launch counts as one of its benefits, alongside reducing HBM traffic via operand reuse."
+    "A": "Wrong: asynchronous launch means the CPU does not wait for kernel completion, but the launch itself still consumes CPU time and imposes a lower bound on inter-kernel spacing.",
+    "B": "Correct: kernel fusion cuts launch counts as one of its benefits, alongside reducing HBM traffic via operand reuse.",
+    "C": "Correct: when launch overhead > kernel time, the loop is CPU-bound on launches; the GPU sits idle much of the time.",
+    "D": "Correct: CUDA Graphs is the documented mechanism for amortizing per-launch overhead."
   },
   "assumptions": [
     "Launch overhead ~5–10 μs per kernel is representative of recent CUDA driver stacks; small variations occur across versions.",
@@ -40,13 +58,32 @@
     "Does not imply CUDA Graphs is free; graph construction has one-time overhead and may not fit every dynamic control-flow pattern.",
     "Does not imply fusion always improves performance; over-fusion can increase register pressure and reduce occupancy."
   ],
-  "misconceptionTags": ["async_hides_launch_myth", "graph_capture_scope"],
+  "misconceptionTags": [
+    "async_hides_launch_myth",
+    "graph_capture_scope"
+  ],
   "distractorRationales": {
-    "C": "Confuses asynchronous launch semantics with elimination of launch cost."
+    "A": "Confuses asynchronous launch semantics with elimination of launch cost."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-guide", "locator": "Streams, asynchronous launches, CUDA Graphs chapter", "supports": ["A", "B", "D"] },
-    { "ref": "DOC:cuda-best", "locator": "Kernel launch overhead and graph capture guidance", "supports": ["A", "B", "D"] }
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Streams, asynchronous launches, CUDA Graphs chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Kernel launch overhead and graph capture guidance",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

@@ -19,18 +19,33 @@
   },
   "stem": "Select all correct statements about RMSNorm y = x * rsqrt(mean(x^2) + eps) * g. (Choose all that apply.)",
   "options": [
-    { "id": "A", "text": "RMSNorm requires a single reduction (E[x^2]) over the normalization axis and no mean subtraction; per-element compute is fewer ops than LayerNorm." },
-    { "id": "B", "text": "RMSNorm is compute-bound on modern GPUs because the rsqrt and elementwise scaling per element are expensive relative to the memory bandwidth used." },
-    { "id": "C", "text": "RMSNorm is mathematically identical to LayerNorm applied to zero-mean inputs, so it can always be replaced by LayerNorm with the same weights without changing the trained model." },
-    { "id": "D", "text": "RMSNorm is memory-bandwidth bound in practice: for a row of length N, the kernel reads N x-values and 1 weight tensor once, writes N y-values once, and performs O(N) elementwise operations plus one reduction — the reduction and rsqrt are negligible relative to HBM traffic on modern hardware." }
+    {
+      "id": "A",
+      "text": "RMSNorm is memory-bandwidth bound in practice: for a row of length N, the kernel reads N x-values and 1 weight tensor once, writes N y-values once, and performs O(N) elementwise operations plus one reduction — the reduction and rsqrt are negligible relative to HBM traffic on modern hardware."
+    },
+    {
+      "id": "B",
+      "text": "RMSNorm requires a single reduction (E[x^2]) over the normalization axis and no mean subtraction; per-element compute is fewer ops than LayerNorm."
+    },
+    {
+      "id": "C",
+      "text": "RMSNorm is compute-bound on modern GPUs because the rsqrt and elementwise scaling per element are expensive relative to the memory bandwidth used."
+    },
+    {
+      "id": "D",
+      "text": "RMSNorm is mathematically identical to LayerNorm applied to zero-mean inputs, so it can always be replaced by LayerNorm with the same weights without changing the trained model."
+    }
   ],
-  "correctAnswers": ["A", "D"],
+  "correctAnswers": [
+    "A",
+    "B"
+  ],
   "explanation": "A is correct: RMSNorm needs only one reduction (sum of x^2), skipping the mean subtraction and bias of LayerNorm. D is correct: like LayerNorm, RMSNorm is memory-bandwidth bound — HBM traffic (read x, read g, write y) dominates the small per-element compute. B is wrong: 1 flop/byte order-of-magnitude intensity puts it below any modern GPU ridge point. C is wrong: RMSNorm is not just LayerNorm on zero-mean inputs; even in exact arithmetic RMSNorm normalizes by RMS (including the mean^2 contribution), and it has no bias term.",
   "optionExplanations": {
-    "A": "Correct: single reduction; no mean subtraction.",
-    "D": "Correct: bandwidth-bound on GPU.",
-    "B": "Wrong: intensity is O(1) flop/byte — memory bound.",
-    "C": "Wrong: RMS(x) != sigma(x) even when mean(x) = 0 unless x is zero-mean AND biases match."
+    "A": "Correct: bandwidth-bound on GPU.",
+    "B": "Correct: single reduction; no mean subtraction.",
+    "C": "Wrong: intensity is O(1) flop/byte — memory bound.",
+    "D": "Wrong: RMS(x) != sigma(x) even when mean(x) = 0 unless x is zero-mean AND biases match."
   },
   "assumptions": [
     "Standard implementations with FP32 accumulation.",
@@ -40,14 +55,30 @@
     "Does not imply RMSNorm is equivalent to LayerNorm in trained-model semantics.",
     "Does not imply that RMSNorm and LayerNorm produce identical gradients."
   ],
-  "misconceptionTags": ["rmsnorm_compute_bound_myth", "rmsnorm_equiv_layernorm_myth"],
+  "misconceptionTags": [
+    "rmsnorm_compute_bound_myth",
+    "rmsnorm_equiv_layernorm_myth"
+  ],
   "distractorRationales": {
-    "B": "Overstates compute cost.",
-    "C": "False mathematical equivalence."
+    "C": "Overstates compute cost.",
+    "D": "False mathematical equivalence."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "Normalization operators", "supports": ["A", "D"] },
-    { "ref": "DOC:cuda-guide", "locator": "Row-parallel norm kernels", "supports": ["D"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Normalization operators",
+      "supports": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Row-parallel norm kernels",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

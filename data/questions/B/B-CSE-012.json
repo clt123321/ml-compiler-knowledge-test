@@ -19,17 +19,31 @@
   "irSnippet": "; Before CSE\n%a = load i32, i32* %p    ; Load L1\ncall void @sink(i32 %a)   ; may write memory\n%b = load i32, i32* %p    ; Load L2\n\n; Naive CSE would replace %b with %a; is this legal?",
   "stem": "The IR performs two loads from the same pointer %p, with a `call @sink` between them that may write to memory. A naive CSE would replace the second load with the first. Which statement is correct?",
   "options": [
-    { "id": "A", "text": "CSE cannot legally replace L2 with %a unless the compiler proves that @sink does not write to the memory pointed to by %p (via alias analysis or a nomemory/readonly attribute). Otherwise the two loads may observe different values and CSE would change semantics." },
-    { "id": "B", "text": "CSE is always legal for loads from the same pointer in SSA form because SSA ensures the pointer value is unchanged." },
-    { "id": "C", "text": "CSE is legal here because compilers assume by default that function calls are pure unless explicitly marked otherwise." },
-    { "id": "D", "text": "CSE is illegal in principle because loads are side-effecting operations that can never be eliminated." }
+    {
+      "id": "A",
+      "text": "CSE is legal here because compilers assume by default that function calls are pure unless explicitly marked otherwise."
+    },
+    {
+      "id": "B",
+      "text": "CSE is always legal for loads from the same pointer in SSA form because SSA ensures the pointer value is unchanged."
+    },
+    {
+      "id": "C",
+      "text": "CSE cannot legally replace L2 with %a unless the compiler proves that @sink does not write to the memory pointed to by %p (via alias analysis or a nomemory/readonly attribute). Otherwise the two loads may observe different values and CSE would change semantics."
+    },
+    {
+      "id": "D",
+      "text": "CSE is illegal in principle because loads are side-effecting operations that can never be eliminated."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "CSE requires the availability property: the earlier computation's result must still be valid at the later use point. For memory loads, this requires proving that no intervening operation writes to the same location. A call whose memory effects are unknown pessimistically kills all availability. Options B, C, D are incorrect: SSA does not extend to memory; compilers default to assuming calls may write memory (not pure); loads are not universally uneliminable.",
   "optionExplanations": {
-    "A": "Correct: CSE for loads requires proving no intervening memory clobber via alias analysis or function attributes.",
+    "A": "Wrong: compilers default to conservative 'may-write' semantics for calls; purity/readonly must be proven or annotated.",
     "B": "Wrong: SSA operates on virtual registers, not memory; a load's value can change if memory is modified between loads.",
-    "C": "Wrong: compilers default to conservative 'may-write' semantics for calls; purity/readonly must be proven or annotated.",
+    "C": "Correct: CSE for loads requires proving no intervening memory clobber via alias analysis or function attributes.",
     "D": "Wrong: loads can be eliminated when availability is proven; they are only side-effecting when volatile or atomic."
   },
   "assumptions": [
@@ -40,16 +54,37 @@
     "Does not imply CSE is always beneficial; sometimes rematerializing a value costs less than saving it in a register (increased register pressure).",
     "Does not imply availability is easy to compute for loads; alias analysis precision is often the limiting factor."
   ],
-  "misconceptionTags": ["ssa_memory_confusion", "call_pure_by_default_myth"],
+  "misconceptionTags": [
+    "ssa_memory_confusion",
+    "call_pure_by_default_myth"
+  ],
   "distractorRationales": {
+    "A": "Falsely assumes calls are pure by default.",
     "B": "Extends SSA to memory incorrectly.",
-    "C": "Falsely assumes calls are pure by default.",
     "D": "Overstates loads' side-effect status."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Common subexpression elimination, availability", "supports": ["A"] },
-    { "ref": "BOOK:appel", "locator": "CSE and value numbering chapter", "supports": ["A"] },
-    { "ref": "DOC:llvm-langref", "locator": "Function attributes: readonly, readnone, memory effects", "supports": ["A"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Common subexpression elimination, availability",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "CSE and value numbering chapter",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:llvm-langref",
+      "locator": "Function attributes: readonly, readnone, memory effects",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

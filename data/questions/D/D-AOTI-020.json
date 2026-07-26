@@ -27,11 +27,11 @@
     },
     {
       "id": "B",
-      "text": "AOTInductor produces a Python-only pickle containing the FX graph; loading requires a full PyTorch install and re-runs the entire torch.compile pipeline before the first execution. Under this framing, AOTInductor produces a Python-only pickle containing the FX graph and per-op metadata; loading the pickle requires a full PyTorch install and re-runs the entire torch.compile pipeline (Dynamo + AOTAutograd + Inductor) before the first execution."
+      "text": "AOTInductor takes an ExportedProgram and produces an ahead-of-time compiled shared library (with the model's kernels and a small runtime wrapper) that can be loaded and executed from a native C++/Python runtime without repeating the compile step."
     },
     {
       "id": "C",
-      "text": "AOTInductor takes an ExportedProgram and produces an ahead-of-time compiled shared library (with the model's kernels and a small runtime wrapper) that can be loaded and executed from a native C++/Python runtime without repeating the compile step."
+      "text": "AOTInductor produces a Python-only pickle containing the FX graph; loading requires a full PyTorch install and re-runs the entire torch.compile pipeline before the first execution. Under this framing, AOTInductor produces a Python-only pickle containing the FX graph and per-op metadata; loading the pickle requires a full PyTorch install and re-runs the entire torch.compile pipeline (Dynamo + AOTAutograd + Inductor) before the first execution."
     },
     {
       "id": "D",
@@ -39,13 +39,13 @@
     }
   ],
   "correctAnswers": [
-    "C"
+    "B"
   ],
   "explanation": "AOTInductor takes an ExportedProgram (from torch.export), lowers it through the Inductor compilation stack ahead of time, and produces a shared library (`.so`) containing the compiled kernels plus a small runtime wrapper. This artifact can be loaded and executed from C++ or from Python without re-running torch.compile, enabling reduced startup latency and deployments where Python source is not desired at runtime.",
   "optionExplanations": {
     "A": "Wrong: AOTInductor is ahead-of-time, not JIT.",
-    "B": "Wrong: it produces a native artifact, not a Python-only pickle.",
-    "C": "Correct.",
+    "B": "Correct.",
+    "C": "Wrong: it produces a native artifact, not a Python-only pickle.",
     "D": "Wrong: AOTInductor produces executable code, not a graph rewrite."
   },
   "assumptions": [
@@ -62,7 +62,7 @@
   ],
   "distractorRationales": {
     "A": "Wrong AOT vs. JIT direction.",
-    "B": "Wrong artifact type.",
+    "C": "Wrong artifact type.",
     "D": "Wrong role."
   },
   "sourceRefs": [
@@ -70,14 +70,14 @@
       "ref": "DOC:torch-aoti",
       "locator": "AOTInductor overview and artifact format",
       "supports": [
-        "C"
+        "B"
       ]
     },
     {
       "ref": "DOC:torch-export",
       "locator": "torch.export + AOTInductor deployment flow",
       "supports": [
-        "C"
+        "B"
       ]
     }
   ],

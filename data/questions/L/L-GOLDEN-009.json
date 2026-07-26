@@ -22,17 +22,31 @@
   "stem": "You are writing a golden test for a new fused Triton `LayerNorm(x) * gamma + beta` kernel. Which combination of design choices best matches golden-test discipline?",
   "codeSnippet": "# Custom Triton kernel under test:\ndef fused_ln_gamma_beta(x, gamma, beta, eps=1e-5):\n    ...\n\n# Reference options:\n#   (i)  torch.nn.functional.layer_norm on CUDA in FP32\n#   (ii) A hand-written numpy CPU LayerNorm in FP64\n#   (iii) An older version of the same Triton kernel\n\n# Input options:\n#   (a) torch.randn seeded with a fixed torch.manual_seed(0)\n#   (b) Different random inputs every test invocation\n\n# Tolerance options:\n#   (α) rtol=1e-2, atol=1e-2 (BF16-appropriate)\n#   (β) rtol=1e-6, atol=1e-6 (FP32/FP64-appropriate)\n#   (γ) tolerance derived from the input dtype (FP32 rtol~1e-5, BF16 rtol~1e-2)",
   "options": [
-    { "id": "A", "text": "Reference (ii) — numpy CPU FP64; input (a) — fixed seed; tolerance (γ) — dtype-driven. A high-precision independent reference plus deterministic inputs plus dtype-appropriate tolerance is the strongest correctness signal, with the extra property that a floating-point-order difference between the CUDA implementation and the reference does not falsely fail the test." },
-    { "id": "B", "text": "Reference (iii) — an older version of the same kernel; input (b) — random each run; tolerance (β) — FP32 strict. Using the same-family reference guarantees the closest numerical match, and random inputs each run maximize coverage across the input distribution over CI history." },
-    { "id": "C", "text": "Reference (i) — torch.nn.functional.layer_norm; input (a) — fixed seed; tolerance (β) — strict FP32/FP64 tolerance regardless of the actual input dtype. Golden tests should always assert bitwise-close equality; letting BF16 tests pass at 1e-2 masks real bugs." },
-    { "id": "D", "text": "Reference — none; input (b) — random; tolerance (α) — loose BF16 tolerance. Golden tests are only useful for detecting NaN/Inf; numerical correctness is validated by end-to-end model accuracy on validation datasets, not by per-kernel numerical checks." }
+    {
+      "id": "A",
+      "text": "Reference (i) — torch.nn.functional.layer_norm; input (a) — fixed seed; tolerance (β) — strict FP32/FP64 tolerance regardless of the actual input dtype. Golden tests should always assert bitwise-close equality; letting BF16 tests pass at 1e-2 masks real bugs."
+    },
+    {
+      "id": "B",
+      "text": "Reference (iii) — an older version of the same kernel; input (b) — random each run; tolerance (β) — FP32 strict. Using the same-family reference guarantees the closest numerical match, and random inputs each run maximize coverage across the input distribution over CI history."
+    },
+    {
+      "id": "C",
+      "text": "Reference (ii) — numpy CPU FP64; input (a) — fixed seed; tolerance (γ) — dtype-driven. A high-precision independent reference plus deterministic inputs plus dtype-appropriate tolerance is the strongest correctness signal, with the extra property that a floating-point-order difference between the CUDA implementation and the reference does not falsely fail the test."
+    },
+    {
+      "id": "D",
+      "text": "Reference — none; input (b) — random; tolerance (α) — loose BF16 tolerance. Golden tests are only useful for detecting NaN/Inf; numerical correctness is validated by end-to-end model accuracy on validation datasets, not by per-kernel numerical checks."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "A robust golden test uses (i) an independent high-precision reference so the test does not merely re-check the buggy implementation against itself, (ii) deterministic inputs so failures are reproducible, and (iii) tolerances matched to the numeric dtype under test. Applying an FP64 tolerance to a BF16 kernel would guarantee failure; applying a BF16 tolerance to an FP32 test would hide bugs. Option B is anti-pattern (same-family reference); C sets a wrong tolerance floor; D abandons numerical validation entirely.",
   "optionExplanations": {
-    "A": "Correct: independent + high-precision + deterministic + dtype-appropriate.",
+    "A": "Wrong: applying FP64 tolerance to BF16 kernels guarantees false failures.",
     "B": "Wrong: same-family reference invites shared bugs; random inputs make failure debugging painful.",
-    "C": "Wrong: applying FP64 tolerance to BF16 kernels guarantees false failures.",
+    "C": "Correct: independent + high-precision + deterministic + dtype-appropriate.",
     "D": "Wrong: eliminates per-kernel correctness signal."
   },
   "assumptions": [
@@ -43,15 +57,30 @@
     "Does not imply CPU/FP64 references are always feasible; some ops have no straightforward CPU reference.",
     "Does not imply differential testing on random inputs is bad; it is complementary, not a replacement for a golden test."
   ],
-  "misconceptionTags": ["same_family_reference", "one_tolerance_fits_all"],
+  "misconceptionTags": [
+    "same_family_reference",
+    "one_tolerance_fits_all"
+  ],
   "distractorRationales": {
+    "A": "Tolerance mismatched to dtype.",
     "B": "Same-family reference / random-input anti-patterns.",
-    "C": "Tolerance mismatched to dtype.",
     "D": "Abandons numerical validation."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-profiler", "locator": "torch.testing.assert_close discussion; testing methodology", "supports": ["A"] },
-    { "ref": "BOOK:pmpp4", "locator": "Numerical validation of GPU kernels", "supports": ["A"] }
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "torch.testing.assert_close discussion; testing methodology",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Numerical validation of GPU kernels",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

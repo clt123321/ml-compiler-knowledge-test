@@ -22,18 +22,32 @@
   "stem": "You dump the TorchInductor IR (via `TORCH_COMPILE_DEBUG=1` or `torch._inductor.config.debug = True`) for a compiled function. Which statement most accurately describes what the dumps reveal for debugging?",
   "codeSnippet": "# Debug dump enabled\nimport torch\ntorch._inductor.config.debug = True\n\n@torch.compile\ndef f(x, w):\n    return (x @ w).relu()\n\ny = f(torch.randn(1024, 1024, device=\"cuda\"), torch.randn(1024, 1024, device=\"cuda\"))\n# Produces torchinductor_*/[hash]/output_code.py, fx_graph_readable.py, etc.",
   "options": [
-    { "id": "A", "text": "The dumps show the FX graph (post-AOTAutograd), the scheduler decisions, and the generated Triton/C++ code. They let you verify which ops fused together, which were emitted as separate kernels, and where the compiler fell back to eager or an external kernel — invaluable for diagnosing missing-fusion or unexpected-kernel-launch bugs." },
-    { "id": "B", "text": "The dumps include a full PTX assembly listing with per-instruction SASS mapping and dynamic register allocation; they are the primary tool for register-pressure debugging and replace nvcc `--ptxas-options=-v` output entirely." },
-    { "id": "C", "text": "The dumps are text protobuf files identical to ONNX and can be re-imported into any ONNX-compatible runtime; this is the standard way to convert a torch.compile'd model to TensorRT for deployment." },
-    { "id": "D", "text": "The dumps only contain the model's weights in a compressed format; they do not expose graph structure or generated code and are intended only as a runtime cache for the compiler." }
+    {
+      "id": "A",
+      "text": "The dumps only contain the model's weights in a compressed format; they do not expose graph structure or generated code and are intended only as a runtime cache for the compiler."
+    },
+    {
+      "id": "B",
+      "text": "The dumps include a full PTX assembly listing with per-instruction SASS mapping and dynamic register allocation; they are the primary tool for register-pressure debugging and replace nvcc `--ptxas-options=-v` output entirely."
+    },
+    {
+      "id": "C",
+      "text": "The dumps are text protobuf files identical to ONNX and can be re-imported into any ONNX-compatible runtime; this is the standard way to convert a torch.compile'd model to TensorRT for deployment."
+    },
+    {
+      "id": "D",
+      "text": "The dumps show the FX graph (post-AOTAutograd), the scheduler decisions, and the generated Triton/C++ code. They let you verify which ops fused together, which were emitted as separate kernels, and where the compiler fell back to eager or an external kernel — invaluable for diagnosing missing-fusion or unexpected-kernel-launch bugs."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "TorchInductor's debug dumps show the FX graph after AOTAutograd, the scheduler's fusion decisions, and the actual generated Triton (for CUDA) or C++ (for CPU) code. This lets you verify fusion, kernel count, and codegen behavior — the primary use case is diagnosing performance regressions or missing fusions. Options B/C/D fabricate contents that these dumps do not have (PTX/SASS, ONNX serialization, or weight caches).",
   "optionExplanations": {
-    "A": "Correct: describes the actual dump contents and their diagnostic use.",
+    "A": "Wrong: the dumps contain graph and generated code, not just weights.",
     "B": "Wrong: PTX/SASS analysis uses ptxas -v and Nsight Compute; Inductor dumps stop at the Triton source level.",
     "C": "Wrong: the dumps are not ONNX-compatible.",
-    "D": "Wrong: the dumps contain graph and generated code, not just weights."
+    "D": "Correct: describes the actual dump contents and their diagnostic use."
   },
   "assumptions": [
     "PyTorch 2.3 ~ 2.5 default Inductor debug dump layout."
@@ -42,15 +56,30 @@
     "Does not imply IR dumps replace runtime profiling; they show static compiler decisions, not measured behavior.",
     "Does not imply the dumps expose everything; some internal state (e.g., autotuning history) may require additional flags."
   ],
-  "misconceptionTags": ["ir_dump_is_ptx_myth", "ir_dump_is_onnx_myth"],
+  "misconceptionTags": [
+    "ir_dump_is_ptx_myth",
+    "ir_dump_is_onnx_myth"
+  ],
   "distractorRationales": {
+    "A": "Wrong content.",
     "B": "Confuses IR dump with PTX/SASS.",
-    "C": "Confuses IR dump with ONNX export.",
-    "D": "Wrong content."
+    "C": "Confuses IR dump with ONNX export."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-inductor", "locator": "TorchInductor debug output and TORCH_COMPILE_DEBUG", "supports": ["A"] },
-    { "ref": "PAPER:pytorch2", "locator": "Inductor scheduler and generated code debugging story", "supports": ["A"] }
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "TorchInductor debug output and TORCH_COMPILE_DEBUG",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Inductor scheduler and generated code debugging story",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

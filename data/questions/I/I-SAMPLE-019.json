@@ -19,17 +19,31 @@
   },
   "stem": "Which description of temperature (T) and top-p (nucleus, p) sampling for LLM decoding is correct?",
   "options": [
-    { "id": "A", "text": "Temperature T scales the logits by exp(T) after softmax; top-p sorts the resulting probabilities in ascending order and keeps the first p fraction of the distribution, then renormalizes." },
-    { "id": "B", "text": "Temperature T divides the softmax output by T; top-p keeps exactly floor(p * V) tokens by count (not by cumulative probability) to give an upper bound on the sampling set size." },
-    { "id": "C", "text": "Temperature T divides the logits by T before the softmax (T > 1 flattens the distribution, T < 1 sharpens it); top-p, after softmax, sorts probabilities in descending order and keeps the smallest set whose cumulative probability first exceeds p, then renormalizes over this set before sampling." },
-    { "id": "D", "text": "Temperature T is applied by clipping logits above the T-th percentile; top-p is a synonym for top-k with p = k / V, so the two are algebraically equivalent under this identification." }
+    {
+      "id": "A",
+      "text": "Temperature T scales the logits by exp(T) after softmax; top-p sorts the resulting probabilities in ascending order and keeps the first p fraction of the distribution, then renormalizes."
+    },
+    {
+      "id": "B",
+      "text": "Temperature T divides the logits by T before the softmax (T > 1 flattens the distribution, T < 1 sharpens it); top-p, after softmax, sorts probabilities in descending order and keeps the smallest set whose cumulative probability first exceeds p, then renormalizes over this set before sampling."
+    },
+    {
+      "id": "C",
+      "text": "Temperature T divides the softmax output by T; top-p keeps exactly floor(p * V) tokens by count (not by cumulative probability) to give an upper bound on the sampling set size."
+    },
+    {
+      "id": "D",
+      "text": "Temperature T is applied by clipping logits above the T-th percentile; top-p is a synonym for top-k with p = k / V, so the two are algebraically equivalent under this identification."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "Temperature scales logits: p_i = softmax(z / T)_i. T > 1 flattens, T < 1 sharpens, T -> 0 becomes greedy (argmax), T -> inf becomes uniform. Top-p (nucleus sampling) after computing probabilities sorts them descendingly, forms the smallest prefix whose cumulative sum first exceeds p, and samples from this set (renormalized). This lets the effective set size adapt to the distribution's peakedness at each step, unlike top-k which uses a fixed count.",
   "optionExplanations": {
-    "C": "Correct: canonical definitions of temperature and nucleus sampling.",
     "A": "Wrong: temperature is applied to logits before softmax, not to the softmax output; and top-p uses cumulative-descending, not ascending.",
-    "B": "Wrong: top-p is by cumulative probability, not by count.",
+    "B": "Correct: canonical definitions of temperature and nucleus sampling.",
+    "C": "Wrong: top-p is by cumulative probability, not by count.",
     "D": "Wrong: top-p is adaptive and not equivalent to top-k with a fixed fraction."
   },
   "assumptions": [
@@ -40,14 +54,23 @@
     "Does not imply top-p and top-k are mutually exclusive; they are commonly combined.",
     "Does not imply that temperature preserves relative rank; T -> inf makes the distribution uniform, losing rank information numerically."
   ],
-  "misconceptionTags": ["temperature_post_softmax", "topp_by_count"],
+  "misconceptionTags": [
+    "temperature_post_softmax",
+    "topp_by_count"
+  ],
   "distractorRationales": {
     "A": "Wrong ordering (T after softmax) and wrong top-p direction.",
-    "B": "Confuses top-p with top-k.",
+    "C": "Confuses top-p with top-k.",
     "D": "Fabricates an equivalence."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "Text generation sampling strategies", "supports": ["C"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Text generation sampling strategies",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,

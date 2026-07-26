@@ -26,7 +26,7 @@
   "options": [
     {
       "id": "A",
-      "text": "`cp.async` copies from shared memory to global memory (the reverse direction) and is used to flush computed tiles back to HBM without blocking."
+      "text": "`cp.async` issues an asynchronous copy from global memory directly to shared memory that does not pass through registers; the copy proceeds in the background while the thread continues executing, and the completion is synchronized with `cp.async.commit_group` + `cp.async.wait_group` (or higher-level barriers). This enables software-pipelined GEMM tile loads."
     },
     {
       "id": "B",
@@ -38,18 +38,18 @@
     },
     {
       "id": "D",
-      "text": "`cp.async` issues an asynchronous copy from global memory directly to shared memory that does not pass through registers; the copy proceeds in the background while the thread continues executing, and the completion is synchronized with `cp.async.commit_group` + `cp.async.wait_group` (or higher-level barriers). This enables software-pipelined GEMM tile loads."
+      "text": "`cp.async` copies from shared memory to global memory (the reverse direction) and is used to flush computed tiles back to HBM without blocking."
     }
   ],
   "correctAnswers": [
-    "D"
+    "A"
   ],
   "explanation": "`cp.async` is a PTX instruction introduced with Ampere (sm_80) that copies data from global memory directly to shared memory, bypassing registers. This frees registers, reduces instruction count, and (crucially) allows compute to overlap with the copy — the copy runs asynchronously and the thread proceeds. `cp.async.commit_group` groups pending copies; `cp.async.wait_group N` waits until at most N outstanding groups remain. This is the mechanism behind Ampere-era software-pipelined GEMM kernels (e.g., CUTLASS multi-stage). Hopper adds TMA (Tensor Memory Accelerator) which extends this asynchronous-copy model.",
   "optionExplanations": {
-    "D": "Correct: async GMEM→SMEM without registers; enables SW pipelining.",
+    "A": "Correct: async GMEM→SMEM without registers; enables SW pipelining.",
     "B": "Wrong: `cp.async` is genuinely asynchronous and bypasses registers.",
     "C": "Wrong: cp.async is Ampere+; Hopper adds TMA on top.",
-    "A": "Wrong: direction is GMEM → SMEM."
+    "D": "Wrong: direction is GMEM → SMEM."
   },
   "assumptions": [
     "PTX ISA as of CUDA 11+; sm_80+ hardware."
@@ -65,21 +65,21 @@
   "distractorRationales": {
     "B": "Confuses async name with async semantics.",
     "C": "Wrong architecture generation.",
-    "A": "Wrong copy direction."
+    "D": "Wrong copy direction."
   },
   "sourceRefs": [
     {
       "ref": "DOC:cuda-guide",
       "locator": "PTX cp.async instruction; sm_80 async copy",
       "supports": [
-        "D"
+        "A"
       ]
     },
     {
       "ref": "DOC:cuda-best",
       "locator": "Asynchronous copy for software pipelining",
       "supports": [
-        "D"
+        "A"
       ]
     }
   ],

@@ -18,24 +18,68 @@
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["B", "N", "D"], ["D", "E"], ["B", "N", "k"], ["B", "N", "k"]],
-    "dtypes": ["float16", "float16", "int32", "float16"],
-    "layouts": ["contiguous", "contiguous", "contiguous", "contiguous"]
+    "shapes": [
+      [
+        "B",
+        "N",
+        "D"
+      ],
+      [
+        "D",
+        "E"
+      ],
+      [
+        "B",
+        "N",
+        "k"
+      ],
+      [
+        "B",
+        "N",
+        "k"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "int32",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "In a top-k MoE MLP layer with E experts, each token is routed to k experts based on a gating network. Which description of the dataflow is correct?",
   "options": [
-    { "id": "A", "text": "Every token is sent to every expert; the gating scores are used only as a soft mask on the outputs so that experts with score 0 contribute nothing. The 'sparsity' of MoE is entirely about the sum of gating weights, not about avoided compute." },
-    { "id": "B", "text": "The gating network selects a single expert per token; multi-expert (top-k > 1) MoE always requires k independent forward passes through the full MLP block, because token-to-expert routing is not amenable to batched execution." },
-    { "id": "C", "text": "The gate produces per-expert probabilities for each token; every token is routed to the expert with highest probability, and its output is scaled by that probability. The scaling is what preserves gradient flow through the routing decision." },
-    { "id": "D", "text": "The gate produces scores over the E experts per token; top-k experts (typically k=2) are selected and each token contributes to those k experts' input batches with weights = softmax over the top-k scores. Only the k selected experts run their MLP on that token, and outputs are combined by the gate weights. Load balancing across experts is enforced by auxiliary losses / capacity limits." }
+    {
+      "id": "A",
+      "text": "The gate produces scores over the E experts per token; top-k experts (typically k=2) are selected and each token contributes to those k experts' input batches with weights = softmax over the top-k scores. Only the k selected experts run their MLP on that token, and outputs are combined by the gate weights. Load balancing across experts is enforced by auxiliary losses / capacity limits."
+    },
+    {
+      "id": "B",
+      "text": "The gating network selects a single expert per token; multi-expert (top-k > 1) MoE always requires k independent forward passes through the full MLP block, because token-to-expert routing is not amenable to batched execution."
+    },
+    {
+      "id": "C",
+      "text": "The gate produces per-expert probabilities for each token; every token is routed to the expert with highest probability, and its output is scaled by that probability. The scaling is what preserves gradient flow through the routing decision."
+    },
+    {
+      "id": "D",
+      "text": "Every token is sent to every expert; the gating scores are used only as a soft mask on the outputs so that experts with score 0 contribute nothing. The 'sparsity' of MoE is entirely about the sum of gating weights, not about avoided compute."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "A"
+  ],
   "explanation": "Top-k MoE (as in Switch Transformer, Mixtral) computes gating scores g = x @ W_gate of shape [B*N, E], selects the top-k experts per token, and normalizes the k selected scores (softmax over the k) to get combining weights. Each token is dispatched to k expert input batches; each expert runs a standard MLP over the tokens routed to it. Outputs from the k experts are combined by the normalized gate weights. Load balancing is a serious concern (some experts get too many tokens) and is addressed via auxiliary losses in training and capacity factors / dropping in serving.",
   "optionExplanations": {
-    "D": "Correct: canonical top-k MoE routing.",
-    "A": "Wrong: sparsity means skipped compute; not every expert runs on every token.",
+    "A": "Correct: canonical top-k MoE routing.",
     "B": "Wrong: k > 1 does not force k passes; a single grouped dispatch handles all k slots.",
-    "C": "Wrong: describes top-1 MoE only and mischaracterizes the scaling role."
+    "C": "Wrong: describes top-1 MoE only and mischaracterizes the scaling role.",
+    "D": "Wrong: sparsity means skipped compute; not every expert runs on every token."
   },
   "assumptions": [
     "Discussion is of top-k sparse MoE at inference or training, not dense mixture.",
@@ -45,15 +89,30 @@
     "Does not imply MoE always improves throughput; imbalance and communication (in TP/EP) can hurt.",
     "Does not imply that all-to-all is the only dispatch method; token-shuffle and grouped-GEMM approaches exist."
   ],
-  "misconceptionTags": ["moe_dense_myth", "moe_top1_only_myth"],
+  "misconceptionTags": [
+    "moe_dense_myth",
+    "moe_top1_only_myth"
+  ],
   "distractorRationales": {
-    "A": "Denies sparsity.",
     "B": "Denies batched multi-expert dispatch.",
-    "C": "Ignores k > 1 case."
+    "C": "Ignores k > 1 case.",
+    "D": "Denies sparsity."
   },
   "sourceRefs": [
-    { "ref": "BOOK:sze-eff", "locator": "MoE and conditional computation", "supports": ["D"] },
-    { "ref": "DOC:vllm", "locator": "MoE serving and expert dispatch", "supports": ["D"] }
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "MoE and conditional computation",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "MoE serving and expert dispatch",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

@@ -20,18 +20,33 @@
   "stem": "Nsight Compute reports the following warp stall breakdown for a custom kernel. Which conclusions and next steps are correct? (Select all that apply.)",
   "profileData": "Kernel: my_reduce_kernel\n  Warp stall breakdown (% cycles per stall reason):\n    Long Scoreboard (memory latency)  : 42 %\n    Barrier                            : 18 %\n    Wait                               : 12 %\n    Not Selected                       :  8 %\n    Short Scoreboard                   :  6 %\n    Others (Selected, Drain, ...)      : 14 %\n  DRAM Throughput: 45 %\n  L2 Hit Rate: 30 %",
   "options": [
-    { "id": "A", "text": "The dominant stall reason 'Long Scoreboard' points to memory-load latency: warps are waiting for global-memory loads. Mitigations include improving L2 hit rate (better data reuse or blocking), using async cp.async / prefetching, and increasing warps-per-SM to hide latency." },
-    { "id": "B", "text": "'Barrier' stall at 18% suggests __syncthreads() is taking a large fraction of time; reducing block size or eliminating synchronization is always the right response to any Barrier stall regardless of the algorithm's synchronization needs." },
-    { "id": "C", "text": "A 45% DRAM throughput combined with 30% L2 hit rate indicates room to reduce memory traffic (e.g., staging in shared memory) — this would attack the top stall reason at the source rather than raising occupancy to hide it." },
-    { "id": "D", "text": "'Long Scoreboard' means the kernel is compute-bound on the FP32 unit; warps are waiting for math to complete. The right mitigation is to add more math per thread to fill in the pipeline." }
+    {
+      "id": "A",
+      "text": "'Long Scoreboard' means the kernel is compute-bound on the FP32 unit; warps are waiting for math to complete. The right mitigation is to add more math per thread to fill in the pipeline."
+    },
+    {
+      "id": "B",
+      "text": "The dominant stall reason 'Long Scoreboard' points to memory-load latency: warps are waiting for global-memory loads. Mitigations include improving L2 hit rate (better data reuse or blocking), using async cp.async / prefetching, and increasing warps-per-SM to hide latency."
+    },
+    {
+      "id": "C",
+      "text": "'Barrier' stall at 18% suggests __syncthreads() is taking a large fraction of time; reducing block size or eliminating synchronization is always the right response to any Barrier stall regardless of the algorithm's synchronization needs."
+    },
+    {
+      "id": "D",
+      "text": "A 45% DRAM throughput combined with 30% L2 hit rate indicates room to reduce memory traffic (e.g., staging in shared memory) — this would attack the top stall reason at the source rather than raising occupancy to hide it."
+    }
   ],
-  "correctAnswers": ["A", "C"],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
   "explanation": "A: Long Scoreboard = waiting on global-memory loads. Latency-hiding (more warps) and reducing memory traffic are both valid mitigations. C: 45% DRAM with only 30% L2 hit rate implies workload has room to increase locality via shared-memory staging or tiling, which reduces the source of memory latency. B is wrong: Barrier stalls reflect true synchronization needs; reducing block size can hurt occupancy or algorithm correctness. D is wrong: Long Scoreboard is a memory-latency stall, not a compute stall.",
   "optionExplanations": {
-    "A": "Correct: standard Long-Scoreboard interpretation.",
-    "B": "Wrong: barriers exist for correctness; removing them is not a general fix.",
-    "C": "Correct: reducing memory traffic attacks the root cause.",
-    "D": "Wrong: 'Long Scoreboard' = memory, not compute."
+    "A": "Wrong: 'Long Scoreboard' = memory, not compute.",
+    "B": "Correct: standard Long-Scoreboard interpretation.",
+    "C": "Wrong: barriers exist for correctness; removing them is not a general fix.",
+    "D": "Correct: reducing memory traffic attacks the root cause."
   },
   "assumptions": [
     "Ampere/Hopper stall taxonomy as documented in Nsight Compute reference.",
@@ -41,14 +56,30 @@
     "Does not imply 'Long Scoreboard' can always be eliminated; some workloads have irreducible memory latency.",
     "Does not imply higher occupancy is always desirable."
   ],
-  "misconceptionTags": ["long_scoreboard_compute_myth", "barrier_always_bad"],
+  "misconceptionTags": [
+    "long_scoreboard_compute_myth",
+    "barrier_always_bad"
+  ],
   "distractorRationales": {
-    "B": "Overreacts to barrier stalls.",
-    "D": "Confuses memory latency stall with compute stall."
+    "A": "Confuses memory latency stall with compute stall.",
+    "C": "Overreacts to barrier stalls."
   },
   "sourceRefs": [
-    { "ref": "DOC:ncu", "locator": "Warp stall reasons taxonomy", "supports": ["A", "C"] },
-    { "ref": "BOOK:pmpp4", "locator": "Memory latency and warp scheduling", "supports": ["A"] }
+    {
+      "ref": "DOC:ncu",
+      "locator": "Warp stall reasons taxonomy",
+      "supports": [
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Memory latency and warp scheduling",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

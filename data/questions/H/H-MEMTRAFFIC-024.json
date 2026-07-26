@@ -20,17 +20,31 @@
   "profileData": "Model: 7B-parameter LLM.\n  Decode step at batch=1: dominant cost = load all weights once, do FP16 matmuls.\n  FP16 weights: 7 × 10^9 × 2 B = 14 GB per decode step.\n  W4A16 weights: 7 × 10^9 × 0.5 B (INT4 packed) + per-group scales (group_size 128) ≈ 3.5 GB + ~0.11 GB scales.",
   "stem": "Based on the memory-traffic estimate above, what is the primary reason W4A16 accelerates batch-1 LLM decode, and by roughly what factor is weight-load traffic reduced?",
   "options": [
-    { "id": "A", "text": "Weight-load traffic drops by roughly 4× (14 GB → ~3.6 GB including scales); batch-1 decode is dominated by weight loading, so decode throughput improves by close to the same factor, minus overhead from dequantization in registers." },
-    { "id": "B", "text": "Weight-load traffic is unchanged because INT4 weights are stored in FP16-sized buffers; the improvement comes purely from INT4 Tensor Core arithmetic." },
-    { "id": "C", "text": "Weight-load traffic doubles because per-group scales double the metadata; W4A16 is slower than FP16 for decode." },
-    { "id": "D", "text": "W4A16 accelerates decode by 8× because INT4 uses ¼ the bytes and per-channel scaling gives another 2×." }
+    {
+      "id": "A",
+      "text": "Weight-load traffic doubles because per-group scales double the metadata; W4A16 is slower than FP16 for decode."
+    },
+    {
+      "id": "B",
+      "text": "Weight-load traffic is unchanged because INT4 weights are stored in FP16-sized buffers; the improvement comes purely from INT4 Tensor Core arithmetic."
+    },
+    {
+      "id": "C",
+      "text": "Weight-load traffic drops by roughly 4× (14 GB → ~3.6 GB including scales); batch-1 decode is dominated by weight loading, so decode throughput improves by close to the same factor, minus overhead from dequantization in registers."
+    },
+    {
+      "id": "D",
+      "text": "W4A16 accelerates decode by 8× because INT4 uses ¼ the bytes and per-channel scaling gives another 2×."
+    }
   ],
-  "correctAnswers": ["A"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "INT4 weights use 0.5 bytes/param vs FP16's 2 bytes — a 4× reduction. Per-group scales at group_size 128 add ~1/32 of the FP16 weight size (one FP16 scale per 128 INT4 weights ≈ 0.5 bit per weight in scale metadata), so total is ~3.6 GB vs 14 GB. Batch-1 decode is bandwidth-bound (kernel time is roughly bytes_moved / bandwidth); the observed decode speedup is close to 4× minus dequant-in-register overhead. Option B is false: INT4 is stored packed, not in FP16-sized buffers. Option C is false: scales are small (~1/32 of the weight size), not doubling. Option D fabricates an 8× that has no basis (per-channel scale saves no additional bandwidth in this context).",
   "optionExplanations": {
-    "A": "Correct: 4× traffic reduction + accurate accounting of scales.",
+    "A": "Wrong: per-group scales add ~3% not 100%.",
     "B": "Wrong: INT4 storage is packed.",
-    "C": "Wrong: per-group scales add ~3% not 100%.",
+    "C": "Correct: 4× traffic reduction + accurate accounting of scales.",
     "D": "Wrong: fabricated 8× argument."
   },
   "assumptions": [
@@ -42,15 +56,30 @@
     "Does not imply the full 4× speedup is realized in wall-clock — dequant, scale broadcast, and kernel overhead reduce the effective gain to ~2.5-3× in practice.",
     "Does not imply the same argument applies to prefill or large-batch cases — those are compute-bound and W4A16's gain shrinks."
   ],
-  "misconceptionTags": ["quant_speedup_over_estimated", "packed_int4_confused_with_fp16_storage"],
+  "misconceptionTags": [
+    "quant_speedup_over_estimated",
+    "packed_int4_confused_with_fp16_storage"
+  ],
   "distractorRationales": {
+    "A": "Overestimates scale metadata size.",
     "B": "Misunderstands INT4 storage.",
-    "C": "Overestimates scale metadata size.",
     "D": "Invents an 8× gain."
   },
   "sourceRefs": [
-    { "ref": "PAPER:awq", "locator": "W4A16 memory traffic vs FP16 analysis", "supports": ["A"] },
-    { "ref": "BOOK:sze-eff", "locator": "Bandwidth-vs-compute for quantized inference", "supports": ["A"] }
+    {
+      "ref": "PAPER:awq",
+      "locator": "W4A16 memory traffic vs FP16 analysis",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Bandwidth-vs-compute for quantized inference",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
