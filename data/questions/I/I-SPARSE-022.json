@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "Structured 2:4 sparsity (Ampere) preserves tensor-core throughput at half the FLOP cost of the equivalent dense GEMM; it is a hardware-native format supported by cuSPARSELt / cuBLAS sparse APIs and yields real speedup on supported dtypes."
+      "text": "Structured 2:4 sparsity delivers a real ~2x speedup on any dtype and any GEMM shape, since the Sparse Tensor Core hardware is dtype- and shape-agnostic once the mask is applied."
     },
     {
       "id": "D",
@@ -43,11 +43,11 @@
     "B",
     "D"
   ],
-  "explanation": "A is correct: unstructured sparsity on GPUs typically needs very low density before its FLOP savings beat the overhead of irregular indexing and load-imbalance across warps. C is correct: LLM decode is bandwidth-bound on weight/KV reads, so any sparse format that reduces bytes read is directly beneficial — provided a matching sparse kernel exists. B is partially correct as a factual statement about 2:4 but oversells 'yields real speedup' without conditions; the phrasing here treats it as an unconditional claim, which we do not accept as strictly correct — this option is meant as a distractor about how narrowly the 2:4 support is: it is only for specific dtypes (FP16/BF16/INT8) and requires dedicated kernels. D is wrong: 'sparse tensor cores dynamically skip zero tiles regardless of pattern' is fabricated; hardware requires the 2:4 structure.",
+  "explanation": "Options B, D are correct; options A, C are incorrect. A (Wrong): hardware requires the 2:4 structure; arbitrary sparsity does not get hardware-native skipping. B (Correct): unstructured sparsity break-even point on GPU is very low density. C (Wrong): Wrong (as stated): 2:4 does provide speedup but only on supported dtypes and with dedicated kernels; the option's blanket 'yields real speedup' is unconditional and misleading. D (Correct): decode is bandwidth-bound; sparsity that reduces HBM traffic can help if a kernel exists.",
   "optionExplanations": {
     "A": "Wrong: hardware requires the 2:4 structure; arbitrary sparsity does not get hardware-native skipping.",
     "B": "Correct: unstructured sparsity break-even point on GPU is very low density.",
-    "C": "Wrong (as stated): 2:4 does provide speedup but only on supported dtypes and with dedicated kernels; the option's blanket 'yields real speedup' is unconditional and misleading.",
+    "C": "Wrong as stated: while structured 2:4 sparsity on Ampere+ Sparse Tensor Cores can deliver up to ~2x GEMM speedup, this is scoped to (a) supported dtypes (FP16 / BF16 / INT8 / TF32 on A100; FP8 added on H100), (b) sufficiently large M/N/K so the sparse path is dispatched, and (c) accuracy-preserving pruning of the weight to the 2:4 pattern. The blanket 'any dtype and any GEMM shape' claim is an overclaim.",
     "D": "Correct: decode is bandwidth-bound; sparsity that reduces HBM traffic can help if a kernel exists."
   },
   "assumptions": [
@@ -91,7 +91,7 @@
   },
   "contentCardRef": "data/content-cards/I/I-SPARSE-022.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 3,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

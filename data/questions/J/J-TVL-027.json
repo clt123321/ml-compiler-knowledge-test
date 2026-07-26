@@ -40,7 +40,7 @@
     "A",
     "C"
   ],
-  "explanation": "B is correct: batching amortizes weight reads (good for throughput) but each batched step is slightly slower per-request (bad for TPOT). D is correct: as batch grows, the operator transitions from bandwidth-bound to compute-bound and further gains diminish while TPOT rises. A is wrong: larger batches raise TPOT (per-token latency per request), so latency and throughput trade off. C is wrong: throughput = tokens/sec across all users; latency = time per request. They are not reciprocals and can move independently.",
+  "explanation": "Options A, C are correct; options B, D are incorrect. A (Correct): bandwidth→compute transition and diminishing returns. B (Wrong): larger batches raise TPOT. C (Correct): throughput up, per-request TPOT up. D (Wrong): throughput and latency are different metrics. General context: They are not reciprocals and can move independently.",
   "optionExplanations": {
     "A": "Correct: bandwidth→compute transition and diminishing returns.",
     "B": "Wrong: larger batches raise TPOT.",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/J/J-TVL-027.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

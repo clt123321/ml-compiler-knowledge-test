@@ -74,7 +74,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "The main performance argument for row-parallel fused LN: `x` (the largest input) is streamed from HBM once per row; the reductions (mean, variance) and the final normalization all reuse the register/SMEM copy. A multi-pass implementation that re-reads `x` for the second reduction doubles HBM traffic for the largest tensor. Choice B is wrong: two-pass mean-then-variance in FP32 is numerically fine for typical shapes (Welford's advantage is at very high N or numerically ill-conditioned data). Choice C is wrong: `rsqrt` is not bit-identical across arches. Choice D is wrong: Triton does not automatically place tensors in constant memory based on shape.",
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): rsqrt/tl.sqrt reciprocal is not bit-identical across arches. B (Wrong): two-pass in FP32 is numerically fine for typical shapes. C (Correct): fused single-pass minimizes HBM traffic for x. D (Wrong): Triton has no automatic constant-memory placement. General context: The main performance argument for row-parallel fused LN: `x` (the largest input) is streamed from HBM once per row; the reductions (mean, variance) and the final normalization all reuse the register/SMEM copy. A multi-pass implementation that re-reads `x` for the second reduction doubles HBM traffic for the largest tensor.",
   "optionExplanations": {
     "A": "Wrong: rsqrt/tl.sqrt reciprocal is not bit-identical across arches.",
     "B": "Wrong: two-pass in FP32 is numerically fine for typical shapes.",
@@ -122,7 +122,7 @@
   },
   "contentCardRef": "data/content-cards/F/F-LN-020.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

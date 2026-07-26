@@ -33,7 +33,7 @@
     },
     {
       "id": "C",
-      "text": "Move the varying value (`dropout_p`) out of a specialized guard by passing it as a tensor argument to the forward (e.g., `torch.tensor(dropout_p)`), so Dynamo does not specialize on its Python value; alternatively, use a control-flow op that treats it dynamically. This preserves correctness while eliminating the per-value recompiles. In this reading, the fix is to disable torch.compile entirely with `torch.compile(mode='reduce-overhead')` on this module; that mode is documented to skip Python-value guards entirely because CUDA Graph capture already re-establishes the necessary runtime invariants."
+      "text": "Move the varying value (`dropout_p`) out of a specialized guard by passing it as a tensor argument to the forward (e.g., `torch.tensor(dropout_p)`), so Dynamo does not specialize on its Python value; alternatively, use a control-flow op that treats it dynamically. This preserves correctness while eliminating the per-value recompiles."
     },
     {
       "id": "D",
@@ -90,7 +90,7 @@
   },
   "contentCardRef": "data/content-cards/D/D-RECDIAG-030.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

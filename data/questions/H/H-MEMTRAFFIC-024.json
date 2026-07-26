@@ -40,7 +40,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "INT4 weights use 0.5 bytes/param vs FP16's 2 bytes — a 4× reduction. Per-group scales at group_size 128 add ~1/32 of the FP16 weight size (one FP16 scale per 128 INT4 weights ≈ 0.5 bit per weight in scale metadata), so total is ~3.6 GB vs 14 GB. Batch-1 decode is bandwidth-bound (kernel time is roughly bytes_moved / bandwidth); the observed decode speedup is close to 4× minus dequant-in-register overhead. Option B is false: INT4 is stored packed, not in FP16-sized buffers. Option C is false: scales are small (~1/32 of the weight size), not doubling. Option D fabricates an 8× that has no basis (per-channel scale saves no additional bandwidth in this context).",
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): per-group scales add ~3% not 100%. B (Wrong): INT4 storage is packed. C (Correct): 4× traffic reduction + accurate accounting of scales. D (Wrong): fabricated 8× argument. General context: INT4 weights use 0.5 bytes/param vs FP16's 2 bytes — a 4× reduction. Per-group scales at group_size 128 add ~1/32 of the FP16 weight size (one FP16 scale per 128 INT4 weights ≈ 0.5 bit per weight in scale metadata), so total is ~3.6 GB vs 14 GB. Batch-1 decode is bandwidth-bound (kernel time is roughly bytes_moved / bandwidth); the observed decode speedup is close to 4× minus dequant-in-register overhead. Option D fabricates an 8× that has no basis (per-channel scale saves no additional bandwidth in this context).",
   "optionExplanations": {
     "A": "Wrong: per-group scales add ~3% not 100%.",
     "B": "Wrong: INT4 storage is packed.",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-MEMTRAFFIC-024.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

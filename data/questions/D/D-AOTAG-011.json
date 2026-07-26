@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "AOTAutograd captures a joint forward+backward graph by re-running the forward under a tracer that records both directions, then partitions it into forward and backward subgraphs handed to Inductor for compilation. In this framing, AOTAutograd traces only the forward graph; the backward is always executed eagerly through PyTorch's autograd engine op-by-op, and no fused or compiled backward is produced under any torch.compile configuration."
+      "text": "AOTAutograd captures a joint forward+backward graph by re-running the forward under a tracer that records both directions, then partitions it into forward and backward subgraphs handed to Inductor for compilation."
     },
     {
       "id": "D",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/D/D-AOTAG-011.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

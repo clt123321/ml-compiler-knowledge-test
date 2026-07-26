@@ -38,7 +38,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "BF16 shares FP32's 8-bit exponent and thus its dynamic range, at the cost of a 7-bit (vs. FP16's 10-bit) mantissa. In deep learning training, gradients often have very small magnitudes that underflow FP16's ~[6e-5, 6.5e4] range; BF16's ~[1e-38, 3e38] range accommodates them without loss scaling. The trade-off is mantissa precision, which some pathological accumulations may notice; empirically most training runs prefer BF16 when hardware supports it. B is wrong: both formats are 16 bits. C is wrong: BF16 has an 8-bit exponent. D is wrong: BF16 is floating-point, not fixed-point.",
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): BF16's exponent width is 8, not 5. B (Wrong): BF16 and FP16 are both 16 bits. C (Correct): matches the widely-documented BF16 rationale. D (Wrong): BF16 is floating-point. General context: BF16 shares FP32's 8-bit exponent and thus its dynamic range, at the cost of a 7-bit (vs. FP16's 10-bit) mantissa. In deep learning training, gradients often have very small magnitudes that underflow FP16's ~[6e-5, 6.5e4] range; BF16's ~[1e-38, 3e38] range accommodates them without loss scaling. The trade-off is mantissa precision, which some pathological accumulations may notice; empirically most training runs prefer BF16 when hardware supports it.",
   "optionExplanations": {
     "A": "Wrong: BF16's exponent width is 8, not 5.",
     "B": "Wrong: BF16 and FP16 are both 16 bits.",
@@ -86,7 +86,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-DTYPE-002.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

@@ -40,7 +40,7 @@
     "B",
     "D"
   ],
-  "explanation": "A and B are the fundamental amortization argument. C captures an important practical concern: recompilation costs are hidden 'compile budget' spent per unique shape/config the runtime encounters. D is false: tuning budget affects the artifact's runtime performance, which is precisely serving latency. E is false: tuning curves are typically sub-linear or convex — diminishing returns mean spending 10× more time yields a marginal improvement, not 10× speedup.",
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): short-lived usage inverts the trade-off. B (Correct): recompilation is a hidden compile-budget line item. C (Wrong): tuning budget determines the artifact's runtime performance. D (Correct): amortization over serving lifetime. General context: C captures an important practical concern: recompilation costs are hidden 'compile budget' spent per unique shape/config the runtime encounters.",
   "optionExplanations": {
     "A": "Correct: short-lived usage inverts the trade-off.",
     "B": "Correct: recompilation is a hidden compile-budget line item.",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/G/G-BUDGET-029.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

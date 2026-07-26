@@ -41,7 +41,7 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "Ampere shared memory has 32 banks with 4-byte width; bank = (address / 4) mod 32. For smem[i][y] with row size 32 floats (128 B), the byte address is i·128 + y·4. The bank index (i·128 + y·4)/4 mod 32 = (i·32 + y) mod 32 = y (since i·32 mod 32 = 0). All 32 threads in the warp map to the same bank y → 32-way conflict; access serializes into 32 cycles. Padding to [32][33] (or transposing the access) restores conflict-free behavior. Option C is wrong (half-warp granularity applied on older compute capabilities; modern SM uses 32-way warp for bank conflict analysis). Option D is wrong (no automatic padding).",
+  "explanation": "Option D is correct; options A, B, C are incorrect. A (Wrong): with a 32-wide row of 4-byte elements, the row stride matches the bank period (128 B = 32 banks × 4 B), so column-major access hits the same bank across rows. B (Wrong): shared-memory padding must be programmer-written (e.g., declare [32][33]). C (Wrong): half-warp granularity applied to legacy architectures (Fermi and earlier); Ampere uses warp-wide conflict analysis. D (Correct): the access serializes to 32 cycles due to same-bank targeting. General context: Ampere shared memory has 32 banks with 4-byte width; bank = (address / 4) mod 32. For smem[i][y] with row size 32 floats (128 B), the byte address is i·128 + y·4. The bank index (i·128 + y·4)/4 mod 32 = (i·32 + y) mod 32 = y (since i·32 mod 32 = 0). All 32 threads in the warp map to the same bank y → 32-way conflict; access serializes into 32 cycles. Padding to [32][33] (or transposing the access) restores conflict-free behavior.",
   "optionExplanations": {
     "A": "Wrong: with a 32-wide row of 4-byte elements, the row stride matches the bank period (128 B = 32 banks × 4 B), so column-major access hits the same bank across rows.",
     "B": "Wrong: shared-memory padding must be programmer-written (e.g., declare [32][33]).",
@@ -90,7 +90,7 @@
   },
   "contentCardRef": "data/content-cards/A/A-BANK-022.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

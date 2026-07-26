@@ -24,7 +24,7 @@
     },
     {
       "id": "B",
-      "text": "Eager runs each operation immediately as Python encounters it, with no persistent graph representation captured by default; static graph capture constructs a persistent IR before execution, enabling whole-program optimizations at the cost of trace-time restrictions. In this account, eager execution generates fresh machine code for every executed Python statement using an on-the-fly JIT, while static frameworks strip Python entirely and are typically distributed as Python-free C++ binaries."
+      "text": "Eager runs each operation immediately as Python encounters it, with no persistent graph representation captured by default; static graph capture constructs a persistent IR before execution, enabling whole-program optimizations at the cost of trace-time restrictions."
     },
     {
       "id": "C",
@@ -85,7 +85,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-EAGER-015.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

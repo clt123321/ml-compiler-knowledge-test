@@ -59,7 +59,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "NumPy / PyTorch broadcasting aligns dimensions from the trailing (last) axis. `scale` with shape `[out]` broadcasts against `W`'s last axis (of size `in`), requiring `in == out`; otherwise a shape error is raised. Even when `in == out`, the intended semantics (one scale per row) is not what broadcasting does — it applies one scale per column. The fix is to reshape `scale` to `[out, 1]` via `.unsqueeze(1)` or `.view(out, 1)`, so it broadcasts across the trailing (in) axis. Option B is false: broadcasting aligns from the last axis, not the first. Option C is wrong: `to(fp16)` is a valid representation cast for symmetric quantization (multiplication by scale gives the FP16 value). Option D partially recognizes the trailing-axis alignment but misdescribes the failure mode.",
+  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): broadcasting aligns from the last axis. B (Correct): identifies broadcasting rule and the correct fix. C (Wrong): cast + multiply is the standard symmetric-quant dequant. D (Wrong): even when out == in, the result is per-column, not per-row. General context: NumPy / PyTorch broadcasting aligns dimensions from the trailing (last) axis. `scale` with shape `[out]` broadcasts against `W`'s last axis (of size `in`), requiring `in == out`; otherwise a shape error is raised. Even when `in == out`, the intended semantics (one scale per row) is not what broadcasting does — it applies one scale per column. The fix is to reshape `scale` to `[out, 1]` via `.unsqueeze(1)` or `.view(out, 1)`, so it broadcasts across the trailing (in) axis. Option D partially recognizes the trailing-axis alignment but misdescribes the failure mode.",
   "optionExplanations": {
     "A": "Wrong: broadcasting aligns from the last axis.",
     "B": "Correct: identifies broadcasting rule and the correct fix.",
@@ -106,7 +106,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-GRAN-012.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

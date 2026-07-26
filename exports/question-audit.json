@@ -27,12 +27,12 @@
       "pass": true
     },
     "correct_longest_ratio": {
-      "value": 0.795,
+      "value": 0.74,
       "max": 0.8,
       "pass": true
     },
     "correct_wrong_length_gap": {
-      "value": 0.243,
+      "value": 0.194,
       "max": 0.3,
       "pass": true
     },
@@ -55,9 +55,9 @@
       "C": 75,
       "D": 68
     },
-    "correctLongestCount": 318,
-    "avgCorrectLen": 243.97,
-    "avgWrongLen": 196.21
+    "correctLongestCount": 296,
+    "avgCorrectLen": 234.21,
+    "avgWrongLen": 196.17
   },
   "issues": [
     {

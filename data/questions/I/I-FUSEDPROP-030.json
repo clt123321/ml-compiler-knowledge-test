@@ -41,7 +41,7 @@
     "C",
     "D"
   ],
-  "explanation": "A is correct: fusion reduces HBM roundtrips and launch overhead; it does not change FLOPs. B is correct: pointwise-producer/consumer fusion is easy; fusing across reductions is much harder and shape-dependent. D is correct: fusion increases register footprint and can cause spills. C is wrong: fusion is not universally free — register spills, reduced occupancy, and worse tile shapes can make a fused kernel slower.",
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): fusion has real costs; not universally beneficial. B (Correct): register pressure can undo the gains. C (Correct): fusion reduces HBM traffic and launch overhead. D (Correct): reduction-boundary fusion is hard and conditional.",
   "optionExplanations": {
     "A": "Wrong: fusion has real costs; not universally beneficial.",
     "B": "Correct: register pressure can undo the gains.",
@@ -90,7 +90,7 @@
   },
   "contentCardRef": "data/content-cards/I/I-FUSEDPROP-030.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "The partitioner runs a min-cut / heuristic algorithm on the joint FX graph to decide which tensors to save as activations vs. recompute in the backward. Cheap-to-recompute values may be recomputed to reduce activation memory, while expensive-to-recompute values are saved. It is a compile-time decision, not a per-call runtime decision. In this account, the partitioner runs at each call site to observe runtime memory usage and decides on the fly whether to save or recompute each activation; this is why AOTAutograd is documented to introduce variable per-call latency across a training loop."
+      "text": "The partitioner runs a min-cut / heuristic algorithm on the joint FX graph to decide which tensors to save as activations vs. recompute in the backward. Cheap-to-recompute values may be recomputed to reduce activation memory, while expensive-to-recompute values are saved. It is a compile-time decision, not a per-call runtime decision."
     },
     {
       "id": "D",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/D/D-BWSHAPE-033.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

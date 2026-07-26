@@ -71,7 +71,7 @@
     "B",
     "C"
   ],
-  "explanation": "A: FP16 has only ~11 bits of mantissa; long reductions accumulate rounding error. FP32 accumulation preserves precision. B: On sm_80+, Tensor Core `mma.sync` instructions natively accept FP16 operands with FP32 accumulator (`mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32` and similar). Triton's `tl.dot(..., out_dtype=tl.float32)` compiles to these. C is wrong: FP32-accumulate then downcast produces a different (usually much more accurate) result than FP16-accumulate. D is wrong: CUDA `wmma`/`mma.sync` explicitly support mixed-precision (FP16-in, FP32-accum) on Volta, Turing, Ampere, Hopper — that is one of Tensor Cores' key features.",
+  "explanation": "Options B, C are correct; options A, D are incorrect. A (Wrong): mixed-precision Tensor Core support is a core feature of CUDA's mma APIs. B (Correct): FP32 accumulation is standard for numerical robustness. C (Correct): mma.sync FP16-in, FP32-accum is the hardware path on Ampere+. D (Wrong): FP32-accum-then-downcast ≠ full-FP16 pipeline; the intermediate precision matters. General context: FP32 accumulation preserves precision. Triton's `tl.dot(..., out_dtype=tl.float32)` compiles to these.",
   "optionExplanations": {
     "A": "Wrong: mixed-precision Tensor Core support is a core feature of CUDA's mma APIs.",
     "B": "Correct: FP32 accumulation is standard for numerical robustness.",
@@ -118,7 +118,7 @@
   },
   "contentCardRef": "data/content-cards/F/F-GEMMFP16-015.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

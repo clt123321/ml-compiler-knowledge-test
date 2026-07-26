@@ -44,7 +44,7 @@
     "C",
     "D"
   ],
-  "explanation": "A is correct: KV quantization directly cuts per-token bytes and roughly doubles capacity for INT8 / halves again for FP8/INT4. B is correct: capping batch reduces contention at the cost of some throughput but improves tail behavior. C is correct: prefix caching lets shared prefill KV live once, cutting effective per-request KV for the shared portion. D is wrong: pipeline parallelism does not replicate KV; each stage stores only the KV for its own layers, giving no total-capacity increase. In fact PP typically stores L/P layers' worth of KV per stage instead of L/T rows in TP.",
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): PP shards layers (each stage stores its layers' KV), it does not replicate. B (Correct): KV quant is the direct capacity lever. C (Correct): admission control trades throughput for stability. D (Correct): prefix caching reduces effective per-request KV. General context: In fact PP typically stores L/P layers' worth of KV per stage instead of L/T rows in TP.",
   "optionExplanations": {
     "A": "Wrong: PP shards layers (each stage stores its layers' KV), it does not replicate.",
     "B": "Correct: KV quant is the direct capacity lever.",
@@ -94,7 +94,7 @@
   },
   "contentCardRef": "data/content-cards/J/J-OOM-028.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

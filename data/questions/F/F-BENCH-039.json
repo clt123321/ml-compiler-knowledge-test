@@ -45,7 +45,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: Correct benchmark discipline — warmup, `cudaDeviceSynchronize` around the timed region, CUDA events for GPU-side timing. Skipping any of these leaks noise (CPU launch time, prior kernel completion, JIT compile). B: FP kernels rarely reproduce bitwise-identical results as their reference; `torch.testing.assert_close` with appropriate rtol/atol (FP32: rtol ~1e-5; FP16: rtol ~1e-3; per op semantics) is the standard. C is wrong: `time.time()` on a single launch measures CPU launch time and includes async completion of prior work — a well-known pitfall. D is wrong: first-launch includes autotune search + JIT compile which are usually excluded from steady-state latency reports (though they should be reported separately as compile time).",
+  "explanation": "Options C, D are correct; options A, B are incorrect. A (Wrong): single-launch time.time() is unreliable. B (Wrong): first-launch compile/tune cost should not be reported as steady-state. C (Correct): sync + events + warmup is the canonical pattern. D (Correct): FP kernels need tolerance-based comparison. General context: Skipping any of these leaks noise (CPU launch time, prior kernel completion, JIT compile).",
   "optionExplanations": {
     "A": "Wrong: single-launch time.time() is unreliable.",
     "B": "Wrong: first-launch compile/tune cost should not be reported as steady-state.",
@@ -92,7 +92,7 @@
   },
   "contentCardRef": "data/content-cards/F/F-BENCH-039.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

@@ -49,13 +49,13 @@
     },
     {
       "id": "D",
-      "text": "Arithmetic intensity ≈ 0.125 FLOP/byte. The kernel is well below the ridge point (0.125 << 9.75), so it is memory-bound: expected time = 128 MB / 2.0 TB/s ≈ 62 µs (peak). Measured 40 ms is roughly 640× slower than peak — the kernel is highly inefficient or the measurement is wrong (launch overhead, missing sync, tiny grid)."
+      "text": "Arithmetic intensity ≈ 0.25 FLOP/byte. The kernel is well below the ridge point (0.25 << 9.75), so it is memory-bound: expected time = 128 MB / 2.0 TB/s ≈ 62 µs (peak). Measured 40 ms is roughly 640× slower than peak — the kernel is highly inefficient or the measurement is wrong (launch overhead, missing sync, tiny grid)."
     }
   ],
   "correctAnswers": [
     "D"
   ],
-  "explanation": "Elementwise `y = a*x + b` performs 2 FLOPs per output element, touching 8 bytes (4 in + 4 out). Arithmetic intensity = 2 / 8 = 0.25 FLOP/byte, but since only one read and one write are counted per element pair, the intensity is 0.125–0.25 FLOP/byte depending on how one counts. Either way, it is far below the A100 ridge point of ~9.75 FLOP/byte, making the kernel deeply memory-bound. Peak-bound time for 128 MB of traffic at 2.0 TB/s is ~62 µs. The measured 40 ms is ~640× slower than roofline peak, indicating a serious inefficiency (launch overhead dominates, or the measurement contains async-timing errors, or the grid is undersized). Option A confuses direction; C mis-counts bytes; D wrongly claims roofline is inapplicable.",
+  "explanation": "Elementwise `y = a*x + b` performs 2 FLOPs per output element, reading 4 bytes and writing 4 bytes (8 bytes total per element). Arithmetic intensity = 2 / 8 = 0.25 FLOP/byte, far below the A100 ridge point of ~9.75 FLOP/byte — the kernel is deeply memory-bound. Peak-bound time for 128 MB of traffic at 2.0 TB/s is ~62 µs. The measured 40 ms is ~640× slower than roofline peak, indicating a serious inefficiency (launch overhead dominates, or the measurement contains async-timing errors, or the grid is undersized). Options A and C mis-count the byte traffic (A: 16 bytes per pair double-counts; C: 4 bytes per element counts only one side) and mis-diagnose the kernel as compute-bound; option B wrongly claims roofline is inapplicable to elementwise kernels; option D states the correct arithmetic intensity and the memory-bound diagnosis.",
   "optionExplanations": {
     "A": "Wrong: 0.125 is well below 9.75, so the kernel is memory-bound, not compute-bound.",
     "B": "Wrong: roofline applies to all kernels; elementwise kernels typically sit at the memory-bound side.",
@@ -103,7 +103,7 @@
   },
   "contentCardRef": "data/content-cards/L/L-ROOFLINE-021.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

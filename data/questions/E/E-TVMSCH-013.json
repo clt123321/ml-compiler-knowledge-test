@@ -46,7 +46,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: `split` + `bind` is the canonical GPU schedule for a 1-D loop. B: `cache_read` inserts an intermediate buffer at the given storage scope, preserving compute semantics. C is wrong: `vectorize` requires the loop extent to divide the target vector width (and no cross-iteration dependencies); it may fail with an explicit error, not silently downgrade. D: `bind` directly on a 1-D loop is legal — the loop extent becomes the thread count. This is common for simple element-wise kernels; whether it is efficient is a separate concern.",
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): `vectorize` is not universally applicable; it errors when preconditions fail. B (Correct): `bind` on a single loop is legal legalization. C (Correct): canonical `split` + `bind(blockIdx, threadIdx)` GPU schedule. D (Correct): `cache_read` inserts a scoped staging buffer. General context: This is common for simple element-wise kernels; whether it is efficient is a separate concern.",
   "optionExplanations": {
     "A": "Wrong: `vectorize` is not universally applicable; it errors when preconditions fail.",
     "B": "Correct: `bind` on a single loop is legal legalization.",
@@ -86,7 +86,7 @@
   },
   "contentCardRef": "data/content-cards/E/E-TVMSCH-013.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

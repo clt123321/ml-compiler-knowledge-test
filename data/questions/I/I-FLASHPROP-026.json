@@ -43,7 +43,7 @@
     "C",
     "D"
   ],
-  "explanation": "A is correct: FlashAttention is exact (subject to normal rounding) and has the same forward FLOP count. B is correct: this is the paper's central I/O complexity result. D is correct: backward recomputation is a key design choice. C is wrong: this is a benchmark_leak — the paper reports specific speedups on specific hardware and shapes; treating them as universal is a common misreading. Speedup depends strongly on N, d, batch, and hardware SMEM.",
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): benchmark_leak — a specific measurement is treated as a universal fact. B (Correct): backward design. C (Correct): exactness and preserved FLOP count. D (Correct): paper's IO complexity result. General context: Speedup depends strongly on N, d, batch, and hardware SMEM.",
   "optionExplanations": {
     "A": "Wrong: benchmark_leak — a specific measurement is treated as a universal fact.",
     "B": "Correct: backward design.",
@@ -84,7 +84,7 @@
   },
   "contentCardRef": "data/content-cards/I/I-FLASHPROP-026.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

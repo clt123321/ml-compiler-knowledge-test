@@ -25,7 +25,7 @@
     },
     {
       "id": "B",
-      "text": "Shape inference propagates per-op shape rules from inputs to outputs; with `x: [N, D]` and `w: [D, D]`, `y = matmul(x, w)` gives `[N, D]`. Extents like `N` remain symbolic when not known statically; concretization to actual integers happens at runtime (or via specialization). In this reading, shape inference only succeeds when all input shapes are fully static integers; introducing any symbolic dim causes the inference pass to abort and drop all previously-inferred shape annotations from the graph."
+      "text": "Shape inference propagates per-op shape rules from inputs to outputs; with `x: [N, D]` and `w: [D, D]`, `y = matmul(x, w)` gives `[N, D]`. Extents like `N` remain symbolic when not known statically; concretization to actual integers happens at runtime (or via specialization)."
     },
     {
       "id": "C",
@@ -85,7 +85,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-SHAPEINFER-029.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

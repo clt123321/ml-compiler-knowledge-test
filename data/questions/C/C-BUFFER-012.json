@@ -30,7 +30,7 @@
     },
     {
       "id": "C",
-      "text": "Tensor form has value semantics (immutable SSA values; each op produces a fresh tensor); memref form has reference semantics (ops write into named buffers). Bufferization assigns buffers and inserts allocations/copies as needed to preserve semantics. Under this reading, the bufferization pass is unnecessary and is included in MLIR only for symmetry with earlier prototype dialects rather than to resolve any real semantic difference between the two levels."
+      "text": "Tensor form has value semantics (immutable SSA values; each op produces a fresh tensor); memref form has reference semantics (ops write into named buffers). Bufferization assigns buffers and inserts allocations/copies as needed to preserve semantics."
     },
     {
       "id": "D",
@@ -86,7 +86,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-BUFFER-012.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

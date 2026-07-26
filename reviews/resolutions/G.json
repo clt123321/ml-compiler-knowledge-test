@@ -1,0 +1,78 @@
+{
+  "module": "G",
+  "generatedAt": "2026-07-26",
+  "agent": "repair-agent-round1",
+  "round": "round1_repair",
+  "entries": [
+    {
+      "id": "G-BUDGET-029",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "G-CFCSE-017",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "G-FUSION-005",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "G-PORTABILITY-026",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "G-TVMSCHED-028",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "G-UNROLL-011",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "G-COSTMODEL-020",
+      "finding": "MINOR (weak_distractor D warmup) + prior orchestrator fix already restored correctAnswers=[B,C] to valid range. Reviewer independently confirmed [B,C] substantively correct but noted option D (warmup/JIT/clock ramp-up) is arguably a real measurement-vs-model divergence source in practice.",
+      "resolution": "Strengthened optionExplanations[\"D\"] to explicitly frame warmup/JIT/lazy-init/clock ramp-up as measurement-methodology artifacts removed by proper warmup + synchronize + CUDA events, distinguishing them from the systematic cost-model gaps (B and C) that persist post-warmup. correctAnswers unchanged.",
+      "diff": [
+        "optionExplanations[D]"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    }
+  ]
+}

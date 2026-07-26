@@ -43,7 +43,7 @@
       "file": "data/questions/D/D-GUARD-006.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-GUARD-006.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-MARK-007",
@@ -57,7 +57,7 @@
       "file": "data/questions/D/D-SYMINT-008.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-SYMINT-008.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-AUTODYN-009",
@@ -78,7 +78,7 @@
       "file": "data/questions/D/D-AOTAG-011.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-AOTAG-011.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-DECOMP-012",
@@ -113,7 +113,7 @@
       "file": "data/questions/D/D-TRITON-016.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-TRITON-016.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-CPPBACK-017",
@@ -127,14 +127,14 @@
       "file": "data/questions/D/D-EXPORT-018.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-EXPORT-018.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-EXPCONS-019",
       "file": "data/questions/D/D-EXPCONS-019.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-EXPCONS-019.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-AOTI-020",
@@ -211,7 +211,7 @@
       "file": "data/questions/D/D-RECDIAG-030.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-RECDIAG-030.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-MODE-031",
@@ -225,21 +225,21 @@
       "file": "data/questions/D/D-COMPILET-032.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-COMPILET-032.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-BWSHAPE-033",
       "file": "data/questions/D/D-BWSHAPE-033.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-BWSHAPE-033.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-GUARDEXPR-034",
       "file": "data/questions/D/D-GUARDEXPR-034.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-GUARDEXPR-034.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "D-FX-035",

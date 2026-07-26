@@ -39,7 +39,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "CSE requires the availability property: the earlier computation's result must still be valid at the later use point. For memory loads, this requires proving that no intervening operation writes to the same location. A call whose memory effects are unknown pessimistically kills all availability. Options B, C, D are incorrect: SSA does not extend to memory; compilers default to assuming calls may write memory (not pure); loads are not universally uneliminable.",
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): compilers default to conservative 'may-write' semantics for calls; purity/readonly must be proven or annotated. B (Wrong): SSA operates on virtual registers, not memory; a load's value can change if memory is modified between loads. C (Correct): CSE for loads requires proving no intervening memory clobber via alias analysis or function attributes. D (Wrong): loads can be eliminated when availability is proven; they are only side-effecting when volatile or atomic. General context: CSE requires the availability property: the earlier computation's result must still be valid at the later use point. For memory loads, this requires proving that no intervening operation writes to the same location. A call whose memory effects are unknown pessimistically kills all availability.",
   "optionExplanations": {
     "A": "Wrong: compilers default to conservative 'may-write' semantics for calls; purity/readonly must be proven or annotated.",
     "B": "Wrong: SSA operates on virtual registers, not memory; a load's value can change if memory is modified between loads.",
@@ -93,7 +93,7 @@
   },
   "contentCardRef": "data/content-cards/B/B-CSE-012.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

@@ -44,7 +44,7 @@
     "A": "Wrong: precision alone does not close the model-vs-measurement gap.",
     "B": "Correct: register allocation and spill decisions are made post-source and affect real runtime.",
     "C": "Correct: cache/TLB context effects are outside a static model.",
-    "D": "Wrong: warmup is a measurement-methodology issue, not a model-vs-truth gap. Once warmed up, the underlying runtime is stable; both model and measurement target the warmed steady state."
+    "D": "Wrong as a **cost-model vs runtime** discrepancy source: warmup, JIT compilation latency, lazy CUDA context initialization, and clock ramp-up are **measurement-methodology artifacts** eliminated by (i) a warmup phase, (ii) `torch.cuda.synchronize()`, and (iii) CUDA event timing. They inflate wall time on the *first* call but do not reflect a systematic under-estimate by the cost model of steady-state kernel behavior. The genuine cost-model gaps (options B and C) — undermodeled cache/coalescing effects and off-critical-path fixed costs (launch, alloc) — persist even after warmup and are the intended targets of this question."
   },
   "assumptions": [
     "The analytical model is built on op counts, shape, and memory-traffic estimates only.",
@@ -88,7 +88,7 @@
   },
   "contentCardRef": "data/content-cards/G/G-COSTMODEL-020.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

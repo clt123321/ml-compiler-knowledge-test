@@ -43,7 +43,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: FP32 accumulation is the whole point — it keeps the running sum in a numerically stable range. B: The final downcast is a per-element rounding step that adds error; for training this can matter (LayerNorm stats, etc.). C: Loading FP16/BF16 halves the memory bandwidth requirement, which is the dominant end-to-end speed-up for GEMM on Tensor Cores. D is false: FP16/BF16 Tensor Core throughput is much higher than pure FP32 (roughly 8-16× depending on generation). E is false: writing FP32 output doubles storage cost per element; the format choice is a real trade-off, not a free choice.",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): bandwidth halving is central to Tensor Core speed-up. B (Wrong): mixed-precision Tensor Core is 8-16× faster than FP32 GEMM. C (Correct): accumulator dtype drives numerical stability. D (Correct): downcast rounding is a real, per-element error source.",
   "optionExplanations": {
     "A": "Correct: bandwidth halving is central to Tensor Core speed-up.",
     "B": "Wrong: mixed-precision Tensor Core is 8-16× faster than FP32 GEMM.",
@@ -92,7 +92,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-ACCUM-007.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

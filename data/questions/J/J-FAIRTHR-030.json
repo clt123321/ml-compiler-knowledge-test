@@ -44,7 +44,7 @@
     "B",
     "D"
   ],
-  "explanation": "A is correct: chunked prefill directly solves the burst-driven TPOT spike for tenant A by interleaving decoding with the long prefill of tenant B. C is correct: KV budget quotas cap the contention tenant B can create. D is correct: fairness-aware scheduling addresses long-request domination. B is wrong: serializing tenants collapses aggregate throughput to a single-tenant baseline; the goal is fairness without throughput collapse.",
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): fair queueing. B (Correct): chunked prefill. C (Wrong): serializing kills aggregate throughput. D (Correct): per-tenant KV quotas.",
   "optionExplanations": {
     "A": "Correct: fair queueing.",
     "B": "Correct: chunked prefill.",
@@ -93,7 +93,7 @@
   },
   "contentCardRef": "data/content-cards/J/J-FAIRTHR-030.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

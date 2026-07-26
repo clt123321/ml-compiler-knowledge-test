@@ -40,7 +40,7 @@
     "B",
     "D"
   ],
-  "explanation": "A is correct: rejection sampling preserves the target sampling distribution exactly (a proved property in the original paper). C is correct: the win is largest when target-model per-step latency is dominated by fixed overheads (memory-bound decode), because verifying k tokens is only marginally more expensive than one; when target is compute-bound, the extra verification compute directly costs more. B is wrong: acceptance rate p < 1 shrinks expected accepted prefix, and draft cost eats into the win. D is wrong: correctness only requires shared vocab / tokenization; the draft can be any model.",
+  "explanation": "Options B, D are correct; options A, C are incorrect. A (Wrong): ignores acceptance rate and draft cost. B (Correct): memory-bound target maximizes the win. C (Wrong): draft can be arbitrary; only vocab needs to match. D (Correct): sampling distribution preserved.",
   "optionExplanations": {
     "A": "Wrong: ignores acceptance rate and draft cost.",
     "B": "Correct: memory-bound target maximizes the win.",
@@ -81,7 +81,7 @@
   },
   "contentCardRef": "data/content-cards/J/J-SPECPROP-023.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

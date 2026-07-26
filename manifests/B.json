@@ -85,14 +85,14 @@
       "file": "data/questions/B/B-CSE-012.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/B/B-CSE-012.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "B-LICM-013",
       "file": "data/questions/B/B-LICM-013.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/B/B-LICM-013.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "B-INLINE-014",

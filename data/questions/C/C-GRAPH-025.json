@@ -40,7 +40,7 @@
     "C",
     "D"
   ],
-  "explanation": "A dataflow graph is directed (A); a forward pass in a feedforward net is a DAG (B), enabling topological scheduling; and each node's output shape/dtype is normally inferred from operator semantics and input types (D). Option C is wrong: whether an edge is materialized in memory is a codegen/scheduling decision. Fused kernels represent a shared iteration space where intermediates live in registers, not memory — no explicit memory nodes need to be added to the graph.",
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): materialization is a scheduling choice, not a property of the graph. B (Correct): shape/dtype inference is routine. C (Correct). D (Correct): DAG structure for forward passes is standard. General context: A dataflow graph is directed (A); a forward pass in a feedforward net is a DAG (B), enabling topological scheduling; and each node's output shape/dtype is normally inferred from operator semantics and input types (D). Fused kernels represent a shared iteration space where intermediates live in registers, not memory — no explicit memory nodes need to be added to the graph.",
   "optionExplanations": {
     "A": "Wrong: materialization is a scheduling choice, not a property of the graph.",
     "B": "Correct: shape/dtype inference is routine.",
@@ -94,7 +94,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-GRAPH-025.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

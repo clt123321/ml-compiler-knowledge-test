@@ -29,7 +29,7 @@
     },
     {
       "id": "C",
-      "text": "Symbolic shape uses named symbols at compile time (e.g., dim `N`) that can carry relational constraints (`N > 0`, `N % 8 == 0`); dynamic shape refers to the property that the extent is not known statically. Symbolic-shape support is one implementation technique for dynamic shapes. In this reading, the two terms are used identically throughout every compiler paper and framework documentation; there is no distinction between representation and property, and either word can be substituted for the other in any context."
+      "text": "Symbolic shape uses named symbols at compile time (e.g., dim `N`) that can carry relational constraints (`N > 0`, `N % 8 == 0`); dynamic shape refers to the property that the extent is not known statically. Symbolic-shape support is one implementation technique for dynamic shapes."
     },
     {
       "id": "D",
@@ -85,7 +85,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-SYMSHAPE-018.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

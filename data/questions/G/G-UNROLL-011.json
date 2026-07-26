@@ -38,7 +38,7 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "The canonical downside of unrolling is code bloat leading to instruction-cache pressure and, on GPUs, higher register pressure and spills. When the loop body is already small enough that overhead is negligible relative to the body's work, aggressive unrolling only inflates code size without a compensating throughput gain. Option B is wrong: fully unrolling a fixed small trip-count loop is a standard and legal transformation. Option C is wrong: 'impossible' is not a performance argument. Option D is wrong: unrolling can help with data-dependent accesses when it exposes ILP between independent lanes.",
+  "explanation": "Option D is correct; options A, B, C are incorrect. A (Wrong): unrolling can expose ILP even under data-dependent accesses. B (Wrong): full unroll of small fixed trip counts is legal and standard. C (Wrong): statically-unknown trip counts prevent unrolling, but the question is about when it hurts, not when it's impossible. D (Correct): code-bloat and I-cache pressure are the classic anti-unrolling scenarios. General context: The canonical downside of unrolling is code bloat leading to instruction-cache pressure and, on GPUs, higher register pressure and spills. When the loop body is already small enough that overhead is negligible relative to the body's work, aggressive unrolling only inflates code size without a compensating throughput gain.",
   "optionExplanations": {
     "A": "Wrong: unrolling can expose ILP even under data-dependent accesses.",
     "B": "Wrong: full unroll of small fixed trip counts is legal and standard.",
@@ -86,7 +86,7 @@
   },
   "contentCardRef": "data/content-cards/G/G-UNROLL-011.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

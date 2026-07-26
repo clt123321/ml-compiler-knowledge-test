@@ -44,7 +44,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: bit-count savings compound (2× over INT8, 4× over FP16). B: coarser quantization → larger per-element error → more sensitivity to long-context softmax accumulation. C: INT4 KV kernel support is less mature; many stacks dequant to FP16 in-attention. D is false: INT4 has strictly less precision than INT8; the higher per-token scale count does not compensate for 4-bit resolution. E is false: attention kernels dequant INT4 KVs to FP16 in registers; FP4 Tensor Cores are not required (and did not exist as of the frameworks referenced).",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): kernel-support maturity. B (Wrong): fewer bits = less precision, regardless of scale count. C (Correct): footprint arithmetic. D (Correct): sensitivity to context length grows with quantization coarseness.",
   "optionExplanations": {
     "A": "Correct: kernel-support maturity.",
     "B": "Wrong: fewer bits = less precision, regardless of scale count.",
@@ -94,7 +94,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-INT4KV-035.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

@@ -57,42 +57,42 @@
       "file": "data/questions/C/C-LEGALIZE-008.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-LEGALIZE-008.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-VERIFY-009",
       "file": "data/questions/C/C-VERIFY-009.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-VERIFY-009.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-VIEW-010",
       "file": "data/questions/C/C-VIEW-010.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-VIEW-010.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-TILING-011",
       "file": "data/questions/C/C-TILING-011.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-TILING-011.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-BUFFER-012",
       "file": "data/questions/C/C-BUFFER-012.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-BUFFER-012.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-DCE-013",
       "file": "data/questions/C/C-DCE-013.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-DCE-013.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-STABLEHLO-014",
@@ -106,14 +106,14 @@
       "file": "data/questions/C/C-EAGER-015.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-EAGER-015.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-DIALECT-016",
       "file": "data/questions/C/C-DIALECT-016.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-DIALECT-016.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-PROD-017",
@@ -127,7 +127,7 @@
       "file": "data/questions/C/C-SYMSHAPE-018.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-SYMSHAPE-018.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-IRLEVELS-019",
@@ -141,7 +141,7 @@
       "file": "data/questions/C/C-STRIDE-020.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-STRIDE-020.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-REGION-021",
@@ -155,7 +155,7 @@
       "file": "data/questions/C/C-TE-022.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-TE-022.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-LOOPIR-023",
@@ -176,14 +176,14 @@
       "file": "data/questions/C/C-GRAPH-025.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-GRAPH-025.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-LAYOUTOPT-026",
       "file": "data/questions/C/C-LAYOUTOPT-026.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-LAYOUTOPT-026.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-MATERIALIZE-027",
@@ -204,7 +204,7 @@
       "file": "data/questions/C/C-SHAPEINFER-029.json",
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/C/C-SHAPEINFER-029.json",
-      "version": 1
+      "version": 2
     },
     {
       "id": "C-LINALG-030",

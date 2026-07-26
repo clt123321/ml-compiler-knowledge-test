@@ -1,0 +1,68 @@
+{
+  "module": "J",
+  "generatedAt": "2026-07-26",
+  "agent": "repair-agent-round1",
+  "round": "round1_repair",
+  "entries": [
+    {
+      "id": "J-DISAG-029",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "J-FAIRTHR-030",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "J-OOM-028",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "J-PAGEDDES-024",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "J-SPECPROP-023",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "J-TVL-027",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    }
+  ]
+}

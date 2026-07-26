@@ -45,7 +45,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: Classic intra-warp divergence — lanes that take different paths execute those paths serially with the inactive lanes predicated off. B: `blockIdx` is uniform across all threads in a block, so the entire warp evaluates the branch identically; no divergence. C: `?:` often compiles to select/predicated instructions on GPU (`selp.f32` etc.), which is divergence-free but may pay for both sides — well-predicted (uniform-within-warp) branches can beat predication when the two arms differ greatly in cost. D is wrong: nvcc does emit predicated instructions when profitable.",
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): nvcc uses predication where profitable. B (Correct): divergent branches serialize the warp. C (Correct): uniform-within-warp branches do not diverge. D (Correct): predication trades divergence for possible dual-work.",
   "optionExplanations": {
     "A": "Wrong: nvcc uses predication where profitable.",
     "B": "Correct: divergent branches serialize the warp.",
@@ -94,7 +94,7 @@
   },
   "contentCardRef": "data/content-cards/F/F-DIVERGE-029.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

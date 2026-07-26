@@ -46,7 +46,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: FP8 Tensor Core matmuls accumulate in FP32 (parallel to FP16/BF16 → FP32 accumulation). B: FP8's dynamic range is small (E4M3 ~±448, E5M2 ~±57344); production stacks apply scaling to keep values in range, with Transformer Engine automating it. C: H100 FP8 peak is roughly 2× BF16 peak (per NVIDIA specs), but the ratio only holds for compute-bound kernels. D is false: no framework uses FP8 accumulators for main compute; the small range makes this impractical. E is false: FP8 requires opt-in and scale management; frameworks do not silently convert FP16 to FP8.",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): peak-throughput advantage in compute-bound regimes. B (Wrong): no FP8 accumulator in production paths. C (Correct): FP32 accumulator is standard for FP8 Tensor Cores. D (Correct): Transformer Engine's DelayedScaling recipe.",
   "optionExplanations": {
     "A": "Correct: peak-throughput advantage in compute-bound regimes.",
     "B": "Wrong: no FP8 accumulator in production paths.",
@@ -96,7 +96,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-FP8ACCUM-032.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

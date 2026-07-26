@@ -41,7 +41,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: XLA is specialization-oriented; distinct shapes typically produce distinct compiled binaries. B: StableHLO defines a family of `dynamic_*` ops that carry runtime shape operands, allowing programs to express dynamic behavior without unbounded re-specialization. C is wrong: static shape annotations remain the primary path and are used by many optimizations (fusion cost model, buffer assignment). D: Shape bucketing/padding is a standard mitigation used in serving systems.",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): dynamic_* ops exist for genuine dynamic-shape programs. B (Wrong): static shape is preserved and drives many optimizations. C (Correct): bucketing is a real-world serving mitigation. D (Correct): XLA is static-first.",
   "optionExplanations": {
     "A": "Correct: dynamic_* ops exist for genuine dynamic-shape programs.",
     "B": "Wrong: static shape is preserved and drives many optimizations.",
@@ -80,7 +80,7 @@
   },
   "contentCardRef": "data/content-cards/E/E-XLASHP-022.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

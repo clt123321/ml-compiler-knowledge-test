@@ -44,7 +44,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: Within one stream, work is serialized in issue order; different streams can overlap (subject to compute/copy engine availability). B: Events provide a cross-stream synchronization primitive: record an event on stream A, tell stream B to wait, and B's subsequent work is ordered after A's pre-record work. Neither operation blocks the host. C is wrong: non-default streams are concurrent by default; no priority flag is required. D is wrong: `cudaEventRecord` is asynchronous — it enqueues the record; use `cudaEventSynchronize` if you want the host to wait.",
+  "explanation": "Options C, D are correct; options A, B are incorrect. A (Wrong): streams are concurrent by default. B (Wrong): `cudaEventRecord` is asynchronous. C (Correct): intra-stream ordered, inter-stream may overlap. D (Correct): canonical event-based cross-stream sync. General context: Neither operation blocks the host.",
   "optionExplanations": {
     "A": "Wrong: streams are concurrent by default.",
     "B": "Wrong: `cudaEventRecord` is asynchronous.",
@@ -84,7 +84,7 @@
   },
   "contentCardRef": "data/content-cards/F/F-STREAM-026.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

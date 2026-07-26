@@ -29,7 +29,7 @@
     },
     {
       "id": "B",
-      "text": "The recompile is triggered by a stride guard, not a shape guard. TorchDynamo installs guards on the observed strides (in addition to shapes); a call with the same shape but different strides fails the guard and produces a new compiled variant. Under this framing, the log is misattributed: a transposed view has the same physical storage as the contiguous tensor, so no stride guard should ever fire in this scenario; the observed recompilation must have been caused by an unrelated dtype change between the calls."
+      "text": "The recompile is triggered by a stride guard, not a shape guard. TorchDynamo installs guards on the observed strides (in addition to shapes); a call with the same shape but different strides fails the guard and produces a new compiled variant."
     },
     {
       "id": "C",
@@ -90,7 +90,7 @@
   },
   "contentCardRef": "data/content-cards/D/D-GUARD-006.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

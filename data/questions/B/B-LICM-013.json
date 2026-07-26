@@ -39,7 +39,7 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "LICM safety requires: (1) loop-invariance; (2) dominance of exits so the hoisted value is used correctly; (3) speculative-safety — hoisting must not introduce faults or side effects that would not have occurred originally. For sdiv, the divisor must be provably non-zero (otherwise the original loop might never execute the body, e.g., a zero-trip loop, and hoisting would introduce a spurious trap). Options B, C, D are wrong: B ignores the speculative-safety condition; C over-restricts to arithmetic operations; D requires unnecessary transformations.",
+  "explanation": "Option D is correct; options A, B, C are incorrect. A (Wrong): unrolling is a separate transformation; LICM does not require it. B (Wrong): overlooks that the loop might not execute; hoisting introduces new side effects if the loop body was never entered. C (Wrong): divisions can be hoisted when non-zero divisor is proven; not category-blocked. D (Correct): all three conditions (invariance, dominance, speculative-safety) apply. General context: LICM safety requires: (1) loop-invariance; (2) dominance of exits so the hoisted value is used correctly; (3) speculative-safety — hoisting must not introduce faults or side effects that would not have occurred originally. For sdiv, the divisor must be provably non-zero (otherwise the original loop might never execute the body, e.g., a zero-trip loop, and hoisting would introduce a spurious trap).",
   "optionExplanations": {
     "A": "Wrong: unrolling is a separate transformation; LICM does not require it.",
     "B": "Wrong: overlooks that the loop might not execute; hoisting introduces new side effects if the loop body was never entered.",
@@ -93,7 +93,7 @@
   },
   "contentCardRef": "data/content-cards/B/B-LICM-013.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

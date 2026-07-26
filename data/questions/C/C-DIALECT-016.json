@@ -21,7 +21,7 @@
   "options": [
     {
       "id": "A",
-      "text": "An Operation may contain zero or more Regions; each Region contains a list of Blocks; each Block contains a list of Operations and defines Values (its arguments and results produced by operations within it). In this description, MLIR maintains a global op-to-children table separate from the IR text, and reading a nested op requires querying this side-table since the printed textual form is a projection rather than the source of truth."
+      "text": "An Operation may contain zero or more Regions; each Region contains a list of Blocks; each Block contains a list of Operations and defines Values (its arguments and results produced by operations within it)."
     },
     {
       "id": "B",
@@ -85,7 +85,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-DIALECT-016.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

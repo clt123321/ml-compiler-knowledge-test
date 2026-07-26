@@ -43,7 +43,7 @@
     "B",
     "D"
   ],
-  "explanation": "A: dequant-in-register is the most common pattern (used by TensorRT-LLM's INT8 KV attention); it saves HBM traffic while adding cheap dequant ops. B: native quantized attention (FP8 on Hopper via FlashAttention-3, INT8 attention variants) avoids dequant overhead. C: eager dequant to FP16 defeats the bandwidth benefit — the same-size FP16 buffer is still read by attention. D is false: mixed-precision (FP16 weights + INT8 KV) is common and supported. E is false: per-token / per-head-per-token scaling is the norm; single scale per head is coarser and hurts accuracy.",
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): native quantized attention benefits. B (Correct): eager dequant defeats bandwidth benefit. C (Wrong): mixed-precision KV+weight is common. D (Correct): dequant-in-register pattern.",
   "optionExplanations": {
     "A": "Correct: native quantized attention benefits.",
     "B": "Correct: eager dequant defeats bandwidth benefit.",
@@ -93,7 +93,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-KVQ-027.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

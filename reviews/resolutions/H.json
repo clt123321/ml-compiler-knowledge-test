@@ -1,0 +1,120 @@
+{
+  "module": "H",
+  "generatedAt": "2026-07-26",
+  "agent": "repair-agent-round1",
+  "round": "round1_repair",
+  "entries": [
+    {
+      "id": "H-ACCUM-007",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-CALIB-017",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-DTYPE-002",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-FAKE-016",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-FP8ACCUM-032",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-GRAN-012",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-INT4KV-035",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-KVQ-027",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-MEMTRAFFIC-024",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-SYMM-010",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-MIXED-023",
+      "finding": "MINOR (weak_distractor): option B \"BF16 master-weight pattern is optional and often omitted\" contradicts Megatron-LM / DeepSpeed / NeMo production practice which keeps FP32 master weights and FP32 optimizer state. Reviewer flagged this as a distractor-strength issue.",
+      "resolution": "Rewrote option B into a clearly wrong overclaim (\"BF16 mixed-precision training never needs FP32 master weights ... no accuracy penalty\") and expanded optionExplanations[\"B\"] to distinguish loss scaling (not needed under BF16) from master weights / optimizer state (still needed in practice). correctAnswers unchanged.",
+      "diff": [
+        "options[B].text",
+        "optionExplanations[B]",
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    }
+  ]
+}

@@ -64,7 +64,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "The numerically stable softmax uses the identity `softmax(x)_i = exp(x_i - c) / sum_j exp(x_j - c)` for any constant `c`; taking `c = max(x)` guarantees the largest exponent is 0 and all others are ≤ 0, so `exp` cannot overflow (FP32 `exp` overflows near x ≈ 88.7 → ~1e38). Choice B fabricates a fast-path story. C is wrong: `exp` accepts positive inputs; the issue is overflow, not undefined behavior. D is wrong: `other=-inf` is the correct identity for `max` — it never influences the row's max since real values dominate; -inf lanes contribute 0 to sum after `exp` because `exp(-inf) = 0`.",
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): -inf is the correct identity for the max reduction. B (Wrong): no such fast-path/slow-path split in Triton exp. C (Correct): standard numerically stable softmax formulation. D (Wrong): exp accepts any float; overflow is the concern. General context: The numerically stable softmax uses the identity `softmax(x)_i = exp(x_i - c) / sum_j exp(x_j - c)` for any constant `c`; taking `c = max(x)` guarantees the largest exponent is 0 and all others are ≤ 0, so `exp` cannot overflow (FP32 `exp` overflows near x ≈ 88.7 → ~1e38). Choice B fabricates a fast-path story.",
   "optionExplanations": {
     "A": "Wrong: -inf is the correct identity for the max reduction.",
     "B": "Wrong: no such fast-path/slow-path split in Triton exp.",
@@ -111,7 +111,7 @@
   },
   "contentCardRef": "data/content-cards/F/F-SOFTMAX-019.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

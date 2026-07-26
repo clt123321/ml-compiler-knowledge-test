@@ -40,7 +40,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Offset = 2*15 + 1*0 + 3*1 = 33. The zero stride on dim 1 means that all three indices along dim 1 alias the same underlying physical element, so no storage is allocated along that dim; this is exactly how broadcast is represented as a metadata view. In this account, the offset formula multiplies each index by the corresponding shape dim (not stride), and the zero stride is a placeholder that the compiler replaces at codegen with the actual per-element stride derived from the layout."
+      "text": "Offset = 2*15 + 1*0 + 3*1 = 33. The zero stride on dim 1 means that all three indices along dim 1 alias the same underlying physical element, so no storage is allocated along that dim; this is exactly how broadcast is represented as a metadata view."
     },
     {
       "id": "B",
@@ -105,7 +105,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-STRIDE-020.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

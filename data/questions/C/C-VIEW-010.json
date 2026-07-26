@@ -45,7 +45,7 @@
     },
     {
       "id": "B",
-      "text": "(i) View, (ii) View, (iii) Materialization: transposing swaps stride entries; folding compatible contiguous dims is expressible as a view; but the (4,6) reshape re-orders elements across non-contiguous logical groups and needs a copy. In this account, transposes always require a physical copy to preserve contiguity guarantees relied on by downstream kernels, and the `[4,6]` reshape is legal as a pure view because the total number of elements is preserved through the transformation."
+      "text": "(i) View, (ii) View, (iii) Materialization: transposing swaps stride entries; folding compatible contiguous dims is expressible as a view; but the (4,6) reshape re-orders elements across non-contiguous logical groups and needs a copy."
     },
     {
       "id": "C",
@@ -106,7 +106,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-VIEW-010.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

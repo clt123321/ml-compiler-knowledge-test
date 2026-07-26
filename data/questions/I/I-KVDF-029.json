@@ -71,7 +71,7 @@
     "B",
     "D"
   ],
-  "explanation": "A is correct: canonical read/write pattern. C is correct: MQA/GQA lets one KV tile serve multiple Q heads, and good kernels exploit this reuse in SMEM. D is correct: decode is bandwidth-bound on KV, so cutting KV bytes directly cuts wall time. B is wrong: PagedAttention uses a block-table indirection but delivers the loaded blocks to the attention kernel in tiles just like the contiguous layout would; measured HBM latency is not intrinsically higher (the paged layout adds indirection cost but avoids fragmentation cost).",
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): KV quant is a direct bandwidth lever. B (Correct): standard decode-step KV pattern. C (Wrong): paged layout is not intrinsically slower per step; it addresses fragmentation. D (Correct): MQA/GQA KV reuse across Q heads.",
   "optionExplanations": {
     "A": "Correct: KV quant is a direct bandwidth lever.",
     "B": "Correct: standard decode-step KV pattern.",
@@ -119,7 +119,7 @@
   },
   "contentCardRef": "data/content-cards/I/I-KVDF-029.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

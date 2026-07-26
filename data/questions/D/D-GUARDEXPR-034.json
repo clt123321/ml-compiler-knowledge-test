@@ -28,7 +28,7 @@
     },
     {
       "id": "B",
-      "text": "The tracer derived a divisibility constraint (`s0 % 8 == 0`) from `.view(-1, 8)`; when a size that violates the constraint arrives, the guard fails and PyTorch either specializes on that new size or errors, depending on config. Fixes: pad the input to a multiple of 8, or rewrite the `.view` to a shape-safe form (e.g., use `.reshape` with explicit padding, or handle the tail separately). Under this account, the correct fix is to disable dynamic tracing entirely via `dynamic=False`, which bypasses divisibility constraints because the compiled kernel is specialized per observed size and therefore never derives symbolic constraints from ops like `.view`."
+      "text": "The tracer derived a divisibility constraint (`s0 % 8 == 0`) from `.view(-1, 8)`; when a size that violates the constraint arrives, the guard fails and PyTorch either specializes on that new size or errors, depending on config. Fixes: pad the input to a multiple of 8, or rewrite the `.view` to a shape-safe form (e.g., use `.reshape` with explicit padding, or handle the tail separately)."
     },
     {
       "id": "C",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/D/D-GUARDEXPR-034.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

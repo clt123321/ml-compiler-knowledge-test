@@ -40,7 +40,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: Portability requires per-target search or specialization; one universal schedule generally cannot dominate. B: Portability is a claim about the framework, not about a single artifact. C: Baseline choice determines the informativeness of the claim; comparing to vendor libraries is the honest test. D is false: matching a utilization percentage across different algorithms is not a valid portability claim — silent algorithm swaps disguise a rewrite as portability. E is false: even within one architecture family, chip-specific bins (register file size, SM count, memory bandwidth) can flip the winner; retuning per bin is common practice.",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): honest baseline is required for a meaningful claim. B (Wrong): silently swapping the algorithm across targets invalidates the comparison; matching a utilization number is not the same as running the same computation. C (Correct): per-target tuning is required. D (Correct): portability is a framework property, not an artifact property.",
   "optionExplanations": {
     "A": "Correct: honest baseline is required for a meaningful claim.",
     "B": "Wrong: silently swapping the algorithm across targets invalidates the comparison; matching a utilization number is not the same as running the same computation.",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/G/G-PORTABILITY-026.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

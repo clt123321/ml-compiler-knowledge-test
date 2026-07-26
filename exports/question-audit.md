@@ -12,8 +12,8 @@
 | meta_statement_options | 0 | 0 | ✅ |
 | missing_content_cards | 0 | 0 | ✅ |
 | missing_subtopic_misconceptions | 0 | 0 | ✅ |
-| correct_longest_ratio | 0.795 | 0.8 | ✅ |
-| correct_wrong_length_gap | 0.243 | 0.3 | ✅ |
+| correct_longest_ratio | 0.74 | 0.8 | ✅ |
+| correct_wrong_length_gap | 0.194 | 0.3 | ✅ |
 | answer_position_bias | 0.049 | 0.35 | ✅ |
 | tier3_only_sources | 0 | 0 | ✅ |
 

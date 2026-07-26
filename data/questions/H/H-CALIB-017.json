@@ -40,7 +40,7 @@
     "C",
     "D"
   ],
-  "explanation": "A, B, C are standard characterizations of the three calibration modes. MinMax's outlier sensitivity is well-documented; percentile trades a bit of clipping for a tighter distribution fit; KL calibration is TensorRT's classical INT8 workflow. D is false: MinMax's no-clip property means outliers dominate the scale and starve the bulk distribution of resolution — 'not clipping' is not the same as 'most accurate'. E is false: KL calibration is defined against a discrete quantization grid; TensorRT's entropy calibrator explicitly operates on histograms mapped to INT8 bins.",
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): not clipping ≠ most accurate. B (Correct): MinMax definition and outlier sensitivity. C (Correct): percentile definition. D (Correct): KL calibration definition; TensorRT's default. General context: MinMax's outlier sensitivity is well-documented; percentile trades a bit of clipping for a tighter distribution fit; KL calibration is TensorRT's classical INT8 workflow.",
   "optionExplanations": {
     "A": "Wrong: not clipping ≠ most accurate.",
     "B": "Correct: MinMax definition and outlier sensitivity.",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-CALIB-017.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

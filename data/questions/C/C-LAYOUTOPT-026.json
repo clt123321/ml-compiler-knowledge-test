@@ -29,7 +29,7 @@
     },
     {
       "id": "C",
-      "text": "Insert the conversion iff the convolution's expected time savings from the more efficient layout exceed the cost of the transform plus any downstream transforms needed to restore the original layout for consumers that require it. Under this framing, layout transformations always require a full elementwise copy through global memory and always cost more per element than any convolution kernel time they enable saving, so a fusion of layout change and conv is impossible."
+      "text": "Insert the conversion iff the convolution's expected time savings from the more efficient layout exceed the cost of the transform plus any downstream transforms needed to restore the original layout for consumers that require it."
     },
     {
       "id": "D",
@@ -87,7 +87,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-LAYOUTOPT-026.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

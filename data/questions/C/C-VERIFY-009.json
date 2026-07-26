@@ -34,7 +34,7 @@
     },
     {
       "id": "D",
-      "text": "The verifier reports a well-formedness violation: the op's operand shapes are incompatible per the op's ODS constraints. Because the mismatched IR was produced by pass P, this is a bug in P, not in user code. Under this framing, MLIR verifiers only check that the SSA graph has no cycles between op operands and results; the error message about operand shape compatibility must therefore originate from a user-provided assertion or a downstream analysis, not the built-in verifier."
+      "text": "The verifier reports a well-formedness violation: the op's operand shapes are incompatible per the op's ODS constraints. Because the mismatched IR was produced by pass P, this is a bug in P, not in user code."
     }
   ],
   "correctAnswers": [
@@ -87,7 +87,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-VERIFY-009.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

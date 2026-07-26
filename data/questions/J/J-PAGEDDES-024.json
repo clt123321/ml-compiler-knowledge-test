@@ -43,7 +43,7 @@
     "C",
     "D"
   ],
-  "explanation": "A is correct: fixed-size blocks with a per-sequence block table are the core design; internal waste is bounded by block size. B is correct: sharing physical blocks is exactly what enables prefix caching and beam-search efficient forks. D is correct: PagedAttention adds indirection without changing the underlying attention math. C is wrong: paging is a memory layout technique, not compression; PagedAttention KV is stored at full precision by default.",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): sharing enables prefix caching + beam search. B (Wrong): paging is not quantization/compression. C (Correct): block-table lookup as the only overhead vs FlashAttention. D (Correct): fixed blocks + block table + bounded internal waste.",
   "optionExplanations": {
     "A": "Correct: sharing enables prefix caching + beam search.",
     "B": "Wrong: paging is not quantization/compression.",
@@ -93,7 +93,7 @@
   },
   "contentCardRef": "data/content-cards/J/J-PAGEDDES-024.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

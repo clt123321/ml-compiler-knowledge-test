@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The exported program accepts any pair of tensors with shape `[4, N]` and `[4, N]` for the same `N` in the range `[1, 8192]`; sharing the `seq` object across `x` and `y` enforces that both inputs' dim 1 must be equal at runtime. Under this reading, the `Dim` constraint is treated as a compile-time hint that is stripped from the graph at export completion; the exported program is fully specialized to the example shape `[4, 128]` for both inputs, and passing any other size at runtime raises an error."
+      "text": "The exported program accepts any pair of tensors with shape `[4, N]` and `[4, N]` for the same `N` in the range `[1, 8192]`; sharing the `seq` object across `x` and `y` enforces that both inputs' dim 1 must be equal at runtime."
     },
     {
       "id": "B",
@@ -82,7 +82,7 @@
   },
   "contentCardRef": "data/content-cards/D/D-EXPCONS-019.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

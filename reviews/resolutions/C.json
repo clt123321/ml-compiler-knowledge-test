@@ -1,0 +1,148 @@
+{
+  "module": "C",
+  "generatedAt": "2026-07-26",
+  "agent": "repair-agent-round1",
+  "round": "round1_repair",
+  "entries": [
+    {
+      "id": "C-BUFFER-012",
+      "finding": "MAJOR: correct option C contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option C. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[C].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-DCE-013",
+      "finding": "MAJOR: correct option B contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option B. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[B].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-DIALECT-016",
+      "finding": "MAJOR: correct option A contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option A. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[A].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-EAGER-015",
+      "finding": "MAJOR: correct option B contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option B. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[B].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-LAYOUTOPT-026",
+      "finding": "MAJOR: correct option C contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option C. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[C].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-LEGALIZE-008",
+      "finding": "MAJOR: correct option A contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option A. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[A].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-SHAPEINFER-029",
+      "finding": "MAJOR: correct option B contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option B. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[B].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-STRIDE-020",
+      "finding": "MAJOR: correct option A contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option A. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[A].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-SYMSHAPE-018",
+      "finding": "MAJOR: correct option C contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option C. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[C].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-TE-022",
+      "finding": "MAJOR: correct option C contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option C. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[C].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-TILING-011",
+      "finding": "MAJOR: correct option A contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option A. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[A].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-VERIFY-009",
+      "finding": "MAJOR: correct option D contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option D. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[D].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-VIEW-010",
+      "finding": "MAJOR: correct option B contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option B. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[B].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "C-GRAPH-025",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    }
+  ]
+}

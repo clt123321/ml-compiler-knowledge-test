@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Tiling is a schedule transformation that reorders and splits the loop nest while preserving the compute expression's semantics; it does not change what is computed, only when and in what group each iteration runs, which affects locality and parallelism. In this account, tiling is a graph-level operator-fusion pass performed on the operator IR; splitting the loops is the mechanism used to fuse the matmul with adjacent pointwise ops in the graph IR, and this is the sole reason for applying tiling to a schedule."
+      "text": "Tiling is a schedule transformation that reorders and splits the loop nest while preserving the compute expression's semantics; it does not change what is computed, only when and in what group each iteration runs, which affects locality and parallelism."
     },
     {
       "id": "B",
@@ -87,7 +87,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-TILING-011.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

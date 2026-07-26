@@ -28,7 +28,7 @@
     },
     {
       "id": "B",
-      "text": "The default `cache_size_limit` (~8) is being fully consumed; workloads with more distinct shapes than the cache limit would trigger even more churn as cache entries evict, meaning higher shape diversity would make the situation worse if not addressed."
+      "text": "The `cache_size_limit` of 8 is currently being fully consumed and the FX cache is thrashing on the present 8-shape workload; each of the 8 shapes is being evicted and recompiled every invocation, which is why recompilation is being observed."
     },
     {
       "id": "C",
@@ -44,10 +44,10 @@
     "C",
     "D"
   ],
-  "explanation": "A: static-shape torch.compile produces one specialized graph per unique guard-shape. B: `dynamic=True` or `mark_dynamic` allows a single graph to cover a range of shapes. D: compile latency is inside the request wall-time; pre-warming or dynamic shapes removes it from the tail. C is misleading: with cache_size_limit=8 and exactly 8 distinct shapes, the cache is not evicting. If shape diversity were higher, C's concern would be legitimate, but the specific data given here does not evidence eviction — the observed pattern is one-time recompile cost, not thrashing.",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): dynamic-shape compile addresses the root cause. B (Wrong): with exactly 8 distinct shapes and cache_size_limit=8, the cache is at capacity but NOT evicting — each shape's compiled artifact is still resident, so no thrashing/eviction is occurring. Recompilation being observed must therefore come from a different cause (guard failures on non-shape state, dynamic=True disabled, or a Python-level cache miss unrelated to size_limit). The \"currently thrashing\" claim is factually wrong given the present state. C (Correct): JIT cost is inside the request latency for first-time-seen shapes. D (Correct): matches the guard-based recompile behavior. General context: If shape diversity were higher, C's concern would be legitimate, but the specific data given here does not evidence eviction — the observed pattern is one-time recompile cost, not thrashing.",
   "optionExplanations": {
     "A": "Correct: dynamic-shape compile addresses the root cause.",
-    "B": "Wrong for this data: the cache is not currently evicting because number of shapes equals the limit; this would be true only with more diverse shapes.",
+    "B": "Wrong: with exactly 8 distinct shapes and cache_size_limit=8, the cache is at capacity but NOT evicting — each shape's compiled artifact is still resident, so no thrashing/eviction is occurring. Recompilation being observed must therefore come from a different cause (guard failures on non-shape state, dynamic=True disabled, or a Python-level cache miss unrelated to size_limit). The \"currently thrashing\" claim is factually wrong given the present state.",
     "C": "Correct: JIT cost is inside the request latency for first-time-seen shapes.",
     "D": "Correct: matches the guard-based recompile behavior."
   },
@@ -92,7 +92,7 @@
   },
   "contentCardRef": "data/content-cards/L/L-DYNREG-013.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

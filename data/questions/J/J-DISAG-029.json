@@ -44,7 +44,7 @@
     "A",
     "C"
   ],
-  "explanation": "B is correct: shielding decode from prefill contention is the primary TPOT benefit of disaggregation. D is correct: the KV transfer is a real overhead added by disaggregation; high-bandwidth interconnects are needed. A is wrong: KV cache is still needed on decode nodes; it is just transferred instead of created locally. C is wrong: total GPU count is not universally reduced; disaggregation improves phase-scheduling flexibility but does not fundamentally lower compute demand.",
+  "explanation": "Options A, C are correct; options B, D are incorrect. A (Correct): transfer overhead is a real new cost. B (Wrong): KV still needed on decode side. C (Correct): TPOT protection. D (Wrong): disaggregation does not reduce total compute; may increase it slightly.",
   "optionExplanations": {
     "A": "Correct: transfer overhead is a real new cost.",
     "B": "Wrong: KV still needed on decode side.",
@@ -92,7 +92,7 @@
   },
   "contentCardRef": "data/content-cards/J/J-DISAG-029.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

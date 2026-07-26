@@ -1,0 +1,109 @@
+{
+  "module": "D",
+  "generatedAt": "2026-07-26",
+  "agent": "repair-agent-round1",
+  "round": "round1_repair",
+  "entries": [
+    {
+      "id": "D-AOTAG-011",
+      "finding": "MAJOR: correct option C contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option C. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[C].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-BWSHAPE-033",
+      "finding": "MAJOR: correct option C contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option C. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[C].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-COMPILET-032",
+      "finding": "MAJOR: correct option A contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option A. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[A].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-EXPCONS-019",
+      "finding": "MAJOR: correct option A contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option A. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[A].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-EXPORT-018",
+      "finding": "MAJOR: correct option A contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option A. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there. Top-level explanation regenerated from optionExplanations to align with post-shuffle labels.",
+      "diff": [
+        "options[A].text",
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-GUARD-006",
+      "finding": "MAJOR: correct option B contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option B. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[B].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-GUARDEXPR-034",
+      "finding": "MAJOR: correct option B contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option B. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[B].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-RECDIAG-030",
+      "finding": "MAJOR: correct option C contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option C. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[C].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-SYMINT-008",
+      "finding": "MAJOR: correct option A contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option A. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[A].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "D-TRITON-016",
+      "finding": "MAJOR: correct option B contained self-contradicting 'poison tail' starting with 'Under this reading' / 'In this account' / 'In this framing' / 'In this description' / 'In this interpretation'",
+      "resolution": "Stripped trailing self-contradicting paragraph from correct option B. Leading canonical claim preserved. optionExplanations already describe only the correct claim so no changes required there.",
+      "diff": [
+        "options[B].text"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    }
+  ]
+}

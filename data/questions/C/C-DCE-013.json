@@ -26,7 +26,7 @@
     },
     {
       "id": "B",
-      "text": "DCE may remove only the pure `arith.addf` because it has no observable side effects and its result is dead. Neither `linalg.copy` nor `linalg.matmul` can be removed: both have write side effects, and the copy's write to %B is externally observable through the function's memref argument. In this account, once escape analysis has confirmed the buffers are visible outside the function, aggressive DCE simply relies on the alias-analysis conservatism to determine that removing the copy is a valid transformation."
+      "text": "DCE may remove only the pure `arith.addf` because it has no observable side effects and its result is dead. Neither `linalg.copy` nor `linalg.matmul` can be removed: both have write side effects, and the copy's write to %B is externally observable through the function's memref argument."
     },
     {
       "id": "C",
@@ -87,7 +87,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-DCE-013.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

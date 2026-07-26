@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The short script's runtime is dominated by torch.compile's compile-time cost (including max-autotune's kernel-selection search), which is a one-time cost amortized only over enough steps; the long training run amortizes the same cost across many steps and enjoys the steady-state speedup. Under this account, torch.compile's overhead comes from Python's GIL becoming a bottleneck under the compiler's instrumentation of every bytecode; long-running loops eventually release the GIL through checkpointing hooks and thereby amortize the observed slowdown."
+      "text": "The short script's runtime is dominated by torch.compile's compile-time cost (including max-autotune's kernel-selection search), which is a one-time cost amortized only over enough steps; the long training run amortizes the same cost across many steps and enjoys the steady-state speedup."
     },
     {
       "id": "B",
@@ -90,7 +90,7 @@
   },
   "contentCardRef": "data/content-cards/D/D-COMPILET-032.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

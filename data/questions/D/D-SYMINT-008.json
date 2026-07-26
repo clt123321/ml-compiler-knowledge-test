@@ -23,7 +23,7 @@
   "options": [
     {
       "id": "A",
-      "text": "A SymInt is a compile-time symbolic representation of an integer whose concrete value is unknown at trace time; it lets Dynamo/AOTAutograd trace with dim expressions (e.g., `s0`, `s0*4`) that resolve to integers at runtime, avoiding shape specialization. Under this reading, a SymInt is a runtime tensor holding an integer value on the GPU device; PyTorch inserts SymInts to record shape values for autograd's backward pass, and they are only read at gradient-computation time when the backward graph runs."
+      "text": "A SymInt is a compile-time symbolic representation of an integer whose concrete value is unknown at trace time; it lets Dynamo/AOTAutograd trace with dim expressions (e.g., `s0`, `s0*4`) that resolve to integers at runtime, avoiding shape specialization."
     },
     {
       "id": "B",
@@ -88,7 +88,7 @@
   },
   "contentCardRef": "data/content-cards/D/D-SYMINT-008.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

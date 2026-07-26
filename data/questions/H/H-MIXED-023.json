@@ -29,7 +29,7 @@
     },
     {
       "id": "B",
-      "text": "BF16 training generally does not require loss scaling because BF16's exponent range matches FP32; the master-weight pattern is optional and often omitted."
+      "text": "Because BF16 has the same exponent range as FP32, BF16 mixed-precision training never needs FP32 master weights — production frameworks (Megatron-LM, DeepSpeed, NeMo) run the optimizer state in pure BF16 with no accuracy penalty."
     },
     {
       "id": "C",
@@ -45,10 +45,10 @@
     "C",
     "D"
   ],
-  "explanation": "A: standard mixed-precision matmul (HMMA with FP32 accumulator, FP16 output). B: the master-weight pattern is the essential trick for FP16 training. C: loss scaling is the standard mitigation for FP16 gradient underflow. D is partially misleading: BF16 typically does not need loss scaling, but the master-weight pattern is still commonly used (or the optimizer state is kept in FP32) to preserve tiny update magnitudes that would round to zero in BF16 — 'often omitted' is not accurate; frameworks like Megatron-LM keep FP32 optimizer state even under BF16. E is false: master weights add ONE FP32 copy in addition to the FP16 copy, so weight memory grows to 2 bytes (FP16) + 4 bytes (FP32) = 6 bytes/param — this is MORE than pure FP32 (4 bytes), not double.",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): loss scaling for FP16 underflow. B (Wrong): BF16 has FP32 exponent range so **loss scaling** is not required — that part is correct in the literature. But FP32 **master weights and FP32 optimizer state (moments)** are still standard practice in production BF16 training (Megatron-LM, DeepSpeed BF16 optimizer, NeMo) to prevent small weight-update underflow into BF16 mantissa noise. Running the optimizer purely in BF16 does incur measurable convergence degradation for LLM-scale training. C (Correct): matmul dtype roles. D (Correct): master-weight rationale.",
   "optionExplanations": {
     "A": "Correct: loss scaling for FP16 underflow.",
-    "B": "Wrong: BF16 master-weight pattern is common, not typically omitted.",
+    "B": "Wrong: BF16 has FP32 exponent range so **loss scaling** is not required — that part is correct in the literature. But FP32 **master weights and FP32 optimizer state (moments)** are still standard practice in production BF16 training (Megatron-LM, DeepSpeed BF16 optimizer, NeMo) to prevent small weight-update underflow into BF16 mantissa noise. Running the optimizer purely in BF16 does incur measurable convergence degradation for LLM-scale training.",
     "C": "Correct: matmul dtype roles.",
     "D": "Correct: master-weight rationale."
   },
@@ -94,7 +94,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-MIXED-023.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

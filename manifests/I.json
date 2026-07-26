@@ -3,35 +3,215 @@
   "code": "I",
   "expectedCount": 30,
   "questions": [
-    { "id": "I-GEMM-001",       "file": "data/questions/I/I-GEMM-001.json",       "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-GEMM-001.json",       "version": 1 },
-    { "id": "I-GEMV-002",       "file": "data/questions/I/I-GEMV-002.json",       "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-GEMV-002.json",       "version": 1 },
-    { "id": "I-SOFTMAX-003",    "file": "data/questions/I/I-SOFTMAX-003.json",    "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-SOFTMAX-003.json",    "version": 1 },
-    { "id": "I-ONLINESM-004",   "file": "data/questions/I/I-ONLINESM-004.json",   "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-ONLINESM-004.json",   "version": 1 },
-    { "id": "I-FLASH-005",      "file": "data/questions/I/I-FLASH-005.json",      "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-FLASH-005.json",      "version": 1 },
-    { "id": "I-FLASHIO-006",    "file": "data/questions/I/I-FLASHIO-006.json",    "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-FLASHIO-006.json",    "version": 1 },
-    { "id": "I-MHAMQA-007",     "file": "data/questions/I/I-MHAMQA-007.json",     "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-MHAMQA-007.json",     "version": 1 },
-    { "id": "I-GQA-008",        "file": "data/questions/I/I-GQA-008.json",        "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-GQA-008.json",        "version": 1 },
-    { "id": "I-KVCACHE-009",    "file": "data/questions/I/I-KVCACHE-009.json",    "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-KVCACHE-009.json",    "version": 1 },
-    { "id": "I-FUSEDQKV-010",   "file": "data/questions/I/I-FUSEDQKV-010.json",   "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-FUSEDQKV-010.json",   "version": 1 },
-    { "id": "I-RMSVSLN-011",    "file": "data/questions/I/I-RMSVSLN-011.json",    "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-RMSVSLN-011.json",    "version": 1 },
-    { "id": "I-ROPE-012",       "file": "data/questions/I/I-ROPE-012.json",       "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-ROPE-012.json",       "version": 1 },
-    { "id": "I-SWIGLU-013",     "file": "data/questions/I/I-SWIGLU-013.json",     "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-SWIGLU-013.json",     "version": 1 },
-    { "id": "I-FUSEDMLP-014",   "file": "data/questions/I/I-FUSEDMLP-014.json",   "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-FUSEDMLP-014.json",   "version": 1 },
-    { "id": "I-REDUCE-015",     "file": "data/questions/I/I-REDUCE-015.json",     "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-REDUCE-015.json",     "version": 1 },
-    { "id": "I-CONV-016",       "file": "data/questions/I/I-CONV-016.json",       "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-CONV-016.json",       "version": 1 },
-    { "id": "I-EMB-017",        "file": "data/questions/I/I-EMB-017.json",        "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-EMB-017.json",        "version": 1 },
-    { "id": "I-TOPK-018",       "file": "data/questions/I/I-TOPK-018.json",       "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-TOPK-018.json",       "version": 1 },
-    { "id": "I-SAMPLE-019",     "file": "data/questions/I/I-SAMPLE-019.json",     "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-SAMPLE-019.json",     "version": 1 },
-    { "id": "I-MOEROUT-020",    "file": "data/questions/I/I-MOEROUT-020.json",    "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-MOEROUT-020.json",    "version": 1 },
-    { "id": "I-GGEMM-021",      "file": "data/questions/I/I-GGEMM-021.json",      "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-GGEMM-021.json",      "version": 1 },
-    { "id": "I-SPARSE-022",     "file": "data/questions/I/I-SPARSE-022.json",     "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-SPARSE-022.json",     "version": 1 },
-    { "id": "I-FFT-023",        "file": "data/questions/I/I-FFT-023.json",        "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-FFT-023.json",        "version": 1 },
-    { "id": "I-EPILOGUE-024",   "file": "data/questions/I/I-EPILOGUE-024.json",   "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-EPILOGUE-024.json",   "version": 1 },
-    { "id": "I-ATTBACK-025",    "file": "data/questions/I/I-ATTBACK-025.json",    "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-ATTBACK-025.json",    "version": 1 },
-    { "id": "I-FLASHPROP-026",  "file": "data/questions/I/I-FLASHPROP-026.json",  "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-FLASHPROP-026.json",  "version": 1 },
-    { "id": "I-RMSPROP-027",    "file": "data/questions/I/I-RMSPROP-027.json",    "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-RMSPROP-027.json",    "version": 1 },
-    { "id": "I-MOEPROP-028",    "file": "data/questions/I/I-MOEPROP-028.json",    "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-MOEPROP-028.json",    "version": 1 },
-    { "id": "I-KVDF-029",       "file": "data/questions/I/I-KVDF-029.json",       "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-KVDF-029.json",       "version": 1 },
-    { "id": "I-FUSEDPROP-030",  "file": "data/questions/I/I-FUSEDPROP-030.json",  "reviewStatus": "draft", "contentCardFile": "data/content-cards/I/I-FUSEDPROP-030.json",  "version": 1 }
+    {
+      "id": "I-GEMM-001",
+      "file": "data/questions/I/I-GEMM-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-GEMM-001.json",
+      "version": 1
+    },
+    {
+      "id": "I-GEMV-002",
+      "file": "data/questions/I/I-GEMV-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-GEMV-002.json",
+      "version": 1
+    },
+    {
+      "id": "I-SOFTMAX-003",
+      "file": "data/questions/I/I-SOFTMAX-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-SOFTMAX-003.json",
+      "version": 1
+    },
+    {
+      "id": "I-ONLINESM-004",
+      "file": "data/questions/I/I-ONLINESM-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-ONLINESM-004.json",
+      "version": 1
+    },
+    {
+      "id": "I-FLASH-005",
+      "file": "data/questions/I/I-FLASH-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-FLASH-005.json",
+      "version": 1
+    },
+    {
+      "id": "I-FLASHIO-006",
+      "file": "data/questions/I/I-FLASHIO-006.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-FLASHIO-006.json",
+      "version": 1
+    },
+    {
+      "id": "I-MHAMQA-007",
+      "file": "data/questions/I/I-MHAMQA-007.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-MHAMQA-007.json",
+      "version": 1
+    },
+    {
+      "id": "I-GQA-008",
+      "file": "data/questions/I/I-GQA-008.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-GQA-008.json",
+      "version": 1
+    },
+    {
+      "id": "I-KVCACHE-009",
+      "file": "data/questions/I/I-KVCACHE-009.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-KVCACHE-009.json",
+      "version": 1
+    },
+    {
+      "id": "I-FUSEDQKV-010",
+      "file": "data/questions/I/I-FUSEDQKV-010.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-FUSEDQKV-010.json",
+      "version": 1
+    },
+    {
+      "id": "I-RMSVSLN-011",
+      "file": "data/questions/I/I-RMSVSLN-011.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-RMSVSLN-011.json",
+      "version": 1
+    },
+    {
+      "id": "I-ROPE-012",
+      "file": "data/questions/I/I-ROPE-012.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-ROPE-012.json",
+      "version": 1
+    },
+    {
+      "id": "I-SWIGLU-013",
+      "file": "data/questions/I/I-SWIGLU-013.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-SWIGLU-013.json",
+      "version": 1
+    },
+    {
+      "id": "I-FUSEDMLP-014",
+      "file": "data/questions/I/I-FUSEDMLP-014.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-FUSEDMLP-014.json",
+      "version": 1
+    },
+    {
+      "id": "I-REDUCE-015",
+      "file": "data/questions/I/I-REDUCE-015.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-REDUCE-015.json",
+      "version": 1
+    },
+    {
+      "id": "I-CONV-016",
+      "file": "data/questions/I/I-CONV-016.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-CONV-016.json",
+      "version": 1
+    },
+    {
+      "id": "I-EMB-017",
+      "file": "data/questions/I/I-EMB-017.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-EMB-017.json",
+      "version": 1
+    },
+    {
+      "id": "I-TOPK-018",
+      "file": "data/questions/I/I-TOPK-018.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-TOPK-018.json",
+      "version": 1
+    },
+    {
+      "id": "I-SAMPLE-019",
+      "file": "data/questions/I/I-SAMPLE-019.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-SAMPLE-019.json",
+      "version": 1
+    },
+    {
+      "id": "I-MOEROUT-020",
+      "file": "data/questions/I/I-MOEROUT-020.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-MOEROUT-020.json",
+      "version": 1
+    },
+    {
+      "id": "I-GGEMM-021",
+      "file": "data/questions/I/I-GGEMM-021.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-GGEMM-021.json",
+      "version": 1
+    },
+    {
+      "id": "I-SPARSE-022",
+      "file": "data/questions/I/I-SPARSE-022.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-SPARSE-022.json",
+      "version": 3
+    },
+    {
+      "id": "I-FFT-023",
+      "file": "data/questions/I/I-FFT-023.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-FFT-023.json",
+      "version": 1
+    },
+    {
+      "id": "I-EPILOGUE-024",
+      "file": "data/questions/I/I-EPILOGUE-024.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-EPILOGUE-024.json",
+      "version": 2
+    },
+    {
+      "id": "I-ATTBACK-025",
+      "file": "data/questions/I/I-ATTBACK-025.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-ATTBACK-025.json",
+      "version": 2
+    },
+    {
+      "id": "I-FLASHPROP-026",
+      "file": "data/questions/I/I-FLASHPROP-026.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-FLASHPROP-026.json",
+      "version": 2
+    },
+    {
+      "id": "I-RMSPROP-027",
+      "file": "data/questions/I/I-RMSPROP-027.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-RMSPROP-027.json",
+      "version": 2
+    },
+    {
+      "id": "I-MOEPROP-028",
+      "file": "data/questions/I/I-MOEPROP-028.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-MOEPROP-028.json",
+      "version": 2
+    },
+    {
+      "id": "I-KVDF-029",
+      "file": "data/questions/I/I-KVDF-029.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-KVDF-029.json",
+      "version": 2
+    },
+    {
+      "id": "I-FUSEDPROP-030",
+      "file": "data/questions/I/I-FUSEDPROP-030.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/I/I-FUSEDPROP-030.json",
+      "version": 2
+    }
   ]
 }

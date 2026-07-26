@@ -40,7 +40,7 @@
     "B",
     "C"
   ],
-  "explanation": "A: `tensor` is SSA-valued and immutable at the IR level; producers create new tensors, and the compiler is free to reuse buffers only after bufferization. B: `memref` models a strided buffer with memory-space, and aliasing is possible (this is why memref alias analysis exists). C is wrong: vector is a distinct lower-level type used inside kernel-shaped compute; the standard lowering path is tensor → memref (bufferization) → lower dialects; `vector` is a peer type, not tensor's only lowering target. D is wrong: bufferization exists precisely because `tensor` and `memref` differ semantically (value vs buffer, immutability vs aliasing).",
+  "explanation": "Options B, C are correct; options A, D are incorrect. A (Wrong): bufferization is required precisely because the two types differ. B (Correct): `tensor` is SSA-valued and immutable at the IR level. C (Correct): `memref` is a buffer type with aliasing and memory-space. D (Wrong): tensors are lowered to memrefs (bufferization) as the canonical path; vector is a separate register-level SIMD type.",
   "optionExplanations": {
     "A": "Wrong: bufferization is required precisely because the two types differ.",
     "B": "Correct: `tensor` is SSA-valued and immutable at the IR level.",
@@ -88,7 +88,7 @@
   },
   "contentCardRef": "data/content-cards/E/E-MLIRTYPE-006.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

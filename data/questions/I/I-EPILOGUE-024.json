@@ -76,7 +76,7 @@
     "B",
     "D"
   ],
-  "explanation": "A is correct: bias add and elementwise activation are the canonical GEMM epilogue candidates. They act on the accumulator tile in registers before write-back, saving one HBM roundtrip per intermediate. C is correct: RMSNorm needs a reduction along D_out, which requires the full row to be in one CTA's tile; this constraint is rarely met by typical GEMM tile designs, so mainstream libraries either keep RMSNorm as a separate kernel or provide a dedicated GEMM+row-reduce epilogue. B is wrong: RMSNorm is not scalar-elementwise; it depends on per-row statistics. D is wrong: tensor-core epilogues run in registers/SMEM without breaking throughput.",
+  "explanation": "Options B, D are correct; options A, C are incorrect. A (Wrong): tensor-core epilogues are supported natively; they do not disable the tensor cores. B (Correct): standard bias/activation epilogue. C (Wrong): RMSNorm is per-row, not element-independent. D (Correct): RMSNorm needs row-reduction which conflicts with typical GEMM tile decomposition. General context: They act on the accumulator tile in registers before write-back, saving one HBM roundtrip per intermediate.",
   "optionExplanations": {
     "A": "Wrong: tensor-core epilogues are supported natively; they do not disable the tensor cores.",
     "B": "Correct: standard bias/activation epilogue.",
@@ -124,7 +124,7 @@
   },
   "contentCardRef": "data/content-cards/I/I-EPILOGUE-024.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

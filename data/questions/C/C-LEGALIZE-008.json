@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "The ConversionTarget declares which ops / dialects are legal; the TypeConverter defines how source types are mapped to target types and inserts materializations at boundaries; legalization succeeds when all ops match the target's legality. In this reading, TypeConverter is optional and only used to attach debug metadata; MLIR handles type mismatches by inserting an implicit `unrealized_conversion_cast` that the pipeline is allowed to keep in the final IR."
+      "text": "The ConversionTarget declares which ops / dialects are legal; the TypeConverter defines how source types are mapped to target types and inserts materializations at boundaries; legalization succeeds when all ops match the target's legality."
     },
     {
       "id": "B",
@@ -86,7 +86,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-LEGALIZE-008.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

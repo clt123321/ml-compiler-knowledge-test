@@ -42,7 +42,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "Fusion widens the live-range set: pointwise intermediates that would have been consumed and dropped in kernel A now coexist with the reduction accumulator in kernel B's registers. When the union exceeds the per-thread register budget, ptxas spills to local memory (backed by L1/L2/DRAM). Meanwhile, occupancy collapses (from ~100%/75% to 25% at 96 regs on sm_80 with typical block size). Spill traffic and reduced latency hiding overwhelm the saved intermediate materialization. Option A is wrong: correct-but-slower is a valid outcome of a heuristic, not a bug. Option C is wrong: even memory-bound kernels have an upper bound of DRAM/AI; register pressure can push a kernel past that bound. Option D is wrong: two sequential kernels on one stream do not overlap.",
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): correctness is preserved; slowdown is a heuristic mismatch, not a compiler bug. B (Wrong): 'pointwise math is free inside memory-bound' ignores that spills add memory traffic. C (Correct): canonical register-pressure regression from over-fusion. D (Wrong): two sequential same-stream kernels do not overlap with each other. General context: Fusion widens the live-range set: pointwise intermediates that would have been consumed and dropped in kernel A now coexist with the reduction accumulator in kernel B's registers. When the union exceeds the per-thread register budget, ptxas spills to local memory (backed by L1/L2/DRAM). Meanwhile, occupancy collapses (from ~100%/75% to 25% at 96 regs on sm_80 with typical block size). Spill traffic and reduced latency hiding overwhelm the saved intermediate materialization.",
   "optionExplanations": {
     "A": "Wrong: correctness is preserved; slowdown is a heuristic mismatch, not a compiler bug.",
     "B": "Wrong: 'pointwise math is free inside memory-bound' ignores that spills add memory traffic.",
@@ -90,7 +90,7 @@
   },
   "contentCardRef": "data/content-cards/G/G-FUSION-005.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

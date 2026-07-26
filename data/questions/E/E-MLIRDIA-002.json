@@ -41,7 +41,7 @@
     "B",
     "D"
   ],
-  "explanation": "A: Dialects are MLIR's extensibility unit: they group ops/types/attrs under a namespace and multiple dialects coexist in one module. B: Traits are static tags on Op classes; passes query them via `hasTrait<>()` and use them for verification and uniform handling. C: Interfaces provide polymorphic virtual behavior (e.g., `InferShapedTypeOpInterface`, `MemoryEffectOpInterface`). D is wrong: dialect conversion typically uses interfaces and pattern rewriting to replace Ops without cloning-from-scratch; lowering is a first-class transformation, not manual duplication.",
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): Traits are static compile-time metadata for uniform handling. B (Correct): Interfaces are virtual method dispatch on Ops/Types/Dialects. C (Wrong): dialect conversion + patterns replace Ops using rewriter APIs; interfaces enable polymorphic legalization. D (Correct): Dialects group ops/types/attrs and can coexist for progressive lowering.",
   "optionExplanations": {
     "A": "Correct: Traits are static compile-time metadata for uniform handling.",
     "B": "Correct: Interfaces are virtual method dispatch on Ops/Types/Dialects.",
@@ -89,7 +89,7 @@
   },
   "contentCardRef": "data/content-cards/E/E-MLIRDIA-002.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

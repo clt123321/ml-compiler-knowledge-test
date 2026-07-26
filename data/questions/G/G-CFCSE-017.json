@@ -39,7 +39,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "The 'Before → After' rewrite is a canonical composition of three classical optimizations: constant folding (evaluate `mul 2, 3` at compile time), CSE (recognize `%t3` and `%t4` compute the same expression on the same operands, so they are one value), and DCE (remove `%unused` since it has no consumer and no side effect). All three are semantics-preserving on pure operations. Option B is wrong: CSE routinely eliminates duplicate values, and DCE removes side-effect-free unused ops. Option C is wrong: SSA allows a single value to be used many times, including in multiple return slots (or, in tuple form, the return itself contains two references to the same SSA value). Option D introduces an irrelevant loop context.",
+  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): mischaracterizes the reach of CSE and DCE. B (Correct): constant folding + CSE + DCE composition; all semantics-preserving. C (Wrong): SSA allows a value to have many uses. D (Wrong): no loop is present; LICM is irrelevant to this fragment. General context: The 'Before → After' rewrite is a canonical composition of three classical optimizations: constant folding (evaluate `mul 2, 3` at compile time), CSE (recognize `%t3` and `%t4` compute the same expression on the same operands, so they are one value), and DCE (remove `%unused` since it has no consumer and no side effect). All three are semantics-preserving on pure operations. Option D introduces an irrelevant loop context.",
   "optionExplanations": {
     "A": "Wrong: mischaracterizes the reach of CSE and DCE.",
     "B": "Correct: constant folding + CSE + DCE composition; all semantics-preserving.",
@@ -86,7 +86,7 @@
   },
   "contentCardRef": "data/content-cards/G/G-CFCSE-017.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

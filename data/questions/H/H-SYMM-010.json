@@ -39,7 +39,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "Symmetric quantization (z=0) simplifies the GEMM: `sum_k (a_q * s_a) * (b_q * s_b) = s_a * s_b * sum_k (a_q * b_q)` — no zero-point cross-terms. Asymmetric quantization gives a better fit to skewed distributions (e.g., post-ReLU activations that are always non-negative) but introduces cross-terms of the form `sum_k a_q * z_b` and `sum_k z_a * b_q`. B is wrong: symmetric can waste range on skewed distributions. C is wrong: unsigned 8-bit has 256 levels vs. signed 8-bit's 255 (symmetric convention) — this is a small quantization-level count difference, not a systematic accuracy edge. D is wrong: symmetric INT8 IS signed.",
+  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): symmetric and asymmetric can differ substantially on skewed distributions. B (Correct): standard trade-off analysis between symmetric and asymmetric. C (Wrong): representable levels differ by 1; accuracy depends on distribution. D (Wrong): symmetric INT8 IS signed. General context: Symmetric quantization (z=0) simplifies the GEMM: `sum_k (a_q * s_a) * (b_q * s_b) = s_a * s_b * sum_k (a_q * b_q)` — no zero-point cross-terms. Asymmetric quantization gives a better fit to skewed distributions (e.g., post-ReLU activations that are always non-negative) but introduces cross-terms of the form `sum_k a_q * z_b` and `sum_k z_a * b_q`. signed 8-bit's 255 (symmetric convention) — this is a small quantization-level count difference, not a systematic accuracy edge.",
   "optionExplanations": {
     "A": "Wrong: symmetric and asymmetric can differ substantially on skewed distributions.",
     "B": "Correct: standard trade-off analysis between symmetric and asymmetric.",
@@ -86,7 +86,7 @@
   },
   "contentCardRef": "data/content-cards/H/H-SYMM-010.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

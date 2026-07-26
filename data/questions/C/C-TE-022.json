@@ -29,7 +29,7 @@
     },
     {
       "id": "C",
-      "text": "A Tensor Expression is a declarative, functional description of a tensor's output values in terms of its coordinates and reduction axes; the schedule is what turns that declaration into concrete iteration order, tile sizes, memory placement, and parallelism. In this account, a Tensor Expression is a placeholder object for an ONNX operator that has not yet been implemented in the target backend; runtime execution falls back to eager Python evaluation for any TE encountered during graph execution."
+      "text": "A Tensor Expression is a declarative, functional description of a tensor's output values in terms of its coordinates and reduction axes; the schedule is what turns that declaration into concrete iteration order, tile sizes, memory placement, and parallelism."
     },
     {
       "id": "D",
@@ -85,7 +85,7 @@
   },
   "contentCardRef": "data/content-cards/C/C-TE-022.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }

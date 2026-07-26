@@ -93,7 +93,7 @@
     "B",
     "C"
   ],
-  "explanation": "A is correct: naive backward keeps the [B, H, N, N] attention matrix from forward for use in dS/dV, dS/dQ, dS/dK; this activation dominates memory and prevents long-context training. C is correct: FlashAttention's backward recomputes P block-by-block using the stored (m_i, l_i) row statistics plus Q, K — the [B, H, N, N] matrix is never HBM-resident. D is correct: the recomputation adds FLOPs compared to a forward-only kernel; the wall-clock win comes from HBM I/O reduction dominating. B is wrong: FlashAttention explicitly shows you can compute gradients block-by-block without materializing the full P.",
+  "explanation": "Options A, B, C are correct; option D is incorrect. A (Correct): FlashAttention backward recomputation strategy. B (Correct): FA backward is a compute-for-I/O trade. C (Correct): standard attention backward memory footprint. D (Wrong): block-wise recomputation avoids full P materialization.",
   "optionExplanations": {
     "A": "Correct: FlashAttention backward recomputation strategy.",
     "B": "Correct: FA backward is a compute-for-I/O trade.",
@@ -134,7 +134,7 @@
   },
   "contentCardRef": "data/content-cards/I/I-ATTBACK-025.json",
   "reviewStatus": "draft",
-  "version": 1,
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"
 }
