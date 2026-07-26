@@ -2,7 +2,7 @@
   "id": "F-DIVERGE-029",
   "type": "multiple",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / Warp divergence — cost and mitigation",
+  "subtopic": "CUDA / Warp divergence \u2014 cost and mitigation",
   "learningObjective": "Reason about the performance cost of intra-warp branch divergence and understand which patterns do or do not cause it.",
   "archetype": "code_implementation",
   "difficulty": 3,
@@ -29,7 +29,7 @@
     },
     {
       "id": "B",
-      "text": "Case A causes intra-warp divergence: the warp effectively serializes into two passes (one for lanes 0-15 running `foo`, one for lanes 16-31 running `bar`), so total cost ≈ cost(foo) + cost(bar) for the divergent instructions rather than max of the two."
+      "text": "Case A causes intra-warp divergence: the warp effectively serializes into two passes (one for lanes 0-15 running `foo`, one for lanes 16-31 running `bar`), so total cost \u2248 cost(foo) + cost(bar) for the divergent instructions rather than max of the two."
     },
     {
       "id": "C",
@@ -93,8 +93,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-DIVERGE-029.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

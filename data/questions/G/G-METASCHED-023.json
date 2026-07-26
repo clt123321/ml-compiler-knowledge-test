@@ -21,14 +21,33 @@
   },
   "stem": "The MetaSchedule / Ansor design line replaced hand-written schedule templates with an automatic pipeline. Which of the following are TRUE about the design motivations of that line? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "Manual per-operator templates are labor-intensive and do not generalize across new operator variants (e.g., new attention patterns, fused kernels), motivating an automatic sketch-generation stage." },
-    { "id": "B", "text": "A learned cost model is more predictive of measured runtime than a purely analytical model built on op counts and shape features alone, especially for GPU kernels where spills and bank conflicts matter." },
-    { "id": "C", "text": "The search space must be broken into a small number of algorithmic 'sketches' followed by numerical parameter annotation, so evolutionary search operates in a well-structured space rather than an unconstrained sequence of schedule primitives." },
-    { "id": "D", "text": "The system should replace real-hardware measurement with pure static analysis to eliminate measurement noise." },
-    { "id": "E", "text": "MetaSchedule sacrifices tuning quality for compile time; on any workload, a compiler with a manual template achieves better final kernels than MetaSchedule." }
+    {
+      "id": "A",
+      "text": "Manual per-operator templates are labor-intensive and do not generalize across new operator variants (e.g., new attention patterns, fused kernels), motivating an automatic sketch-generation stage."
+    },
+    {
+      "id": "B",
+      "text": "A learned cost model is more predictive of measured runtime than a purely analytical model built on op counts and shape features alone, especially for GPU kernels where spills and bank conflicts matter."
+    },
+    {
+      "id": "C",
+      "text": "The search space must be broken into a small number of algorithmic 'sketches' followed by numerical parameter annotation, so evolutionary search operates in a well-structured space rather than an unconstrained sequence of schedule primitives."
+    },
+    {
+      "id": "D",
+      "text": "The system should replace real-hardware measurement with pure static analysis to eliminate measurement noise."
+    },
+    {
+      "id": "E",
+      "text": "MetaSchedule sacrifices tuning quality for compile time; on any workload, a compiler with a manual template achieves better final kernels than MetaSchedule."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
-  "explanation": "The Ansor / MetaSchedule design is motivated by three points: (A) hand-written templates are unsustainable as operators proliferate; (B) analytical cost models are inaccurate on modern GPUs — learned models trained on measured runtimes are more predictive; (C) the search proceeds in two phases (sketch generation for algorithmic structure, then annotation of numerical parameters) so evolutionary search operates over a well-typed space. D is directly contrary to Ansor's design — the authors explicitly retain real-hardware measurement while using the cost model for pruning. E overgeneralizes empirical results; MetaSchedule often matches or exceeds handwritten templates.",
+  "correctAnswers": [
+    "A",
+    "B",
+    "C"
+  ],
+  "explanation": "The Ansor / MetaSchedule design is motivated by three points: (A) hand-written templates are unsustainable as operators proliferate; (B) analytical cost models are inaccurate on modern GPUs \u2014 learned models trained on measured runtimes are more predictive; (C) the search proceeds in two phases (sketch generation for algorithmic structure, then annotation of numerical parameters) so evolutionary search operates over a well-typed space. D is directly contrary to Ansor's design \u2014 the authors explicitly retain real-hardware measurement while using the cost model for pruning. E overgeneralizes empirical results; MetaSchedule often matches or exceeds handwritten templates.",
   "optionExplanations": {
     "A": "Correct: manual-template scalability motivates automation.",
     "B": "Correct: learned cost model is more predictive on real hardware.",
@@ -40,17 +59,36 @@
     "The comparison is made under equivalent tuning budgets."
   ],
   "nonImplications": [
-    "Does not imply MetaSchedule eliminates all human input — sketch primitives and cost-model features are still designed.",
+    "Does not imply MetaSchedule eliminates all human input \u2014 sketch primitives and cost-model features are still designed.",
     "Does not imply MetaSchedule is universally better; on some heavily-optimized templated cases, hand tuning can still win."
   ],
-  "misconceptionTags": ["metasched_no_measurement", "metasched_worse_than_template"],
+  "misconceptionTags": [
+    "metasched_no_measurement",
+    "metasched_worse_than_template"
+  ],
   "distractorRationales": {
     "D": "Contradicts Ansor's explicit design choice to keep measurement.",
     "E": "Overgeneralizes based on unfounded assumption."
   },
   "sourceRefs": [
-    { "ref": "PAPER:ansor", "locator": "Sections 3-5: sketch design, learned cost model, evolutionary search", "supports": ["A", "B", "C"] },
-    { "ref": "DOC:tvm-relax", "locator": "MetaSchedule design documentation", "supports": ["A", "B", "C"] }
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Sections 3-5: sketch design, learned cost model, evolutionary search",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "MetaSchedule design documentation",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
@@ -59,8 +97,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-METASCHED-023.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-07-26",
+  "coverage": {
+    "PAPER:halide": {
+      "title": "Halide: A Language and Compiler for Optimizing Parallelism, Locality, and Recomputation in Image Processing Pipelines",
+      "used": 9
+    },
+    "PAPER:tvm": {
+      "title": "TVM: An Automated End-to-End Optimizing Compiler for Deep Learning",
+      "used": 19
+    },
+    "PAPER:ansor": {
+      "title": "Ansor: Generating High-Performance Tensor Programs for Deep Learning",
+      "used": 12
+    },
+    "PAPER:mlir": {
+      "title": "MLIR: A Compiler Infrastructure for the End of Moore's Law",
+      "used": 18
+    },
+    "PAPER:triton": {
+      "title": "Triton: An Intermediate Language and Compiler for Tiled Neural Network Computations",
+      "used": 2
+    },
+    "PAPER:flashattn": {
+      "title": "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness",
+      "used": 17
+    },
+    "PAPER:vllm": {
+      "title": "Efficient Memory Management for Large Language Model Serving with PagedAttention",
+      "used": 16
+    },
+    "PAPER:orca": {
+      "title": "Orca: A Distributed Serving System for Transformer-Based Generative Models",
+      "used": 7
+    },
+    "PAPER:smoothquant": {
+      "title": "SmoothQuant: Accurate and Efficient Post-Training Quantization for LLMs",
+      "used": 4
+    },
+    "PAPER:gptq": {
+      "title": "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers",
+      "used": 6
+    },
+    "PAPER:awq": {
+      "title": "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration",
+      "used": 9
+    },
+    "PAPER:pytorch2": {
+      "title": "PyTorch 2: Faster Machine Learning Through Dynamic Python Bytecode Transformation and Graph Compilation",
+      "used": 27
+    },
+    "PAPER:gspmd": {
+      "title": "GSPMD: General and Scalable Parallelization for ML Computation Graphs",
+      "used": 17
+    },
+    "PAPER:specdecode": {
+      "title": "Fast Inference from Transformers via Speculative Decoding",
+      "used": 3
+    },
+    "PAPER:tc": {
+      "title": "Tensor Comprehensions: Framework-Agnostic High-Performance Machine Learning Abstractions",
+      "used": 0
+    }
+  }
+}

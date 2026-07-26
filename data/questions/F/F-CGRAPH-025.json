@@ -2,7 +2,7 @@
   "id": "F-CGRAPH-025",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / CUDA Graph — capture, instantiation, launch overhead",
+  "subtopic": "CUDA / CUDA Graph \u2014 capture, instantiation, launch overhead",
   "learningObjective": "Understand CUDA Graph's role in reducing per-launch overhead and its capture/instantiation lifecycle.",
   "archetype": "systems_dataflow",
   "difficulty": 3,
@@ -26,7 +26,7 @@
   "options": [
     {
       "id": "A",
-      "text": "A CUDA Graph is a directed acyclic graph of GPU operations (kernels, memcpys, memsets, host callbacks) captured once (via stream capture or explicit API), instantiated to a `cudaGraphExec_t`, and then launched repeatedly with much lower per-launch CPU overhead than individually launching each op — especially valuable for short kernels where launch overhead dominates."
+      "text": "A CUDA Graph is a directed acyclic graph of GPU operations (kernels, memcpys, memsets, host callbacks) captured once (via stream capture or explicit API), instantiated to a `cudaGraphExec_t`, and then launched repeatedly with much lower per-launch CPU overhead than individually launching each op \u2014 especially valuable for short kernels where launch overhead dominates."
     },
     {
       "id": "B",
@@ -46,7 +46,7 @@
   ],
   "explanation": "CUDA Graphs let you capture a sequence of GPU ops as a DAG, instantiate it into an executable `cudaGraphExec_t`, and launch that executable many times. The main benefit is drastically reduced per-launch CPU overhead: for graphs of many short kernels, the CPU cost of setting up each launch drops from O(N) to O(1). This is especially valuable for LLM decoding (many small kernels per token) and RNN-like patterns. Graphs do not rewrite kernel bodies (no runtime GPU speedup per kernel); an instantiated graph can be launched arbitrarily many times.",
   "optionExplanations": {
-    "A": "Correct: capture → instantiate → repeated launch; primary benefit is CPU-side.",
+    "A": "Correct: capture \u2192 instantiate \u2192 repeated launch; primary benefit is CPU-side.",
     "B": "Wrong: no kernel rewriting; savings are CPU-side.",
     "C": "Wrong: instantiated graphs can be launched many times.",
     "D": "Wrong: streams and graphs are distinct APIs (though related)."
@@ -70,7 +70,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:cuda-guide",
-      "locator": "CUDA Graphs section — capture, instantiate, launch",
+      "locator": "CUDA Graphs section \u2014 capture, instantiate, launch",
       "supports": [
         "A"
       ]
@@ -90,8 +90,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-CGRAPH-025.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

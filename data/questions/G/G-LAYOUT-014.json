@@ -3,7 +3,7 @@
   "type": "single",
   "module": "graph_opt_schedule",
   "subtopic": "Layout transformation / NCHW vs. NHWC on GPU",
-  "learningObjective": "Explain why an NCHW → NHWC layout transformation can improve GPU convolution performance and identify the precondition for the transformation to pay off.",
+  "learningObjective": "Explain why an NCHW \u2192 NHWC layout transformation can improve GPU convolution performance and identify the precondition for the transformation to pay off.",
   "archetype": "performance_diagnosis",
   "difficulty": 3,
   "depth": "systems",
@@ -89,8 +89,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-LAYOUT-014.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

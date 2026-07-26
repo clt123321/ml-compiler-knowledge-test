@@ -50,8 +50,8 @@
     "Standard Transformer decoder with per-token K/V caches stored across decode steps."
   ],
   "nonImplications": [
-    "Does not imply KV quantization is free — some accuracy cost is typical.",
-    "Does not imply attention kernel automatically supports quantized KVs — kernel-side support is needed."
+    "Does not imply KV quantization is free \u2014 some accuracy cost is typical.",
+    "Does not imply attention kernel automatically supports quantized KVs \u2014 kernel-side support is needed."
   ],
   "misconceptionTags": [
     "kv_quant_target_confusion"
@@ -83,8 +83,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-KVQ-025.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

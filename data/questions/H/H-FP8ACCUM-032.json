@@ -22,11 +22,11 @@
     "stability": "version_sensitive"
   },
   "stem": "On Hopper Tensor Cores, FP8 (E4M3/E5M2) matmul is a common training precision. Which of the following statements about the FP8 GEMM numerical pipeline are TRUE? (Select all that apply.)",
-  "profileData": "Hopper H100 Tensor Core peak throughput (dense, per NVIDIA whitepaper):\n  BF16 / FP16      : ~ 989 TFLOPS\n  FP8 (E4M3, E5M2) : ~1979 TFLOPS  (~ 2×)\n  Accumulator dtype in FP8 QMMA/WGMMA: FP32.\n  Transformer Engine 'DelayedScaling' recipe: per-tensor scale factors updated with a lag over recent statistics.",
+  "profileData": "Hopper H100 Tensor Core peak throughput (dense, per NVIDIA whitepaper):\n  BF16 / FP16      : ~ 989 TFLOPS\n  FP8 (E4M3, E5M2) : ~1979 TFLOPS  (~ 2\u00d7)\n  Accumulator dtype in FP8 QMMA/WGMMA: FP32.\n  Transformer Engine 'DelayedScaling' recipe: per-tensor scale factors updated with a lag over recent statistics.",
   "options": [
     {
       "id": "A",
-      "text": "FP8 GEMM on H100 has approximately 2× the peak throughput of BF16 GEMM on the same hardware, but only when memory bandwidth is not the bottleneck."
+      "text": "FP8 GEMM on H100 has approximately 2\u00d7 the peak throughput of BF16 GEMM on the same hardware, but only when memory bandwidth is not the bottleneck."
     },
     {
       "id": "B",
@@ -58,8 +58,8 @@
     "The workload uses NVIDIA's Transformer Engine or equivalent FP8 pipeline."
   ],
   "nonImplications": [
-    "Does not imply FP8 always matches BF16 accuracy — small residual differences are typical, and workload-dependent.",
-    "Does not imply the 2× peak is always realized — memory-bandwidth-bound kernels see much less benefit."
+    "Does not imply FP8 always matches BF16 accuracy \u2014 small residual differences are typical, and workload-dependent.",
+    "Does not imply the 2\u00d7 peak is always realized \u2014 memory-bandwidth-bound kernels see much less benefit."
   ],
   "misconceptionTags": [
     "fp8_accum",
@@ -95,8 +95,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/H/H-FP8ACCUM-032.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

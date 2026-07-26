@@ -2,7 +2,7 @@
   "id": "E-TVMEXT-016",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "TVM / External library integration — BYOC, extern ops",
+  "subtopic": "TVM / External library integration \u2014 BYOC, extern ops",
   "learningObjective": "Understand how TVM integrates external kernel libraries (cuBLAS, cuDNN, TensorRT) into a Relax program.",
   "archetype": "systems_dataflow",
   "difficulty": 3,
@@ -41,7 +41,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "TVM's BYOC framework and extern-op mechanism allow a Relax op or subgraph to be lowered to an opaque call into a third-party library (cuBLAS, cuDNN, TensorRT, MKL, etc.). The compiler still knows the shape/dtype at the graph level (for verification and downstream layout planning) but does not see the library's internal loops — so the call is a black box for TensorIR-level scheduling and fusion. This coexists with generated PrimFunc code paths, and both can appear in a single compiled artifact.",
+  "explanation": "TVM's BYOC framework and extern-op mechanism allow a Relax op or subgraph to be lowered to an opaque call into a third-party library (cuBLAS, cuDNN, TensorRT, MKL, etc.). The compiler still knows the shape/dtype at the graph level (for verification and downstream layout planning) but does not see the library's internal loops \u2014 so the call is a black box for TensorIR-level scheduling and fusion. This coexists with generated PrimFunc code paths, and both can appear in a single compiled artifact.",
   "optionExplanations": {
     "A": "Wrong: external calls are not inlined into TensorIR; the library is not a PrimFunc.",
     "B": "Wrong: external calls are supported.",
@@ -79,8 +79,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-TVMEXT-016.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

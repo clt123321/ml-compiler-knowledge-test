@@ -84,7 +84,7 @@
   ],
   "nonImplications": [
     "Does not imply the kernel is broken; it produces correct results, just with wasted bandwidth.",
-    "Does not imply the fix is to reduce `stride`; the fix depends on the surrounding algorithm — often reshaping the input so the desired axis is fastest-varying."
+    "Does not imply the fix is to reduce `stride`; the fix depends on the surrounding algorithm \u2014 often reshaping the input so the desired axis is fastest-varying."
   ],
   "misconceptionTags": [
     "bank_conflict_confusion_global",
@@ -118,8 +118,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-COALESCE-002.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

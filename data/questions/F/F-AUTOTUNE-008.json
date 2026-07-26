@@ -60,7 +60,7 @@
     "A",
     "D"
   ],
-  "explanation": "`triton.autotune` runs measurement over the user-provided `configs` list, keyed on the specified `key=[...]` arguments; for each new key tuple, it benchmarks each config once and caches the winner. `num_warps` and `num_stages` are structural launch parameters selected per Config (not free-form user args at call time). The autotuner is _not_ exhaustive over the entire configuration space — it only tries the configs the user listed. And it does re-tune when new key values appear; it is a runtime-invoked mechanism, not compile-time-only.",
+  "explanation": "`triton.autotune` runs measurement over the user-provided `configs` list, keyed on the specified `key=[...]` arguments; for each new key tuple, it benchmarks each config once and caches the winner. `num_warps` and `num_stages` are structural launch parameters selected per Config (not free-form user args at call time). The autotuner is _not_ exhaustive over the entire configuration space \u2014 it only tries the configs the user listed. And it does re-tune when new key values appear; it is a runtime-invoked mechanism, not compile-time-only.",
   "optionExplanations": {
     "A": "Correct: `num_warps` and `num_stages` are Config-level parameters.",
     "B": "Wrong: autotuner runs at runtime for new key tuples.",
@@ -99,8 +99,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-AUTOTUNE-008.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

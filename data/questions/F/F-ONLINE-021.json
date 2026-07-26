@@ -2,7 +2,7 @@
   "id": "F-ONLINE-021",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / Online softmax — tile-wise running max and sum",
+  "subtopic": "CUDA / Online softmax \u2014 tile-wise running max and sum",
   "learningObjective": "Understand the online softmax recurrence used to compute softmax in tiles without materializing the full row.",
   "archetype": "code_implementation",
   "difficulty": 4,
@@ -57,7 +57,7 @@
   "correctAnswers": [
     "A"
   ],
-  "explanation": "The online-softmax recurrence, popularized by Milakov & Gimelshein and central to FlashAttention, updates a running `(m, s)` per tile such that after processing all tiles the pair equals `(max(x_1..N), sum_i exp(x_i - max))`. When a new tile arrives, the new anchor is `m = max(m_prev, m_new)`; the previously accumulated `s_prev` was anchored at `m_prev`, so it is rescaled by `exp(m_prev - m)` (≤ 1 since m ≥ m_prev). The new tile's `s_new` (anchored at `m_new`) is rescaled by `exp(m_new - m)`. This is exact algebra, not an approximation.",
+  "explanation": "The online-softmax recurrence, popularized by Milakov & Gimelshein and central to FlashAttention, updates a running `(m, s)` per tile such that after processing all tiles the pair equals `(max(x_1..N), sum_i exp(x_i - max))`. When a new tile arrives, the new anchor is `m = max(m_prev, m_new)`; the previously accumulated `s_prev` was anchored at `m_prev`, so it is rescaled by `exp(m_prev - m)` (\u2264 1 since m \u2265 m_prev). The new tile's `s_new` (anchored at `m_new`) is rescaled by `exp(m_new - m)`. This is exact algebra, not an approximation.",
   "optionExplanations": {
     "A": "Correct: canonical online softmax recurrence.",
     "B": "Wrong: naive sum ignores anchor rescaling and gives wrong result.",
@@ -84,7 +84,7 @@
   "sourceRefs": [
     {
       "ref": "PAPER:flashattn",
-      "locator": "FlashAttention — online softmax formula, Sect. 3",
+      "locator": "FlashAttention \u2014 online softmax formula, Sect. 3",
       "supports": [
         "A"
       ]
@@ -103,8 +103,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-ONLINE-021.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

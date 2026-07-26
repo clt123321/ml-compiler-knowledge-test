@@ -2,7 +2,7 @@
   "id": "E-TVMTIR-012",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "TVM / TensorIR PrimFunc — compute + schedule separation",
+  "subtopic": "TVM / TensorIR PrimFunc \u2014 compute + schedule separation",
   "learningObjective": "Explain how TensorIR represents tensor-level programs and how compute and schedule are separated.",
   "archetype": "precise_definition",
   "difficulty": 2,
@@ -41,7 +41,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "TensorIR PrimFunc is TVM's loop-level IR (successor to the original TVM tensor expression + TIR). It exposes explicit loops, iteration variables, and buffer accesses (via `block` constructs). Schedule primitives — `split`, `tile`, `reorder`, `parallel`, `vectorize`, `bind` to threadIdx/blockIdx, etc. — rewrite the loop structure while preserving compute semantics. This is the direct descendant of the Halide-style separation of compute and schedule.",
+  "explanation": "TensorIR PrimFunc is TVM's loop-level IR (successor to the original TVM tensor expression + TIR). It exposes explicit loops, iteration variables, and buffer accesses (via `block` constructs). Schedule primitives \u2014 `split`, `tile`, `reorder`, `parallel`, `vectorize`, `bind` to threadIdx/blockIdx, etc. \u2014 rewrite the loop structure while preserving compute semantics. This is the direct descendant of the Halide-style separation of compute and schedule.",
   "optionExplanations": {
     "A": "Wrong: schedule primitives are semantics-preserving by construction.",
     "B": "Wrong: loops live in TensorIR, not Relax.",
@@ -75,7 +75,7 @@
     },
     {
       "ref": "PAPER:halide",
-      "locator": "Halide — compute/schedule separation as the intellectual predecessor",
+      "locator": "Halide \u2014 compute/schedule separation as the intellectual predecessor",
       "supports": [
         "C"
       ]
@@ -87,8 +87,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-TVMTIR-012.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

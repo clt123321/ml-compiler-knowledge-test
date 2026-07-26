@@ -19,8 +19,8 @@
     "verifiedAt": "2026-07-26",
     "stability": "version_sensitive"
   },
-  "profileData": "Run A of autotuner (100 trials): best config = C1 at 0.42 ms; C2 comes second at 0.44 ms.\nRun B (same code, same GPU, immediately after Run A): best config = C2 at 0.42 ms; C1 second at 0.45 ms.\nSingle-config replay: each of C1 and C2 individually measures at 0.42 ± 0.03 ms across 20 replays.",
-  "stem": "An autotuner picks different 'best' configs across two consecutive runs. Single-config replay shows both configs measure at 0.42 ± 0.03 ms. Which is the most likely root cause and appropriate fix?",
+  "profileData": "Run A of autotuner (100 trials): best config = C1 at 0.42 ms; C2 comes second at 0.44 ms.\nRun B (same code, same GPU, immediately after Run A): best config = C2 at 0.42 ms; C1 second at 0.45 ms.\nSingle-config replay: each of C1 and C2 individually measures at 0.42 \u00b1 0.03 ms across 20 replays.",
+  "stem": "An autotuner picks different 'best' configs across two consecutive runs. Single-config replay shows both configs measure at 0.42 \u00b1 0.03 ms. Which is the most likely root cause and appropriate fix?",
   "options": [
     {
       "id": "A",
@@ -42,7 +42,7 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "When measurement noise (±0.03 ms) is on the same order as the gap between candidates (0.02 ms), a winner-take-all comparison is essentially coin-flipping. This is the canonical problem for autotuners on real hardware: OS scheduling, GPU clock jitter, memory allocator state, and background processes contribute variance. Robust remedies include (a) increasing repetitions per trial, (b) using a statistical band and declaring a tie inside it, and (c) using median/geomean instead of mean. Options B (driver leak) and C (alternating optima) are unsupported. Option D confuses seed determinism with measurement noise — a seed affects the tuner's exploration path, not the underlying kernel runtime.",
+  "explanation": "When measurement noise (\u00b10.03 ms) is on the same order as the gap between candidates (0.02 ms), a winner-take-all comparison is essentially coin-flipping. This is the canonical problem for autotuners on real hardware: OS scheduling, GPU clock jitter, memory allocator state, and background processes contribute variance. Robust remedies include (a) increasing repetitions per trial, (b) using a statistical band and declaring a tie inside it, and (c) using median/geomean instead of mean. Options B (driver leak) and C (alternating optima) are unsupported. Option D confuses seed determinism with measurement noise \u2014 a seed affects the tuner's exploration path, not the underlying kernel runtime.",
   "optionExplanations": {
     "A": "Wrong: seeds affect tuner exploration, not kernel runtime.",
     "B": "Wrong: no evidence for a driver leak, and driver leaks would show as monotonic slowdown.",
@@ -89,8 +89,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-AUTOTUNE-021.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

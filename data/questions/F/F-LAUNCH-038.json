@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "`gridDim = (65535, 65535, 65535)`, `blockDim = (32, 32, 1)`. `blockDim.x * blockDim.y * blockDim.z = 1024 ≤ 1024` and all grid dims are within the 65535 (y/z) / 2^31-1 (x) hardware maximum on sm_80; this is a legal launch."
+      "text": "`gridDim = (65535, 65535, 65535)`, `blockDim = (32, 32, 1)`. `blockDim.x * blockDim.y * blockDim.z = 1024 \u2264 1024` and all grid dims are within the 65535 (y/z) / 2^31-1 (x) hardware maximum on sm_80; this is a legal launch."
     },
     {
       "id": "D",
@@ -80,8 +80,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-LAUNCH-038.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

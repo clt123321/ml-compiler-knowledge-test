@@ -2,7 +2,7 @@
   "id": "E-HLO-018",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "XLA / HLO — semantics of a matmul-add fragment",
+  "subtopic": "XLA / HLO \u2014 semantics of a matmul-add fragment",
   "learningObjective": "Read a small HLO fragment and identify the semantics of ops, layouts, and reductions.",
   "archetype": "ir_transformation",
   "difficulty": 3,
@@ -40,7 +40,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "HLO's `dot` op with `lhs_contracting_dims={1}, rhs_contracting_dims={0}` is a standard rank-2 matrix multiplication: for each `(i, j)`, `d[i,j] = sum_k A[i,k] * B[k,j]`. The following elementwise `add(d, C)` produces `r[i,j] = d[i,j] + C[i,j]`. `ROOT` marks the entry computation's output value — a semantic marker, not a rematerialization hint.",
+  "explanation": "HLO's `dot` op with `lhs_contracting_dims={1}, rhs_contracting_dims={0}` is a standard rank-2 matrix multiplication: for each `(i, j)`, `d[i,j] = sum_k A[i,k] * B[k,j]`. The following elementwise `add(d, C)` produces `r[i,j] = d[i,j] + C[i,j]`. `ROOT` marks the entry computation's output value \u2014 a semantic marker, not a rematerialization hint.",
   "optionExplanations": {
     "A": "Wrong: HLO `dot` performs contraction, not elementwise multiplication.",
     "B": "Correct: contracting-dim matmul + elementwise add.",
@@ -66,7 +66,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:stablehlo",
-      "locator": "StableHLO spec — dot_general / add / entry output",
+      "locator": "StableHLO spec \u2014 dot_general / add / entry output",
       "supports": [
         "B"
       ]
@@ -78,8 +78,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-HLO-018.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

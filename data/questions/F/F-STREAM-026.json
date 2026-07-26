@@ -70,7 +70,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:cuda-guide",
-      "locator": "Streams and Events — asynchronous ordering",
+      "locator": "Streams and Events \u2014 asynchronous ordering",
       "supports": [
         "C",
         "D"
@@ -83,8 +83,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-STREAM-026.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

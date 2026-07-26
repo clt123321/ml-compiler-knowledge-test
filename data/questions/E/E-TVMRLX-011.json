@@ -2,7 +2,7 @@
   "id": "E-TVMRLX-011",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "TVM / Relax vs Relay — design motivation",
+  "subtopic": "TVM / Relax vs Relay \u2014 design motivation",
   "learningObjective": "Understand what Relax adds relative to Relay and why the TVM community introduced a new graph-level IR.",
   "archetype": "paper_design_intent",
   "difficulty": 3,
@@ -31,7 +31,7 @@
     },
     {
       "id": "C",
-      "text": "Relax is a graph-level IR designed to (i) natively support symbolic/dynamic shapes as first-class values, (ii) unify graph-level and tensor-level IRs by cross-calling PrimFunc via TensorIR, and (iii) enable Python-native metaprogramming and staged transformation — capabilities that Relay's typed functional core could not cleanly express."
+      "text": "Relax is a graph-level IR designed to (i) natively support symbolic/dynamic shapes as first-class values, (ii) unify graph-level and tensor-level IRs by cross-calling PrimFunc via TensorIR, and (iii) enable Python-native metaprogramming and staged transformation \u2014 capabilities that Relay's typed functional core could not cleanly express."
     },
     {
       "id": "D",
@@ -74,7 +74,7 @@
     },
     {
       "ref": "PAPER:tvm",
-      "locator": "TVM OSDI 2018 — background on the original TVM stack",
+      "locator": "TVM OSDI 2018 \u2014 background on the original TVM stack",
       "supports": [
         "C"
       ]
@@ -86,8 +86,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-TVMRLX-011.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

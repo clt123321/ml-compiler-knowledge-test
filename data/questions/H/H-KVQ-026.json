@@ -20,13 +20,27 @@
   "profileData": "Experiment on a 32K-context 13B LLM:\n  Baseline FP16 KV: per-request KV = 4 GB; max concurrent requests = 2 (16 GB budget).\n  INT8 KV: per-request KV = 2 GB; max concurrent requests = 4.\n  Long-context QA benchmark: FP16 KV baseline exact-match = 42.1%; INT8 KV = 41.6%.\n  Same benchmark at 4K context (short): FP16 = 74.3%; INT8 = 74.3%.",
   "stem": "The experiment above shows a small accuracy drop for INT8 KV at 32K context but none at 4K. Which is the best-supported reading?",
   "options": [
-    { "id": "A", "text": "KV cache quantization error accumulates over the attention softmax as the context grows; at 4K the error is negligible, but at 32K the softmax's sensitivity to small logit changes (compounded over 32K attended positions) surfaces the loss. The trade-off is favorable if the accuracy drop is acceptable and the doubled batch capacity is valuable." },
-    { "id": "B", "text": "INT8 KV cache quantization is mathematically identical to FP16 for attention; the 0.5% drop is measurement noise." },
-    { "id": "C", "text": "The accuracy drop at 32K is because INT8 KVs cannot represent long contexts due to a dtype range issue; using UINT8 would eliminate it." },
-    { "id": "D", "text": "The doubled batch capacity is illusory: INT8 KV storage does not actually free GPU memory since the paged allocator still reserves FP16 slots." }
+    {
+      "id": "A",
+      "text": "KV cache quantization error accumulates over the attention softmax as the context grows; at 4K the error is negligible, but at 32K the softmax's sensitivity to small logit changes (compounded over 32K attended positions) surfaces the loss. The trade-off is favorable if the accuracy drop is acceptable and the doubled batch capacity is valuable."
+    },
+    {
+      "id": "B",
+      "text": "INT8 KV cache quantization is mathematically identical to FP16 for attention; the 0.5% drop is measurement noise."
+    },
+    {
+      "id": "C",
+      "text": "The accuracy drop at 32K is because INT8 KVs cannot represent long contexts due to a dtype range issue; using UINT8 would eliminate it."
+    },
+    {
+      "id": "D",
+      "text": "The doubled batch capacity is illusory: INT8 KV storage does not actually free GPU memory since the paged allocator still reserves FP16 slots."
+    }
   ],
-  "correctAnswers": ["A"],
-  "explanation": "KV quantization introduces small errors in both K and V; attention amplifies these because softmax normalizes over the whole context length, and small logit perturbations at long contexts can shift attention distribution. The observation that the drop appears at 32K but not 4K is consistent with error accumulation. The trade-off (0.5% accuracy for 2× batch capacity) is often favorable in production. Option B is false: INT8 KV is not bit-exact with FP16. Option C invents a range issue (INT8 quantizes each K/V element with its own scale; range is handled per-element scale). Option D falsely claims the memory savings are illusory; PagedAttention allocators respect the actual element size.",
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "KV quantization introduces small errors in both K and V; attention amplifies these because softmax normalizes over the whole context length, and small logit perturbations at long contexts can shift attention distribution. The observation that the drop appears at 32K but not 4K is consistent with error accumulation. The trade-off (0.5% accuracy for 2\u00d7 batch capacity) is often favorable in production. Option B is false: INT8 KV is not bit-exact with FP16. Option C invents a range issue (INT8 quantizes each K/V element with its own scale; range is handled per-element scale). Option D falsely claims the memory savings are illusory; PagedAttention allocators respect the actual element size.",
   "optionExplanations": {
     "A": "Correct: canonical error-accumulation explanation.",
     "B": "Wrong: INT8 KV introduces real quantization error.",
@@ -39,17 +53,32 @@
   ],
   "nonImplications": [
     "Does not imply INT8 KV is always safe; models sensitive to attention distribution (e.g., in-context retrieval) may see larger drops.",
-    "Does not imply FP8 KV always outperforms INT8 KV — depends on distribution and hardware kernel support."
+    "Does not imply FP8 KV always outperforms INT8 KV \u2014 depends on distribution and hardware kernel support."
   ],
-  "misconceptionTags": ["kv_quant_no_accuracy_loss", "kv_memory_illusory"],
+  "misconceptionTags": [
+    "kv_quant_no_accuracy_loss",
+    "kv_memory_illusory"
+  ],
   "distractorRationales": {
     "B": "Denies quantization error.",
     "C": "Invents a range-related mechanism.",
     "D": "Contradicts how paged allocators work."
   },
   "sourceRefs": [
-    { "ref": "DOC:trtllm", "locator": "KV cache quantization guide with accuracy notes", "supports": ["A"] },
-    { "ref": "BOOK:sze-eff", "locator": "Attention numerical sensitivity", "supports": ["A"] }
+    {
+      "ref": "DOC:trtllm",
+      "locator": "KV cache quantization guide with accuracy notes",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Attention numerical sensitivity",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
@@ -58,8 +87,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-KVQ-026.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -16,7 +16,7 @@
   "softwareContext": {
     "stability": "stable_principle"
   },
-  "stem": "The Halide paper (PLDI 2013) is famous for separating a program's algorithm (the pure functional description of what to compute) from its schedule (the description of how to compute it — loop order, tiling, storage granularity, parallelism). Which best captures the paper's design intent behind this separation?",
+  "stem": "The Halide paper (PLDI 2013) is famous for separating a program's algorithm (the pure functional description of what to compute) from its schedule (the description of how to compute it \u2014 loop order, tiling, storage granularity, parallelism). Which best captures the paper's design intent behind this separation?",
   "options": [
     {
       "id": "A",
@@ -49,7 +49,7 @@
     "The algorithm is expressible in Halide's pure functional style."
   ],
   "nonImplications": [
-    "Does not imply that any schedule can be chosen for a given algorithm — schedule primitives have legality preconditions.",
+    "Does not imply that any schedule can be chosen for a given algorithm \u2014 schedule primitives have legality preconditions.",
     "Does not imply Halide's autoscheduler always finds an optimal schedule."
   ],
   "misconceptionTags": [
@@ -76,8 +76,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-HALIDE-025.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -53,7 +53,7 @@
     "FP non-associativity is treated as a numerical concern, not a correctness concern for GEMM."
   ],
   "nonImplications": [
-    "Does not imply ikj is optimal — blocked / vectorized orderings dominate in practice.",
+    "Does not imply ikj is optimal \u2014 blocked / vectorized orderings dominate in practice.",
     "Does not imply the same order is preferred on column-major layouts (Fortran / BLAS-style would prefer jki)."
   ],
   "misconceptionTags": [
@@ -88,8 +88,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-REORDER-010.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

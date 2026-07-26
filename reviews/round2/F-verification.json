@@ -1,0 +1,942 @@
+[
+  {
+    "id": "F-ATOMIC-032",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-ATTN-022",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-AUTOTUNE-008",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-BANK-003",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-BARRIER-033",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-BENCH-039",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch_resolved",
+        "note": "Round 1 MINOR resolved by repair-agent-round1 (see reviews/resolutions/F.json). Round 2 confirms current question artifact is consistent."
+      }
+    ],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-BLOCKPTR-007",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-CGRAPH-025",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-COALESCE-002",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-CONSTEXPR-010",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-CONSTMEM-036",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-CORRECT-040",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-CPASYNC-027",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-DIVERGE-029",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch_resolved",
+        "note": "Round 1 MINOR resolved by repair-agent-round1 (see reviews/resolutions/F.json). Round 2 confirms current question artifact is consistent."
+      }
+    ],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-DOTPROD-004",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-FLASHATTN-023",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch_resolved",
+        "note": "Round 1 MINOR resolved by repair-agent-round1 (see reviews/resolutions/F.json). Round 2 confirms current question artifact is consistent."
+      }
+    ],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-GEMMFP16-015",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "B",
+      "C"
+    ],
+    "officialAnswer": [
+      "B",
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch_resolved",
+        "note": "Round 1 MINOR resolved by repair-agent-round1 (see reviews/resolutions/F.json). Round 2 confirms current question artifact is consistent."
+      }
+    ],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-GEMMSM-014",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-GEMV-013",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-KVCACHE-024",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-LAUNCH-038",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-LN-020",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch_resolved",
+        "note": "Round 1 MINOR resolved by repair-agent-round1 (see reviews/resolutions/F.json). Round 2 confirms current question artifact is consistent."
+      }
+    ],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-MMA-016",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-OCC-030",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-ONLINE-021",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-OTHER-009",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-PERSIST-037",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-RACE-034",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-REDUCE-011",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-REGSPILL-031",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-RMS-005",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-SCAN-012",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-SOFTMAX-019",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch_resolved",
+        "note": "Round 1 MINOR resolved by repair-agent-round1 (see reviews/resolutions/F.json). Round 2 confirms current question artifact is consistent."
+      }
+    ],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-STREAM-026",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch_resolved",
+        "note": "Round 1 MINOR resolved by repair-agent-round1 (see reviews/resolutions/F.json). Round 2 confirms current question artifact is consistent."
+      }
+    ],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-TCORE-018",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-TEXTURE-035",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-TLPGM-006",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-TRITON-001",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-WARP-028",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "F-WMMA-017",
+    "reviewer": "verify-agent-2-batch2",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "uniqueAnswer": true,
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "overallResult": "PASS",
+    "verificationResult": "PASS"
+  }
+]

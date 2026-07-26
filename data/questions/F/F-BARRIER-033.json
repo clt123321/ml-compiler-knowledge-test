@@ -2,7 +2,7 @@
   "id": "F-BARRIER-033",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / Synchronization — __syncthreads vs __syncwarp",
+  "subtopic": "CUDA / Synchronization \u2014 __syncthreads vs __syncwarp",
   "learningObjective": "Distinguish __syncthreads and __syncwarp semantics and identify when each is appropriate.",
   "archetype": "precise_definition",
   "difficulty": 2,
@@ -82,8 +82,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-BARRIER-033.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

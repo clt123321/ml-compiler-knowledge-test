@@ -18,12 +18,26 @@
   },
   "stem": "The MLIR paper motivates a design with many co-existing dialects at different abstraction levels rather than a single universal IR. Which statement best captures the design intent argued in the paper?",
   "options": [
-    { "id": "A", "text": "MLIR argues that a single universal IR is optimal; the multiple dialects are transient artifacts that are collapsed into one representation before any optimization runs." },
-    { "id": "B", "text": "MLIR's design goal is to be a runtime system that dispatches operations across hardware at execution time; the dialects correspond to different runtimes." },
-    { "id": "C", "text": "MLIR is designed so each optimization can be expressed at the abstraction level where it is most natural (e.g. tensor-level fusion at a high dialect, tiling at Linalg, code emission at LLVM), with progressive lowering between dialects; the payoff is shared compiler infrastructure reused across domains." },
-    { "id": "D", "text": "MLIR replaces LLVM as the compilation backend; projects using MLIR no longer emit LLVM IR at any point." }
+    {
+      "id": "A",
+      "text": "MLIR argues that a single universal IR is optimal; the multiple dialects are transient artifacts that are collapsed into one representation before any optimization runs."
+    },
+    {
+      "id": "B",
+      "text": "MLIR's design goal is to be a runtime system that dispatches operations across hardware at execution time; the dialects correspond to different runtimes."
+    },
+    {
+      "id": "C",
+      "text": "MLIR is designed so each optimization can be expressed at the abstraction level where it is most natural (e.g. tensor-level fusion at a high dialect, tiling at Linalg, code emission at LLVM), with progressive lowering between dialects; the payoff is shared compiler infrastructure reused across domains."
+    },
+    {
+      "id": "D",
+      "text": "MLIR replaces LLVM as the compilation backend; projects using MLIR no longer emit LLVM IR at any point."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "The MLIR paper's core argument is that different optimizations belong at different abstraction levels, and having a shared infrastructure (parser, type system, pass manager, pattern rewriter) that hosts multiple dialects lets compiler authors share machinery across domains. Progressive lowering between dialects (e.g. TF → Tosa → Linalg → Vector → LLVM) is the standard pipeline pattern. MLIR complements LLVM rather than replacing it.",
   "optionExplanations": {
     "A": "Wrong: reverses the paper's argument — dialects are first-class, not transient.",
@@ -38,15 +52,31 @@
     "Does not imply every project needs many dialects; small pipelines can use one or two.",
     "Does not imply MLIR guarantees better code than existing compilers; the argument is about infrastructure reuse and abstraction."
   ],
-  "misconceptionTags": ["mlir_single_ir", "mlir_replaces_llvm", "mlir_is_runtime"],
+  "misconceptionTags": [
+    "mlir_single_ir",
+    "mlir_replaces_llvm",
+    "mlir_is_runtime"
+  ],
   "distractorRationales": {
     "A": "Confuses multi-dialect design with a monolithic IR.",
     "B": "Confuses compiler with runtime.",
     "D": "Denies MLIR-to-LLVM lowering."
   },
   "sourceRefs": [
-    { "ref": "PAPER:mlir", "locator": "§1–§3 motivation for shared multi-level IR infrastructure", "supports": ["C"] },
-    { "ref": "DOC:mlir-langref", "locator": "Dialects and progressive lowering", "supports": ["C"] }
+    {
+      "ref": "PAPER:mlir",
+      "locator": "§1–§3 motivation for shared multi-level IR infrastructure",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Dialects and progressive lowering",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,
@@ -54,8 +84,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/N/N-MLIR-004.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

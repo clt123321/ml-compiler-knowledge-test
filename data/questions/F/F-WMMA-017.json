@@ -44,9 +44,9 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "`nvcuda::wmma` (in `<mma.h>`) is a C++ template API providing `fragment<>` types, `load_matrix_sync`, `store_matrix_sync`, `mma_sync` free functions, and shape templates. It is a high-level abstraction that the compiler lowers to `mma.sync` + `ldmatrix` PTX. Raw `mma.sync` (via inline PTX or PTX intrinsics) gives more control — used by CUTLASS and other libraries for shape/layout combinations not directly exposed by wmma. Both are supported across Volta+; they can be mixed. PTX is a stable virtual ISA.",
+  "explanation": "`nvcuda::wmma` (in `<mma.h>`) is a C++ template API providing `fragment<>` types, `load_matrix_sync`, `store_matrix_sync`, `mma_sync` free functions, and shape templates. It is a high-level abstraction that the compiler lowers to `mma.sync` + `ldmatrix` PTX. Raw `mma.sync` (via inline PTX or PTX intrinsics) gives more control \u2014 used by CUTLASS and other libraries for shape/layout combinations not directly exposed by wmma. Both are supported across Volta+; they can be mixed. PTX is a stable virtual ISA.",
   "optionExplanations": {
-    "C": "Correct: two layers of the same abstraction; wmma → mma.sync at lowering.",
+    "C": "Correct: two layers of the same abstraction; wmma \u2192 mma.sync at lowering.",
     "B": "Wrong: mixing is allowed.",
     "A": "Wrong: wmma continues to work on Ampere and later; it lowers to newer mma shapes.",
     "D": "Wrong: PTX is a stable abstraction; production libraries use it heavily."
@@ -82,8 +82,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-WMMA-017.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

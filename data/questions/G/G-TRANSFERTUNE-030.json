@@ -19,7 +19,7 @@
     "verifiedAt": "2026-07-26",
     "stability": "version_sensitive"
   },
-  "profileData": "Tuning history:\n  Model A tuned on A100 with 4,000 trials, achieves 0.85× cuBLAS on GEMM kernels.\n  Transfer-tuning experiment:\n    - Cost model from A applied to Model B (GEMM shapes shifted, same dtype, same A100) → 3.8× fewer trials to reach 0.80× cuBLAS.\n    - Cost model from A applied to Model C (Conv shapes, same A100) → NO speed-up in trial count vs. from-scratch.\n    - Cost model from A applied to Model D (GEMM shapes, different GPU H100) → NO speed-up in trial count.",
+  "profileData": "Tuning history:\n  Model A tuned on A100 with 4,000 trials, achieves 0.85\u00d7 cuBLAS on GEMM kernels.\n  Transfer-tuning experiment:\n    - Cost model from A applied to Model B (GEMM shapes shifted, same dtype, same A100) \u2192 3.8\u00d7 fewer trials to reach 0.80\u00d7 cuBLAS.\n    - Cost model from A applied to Model C (Conv shapes, same A100) \u2192 NO speed-up in trial count vs. from-scratch.\n    - Cost model from A applied to Model D (GEMM shapes, different GPU H100) \u2192 NO speed-up in trial count.",
   "stem": "The transfer-tuning experiment above shows that reusing a tuned cost model helps in some cases but not others. Which is the best-supported explanation?",
   "options": [
     {
@@ -54,7 +54,7 @@
   ],
   "nonImplications": [
     "Does not imply cross-hardware transfer is unattainable; specifically-designed multi-hardware training can achieve it.",
-    "Does not imply transfer tuning replaces from-scratch tuning — it accelerates convergence within its scope."
+    "Does not imply transfer tuning replaces from-scratch tuning \u2014 it accelerates convergence within its scope."
   ],
   "misconceptionTags": [
     "transfer_tune_universal",
@@ -88,8 +88,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-TRANSFERTUNE-030.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

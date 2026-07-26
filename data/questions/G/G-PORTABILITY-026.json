@@ -52,7 +52,7 @@
   ],
   "nonImplications": [
     "Does not imply portability is unattainable; it is achievable within a well-defined scope.",
-    "Does not imply retuning cost is negligible — it must be part of the reported effort."
+    "Does not imply retuning cost is negligible \u2014 it must be part of the reported effort."
   ],
   "misconceptionTags": [
     "portability_same_schedule_all_targets",
@@ -88,8 +88,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-PORTABILITY-026.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

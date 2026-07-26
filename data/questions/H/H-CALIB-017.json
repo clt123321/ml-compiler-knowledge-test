@@ -40,9 +40,9 @@
     "C",
     "D"
   ],
-  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): not clipping ≠ most accurate. B (Correct): MinMax definition and outlier sensitivity. C (Correct): percentile definition. D (Correct): KL calibration definition; TensorRT's default. General context: MinMax's outlier sensitivity is well-documented; percentile trades a bit of clipping for a tighter distribution fit; KL calibration is TensorRT's classical INT8 workflow.",
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): not clipping \u2260 most accurate. B (Correct): MinMax definition and outlier sensitivity. C (Correct): percentile definition. D (Correct): KL calibration definition; TensorRT's default. General context: MinMax's outlier sensitivity is well-documented; percentile trades a bit of clipping for a tighter distribution fit; KL calibration is TensorRT's classical INT8 workflow.",
   "optionExplanations": {
-    "A": "Wrong: not clipping ≠ most accurate.",
+    "A": "Wrong: not clipping \u2260 most accurate.",
     "B": "Correct: MinMax definition and outlier sensitivity.",
     "C": "Correct: percentile definition.",
     "D": "Correct: KL calibration definition; TensorRT's default."
@@ -88,8 +88,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-CALIB-017.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

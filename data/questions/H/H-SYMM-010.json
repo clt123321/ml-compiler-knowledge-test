@@ -25,7 +25,7 @@
     },
     {
       "id": "B",
-      "text": "Symmetric quantization has z=0, so the dequantized value is `q * s` — this simplifies INT8 GEMM because there is no zero-point cross-term to compute. Asymmetric quantization uses the full [0, 255] range and captures skewed distributions (e.g., post-ReLU activations) better, at the cost of an extra bias term in the GEMM."
+      "text": "Symmetric quantization has z=0, so the dequantized value is `q * s` \u2014 this simplifies INT8 GEMM because there is no zero-point cross-term to compute. Asymmetric quantization uses the full [0, 255] range and captures skewed distributions (e.g., post-ReLU activations) better, at the cost of an extra bias term in the GEMM."
     },
     {
       "id": "C",
@@ -39,7 +39,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): symmetric and asymmetric can differ substantially on skewed distributions. B (Correct): standard trade-off analysis between symmetric and asymmetric. C (Wrong): representable levels differ by 1; accuracy depends on distribution. D (Wrong): symmetric INT8 IS signed. General context: Symmetric quantization (z=0) simplifies the GEMM: `sum_k (a_q * s_a) * (b_q * s_b) = s_a * s_b * sum_k (a_q * b_q)` — no zero-point cross-terms. Asymmetric quantization gives a better fit to skewed distributions (e.g., post-ReLU activations that are always non-negative) but introduces cross-terms of the form `sum_k a_q * z_b` and `sum_k z_a * b_q`. signed 8-bit's 255 (symmetric convention) — this is a small quantization-level count difference, not a systematic accuracy edge.",
+  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): symmetric and asymmetric can differ substantially on skewed distributions. B (Correct): standard trade-off analysis between symmetric and asymmetric. C (Wrong): representable levels differ by 1; accuracy depends on distribution. D (Wrong): symmetric INT8 IS signed. General context: Symmetric quantization (z=0) simplifies the GEMM: `sum_k (a_q * s_a) * (b_q * s_b) = s_a * s_b * sum_k (a_q * b_q)` \u2014 no zero-point cross-terms. Asymmetric quantization gives a better fit to skewed distributions (e.g., post-ReLU activations that are always non-negative) but introduces cross-terms of the form `sum_k a_q * z_b` and `sum_k z_a * b_q`. signed 8-bit's 255 (symmetric convention) \u2014 this is a small quantization-level count difference, not a systematic accuracy edge.",
   "optionExplanations": {
     "A": "Wrong: symmetric and asymmetric can differ substantially on skewed distributions.",
     "B": "Correct: standard trade-off analysis between symmetric and asymmetric.",
@@ -51,8 +51,8 @@
     "The subsequent GEMM implementation matches the quantization convention."
   ],
   "nonImplications": [
-    "Does not imply asymmetric is always more accurate — for symmetric weight distributions, symmetric is optimal.",
-    "Does not imply the extra bias term makes asymmetric GEMM prohibitively slow — cuBLAS supports asymmetric INT8 with a manageable overhead."
+    "Does not imply asymmetric is always more accurate \u2014 for symmetric weight distributions, symmetric is optimal.",
+    "Does not imply the extra bias term makes asymmetric GEMM prohibitively slow \u2014 cuBLAS supports asymmetric INT8 with a manageable overhead."
   ],
   "misconceptionTags": [
     "sym_asym_no_difference",
@@ -85,8 +85,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-SYMM-010.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

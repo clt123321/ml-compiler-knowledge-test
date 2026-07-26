@@ -38,7 +38,7 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "Static memory planning is a compile-time pass over the tensor program's data-flow graph: the compiler computes the live range of every intermediate tensor, then packs them into a small set of pre-allocated buffers such that concurrently-live tensors do not share. The output is a schedule that assigns tensor → offset into an arena, so the runtime avoids per-op allocation. Option B describes a runtime allocator (like PyTorch's CachingAllocator), a different and complementary mechanism. Option C confuses per-iteration reuse (runtime concept) with the compile-time plan. Option D confuses SSA renaming with buffer assignment.",
+  "explanation": "Static memory planning is a compile-time pass over the tensor program's data-flow graph: the compiler computes the live range of every intermediate tensor, then packs them into a small set of pre-allocated buffers such that concurrently-live tensors do not share. The output is a schedule that assigns tensor \u2192 offset into an arena, so the runtime avoids per-op allocation. Option B describes a runtime allocator (like PyTorch's CachingAllocator), a different and complementary mechanism. Option C confuses per-iteration reuse (runtime concept) with the compile-time plan. Option D confuses SSA renaming with buffer assignment.",
   "optionExplanations": {
     "A": "Wrong: SSA renaming has nothing to do with physical buffer allocation.",
     "B": "Wrong: describes a caching allocator, which is a runtime mechanism.",
@@ -50,7 +50,7 @@
     "Tensor sizes and lifetimes are known at compile time (static shapes or bounded dynamic shapes)."
   ],
   "nonImplications": [
-    "Does not imply memory planning replaces runtime allocation entirely — dynamic shapes and side-effecting operations may still require dynamic buffers.",
+    "Does not imply memory planning replaces runtime allocation entirely \u2014 dynamic shapes and side-effecting operations may still require dynamic buffers.",
     "Does not imply the resulting plan is optimal in general; buffer-packing is NP-hard and compilers use heuristics."
   ],
   "misconceptionTags": [
@@ -84,8 +84,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-MEMPLAN-015.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

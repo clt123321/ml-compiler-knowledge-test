@@ -2,7 +2,7 @@
   "id": "E-XLASPMD-023",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "XLA SPMD / GSPMD — sharding annotations and automatic parallelization",
+  "subtopic": "XLA SPMD / GSPMD \u2014 sharding annotations and automatic parallelization",
   "learningObjective": "Understand the basic idea of XLA SPMD partitioning and how sharding annotations drive automatic parallelization.",
   "archetype": "systems_dataflow",
   "difficulty": 3,
@@ -74,7 +74,7 @@
     },
     {
       "ref": "PAPER:gspmd",
-      "locator": "GSPMD paper (Xu et al., 2021) — SPMD partitioning + collectives",
+      "locator": "GSPMD paper (Xu et al., 2021) \u2014 SPMD partitioning + collectives",
       "supports": [
         "B"
       ]
@@ -86,8 +86,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-XLASPMD-023.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

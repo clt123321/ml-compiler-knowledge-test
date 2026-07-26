@@ -33,13 +33,13 @@
     },
     {
       "id": "D",
-      "text": "Once the FP16 sum exceeds ~2^k, values with magnitude below ~2^(k-11) round to zero when added, because FP16's 10-bit mantissa cannot distinguish them; this is 'swamping'. The rewrite fixes it by accumulating small partial sums in FP32 and combining them at the end — most additions happen when the running total is still small."
+      "text": "Once the FP16 sum exceeds ~2^k, values with magnitude below ~2^(k-11) round to zero when added, because FP16's 10-bit mantissa cannot distinguish them; this is 'swamping'. The rewrite fixes it by accumulating small partial sums in FP32 and combining them at the end \u2014 most additions happen when the running total is still small."
     }
   ],
   "correctAnswers": [
     "D"
   ],
-  "explanation": "This is the classical swamping / small-magnitude-lost-to-large-running-sum problem. FP16 has 11 bits of precision (including implicit leading 1); once the running sum reaches magnitude 2^k, additions of magnitude < 2^(k-11) round to zero. Block-parallel FP32 combining reduces the running sum in each partial, keeping most additions numerically visible. Option B claims associativity, which FP addition does not have. Option C confuses precision-preserving upcast with a semantic bug. Option D confuses swamping with overflow — the reduction may not overflow but still lose precision.",
+  "explanation": "This is the classical swamping / small-magnitude-lost-to-large-running-sum problem. FP16 has 11 bits of precision (including implicit leading 1); once the running sum reaches magnitude 2^k, additions of magnitude < 2^(k-11) round to zero. Block-parallel FP32 combining reduces the running sum in each partial, keeping most additions numerically visible. Option B claims associativity, which FP addition does not have. Option C confuses precision-preserving upcast with a semantic bug. Option D confuses swamping with overflow \u2014 the reduction may not overflow but still lose precision.",
   "optionExplanations": {
     "A": "Wrong: swamping is a precision issue that can occur without overflow.",
     "B": "Wrong: FP addition is not associative.",
@@ -52,7 +52,7 @@
   ],
   "nonImplications": [
     "Does not imply block partials always match a reference FP32 reduction; different block sizes yield different (but generally better) results.",
-    "Does not imply Kahan summation is unnecessary — it can further reduce accumulated error."
+    "Does not imply Kahan summation is unnecessary \u2014 it can further reduce accumulated error."
   ],
   "misconceptionTags": [
     "fp_associativity",
@@ -85,8 +85,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-ACCUM-008.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

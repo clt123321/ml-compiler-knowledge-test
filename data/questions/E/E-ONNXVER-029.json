@@ -39,7 +39,7 @@
   "correctAnswers": [
     "A"
   ],
-  "explanation": "ONNX has two distinct versioning axes: (1) IR version — the ModelProto schema version, defining structural/format features (e.g., what fields exist, how initializers are stored); (2) Opset version(s) — the semantic version of each operator domain. A model declares its `ir_version` and one or more `opset_import` entries. These evolve independently: adding a new opset does not typically require a new IR version, and vice versa.",
+  "explanation": "ONNX has two distinct versioning axes: (1) IR version \u2014 the ModelProto schema version, defining structural/format features (e.g., what fields exist, how initializers are stored); (2) Opset version(s) \u2014 the semantic version of each operator domain. A model declares its `ir_version` and one or more `opset_import` entries. These evolve independently: adding a new opset does not typically require a new IR version, and vice versa.",
   "optionExplanations": {
     "A": "Correct: IR version = format schema; opset version = operator semantics.",
     "B": "Wrong: they are different fields with different roles.",
@@ -76,8 +76,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-ONNXVER-029.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

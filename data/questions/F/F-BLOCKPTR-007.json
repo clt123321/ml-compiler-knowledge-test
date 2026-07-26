@@ -97,8 +97,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-BLOCKPTR-007.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

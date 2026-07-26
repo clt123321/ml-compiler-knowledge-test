@@ -2,7 +2,7 @@
   "id": "E-TVMVM-017",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "TVM / Relax VM runtime — dynamic execution model",
+  "subtopic": "TVM / Relax VM runtime \u2014 dynamic execution model",
   "learningObjective": "Understand the role of the Relax VM in executing compiled TVM programs and its position relative to static compilation.",
   "archetype": "systems_dataflow",
   "difficulty": 3,
@@ -35,7 +35,7 @@
     },
     {
       "id": "D",
-      "text": "The Relax VM is a bytecode-based runtime that executes a compiled Relax program: it dispatches PrimFunc calls, external-library calls, and control flow, and it handles dynamic-shape allocation and object lifetime — enabling static compilation of graph structure with runtime resolution of dynamic dimensions."
+      "text": "The Relax VM is a bytecode-based runtime that executes a compiled Relax program: it dispatches PrimFunc calls, external-library calls, and control flow, and it handles dynamic-shape allocation and object lifetime \u2014 enabling static compilation of graph structure with runtime resolution of dynamic dimensions."
     }
   ],
   "correctAnswers": [
@@ -79,8 +79,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-TVMVM-017.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

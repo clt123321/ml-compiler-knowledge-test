@@ -74,7 +74,7 @@
     },
     {
       "ref": "PAPER:mlir",
-      "locator": "MLIR CGO 2021 — types and bufferization",
+      "locator": "MLIR CGO 2021 \u2014 types and bufferization",
       "supports": [
         "B",
         "C"
@@ -87,8 +87,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIRTYPE-006.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

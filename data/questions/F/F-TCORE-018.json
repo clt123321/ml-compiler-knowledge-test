@@ -44,7 +44,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "Tensor Core dtype support has expanded generation-by-generation: Volta (sm_70) — FP16; Turing (sm_75) added INT8 (also INT4/INT1 for research); Ampere (sm_80) added TF32, BF16, and FP64 Tensor Cores; Ada (sm_89) added FP8 for inference; Hopper (sm_90) formalized FP8 (E4M3/E5M2) with new throughput levels; Blackwell adds further dtypes. Because support is version-sensitive, portable kernels must dispatch on `__CUDA_ARCH__` or use CUTLASS-style dispatch. There is no software emulation of BF16/TF32/FP8 on the FP16 path — these are distinct hardware datapaths.",
+  "explanation": "Tensor Core dtype support has expanded generation-by-generation: Volta (sm_70) \u2014 FP16; Turing (sm_75) added INT8 (also INT4/INT1 for research); Ampere (sm_80) added TF32, BF16, and FP64 Tensor Cores; Ada (sm_89) added FP8 for inference; Hopper (sm_90) formalized FP8 (E4M3/E5M2) with new throughput levels; Blackwell adds further dtypes. Because support is version-sensitive, portable kernels must dispatch on `__CUDA_ARCH__` or use CUTLASS-style dispatch. There is no software emulation of BF16/TF32/FP8 on the FP16 path \u2014 these are distinct hardware datapaths.",
   "optionExplanations": {
     "A": "Wrong: BF16/TF32/FP8 have their own hardware paths.",
     "B": "Wrong: BF16/TF32 arrived with Ampere; FP8 with Ada/Hopper.",
@@ -82,8 +82,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-TCORE-018.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

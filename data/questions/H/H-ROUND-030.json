@@ -38,7 +38,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "RNE (round-half-to-even, also called banker's rounding) is the IEEE 754 default: round to nearest and break ties toward the even neighbor. Stochastic rounding assigns a probability to each of the two neighbors proportional to distance: e.g., a value 0.7 rounds to 1 with probability 0.7 and to 0 with probability 0.3. Expectation matches the true value → unbiased. Stochastic rounding is used for low-precision training (BF16/FP8 gradient accumulation, INT-only training) to preserve small gradient updates that RNE would systematically round away. Options B, C, D misdescribe or forbid.",
+  "explanation": "RNE (round-half-to-even, also called banker's rounding) is the IEEE 754 default: round to nearest and break ties toward the even neighbor. Stochastic rounding assigns a probability to each of the two neighbors proportional to distance: e.g., a value 0.7 rounds to 1 with probability 0.7 and to 0 with probability 0.3. Expectation matches the true value \u2192 unbiased. Stochastic rounding is used for low-precision training (BF16/FP8 gradient accumulation, INT-only training) to preserve small gradient updates that RNE would systematically round away. Options B, C, D misdescribe or forbid.",
   "optionExplanations": {
     "A": "Wrong: they produce different values.",
     "B": "Correct: standard definitions and use cases.",
@@ -50,7 +50,7 @@
     "Stochastic rounding uses a per-value random draw."
   ],
   "nonImplications": [
-    "Does not imply stochastic rounding is uniformly superior — for inference, deterministic RNE is preferred.",
+    "Does not imply stochastic rounding is uniformly superior \u2014 for inference, deterministic RNE is preferred.",
     "Does not imply hardware always supports stochastic rounding; it is opt-in on some accelerators."
   ],
   "misconceptionTags": [
@@ -83,8 +83,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-ROUND-030.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

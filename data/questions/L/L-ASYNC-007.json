@@ -23,12 +23,26 @@
   "codeSnippet": "import torch, time\nx = torch.randn(4096, 4096, device=\"cuda\", dtype=torch.float16)\nw = torch.randn(4096, 4096, device=\"cuda\", dtype=torch.float16)\n\n# Warmup\nfor _ in range(3):\n    y = x @ w\n\nt0 = time.perf_counter()\nfor _ in range(100):\n    y = x @ w\nt1 = time.perf_counter()\nprint(f\"per-iter mean: {(t1 - t0) / 100 * 1000:.3f} ms\")\n\n# Prints: per-iter mean: 0.041 ms",
   "profileData": "Reported per-iter mean: 0.041 ms; expected ~2-3 ms based on 4096-square FP16 matmul on the target GPU.",
   "options": [
-    { "id": "A", "text": "Move the `time.perf_counter()` reads into a `with torch.no_grad():` block. The measurement is wrong because autograd tracking is running in the background, and disabling it eliminates the async accounting problem entirely." },
-    { "id": "B", "text": "Add `torch.cuda.synchronize()` immediately before `t0` and immediately before `t1`. The CPU timer currently ends before the GPU has finished the queued kernels; the pre-timer sync flushes prior work, and the pre-t1 sync waits for all 100 kernels to finish, so the interval reflects real GPU wall-time." },
-    { "id": "C", "text": "Replace `time.perf_counter()` with `time.time()`, which has higher resolution on Linux and can measure microsecond-level events. `perf_counter` under-reports for durations shorter than 100 µs." },
-    { "id": "D", "text": "Run the loop 10 000 times instead of 100. The current 100-iter loop is too short to amortize warmup; with more iterations, the per-iter mean will asymptotically approach the correct value without any change to the timing methodology." }
+    {
+      "id": "A",
+      "text": "Move the `time.perf_counter()` reads into a `with torch.no_grad():` block. The measurement is wrong because autograd tracking is running in the background, and disabling it eliminates the async accounting problem entirely."
+    },
+    {
+      "id": "B",
+      "text": "Add `torch.cuda.synchronize()` immediately before `t0` and immediately before `t1`. The CPU timer currently ends before the GPU has finished the queued kernels; the pre-timer sync flushes prior work, and the pre-t1 sync waits for all 100 kernels to finish, so the interval reflects real GPU wall-time."
+    },
+    {
+      "id": "C",
+      "text": "Replace `time.perf_counter()` with `time.time()`, which has higher resolution on Linux and can measure microsecond-level events. `perf_counter` under-reports for durations shorter than 100 µs."
+    },
+    {
+      "id": "D",
+      "text": "Run the loop 10 000 times instead of 100. The current 100-iter loop is too short to amortize warmup; with more iterations, the per-iter mean will asymptotically approach the correct value without any change to the timing methodology."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "CUDA launches are asynchronous. The `t1` capture happens right after the CPU has enqueued 100 kernels, not after the GPU has executed them. The visible cost is only the ~0.04 ms of dispatch overhead per launch. Correct methodology synchronizes before the start marker (to flush prior work), enqueues the loop, and synchronizes before the end marker. Option A conflates autograd with async accounting; C is false (perf_counter resolution is fine); D does not fix the fundamental issue.",
   "optionExplanations": {
     "A": "Wrong: no_grad has no effect on CUDA async semantics.",
@@ -44,15 +58,30 @@
     "Does not imply CUDA events are unnecessary; they can replace or complement the sync pattern.",
     "Does not imply autograd is free; it does add dispatcher overhead but not the 40× discrepancy here."
   ],
-  "misconceptionTags": ["autograd_scapegoat", "iteration_count_scapegoat"],
+  "misconceptionTags": [
+    "autograd_scapegoat",
+    "iteration_count_scapegoat"
+  ],
   "distractorRationales": {
     "A": "Misattributes async-timing bug to autograd.",
     "C": "False timer-resolution claim.",
     "D": "Iteration count does not fix missing sync."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-best", "locator": "Async launch + synchronize timing methodology", "supports": ["B"] },
-    { "ref": "DOC:torch-profiler", "locator": "Synchronization when timing PyTorch CUDA workloads", "supports": ["B"] }
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Async launch + synchronize timing methodology",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "Synchronization when timing PyTorch CUDA workloads",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
@@ -61,8 +90,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/L/L-ASYNC-007.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

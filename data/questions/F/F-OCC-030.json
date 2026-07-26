@@ -2,7 +2,7 @@
   "id": "F-OCC-030",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / Occupancy limiters — registers, SMEM, block size",
+  "subtopic": "CUDA / Occupancy limiters \u2014 registers, SMEM, block size",
   "learningObjective": "Understand what limits occupancy in practice: registers per thread, shared memory per block, and threads per block.",
   "archetype": "formula_performance",
   "difficulty": 3,
@@ -24,7 +24,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Registers per SM cap: 65536 / (96 * 256) = 2.66 → 2 blocks. SMEM per SM cap: 164 / 32 = 5.12 → 5 blocks. Thread-count cap: 2048 / 256 = 8 blocks. Block-count cap: 32 blocks. The binding constraint is registers → 2 blocks per SM → 512 active threads → 25% occupancy (relative to 2048 threads/SM peak)."
+      "text": "Registers per SM cap: 65536 / (96 * 256) = 2.66 \u2192 2 blocks. SMEM per SM cap: 164 / 32 = 5.12 \u2192 5 blocks. Thread-count cap: 2048 / 256 = 8 blocks. Block-count cap: 32 blocks. The binding constraint is registers \u2192 2 blocks per SM \u2192 512 active threads \u2192 25% occupancy (relative to 2048 threads/SM peak)."
     },
     {
       "id": "B",
@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "The compiler automatically spills registers to prevent register pressure from limiting occupancy; therefore, the effective occupancy is 100% (8 blocks × 256 threads = 2048)."
+      "text": "The compiler automatically spills registers to prevent register pressure from limiting occupancy; therefore, the effective occupancy is 100% (8 blocks \u00d7 256 threads = 2048)."
     },
     {
       "id": "D",
@@ -42,7 +42,7 @@
   "correctAnswers": [
     "A"
   ],
-  "explanation": "Occupancy = min(all resource limits). A100: (i) Registers/SM = 65536; per-block regs = 96 * 256 = 24576; SMs can hold floor(65536/24576) = 2 blocks. (ii) SMEM per SM ≤ 164 KB; per-block SMEM 32 KB → floor(164/32) = 5 blocks. (iii) Thread count: floor(2048/256) = 8. (iv) Block count: 32. The minimum is 2 (register-bound), so 2 blocks × 256 = 512 active threads → 25% relative occupancy. Register spill (choice C) is a real behavior, but nvcc does not silently do it just to boost occupancy — the user controls via `-maxrregcount` or `__launch_bounds__`; and spill increases traffic, hurting performance.",
+  "explanation": "Occupancy = min(all resource limits). A100: (i) Registers/SM = 65536; per-block regs = 96 * 256 = 24576; SMs can hold floor(65536/24576) = 2 blocks. (ii) SMEM per SM \u2264 164 KB; per-block SMEM 32 KB \u2192 floor(164/32) = 5 blocks. (iii) Thread count: floor(2048/256) = 8. (iv) Block count: 32. The minimum is 2 (register-bound), so 2 blocks \u00d7 256 = 512 active threads \u2192 25% relative occupancy. Register spill (choice C) is a real behavior, but nvcc does not silently do it just to boost occupancy \u2014 the user controls via `-maxrregcount` or `__launch_bounds__`; and spill increases traffic, hurting performance.",
   "optionExplanations": {
     "A": "Correct: register-bound at 2 blocks/SM, 25% occupancy.",
     "B": "Wrong: registers bind before SMEM in this case.",
@@ -89,8 +89,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-OCC-030.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

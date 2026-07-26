@@ -49,8 +49,8 @@
     "Standard QAT pipeline with fake-quant ops in the training graph."
   ],
   "nonImplications": [
-    "Does not imply STE converges to the same optima as full-precision training — some accuracy gap can remain.",
-    "Does not imply LSQ / PACT always beat STE — for INT8 they may be indistinguishable."
+    "Does not imply STE converges to the same optima as full-precision training \u2014 some accuracy gap can remain.",
+    "Does not imply LSQ / PACT always beat STE \u2014 for INT8 they may be indistinguishable."
   ],
   "misconceptionTags": [
     "ste_exact",
@@ -76,8 +76,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-QAT-033.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

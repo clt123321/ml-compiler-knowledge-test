@@ -51,7 +51,7 @@
   ],
   "nonImplications": [
     "Does not imply template-free search is always faster to converge; the larger space needs more measurements.",
-    "Does not imply template-free eliminates all human input — the compute definition and cost-model features are still designed."
+    "Does not imply template-free eliminates all human input \u2014 the compute definition and cost-model features are still designed."
   ],
   "misconceptionTags": [
     "template_free_dominates",
@@ -84,8 +84,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-SEARCHSP-022.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

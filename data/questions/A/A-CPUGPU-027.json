@@ -11,19 +11,38 @@
     "vendor": "generic",
     "architecture": "modern OoO CPU + SIMT GPU",
     "device": "generic",
-    "requiredFeatures": ["branch predictor (CPU)", "large register file (GPU)"]
+    "requiredFeatures": [
+      "branch predictor (CPU)",
+      "large register file (GPU)"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
   },
   "stem": "Which statements correctly contrast the CPU and GPU execution models? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "CPUs devote substantial die area to branch prediction, out-of-order scheduling and large caches per core; GPUs devote proportionally more area to compute units and register files, using massive thread-level parallelism to hide memory latency instead." },
-    { "id": "B", "text": "GPUs typically have a much larger register file per SM than a CPU core has per core, because switching between many warps requires their register state to remain resident for zero-cost context switching." },
-    { "id": "C", "text": "CPU L1 caches are typically per-core and larger per thread than GPU L1/shared memory per thread, reflecting the CPU's reliance on temporal locality within a single thread." },
-    { "id": "D", "text": "GPUs do not use caches at all; latency hiding via warp switching removes any need for a cache hierarchy." }
+    {
+      "id": "A",
+      "text": "CPUs devote substantial die area to branch prediction, out-of-order scheduling and large caches per core; GPUs devote proportionally more area to compute units and register files, using massive thread-level parallelism to hide memory latency instead."
+    },
+    {
+      "id": "B",
+      "text": "GPUs typically have a much larger register file per SM than a CPU core has per core, because switching between many warps requires their register state to remain resident for zero-cost context switching."
+    },
+    {
+      "id": "C",
+      "text": "CPU L1 caches are typically per-core and larger per thread than GPU L1/shared memory per thread, reflecting the CPU's reliance on temporal locality within a single thread."
+    },
+    {
+      "id": "D",
+      "text": "GPUs do not use caches at all; latency hiding via warp switching removes any need for a cache hierarchy."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
+  "correctAnswers": [
+    "A",
+    "B",
+    "C"
+  ],
   "explanation": "A: This is the canonical CPU-throughput vs GPU-throughput design philosophy, articulated in HP6/PMPP4. B: GPU register files (e.g., 65 K × 4 B per SM on A100 ≈ 256 KB) are much larger than CPU per-core register files (~2 KB architectural), enabling zero-cost warp switching. C: CPU L1D is ~32-48 KB per core with a small resident thread count; GPU L1/shared is up to 192 KB per SM but is shared across many threads, giving less per-thread capacity. D is wrong: modern GPUs have L1 (per SM) and L2 (per GPU) caches; latency hiding via warp switching complements, not replaces, caching.",
   "optionExplanations": {
     "A": "Correct: canonical design-philosophy contrast.",
@@ -39,14 +58,39 @@
     "Does not imply CPUs cannot exploit DLP; SIMD ISAs like AVX-512 provide substantial DLP.",
     "Does not imply GPUs never benefit from data locality; kernels still use shared memory and L1 for reuse."
   ],
-  "misconceptionTags": ["gpu_no_cache_myth", "cpu_gpu_design_philosophy"],
+  "misconceptionTags": [
+    "gpu_no_cache_myth",
+    "cpu_gpu_design_philosophy"
+  ],
   "distractorRationales": {
     "D": "Fabricated 'no cache' claim contradicting decades of GPU architecture."
   },
   "sourceRefs": [
-    { "ref": "BOOK:hp6", "locator": "Ch. 4 DLP, CPU vs GPU design philosophy", "supports": ["A", "B", "C"] },
-    { "ref": "BOOK:pmpp4", "locator": "Ch. 1-3 CPU/GPU design contrast", "supports": ["A", "B", "C"] },
-    { "ref": "DOC:cuda-guide", "locator": "Compute Capability tables, register file per SM", "supports": ["B"] }
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 4 DLP, CPU vs GPU design philosophy",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Ch. 1-3 CPU/GPU design contrast",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Compute Capability tables, register file per SM",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,
@@ -54,7 +98,7 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/A/A-CPUGPU-027.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"

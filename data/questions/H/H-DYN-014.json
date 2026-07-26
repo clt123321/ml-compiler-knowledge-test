@@ -49,8 +49,8 @@
     "Standard framework terminology (TensorRT / PyTorch / TF-Lite)."
   ],
   "nonImplications": [
-    "Does not imply dynamic quantization is always slower — for small per-tensor reductions the cost is negligible.",
-    "Does not imply static quantization always yields lower accuracy — often it is more stable because scales don't drift with input distribution."
+    "Does not imply dynamic quantization is always slower \u2014 for small per-tensor reductions the cost is negligible.",
+    "Does not imply static quantization always yields lower accuracy \u2014 often it is more stable because scales don't drift with input distribution."
   ],
   "misconceptionTags": [
     "dynamic_qat_synonym",
@@ -83,8 +83,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-DYN-014.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

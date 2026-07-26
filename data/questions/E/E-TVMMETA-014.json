@@ -2,7 +2,7 @@
   "id": "E-TVMMETA-014",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "TVM / MetaSchedule — search-based auto-tuning",
+  "subtopic": "TVM / MetaSchedule \u2014 search-based auto-tuning",
   "learningObjective": "Understand the role of MetaSchedule in TVM: search space, measurement, cost model, and its relationship to TensorIR schedule primitives.",
   "archetype": "concept_boundary",
   "difficulty": 3,
@@ -75,7 +75,7 @@
     },
     {
       "ref": "PAPER:ansor",
-      "locator": "Ansor (predecessor) — search space, cost model, measurement",
+      "locator": "Ansor (predecessor) \u2014 search space, cost model, measurement",
       "supports": [
         "C"
       ]
@@ -87,8 +87,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-TVMMETA-014.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

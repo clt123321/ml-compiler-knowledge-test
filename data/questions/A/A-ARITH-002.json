@@ -105,7 +105,7 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/A/A-ARITH-002.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"

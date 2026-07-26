@@ -65,14 +65,14 @@
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
-      "locator": "Structure of MLIR — Operations, Regions, Blocks, Values, Types, Attributes",
+      "locator": "Structure of MLIR \u2014 Operations, Regions, Blocks, Values, Types, Attributes",
       "supports": [
         "B"
       ]
     },
     {
       "ref": "PAPER:mlir",
-      "locator": "MLIR CGO 2021 — core IR model",
+      "locator": "MLIR CGO 2021 \u2014 core IR model",
       "supports": [
         "B"
       ]
@@ -84,8 +84,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIROP-001.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

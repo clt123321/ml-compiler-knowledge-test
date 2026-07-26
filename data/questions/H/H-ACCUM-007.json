@@ -43,10 +43,10 @@
     "C",
     "D"
   ],
-  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): bandwidth halving is central to Tensor Core speed-up. B (Wrong): mixed-precision Tensor Core is 8-16× faster than FP32 GEMM. C (Correct): accumulator dtype drives numerical stability. D (Correct): downcast rounding is a real, per-element error source.",
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): bandwidth halving is central to Tensor Core speed-up. B (Wrong): mixed-precision Tensor Core is 8-16\u00d7 faster than FP32 GEMM. C (Correct): accumulator dtype drives numerical stability. D (Correct): downcast rounding is a real, per-element error source.",
   "optionExplanations": {
     "A": "Correct: bandwidth halving is central to Tensor Core speed-up.",
-    "B": "Wrong: mixed-precision Tensor Core is 8-16× faster than FP32 GEMM.",
+    "B": "Wrong: mixed-precision Tensor Core is 8-16\u00d7 faster than FP32 GEMM.",
     "C": "Correct: accumulator dtype drives numerical stability.",
     "D": "Correct: downcast rounding is a real, per-element error source."
   },
@@ -54,8 +54,8 @@
     "The GEMM uses standard cuBLAS or CUTLASS Tensor Core kernels."
   ],
   "nonImplications": [
-    "Does not imply FP32 accumulator eliminates all numerical concerns — subnormal handling and non-associative order still matter.",
-    "Does not imply switching output to FP32 always improves accuracy meaningfully — many workloads see negligible difference."
+    "Does not imply FP32 accumulator eliminates all numerical concerns \u2014 subnormal handling and non-associative order still matter.",
+    "Does not imply switching output to FP32 always improves accuracy meaningfully \u2014 many workloads see negligible difference."
   ],
   "misconceptionTags": [
     "mixed_precision_same_speed_as_fp32",
@@ -91,8 +91,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/H/H-ACCUM-007.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

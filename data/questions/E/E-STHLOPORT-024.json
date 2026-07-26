@@ -21,7 +21,7 @@
   "options": [
     {
       "id": "A",
-      "text": "It decouples the release cycles of frameworks (PyTorch, JAX, TensorFlow) and compilers (XLA, IREE, ...): each side can evolve independently as long as they respect the StableHLO version compatibility contract, avoiding an O(frameworks × compilers) integration matrix and enabling shared optimization work."
+      "text": "It decouples the release cycles of frameworks (PyTorch, JAX, TensorFlow) and compilers (XLA, IREE, ...): each side can evolve independently as long as they respect the StableHLO version compatibility contract, avoiding an O(frameworks \u00d7 compilers) integration matrix and enabling shared optimization work."
     },
     {
       "id": "B",
@@ -39,7 +39,7 @@
   "correctAnswers": [
     "A"
   ],
-  "explanation": "The core design motivation for StableHLO (and similar interchange IRs) is to decouple the release cadence of ML frameworks from that of compiler backends. Without a stable contract, each new framework release risks breaking downstream compilers and vice versa — leading to a combinatorial integration burden (O(frameworks × compilers)). A versioned operator set with compatibility guarantees lets each side ship independently and share common optimization/backend infrastructure.",
+  "explanation": "The core design motivation for StableHLO (and similar interchange IRs) is to decouple the release cadence of ML frameworks from that of compiler backends. Without a stable contract, each new framework release risks breaking downstream compilers and vice versa \u2014 leading to a combinatorial integration burden (O(frameworks \u00d7 compilers)). A versioned operator set with compatibility guarantees lets each side ship independently and share common optimization/backend infrastructure.",
   "optionExplanations": {
     "A": "Correct: portability contract that reduces combinatorial integration cost.",
     "B": "Wrong: StableHLO does not mandate bit-identical numerics across frameworks/backends.",
@@ -51,7 +51,7 @@
   ],
   "nonImplications": [
     "Does not imply StableHLO removes the need for framework-specific optimizations.",
-    "Does not imply full portability of performance — hardware/backend differences still matter."
+    "Does not imply full portability of performance \u2014 hardware/backend differences still matter."
   ],
   "misconceptionTags": [
     "ir_removes_capture_myth",
@@ -77,8 +77,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-STHLOPORT-024.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

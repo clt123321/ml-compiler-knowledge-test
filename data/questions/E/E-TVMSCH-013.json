@@ -2,7 +2,7 @@
   "id": "E-TVMSCH-013",
   "type": "multiple",
   "module": "mlir_tvm_xla",
-  "subtopic": "TVM / TensorIR schedule primitives — split, bind, cache_read",
+  "subtopic": "TVM / TensorIR schedule primitives \u2014 split, bind, cache_read",
   "learningObjective": "Reason about the effect of individual TensorIR schedule primitives on the resulting loop structure and buffer accesses.",
   "archetype": "ir_transformation",
   "difficulty": 3,
@@ -71,7 +71,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:tvm-relax",
-      "locator": "TensorIR schedule primitives — split, bind, cache_read, vectorize",
+      "locator": "TensorIR schedule primitives \u2014 split, bind, cache_read, vectorize",
       "supports": [
         "B",
         "C",
@@ -85,8 +85,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-TVMSCH-013.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -24,7 +24,7 @@
     },
     {
       "id": "B",
-      "text": "Choosing, for each operator instance in the graph, a concrete implementation (library call, generated kernel, or fused template) based on operator type, shape, dtype, layout, and target hardware — with an optional cost model or measurement-based ranking."
+      "text": "Choosing, for each operator instance in the graph, a concrete implementation (library call, generated kernel, or fused template) based on operator type, shape, dtype, layout, and target hardware \u2014 with an optional cost model or measurement-based ranking."
     },
     {
       "id": "C",
@@ -51,7 +51,7 @@
   ],
   "nonImplications": [
     "Does not imply kernel selection is trivial; the search space can be very large.",
-    "Does not imply the selected kernel is optimal — the cost model may be approximate."
+    "Does not imply the selected kernel is optimal \u2014 the cost model may be approximate."
   ],
   "misconceptionTags": [
     "kernel_selection_runtime_dispatch"
@@ -83,8 +83,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-KERNSEL-019.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

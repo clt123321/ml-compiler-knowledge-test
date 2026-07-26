@@ -52,7 +52,7 @@
   ],
   "nonImplications": [
     "Does not imply that longer budgets always improve runtime; measurement noise and cost-model plateaus can cap gains.",
-    "Does not imply short budgets are always sufficient — some workloads need substantial trials to leave a bad local optimum."
+    "Does not imply short budgets are always sufficient \u2014 some workloads need substantial trials to leave a bad local optimum."
   ],
   "misconceptionTags": [
     "budget_orthogonal_to_runtime",
@@ -88,8 +88,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-BUDGET-029.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

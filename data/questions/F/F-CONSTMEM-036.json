@@ -36,13 +36,13 @@
     },
     {
       "id": "D",
-      "text": "`__constant__` memory is a 64 KB per-module region declared at file scope, cached in a dedicated constant cache; when all threads of a warp read the same address, the read is broadcast in a single access — most efficient for warp-uniform accesses (e.g., small lookup tables, per-block scalar parameters)."
+      "text": "`__constant__` memory is a 64 KB per-module region declared at file scope, cached in a dedicated constant cache; when all threads of a warp read the same address, the read is broadcast in a single access \u2014 most efficient for warp-uniform accesses (e.g., small lookup tables, per-block scalar parameters)."
     }
   ],
   "correctAnswers": [
     "D"
   ],
-  "explanation": "CUDA constant memory: 64 KB (module scope), declared with `__constant__` at file scope, read via normal C++ access, backed by a dedicated per-SM constant cache. The key performance property is broadcast: when all lanes of a warp read the same address, the read serves in a single access (fast); non-uniform accesses serialize. Ideal use: small lookup tables, per-launch scalar constants, per-block parameters that are uniform across threads. It is not unlimited (choice B), not per-block (choice C), not runtime-writable from the device (choice D — the host writes constants via `cudaMemcpyToSymbol` before the kernel launch).",
+  "explanation": "CUDA constant memory: 64 KB (module scope), declared with `__constant__` at file scope, read via normal C++ access, backed by a dedicated per-SM constant cache. The key performance property is broadcast: when all lanes of a warp read the same address, the read serves in a single access (fast); non-uniform accesses serialize. Ideal use: small lookup tables, per-launch scalar constants, per-block parameters that are uniform across threads. It is not unlimited (choice B), not per-block (choice C), not runtime-writable from the device (choice D \u2014 the host writes constants via `cudaMemcpyToSymbol` before the kernel launch).",
   "optionExplanations": {
     "A": "Wrong: it is not device-writable and is not for temporary state.",
     "B": "Wrong: 64 KB limit; not universally fastest.",
@@ -87,8 +87,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-CONSTMEM-036.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

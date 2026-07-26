@@ -64,19 +64,19 @@
     },
     {
       "id": "D",
-      "text": "Casting `acc.to(tl.float16)` at the end is guaranteed to produce a bit-identical result to running the entire kernel in FP16 including accumulation, because FP32→FP16 rounding is a no-op when values are within FP16 range."
+      "text": "Casting `acc.to(tl.float16)` at the end is guaranteed to produce a bit-identical result to running the entire kernel in FP16 including accumulation, because FP32\u2192FP16 rounding is a no-op when values are within FP16 range."
     }
   ],
   "correctAnswers": [
     "B",
     "C"
   ],
-  "explanation": "Options B, C are correct; options A, D are incorrect. A (Wrong): mixed-precision Tensor Core support is a core feature of CUDA's mma APIs. B (Correct): FP32 accumulation is standard for numerical robustness. C (Correct): mma.sync FP16-in, FP32-accum is the hardware path on Ampere+. D (Wrong): FP32-accum-then-downcast ≠ full-FP16 pipeline; the intermediate precision matters. General context: FP32 accumulation preserves precision. Triton's `tl.dot(..., out_dtype=tl.float32)` compiles to these.",
+  "explanation": "Options B, C are correct; options A, D are incorrect. A (Wrong): mixed-precision Tensor Core support is a core feature of CUDA's mma APIs. B (Correct): FP32 accumulation is standard for numerical robustness. C (Correct): mma.sync FP16-in, FP32-accum is the hardware path on Ampere+. D (Wrong): FP32-accum-then-downcast \u2260 full-FP16 pipeline; the intermediate precision matters. General context: FP32 accumulation preserves precision. Triton's `tl.dot(..., out_dtype=tl.float32)` compiles to these.",
   "optionExplanations": {
     "A": "Wrong: mixed-precision Tensor Core support is a core feature of CUDA's mma APIs.",
     "B": "Correct: FP32 accumulation is standard for numerical robustness.",
     "C": "Correct: mma.sync FP16-in, FP32-accum is the hardware path on Ampere+.",
-    "D": "Wrong: FP32-accum-then-downcast ≠ full-FP16 pipeline; the intermediate precision matters."
+    "D": "Wrong: FP32-accum-then-downcast \u2260 full-FP16 pipeline; the intermediate precision matters."
   },
   "assumptions": [
     "Tensor Core support on the target GPU (sm_70+).",
@@ -117,8 +117,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-GEMMFP16-015.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -22,7 +22,7 @@
   "options": [
     {
       "id": "A",
-      "text": "It computes `C[m,n] += A[m,k] * B[k,n]` — a standard matrix multiplication with accumulation into `%C`. The `k` dimension is a reduction iterator, so contributions across `k` are summed; `m` and `n` are parallel iterators."
+      "text": "It computes `C[m,n] += A[m,k] * B[k,n]` \u2014 a standard matrix multiplication with accumulation into `%C`. The `k` dimension is a reduction iterator, so contributions across `k` are summed; `m` and `n` are parallel iterators."
     },
     {
       "id": "B",
@@ -34,13 +34,13 @@
     },
     {
       "id": "D",
-      "text": "It computes a batched matmul across three parallel dimensions `(m, n, k)`, producing a rank-3 result tensor of shape `M x N x K` — because all iterators feed the output through the `linalg.yield`."
+      "text": "It computes a batched matmul across three parallel dimensions `(m, n, k)`, producing a rank-3 result tensor of shape `M x N x K` \u2014 because all iterators feed the output through the `linalg.yield`."
     }
   ],
   "correctAnswers": [
     "A"
   ],
-  "explanation": "`linalg.generic` semantics: for each point in the iteration space defined by `iterator_types`, apply the region body using operands and results indexed by the corresponding `indexing_maps`. Parallel iterators produce independent output entries; reduction iterators accumulate into the output using the body's yielded value written back through `outs`. Here iterators `(m, n, k)` with types `[parallel, parallel, reduction]` and maps for `A[m,k]`, `B[k,n]`, `C[m,n]` yield `C[m,n] += A[m,k]*B[k,n]` — exactly matmul with `C` initialized externally.",
+  "explanation": "`linalg.generic` semantics: for each point in the iteration space defined by `iterator_types`, apply the region body using operands and results indexed by the corresponding `indexing_maps`. Parallel iterators produce independent output entries; reduction iterators accumulate into the output using the body's yielded value written back through `outs`. Here iterators `(m, n, k)` with types `[parallel, parallel, reduction]` and maps for `A[m,k]`, `B[k,n]`, `C[m,n]` yield `C[m,n] += A[m,k]*B[k,n]` \u2014 exactly matmul with `C` initialized externally.",
   "optionExplanations": {
     "A": "Correct: standard `linalg.generic` matmul with reduction on `k`.",
     "B": "Wrong: `reduction` iterators explicitly sum across all values, not sample one.",
@@ -66,7 +66,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
-      "locator": "Linalg dialect — generic op semantics",
+      "locator": "Linalg dialect \u2014 generic op semantics",
       "supports": [
         "A"
       ]
@@ -85,8 +85,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIRLIN-004.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

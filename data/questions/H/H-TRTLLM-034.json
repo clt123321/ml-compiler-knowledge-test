@@ -20,13 +20,27 @@
   "profileData": "W4A16 group-size sweep on LLaMA-7B (perplexity, WikiText-2; lower is better):\n  group=32:   4.51   (metadata = ~0.5 bit/param equivalent)\n  group=64:   4.55   (metadata = ~0.25 bit/param)\n  group=128:  4.62   (metadata = ~0.125 bit/param)\n  group=256:  4.85   (metadata = ~0.0625 bit/param)",
   "stem": "The perplexity trend above shows finer group sizes yield better accuracy but with rising metadata cost. Which is the correct reading of the trade-off?",
   "options": [
-    { "id": "A", "text": "Smaller groups give more scale factors per weight matrix, letting each group's scale track a narrower value distribution — more accurate but with higher metadata bandwidth (still small relative to the weights). The right choice depends on the accuracy budget and bandwidth headroom; group=128 is a widely-used default because it captures most of the accuracy at ~3% metadata overhead." },
-    { "id": "B", "text": "Smaller groups are always better because more scales mean more information; the metadata cost is negligible and never affects wall-clock." },
-    { "id": "C", "text": "Larger groups are always better because they mean fewer scales to load; the accuracy differences are measurement noise." },
-    { "id": "D", "text": "The perplexity trend is unreliable because group size cannot affect model output; the differences must be caused by different random seeds during quantization." }
+    {
+      "id": "A",
+      "text": "Smaller groups give more scale factors per weight matrix, letting each group's scale track a narrower value distribution \u2014 more accurate but with higher metadata bandwidth (still small relative to the weights). The right choice depends on the accuracy budget and bandwidth headroom; group=128 is a widely-used default because it captures most of the accuracy at ~3% metadata overhead."
+    },
+    {
+      "id": "B",
+      "text": "Smaller groups are always better because more scales mean more information; the metadata cost is negligible and never affects wall-clock."
+    },
+    {
+      "id": "C",
+      "text": "Larger groups are always better because they mean fewer scales to load; the accuracy differences are measurement noise."
+    },
+    {
+      "id": "D",
+      "text": "The perplexity trend is unreliable because group size cannot affect model output; the differences must be caused by different random seeds during quantization."
+    }
   ],
-  "correctAnswers": ["A"],
-  "explanation": "Finer groups (smaller group size) mean each scale factor covers fewer weight values, allowing tighter fit to local distribution — higher accuracy. But each scale adds metadata: at group=32 with FP16 scales, metadata is one FP16 per 32 INT4 values = 2/(32*0.5)=12.5% overhead on top of the INT4 storage; group=128 gives 2/(128*0.5)=3.125%; group=256 gives 1.5%. The observed perplexity curve captures this trade-off directly. Options B, C are absolutist; option D denies a well-established mechanism.",
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Finer groups (smaller group size) mean each scale factor covers fewer weight values, allowing tighter fit to local distribution \u2014 higher accuracy. But each scale adds metadata: at group=32 with FP16 scales, metadata is one FP16 per 32 INT4 values = 2/(32*0.5)=12.5% overhead on top of the INT4 storage; group=128 gives 2/(128*0.5)=3.125%; group=256 gives 1.5%. The observed perplexity curve captures this trade-off directly. Options B, C are absolutist; option D denies a well-established mechanism.",
   "optionExplanations": {
     "A": "Correct: standard accuracy/metadata trade-off analysis.",
     "B": "Wrong: metadata cost is real, not negligible at small groups.",
@@ -38,18 +52,33 @@
     "Symmetric per-group quantization; INT4 weights."
   ],
   "nonImplications": [
-    "Does not imply group=32 is always preferable when accuracy is critical — kernel-side handling of many scales can add latency.",
-    "Does not imply group=128 is optimal for every model — larger or more sensitive models may benefit from smaller groups."
+    "Does not imply group=32 is always preferable when accuracy is critical \u2014 kernel-side handling of many scales can add latency.",
+    "Does not imply group=128 is optimal for every model \u2014 larger or more sensitive models may benefit from smaller groups."
   ],
-  "misconceptionTags": ["group_size_free", "quant_metadata_ignored"],
+  "misconceptionTags": [
+    "group_size_free",
+    "quant_metadata_ignored"
+  ],
   "distractorRationales": {
     "B": "Ignores metadata cost.",
     "C": "Denies accuracy effect.",
     "D": "Denies quantization mechanics."
   },
   "sourceRefs": [
-    { "ref": "PAPER:awq", "locator": "Group size ablations in AWQ paper", "supports": ["A"] },
-    { "ref": "PAPER:gptq", "locator": "Group size discussion in GPTQ", "supports": ["A"] }
+    {
+      "ref": "PAPER:awq",
+      "locator": "Group size ablations in AWQ paper",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "PAPER:gptq",
+      "locator": "Group size discussion in GPTQ",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
@@ -58,8 +87,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-TRTLLM-034.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

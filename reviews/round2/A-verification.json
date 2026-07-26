@@ -1,0 +1,684 @@
+[
+  {
+    "id": "A-AMDAHL-008",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-ARITH-001",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-ARITH-002",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-BANK-022",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-BATCH-028",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-BW-006",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-CACHE-010",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-COAL-009",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-CPUGPU-027",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-DIVERG-021",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B",
+      "C"
+    ],
+    "officialAnswer": [
+      "B",
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-ENERGY-016",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B"
+    ],
+    "officialAnswer": [
+      "A",
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-HIER-020",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "wording",
+        "note": "Round 1 MINOR wording finding still open (not blocking): Option C's per-SM capacity ordering 'HBM > L2 > SMEM > RF' has RF and SMEM in the wrong strict order on A100 (RF 256 KB > SMEM up to 192 KB). The overall intent (HBM/L2 dwarfs on-c. Round 2 confirms correctness of answer key and does not upgrade severity."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-ILP-030",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-INTENSE-019",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-LAUNCH-015",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-LITTLE-004",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-MEM-005",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "wording",
+        "note": "Round 1 MINOR wording finding still open (not blocking): Option C 'in one cycle to the whole warp' slightly simplifies the CUDA Programming Guide's canonical broadcast description ('as fast as a register read'). Consistent with the canar. Round 2 confirms correctness of answer key and does not upgrade severity."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-NVLINK-014",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-OCC-003",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-PARA-024",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-PCIE-013",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-PEAK-018",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-POWER-029",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-REGSPILL-025",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-RIDGE-007",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-SIMT-011",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B"
+    ],
+    "officialAnswer": [
+      "A",
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-STREAM-026",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-TC-023",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-THROUGH-017",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "A-WARP-012",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  }
+]

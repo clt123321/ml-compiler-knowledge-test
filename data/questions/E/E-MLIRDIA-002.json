@@ -74,7 +74,7 @@
     },
     {
       "ref": "PAPER:mlir",
-      "locator": "MLIR CGO 2021 — extensibility section",
+      "locator": "MLIR CGO 2021 \u2014 extensibility section",
       "supports": [
         "A",
         "B",
@@ -88,8 +88,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIRDIA-002.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

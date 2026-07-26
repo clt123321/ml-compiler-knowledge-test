@@ -75,12 +75,12 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "Decoding generates one token at a time; Q is only 1 row per head, but K and V of length S_kv per sequence must be fully read from HBM to compute attention. The per-step HBM traffic per (batch, head) is ~2 * S_kv * D * sizeof (K + V) plus small Q/O. Arithmetic intensity is very low — this is a canonical memory-bound step in LLM decoding, and the reason KV Cache size / bandwidth is a first-order concern in serving systems (paged KV cache, KV quantization, MQA/GQA). Per-step cost grows with S_kv, so long-context decoding becomes progressively slower per token.",
+  "explanation": "Decoding generates one token at a time; Q is only 1 row per head, but K and V of length S_kv per sequence must be fully read from HBM to compute attention. The per-step HBM traffic per (batch, head) is ~2 * S_kv * D * sizeof (K + V) plus small Q/O. Arithmetic intensity is very low \u2014 this is a canonical memory-bound step in LLM decoding, and the reason KV Cache size / bandwidth is a first-order concern in serving systems (paged KV cache, KV quantization, MQA/GQA). Per-step cost grows with S_kv, so long-context decoding becomes progressively slower per token.",
   "optionExplanations": {
     "A": "Wrong: no hardware compression; traffic grows with S_kv.",
     "B": "Correct: memory-bound; linear in S_kv per step.",
     "C": "Wrong: KV Cache far exceeds L2 for long contexts.",
-    "D": "Wrong: MMA on 1×D * D×S_kv is memory-bound, not compute-bound."
+    "D": "Wrong: MMA on 1\u00d7D * D\u00d7S_kv is memory-bound, not compute-bound."
   },
   "assumptions": [
     "Standard decode-phase attention without approximations.",
@@ -122,8 +122,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-KVCACHE-024.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

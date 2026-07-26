@@ -70,7 +70,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "The kernel takes FP16 inputs and accumulates in FP32; the reference upcasts inputs to FP32 first (no FP16 rounding). The primary error source is FP16 input rounding — each of 4096 accumulated products contributes a small error, and errors partially cancel but do not vanish. Empirically, FP16-input matmul is expected to differ from FP32-input matmul by roughly rtol ~1e-3 at moderate K, which matches the observation. Choice B is wrong: FP32 accumulation reduces but does not eliminate FP16-input rounding. C fabricates non-determinism and rejects tolerance testing. D partially points at a real issue (TF32 on Ampere for `float()` inputs would introduce error), but the observed error is dominated by FP16 rounding.",
+  "explanation": "The kernel takes FP16 inputs and accumulates in FP32; the reference upcasts inputs to FP32 first (no FP16 rounding). The primary error source is FP16 input rounding \u2014 each of 4096 accumulated products contributes a small error, and errors partially cancel but do not vanish. Empirically, FP16-input matmul is expected to differ from FP32-input matmul by roughly rtol ~1e-3 at moderate K, which matches the observation. Choice B is wrong: FP32 accumulation reduces but does not eliminate FP16-input rounding. C fabricates non-determinism and rejects tolerance testing. D partially points at a real issue (TF32 on Ampere for `float()` inputs would introduce error), but the observed error is dominated by FP16 rounding.",
   "optionExplanations": {
     "A": "Wrong: while TF32 default on Ampere can complicate references, the FP16-input error dominates here.",
     "B": "Wrong: FP32 accum does not restore FP16-input precision.",
@@ -83,7 +83,7 @@
     "K = 4096 accumulation length."
   ],
   "nonImplications": [
-    "Does not imply the kernel is guaranteed correct — a proper test should include edge cases (extreme values, dimension boundaries).",
+    "Does not imply the kernel is guaranteed correct \u2014 a proper test should include edge cases (extreme values, dimension boundaries).",
     "Does not imply this tolerance applies to all dtypes; FP8 or INT8 kernels have very different acceptable error bands."
   ],
   "misconceptionTags": [
@@ -117,8 +117,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-CORRECT-040.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

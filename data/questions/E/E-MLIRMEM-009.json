@@ -2,7 +2,7 @@
   "id": "E-MLIRMEM-009",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "MLIR / MemRef dialect — strides, memory space, layout",
+  "subtopic": "MLIR / MemRef dialect \u2014 strides, memory space, layout",
   "learningObjective": "Interpret a strided MemRef type descriptor and understand what its layout affix encodes about memory access patterns.",
   "archetype": "precise_definition",
   "difficulty": 3,
@@ -21,28 +21,28 @@
   "options": [
     {
       "id": "A",
-      "text": "A 4×8 column-major FP32 buffer because the second stride is `1`; MLIR's convention is that stride `1` in the last position indicates column-major layout, and the `3` denotes an alignment-in-bytes annotation."
+      "text": "A 4\u00d78 column-major FP32 buffer because the second stride is `1`; MLIR's convention is that stride `1` in the last position indicates column-major layout, and the `3` denotes an alignment-in-bytes annotation."
     },
     {
       "id": "B",
-      "text": "A 4×8 buffer of f32 in memory space 3 (typically GPU shared/workgroup memory), row-major (stride [8, 1]) with offset 0; the element `[i, j]` lives at linear address `i*8 + j` from the base pointer."
+      "text": "A 4\u00d78 buffer of f32 in memory space 3 (typically GPU shared/workgroup memory), row-major (stride [8, 1]) with offset 0; the element `[i, j]` lives at linear address `i*8 + j` from the base pointer."
     },
     {
       "id": "C",
-      "text": "A 4×8 buffer whose stride array is contiguous FP32 counts, so element `[i, j]` lives at byte address `i*8*4 + j*4`; the memory-space integer `3` denotes a runtime allocator ID resolved lazily at first access."
+      "text": "A 4\u00d78 buffer whose stride array is contiguous FP32 counts, so element `[i, j]` lives at byte address `i*8*4 + j*4`; the memory-space integer `3` denotes a runtime allocator ID resolved lazily at first access."
     },
     {
       "id": "D",
-      "text": "A 4×8 tensor value in memory space 3 with a non-standard SSA numbering; the `strided<[8,1], offset:0>` clause is documentation only and does not affect the address computation, which is always row-major for `memref`."
+      "text": "A 4\u00d78 tensor value in memory space 3 with a non-standard SSA numbering; the `strided<[8,1], offset:0>` clause is documentation only and does not affect the address computation, which is always row-major for `memref`."
     }
   ],
   "correctAnswers": [
     "B"
   ],
-  "explanation": "MLIR memref type: `memref<shape, layout, memory_space>`. `strided<[8, 1], offset: 0>` explicitly encodes the linear-index computation: element `[i, j]` at `offset + i*8 + j*1 = i*8 + j` (in element units, not bytes). Strides `[8, 1]` for a 4×8 buffer is exactly the standard row-major contiguous layout. The trailing integer `3` is the memory space attribute — semantically it is a discriminator (e.g., 0 = global, 3 = shared in GPU lowerings), a static classification of which memory the buffer lives in.",
+  "explanation": "MLIR memref type: `memref<shape, layout, memory_space>`. `strided<[8, 1], offset: 0>` explicitly encodes the linear-index computation: element `[i, j]` at `offset + i*8 + j*1 = i*8 + j` (in element units, not bytes). Strides `[8, 1]` for a 4\u00d78 buffer is exactly the standard row-major contiguous layout. The trailing integer `3` is the memory space attribute \u2014 semantically it is a discriminator (e.g., 0 = global, 3 = shared in GPU lowerings), a static classification of which memory the buffer lives in.",
   "optionExplanations": {
     "A": "Wrong: [8, 1] is row-major (fastest-varying last), not column-major.",
-    "B": "Correct: row-major stride [8,1] on 4×8 with memory space 3.",
+    "B": "Correct: row-major stride [8,1] on 4\u00d78 with memory space 3.",
     "C": "Wrong: strides are in element units, and memory-space is a static discriminator not a runtime ID.",
     "D": "Wrong: the strided clause is semantic, not documentation."
   },
@@ -66,7 +66,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
-      "locator": "MemRef Type — strides, offset, memory space",
+      "locator": "MemRef Type \u2014 strides, offset, memory space",
       "supports": [
         "B"
       ]
@@ -78,8 +78,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIRMEM-009.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

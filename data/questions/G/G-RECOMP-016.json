@@ -18,14 +18,33 @@
   },
   "stem": "Activation recomputation (a.k.a. gradient / activation checkpointing) trades extra forward FLOPs at backward time for reduced peak activation memory. Which of the following statements about the trade-off are TRUE? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "Recomputation is a net win when the peak activation memory (before checkpointing) exceeds the device budget and prevents a larger batch size or sequence length that would raise end-to-end throughput more than the recompute FLOPs cost." },
-    { "id": "B", "text": "Recomputing a cheap operator (e.g., elementwise activation) whose activation tensor is large is generally favorable, since the FLOPs added are small relative to the memory saved." },
-    { "id": "C", "text": "Recomputing an operator whose forward is compute-bound and whose activation is small (e.g., a heavy GEMM with a tiny output) is usually favorable, because the compiler gains ILP." },
-    { "id": "D", "text": "Recomputation changes the mathematical output of the forward and backward passes; users must accept a small accuracy drop." },
-    { "id": "E", "text": "Selective (per-op) recomputation policies can outperform whole-block checkpointing by choosing to recompute only the ops with the highest memory-per-FLOPs ratio." }
+    {
+      "id": "A",
+      "text": "Recomputation is a net win when the peak activation memory (before checkpointing) exceeds the device budget and prevents a larger batch size or sequence length that would raise end-to-end throughput more than the recompute FLOPs cost."
+    },
+    {
+      "id": "B",
+      "text": "Recomputing a cheap operator (e.g., elementwise activation) whose activation tensor is large is generally favorable, since the FLOPs added are small relative to the memory saved."
+    },
+    {
+      "id": "C",
+      "text": "Recomputing an operator whose forward is compute-bound and whose activation is small (e.g., a heavy GEMM with a tiny output) is usually favorable, because the compiler gains ILP."
+    },
+    {
+      "id": "D",
+      "text": "Recomputation changes the mathematical output of the forward and backward passes; users must accept a small accuracy drop."
+    },
+    {
+      "id": "E",
+      "text": "Selective (per-op) recomputation policies can outperform whole-block checkpointing by choosing to recompute only the ops with the highest memory-per-FLOPs ratio."
+    }
   ],
-  "correctAnswers": ["A", "B", "E"],
-  "explanation": "A is the fundamental rationale (memory pressure enabling more batching / longer context often more than offsets the recompute cost). B is the classic favorable case: cheap op with big activation (e.g., GELU, dropout) is a prime candidate to recompute. E captures the observation behind selective checkpointing schemes: not every op has the same memory-per-FLOPs ratio, so a targeted policy dominates uniform block checkpointing. C is the opposite of the favorable case — recomputing an expensive op with a small activation adds a lot of FLOPs for little memory saving. D is wrong: recomputation is semantics-preserving; it produces the same values that would have been cached.",
+  "correctAnswers": [
+    "A",
+    "B",
+    "E"
+  ],
+  "explanation": "A is the fundamental rationale (memory pressure enabling more batching / longer context often more than offsets the recompute cost). B is the classic favorable case: cheap op with big activation (e.g., GELU, dropout) is a prime candidate to recompute. E captures the observation behind selective checkpointing schemes: not every op has the same memory-per-FLOPs ratio, so a targeted policy dominates uniform block checkpointing. C is the opposite of the favorable case \u2014 recomputing an expensive op with a small activation adds a lot of FLOPs for little memory saving. D is wrong: recomputation is semantics-preserving; it produces the same values that would have been cached.",
   "optionExplanations": {
     "A": "Correct: the standard motivation is unlocking larger batches / longer contexts that raise throughput.",
     "B": "Correct: high memory-per-FLOPs ops are ideal to recompute.",
@@ -41,14 +60,33 @@
     "Does not imply recomputation is always a net win; when the model already fits with headroom, it only adds compile complexity and FLOPs.",
     "Does not imply the memory saved is exactly the sum of avoided activation sizes; buffer reuse interactions can dilute the benefit."
   ],
-  "misconceptionTags": ["recomp_changes_math", "recomp_helps_compute_bound_small_activation"],
+  "misconceptionTags": [
+    "recomp_changes_math",
+    "recomp_helps_compute_bound_small_activation"
+  ],
   "distractorRationales": {
     "C": "Reverses the memory-per-FLOPs criterion.",
     "D": "Confuses recomputation with an approximation."
   },
   "sourceRefs": [
-    { "ref": "PAPER:halide", "locator": "Recomputation vs. storage schedule primitives", "supports": ["A", "B", "E"] },
-    { "ref": "BOOK:sze-eff", "locator": "Activation-memory / recompute trade-off in DNN training", "supports": ["A", "B", "E"] }
+    {
+      "ref": "PAPER:halide",
+      "locator": "Recomputation vs. storage schedule primitives",
+      "supports": [
+        "A",
+        "B",
+        "E"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Activation-memory / recompute trade-off in DNN training",
+      "supports": [
+        "A",
+        "B",
+        "E"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
@@ -57,8 +95,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-RECOMP-016.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

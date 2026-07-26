@@ -19,12 +19,27 @@
   },
   "stem": "Select all correct statements about continuous (iteration-level) batching in LLM serving. (Choose all that apply.)",
   "options": [
-    { "id": "A", "text": "Continuous batching removes head-of-line blocking under variable-length outputs: short requests exit as soon as they finish rather than waiting for the longest request in the batch." },
-    { "id": "B", "text": "Continuous batching reduces per-token latency (TPOT) below the batch-1 baseline because sharing weight loads across requests amortizes HBM bandwidth per token." },
-    { "id": "C", "text": "Continuous batching is only meaningful for MoE models; dense transformers see no benefit because their batch dynamics are fully static." },
-    { "id": "D", "text": "Continuous batching improves aggregate throughput but does not improve (and may slightly worsen) per-token latency for a single request compared to running that request alone: joining a batch adds interference." }
+    {
+      "id": "A",
+      "text": "Continuous batching removes head-of-line blocking under variable-length outputs: short requests exit as soon as they finish rather than waiting for the longest request in the batch."
+    },
+    {
+      "id": "B",
+      "text": "Continuous batching reduces per-token latency (TPOT) below the batch-1 baseline because sharing weight loads across requests amortizes HBM bandwidth per token."
+    },
+    {
+      "id": "C",
+      "text": "Continuous batching is only meaningful for MoE models; dense transformers see no benefit because their batch dynamics are fully static."
+    },
+    {
+      "id": "D",
+      "text": "Continuous batching improves aggregate throughput but does not improve (and may slightly worsen) per-token latency for a single request compared to running that request alone: joining a batch adds interference."
+    }
   ],
-  "correctAnswers": ["A", "D"],
+  "correctAnswers": [
+    "A",
+    "D"
+  ],
   "explanation": "A is correct: iteration-level batching's canonical benefit is removing HoL blocking. D is correct: continuous batching improves throughput and fairness but a solo request on a dedicated GPU actually has the fastest TPOT for that request; joining a shared batch adds contention. B is wrong: continuous batching does share weight loads across requests (which raises throughput), but TPOT for a single request is bounded below by the total per-token bandwidth cost — joining a batch does not shorten one request's own per-token latency. C is wrong: dense transformers benefit primarily.",
   "optionExplanations": {
     "A": "Correct: removes HoL blocking.",
@@ -40,14 +55,31 @@
     "Does not imply continuous batching solves all throughput problems.",
     "Does not imply continuous batching is beneficial with only one active request."
   ],
-  "misconceptionTags": ["cbatch_reduces_tpot_myth", "cbatch_moe_only_myth"],
+  "misconceptionTags": [
+    "cbatch_reduces_tpot_myth",
+    "cbatch_moe_only_myth"
+  ],
   "distractorRationales": {
     "B": "Confuses throughput improvement with per-request latency reduction.",
     "C": "Wrong scope."
   },
   "sourceRefs": [
-    { "ref": "PAPER:orca", "locator": "Sec 3-4 — iteration-level scheduling", "supports": ["A", "D"] },
-    { "ref": "DOC:vllm", "locator": "Continuous batching design", "supports": ["A", "D"] }
+    {
+      "ref": "PAPER:orca",
+      "locator": "Sec 3-4 — iteration-level scheduling",
+      "supports": [
+        "A",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "Continuous batching design",
+      "supports": [
+        "A",
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
@@ -56,8 +88,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/J/J-CBPROP-022.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

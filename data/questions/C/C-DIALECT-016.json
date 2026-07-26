@@ -84,7 +84,7 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/C/C-DIALECT-016.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"

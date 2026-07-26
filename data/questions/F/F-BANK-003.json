@@ -63,16 +63,16 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "sm_80 shared memory has 32 banks with 4-byte-wide bank interleaving. In `tile[32][32]`, element `tile[r][c]` maps to bank `c mod 32`. Row write (W1): fix `threadIdx.y`, varying `threadIdx.x` → each thread hits a different bank → conflict-free. Column read (R1): fix `threadIdx.y`, varying `threadIdx.x` on the first index (rows) with fixed column `threadIdx.y` → all 32 threads read column `threadIdx.y`, i.e., addresses `4*(r*32 + threadIdx.y)`; each bank is `addr / 4 mod 32` = `(r*32 + threadIdx.y) mod 32` = `threadIdx.y mod 32` — same bank for all 32 threads → 32-way conflict. Padding to `tile[32][33]` breaks the bank alignment.",
+  "explanation": "sm_80 shared memory has 32 banks with 4-byte-wide bank interleaving. In `tile[32][32]`, element `tile[r][c]` maps to bank `c mod 32`. Row write (W1): fix `threadIdx.y`, varying `threadIdx.x` \u2192 each thread hits a different bank \u2192 conflict-free. Column read (R1): fix `threadIdx.y`, varying `threadIdx.x` on the first index (rows) with fixed column `threadIdx.y` \u2192 all 32 threads read column `threadIdx.y`, i.e., addresses `4*(r*32 + threadIdx.y)`; each bank is `addr / 4 mod 32` = `(r*32 + threadIdx.y) mod 32` = `threadIdx.y mod 32` \u2014 same bank for all 32 threads \u2192 32-way conflict. Padding to `tile[32][33]` breaks the bank alignment.",
   "optionExplanations": {
-    "A": "Wrong: sm_80 supports broadcast (same address across all threads → 1 access) but not multicast for distinct addresses in the same bank.",
+    "A": "Wrong: sm_80 supports broadcast (same address across all threads \u2192 1 access) but not multicast for distinct addresses in the same bank.",
     "C": "Wrong: the row write is not the conflict; the transposed read is.",
     "B": "Correct: identifies the conflict location and the classic padding fix.",
     "D": "Wrong: the CUDA compiler does not automatically eliminate SMEM bank conflicts."
   },
   "assumptions": [
     "Default 4-byte shared-memory bank width on sm_80.",
-    "The kernel is intended to transpose an N × N matrix with N a multiple of 32."
+    "The kernel is intended to transpose an N \u00d7 N matrix with N a multiple of 32."
   ],
   "nonImplications": [
     "Does not imply that padded tiles are always faster; padding wastes SMEM capacity, which can lower occupancy.",
@@ -110,8 +110,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-BANK-003.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

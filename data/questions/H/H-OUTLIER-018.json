@@ -16,7 +16,7 @@
   "softwareContext": {
     "stability": "stable_principle"
   },
-  "profileData": "Per-tensor INT8 quantization of LLM linear layer input activations:\n  Activation distribution: ~99% of values within [-2, 2]; ~1% of values in [-50, 50] (channel-localized outliers).\n  MinMax calibration: threshold = 50 → scale s = 50 / 127 ≈ 0.394 → ~99% of values occupy only ~2 / 0.394 ≈ 5 out of 254 quantization levels.\n  Observed effect: post-quantization perplexity increases 3-5×.",
+  "profileData": "Per-tensor INT8 quantization of LLM linear layer input activations:\n  Activation distribution: ~99% of values within [-2, 2]; ~1% of values in [-50, 50] (channel-localized outliers).\n  MinMax calibration: threshold = 50 \u2192 scale s = 50 / 127 \u2248 0.394 \u2192 ~99% of values occupy only ~2 / 0.394 \u2248 5 out of 254 quantization levels.\n  Observed effect: post-quantization perplexity increases 3-5\u00d7.",
   "stem": "Per-tensor MinMax INT8 quantization on this LLM layer collapses accuracy. Which explanation is most accurate?",
   "options": [
     {
@@ -51,8 +51,8 @@
     "Symmetric per-tensor quantization with MinMax calibration."
   ],
   "nonImplications": [
-    "Does not imply per-channel activation quantization is always feasible — some architectures make it hard to align activation channels across ops.",
-    "Does not imply SmoothQuant is the only remedy — AWQ, LLM.int8's mixed-precision fallback, and other methods exist."
+    "Does not imply per-channel activation quantization is always feasible \u2014 some architectures make it hard to align activation channels across ops.",
+    "Does not imply SmoothQuant is the only remedy \u2014 AWQ, LLM.int8's mixed-precision fallback, and other methods exist."
   ],
   "misconceptionTags": [
     "int8_unusable_for_llm",
@@ -86,8 +86,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-OUTLIER-018.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

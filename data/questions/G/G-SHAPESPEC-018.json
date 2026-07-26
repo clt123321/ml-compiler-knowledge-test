@@ -18,13 +18,32 @@
   },
   "stem": "Consider a compiler that must handle both fully shape-specialized compilation (one compiled artifact per shape combination) and dynamic-shape compilation (one artifact valid across a shape range). Which of the following statements are TRUE? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "Shape-specialized artifacts can apply optimizations that require known constants (e.g., loop-tripcount-dependent unrolling, tile sizes tuned to exact dimensions) that a dynamic-shape artifact cannot use for the same code path." },
-    { "id": "B", "text": "Dynamic-shape artifacts trade some per-shape performance for reduced compilation time and reduced storage of many specialized kernels; symbolic shapes let the compiler emit one kernel with runtime-dispatched tail handling." },
-    { "id": "C", "text": "Fully shape-specialized compilation is always faster at runtime because it avoids all runtime dispatch, even for shapes seen only once during serving." },
-    { "id": "D", "text": "Dynamic-shape compilation is semantically incorrect for models with shape-dependent numerics (e.g., a broadcast that depends on the runtime shape); shape specialization is required for correctness." },
-    { "id": "E", "text": "A hybrid strategy — bucket runtime shapes into a small number of buckets and specialize each — can capture much of the per-shape speed while bounding compile time and cache size." }
+    {
+      "id": "A",
+      "text": "Shape-specialized artifacts can apply optimizations that require known constants (e.g., loop-tripcount-dependent unrolling, tile sizes tuned to exact dimensions) that a dynamic-shape artifact cannot use for the same code path."
+    },
+    {
+      "id": "B",
+      "text": "Dynamic-shape artifacts trade some per-shape performance for reduced compilation time and reduced storage of many specialized kernels; symbolic shapes let the compiler emit one kernel with runtime-dispatched tail handling."
+    },
+    {
+      "id": "C",
+      "text": "Fully shape-specialized compilation is always faster at runtime because it avoids all runtime dispatch, even for shapes seen only once during serving."
+    },
+    {
+      "id": "D",
+      "text": "Dynamic-shape compilation is semantically incorrect for models with shape-dependent numerics (e.g., a broadcast that depends on the runtime shape); shape specialization is required for correctness."
+    },
+    {
+      "id": "E",
+      "text": "A hybrid strategy \u2014 bucket runtime shapes into a small number of buckets and specialize each \u2014 can capture much of the per-shape speed while bounding compile time and cache size."
+    }
   ],
-  "correctAnswers": ["A", "B", "E"],
+  "correctAnswers": [
+    "A",
+    "B",
+    "E"
+  ],
   "explanation": "A captures the fundamental optimization advantage of shape specialization. B captures the fundamental cost/storage/compile-time advantage of dynamic shapes; symbolic-shape emitters (TorchInductor with `dynamic=True`, TVM Relax with symbolic shapes) do exactly this. E is a well-known engineering compromise. C is false: for shapes seen once, specialization pays the compile-time cost that dominates the runtime saving. D is false: dynamic-shape compilation is semantics-preserving; the compiler symbolically tracks broadcast, and correctness does not depend on shape being a compile-time constant.",
   "optionExplanations": {
     "A": "Correct: canonical advantage of shape specialization.",
@@ -38,16 +57,35 @@
   ],
   "nonImplications": [
     "Does not imply dynamic-shape compilation is universally worse at runtime; on some backends symbolic tiling reaches within 5-10% of specialized.",
-    "Does not imply bucketing is free — extra buckets add compile time and code size."
+    "Does not imply bucketing is free \u2014 extra buckets add compile time and code size."
   ],
-  "misconceptionTags": ["specialize_always_faster", "dynamic_shape_incorrect"],
+  "misconceptionTags": [
+    "specialize_always_faster",
+    "dynamic_shape_incorrect"
+  ],
   "distractorRationales": {
     "C": "Ignores compile-time amortization for single-use shapes.",
     "D": "Confuses correctness with performance."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-inductor", "locator": "Dynamic shape compilation; symbolic integers", "supports": ["A", "B", "E"] },
-    { "ref": "DOC:tvm-relax", "locator": "Relax symbolic shape and dispatch", "supports": ["A", "B", "E"] }
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Dynamic shape compilation; symbolic integers",
+      "supports": [
+        "A",
+        "B",
+        "E"
+      ]
+    },
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "Relax symbolic shape and dispatch",
+      "supports": [
+        "A",
+        "B",
+        "E"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
@@ -56,8 +94,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-SHAPESPEC-018.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

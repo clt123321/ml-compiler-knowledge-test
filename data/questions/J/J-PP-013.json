@@ -88,8 +88,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/J/J-PP-013.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

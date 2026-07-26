@@ -2,7 +2,7 @@
   "id": "F-GEMV-013",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / GEMV — row-parallel dot product with warp reduction",
+  "subtopic": "CUDA / GEMV \u2014 row-parallel dot product with warp reduction",
   "learningObjective": "Analyze a CUDA GEMV kernel that assigns one warp per row and identify the memory-bandwidth bottleneck.",
   "archetype": "code_implementation",
   "difficulty": 3,
@@ -67,7 +67,7 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "GEMV has arithmetic intensity ~1/4 FLOP/byte for FP32 (one FMA per 4-byte load from A + amortized 4-byte load from x), which is far below any modern GPU's compute:bandwidth balance (~10-40 FLOPs/byte on A100 for FP32). It is memory-bound. Access pattern: lane `l` reads `A[row*K + l], A[row*K + l+32], ...`; consecutive lanes hit consecutive elements of the row — that is fully coalesced within each iteration. `x` is indeed read redundantly by every row (M times total); the L2 usually caches it since x is only K*4 bytes. Choice C confuses global-memory coalescing (fine here) with shared-memory bank conflicts (not applicable — no SMEM used).",
+  "explanation": "GEMV has arithmetic intensity ~1/4 FLOP/byte for FP32 (one FMA per 4-byte load from A + amortized 4-byte load from x), which is far below any modern GPU's compute:bandwidth balance (~10-40 FLOPs/byte on A100 for FP32). It is memory-bound. Access pattern: lane `l` reads `A[row*K + l], A[row*K + l+32], ...`; consecutive lanes hit consecutive elements of the row \u2014 that is fully coalesced within each iteration. `x` is indeed read redundantly by every row (M times total); the L2 usually caches it since x is only K*4 bytes. Choice C confuses global-memory coalescing (fine here) with shared-memory bank conflicts (not applicable \u2014 no SMEM used).",
   "optionExplanations": {
     "A": "Wrong: GEMV is not compute-bound at typical K values.",
     "B": "Wrong: no SMEM used, so no bank conflicts; but the SMEM-for-x optimization is a real strategy for block-parallel GEMV variants.",
@@ -114,8 +114,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-GEMV-013.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

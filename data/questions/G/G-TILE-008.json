@@ -16,34 +16,34 @@
   "softwareContext": {
     "stability": "stable_principle"
   },
-  "stem": "A GEMM inner kernel `C_tile += A_tile * B_tile` uses square tiles of size `T×T` (FP32) for all three matrices. The target on-chip buffer (L1 cache line budget or GPU shared memory partition) available for this kernel is 48 KB. What is the largest tile size `T` (integer) such that the three tiles fit simultaneously in the 48 KB budget?",
+  "stem": "A GEMM inner kernel `C_tile += A_tile * B_tile` uses square tiles of size `T\u00d7T` (FP32) for all three matrices. The target on-chip buffer (L1 cache line budget or GPU shared memory partition) available for this kernel is 48 KB. What is the largest tile size `T` (integer) such that the three tiles fit simultaneously in the 48 KB budget?",
   "options": [
     {
       "id": "A",
-      "text": "T = 96. Three 96×96 FP32 tiles occupy 3 × 96² × 4 = 110,592 bytes; caches typically allow 2× overcommit so 96 fits."
+      "text": "T = 96. Three 96\u00d796 FP32 tiles occupy 3 \u00d7 96\u00b2 \u00d7 4 = 110,592 bytes; caches typically allow 2\u00d7 overcommit so 96 fits."
     },
     {
       "id": "B",
-      "text": "T = 32. Three 32×32 FP32 tiles occupy 3 × 32² × 4 = 12,288 bytes; anything larger overflows 48 KB."
+      "text": "T = 32. Three 32\u00d732 FP32 tiles occupy 3 \u00d7 32\u00b2 \u00d7 4 = 12,288 bytes; anything larger overflows 48 KB."
     },
     {
       "id": "C",
-      "text": "T = 128. Three 128×128 FP32 tiles occupy 3 × 128² × 4 = 196,608 bytes, which is the standard 48 KB × 4-way associativity assumption."
+      "text": "T = 128. Three 128\u00d7128 FP32 tiles occupy 3 \u00d7 128\u00b2 \u00d7 4 = 196,608 bytes, which is the standard 48 KB \u00d7 4-way associativity assumption."
     },
     {
       "id": "D",
-      "text": "T = 64. Three 64×64 FP32 tiles occupy 3 × 64² × 4 = 49,152 bytes = 48 KB exactly."
+      "text": "T = 64. Three 64\u00d764 FP32 tiles occupy 3 \u00d7 64\u00b2 \u00d7 4 = 49,152 bytes = 48 KB exactly."
     }
   ],
   "correctAnswers": [
     "D"
   ],
-  "explanation": "Bytes = 3 × T² × sizeof(FP32) = 12 × T². Set 12 × T² ≤ 48 × 1024 = 49,152 → T² ≤ 4,096 → T ≤ 64. T = 64 achieves exactly 49,152 bytes. T = 96 requires 110,592 bytes (2.25× budget); T = 128 requires 196,608 bytes (4× budget); caches do not tolerate overcommit. T = 32 fits with room to spare and is not the largest.",
+  "explanation": "Bytes = 3 \u00d7 T\u00b2 \u00d7 sizeof(FP32) = 12 \u00d7 T\u00b2. Set 12 \u00d7 T\u00b2 \u2264 48 \u00d7 1024 = 49,152 \u2192 T\u00b2 \u2264 4,096 \u2192 T \u2264 64. T = 64 achieves exactly 49,152 bytes. T = 96 requires 110,592 bytes (2.25\u00d7 budget); T = 128 requires 196,608 bytes (4\u00d7 budget); caches do not tolerate overcommit. T = 32 fits with room to spare and is not the largest.",
   "optionExplanations": {
-    "A": "Wrong: caches do not permit 2.25× overcommit; performance would collapse from thrashing / spills.",
+    "A": "Wrong: caches do not permit 2.25\u00d7 overcommit; performance would collapse from thrashing / spills.",
     "B": "Wrong: 32 fits but is not the largest; the question asks for the largest T.",
-    "C": "Wrong: 4× overcommit is not how cache/SMEM budgets work.",
-    "D": "Correct: 3 × 64² × 4 = 49,152 bytes exactly fits 48 KB."
+    "C": "Wrong: 4\u00d7 overcommit is not how cache/SMEM budgets work.",
+    "D": "Correct: 3 \u00d7 64\u00b2 \u00d7 4 = 49,152 bytes exactly fits 48 KB."
   },
   "assumptions": [
     "The three tiles are the sole occupants of the 48 KB budget.",
@@ -86,8 +86,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-TILE-008.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

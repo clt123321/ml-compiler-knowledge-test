@@ -2,7 +2,7 @@
   "id": "E-TVMFUS-015",
   "type": "multiple",
   "module": "mlir_tvm_xla",
-  "subtopic": "TVM / Operator fusion — graph-level and tensor-level",
+  "subtopic": "TVM / Operator fusion \u2014 graph-level and tensor-level",
   "learningObjective": "Distinguish graph-level operator fusion in Relax from loop-level fusion in TensorIR and understand what each achieves.",
   "archetype": "concept_boundary",
   "difficulty": 3,
@@ -21,13 +21,28 @@
   },
   "stem": "Which statements about operator fusion in TVM are correct? (Select all that apply.)",
   "options": [
-    { "id": "A", "text": "Graph-level fusion in Relax groups multiple ops into a single fused sub-function (often a call into a fused PrimFunc), reducing kernel launch counts and enabling shared intermediate buffers." },
-    { "id": "B", "text": "Loop-level fusion in TensorIR (`sch.compute_inline`, `sch.reverse_compute_at`) merges producer and consumer loop nests inside a PrimFunc, eliminating intermediate materialization and improving locality." },
-    { "id": "C", "text": "Graph-level fusion can always fuse arbitrary op pairs; there is no notion of a fusion boundary or per-op fusion policy in Relax." },
-    { "id": "D", "text": "External-library ops (e.g., calls to cuBLAS or cuDNN) can be freely fused with generated PrimFunc kernels because Relax's fusion pass rewrites external calls into loop bodies at compile time." }
+    {
+      "id": "A",
+      "text": "Graph-level fusion in Relax groups multiple ops into a single fused sub-function (often a call into a fused PrimFunc), reducing kernel launch counts and enabling shared intermediate buffers."
+    },
+    {
+      "id": "B",
+      "text": "Loop-level fusion in TensorIR (`sch.compute_inline`, `sch.reverse_compute_at`) merges producer and consumer loop nests inside a PrimFunc, eliminating intermediate materialization and improving locality."
+    },
+    {
+      "id": "C",
+      "text": "Graph-level fusion can always fuse arbitrary op pairs; there is no notion of a fusion boundary or per-op fusion policy in Relax."
+    },
+    {
+      "id": "D",
+      "text": "External-library ops (e.g., calls to cuBLAS or cuDNN) can be freely fused with generated PrimFunc kernels because Relax's fusion pass rewrites external calls into loop bodies at compile time."
+    }
   ],
-  "correctAnswers": ["A", "B"],
-  "explanation": "A: Relax's graph-level fusion groups ops into a fused function/PrimFunc — this is the standard fusion optimization at the operator level, reducing launches and enabling scalar/tensor reuse. B: Loop-level fusion in TensorIR merges producer/consumer via `compute_inline` or `compute_at` primitives. C is wrong: Relax defines fusion patterns/policies (e.g., what op types can be epilogue-fused, per-op fusion attributes); not everything fuses. D is wrong: external-library calls are opaque black boxes; they cannot be rewritten into loop bodies and thus cannot participate in TensorIR-level fusion the same way generated PrimFuncs can.",
+  "correctAnswers": [
+    "A",
+    "B"
+  ],
+  "explanation": "A: Relax's graph-level fusion groups ops into a fused function/PrimFunc \u2014 this is the standard fusion optimization at the operator level, reducing launches and enabling scalar/tensor reuse. B: Loop-level fusion in TensorIR merges producer/consumer via `compute_inline` or `compute_at` primitives. C is wrong: Relax defines fusion patterns/policies (e.g., what op types can be epilogue-fused, per-op fusion attributes); not everything fuses. D is wrong: external-library calls are opaque black boxes; they cannot be rewritten into loop bodies and thus cannot participate in TensorIR-level fusion the same way generated PrimFuncs can.",
   "optionExplanations": {
     "A": "Correct: graph-level fusion at the Relax layer.",
     "B": "Correct: loop-level fusion via TensorIR schedule primitives.",
@@ -41,14 +56,30 @@
     "Does not imply graph-level and loop-level fusion are redundant; they operate at different scales and can compose.",
     "Does not imply fusion always improves performance; over-fusion can hurt register/SMEM pressure."
   ],
-  "misconceptionTags": ["fusion_no_boundary_myth", "extern_op_fusion_myth"],
+  "misconceptionTags": [
+    "fusion_no_boundary_myth",
+    "extern_op_fusion_myth"
+  ],
   "distractorRationales": {
     "C": "Ignores fusion policies and boundaries.",
     "D": "Confuses opaque external calls with generated PrimFuncs."
   },
   "sourceRefs": [
-    { "ref": "DOC:tvm-relax", "locator": "Fusion pass in Relax; TensorIR compute_inline / compute_at", "supports": ["A", "B"] },
-    { "ref": "PAPER:tvm", "locator": "TVM OSDI 2018 — operator fusion", "supports": ["A"] }
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "Fusion pass in Relax; TensorIR compute_inline / compute_at",
+      "supports": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "TVM OSDI 2018 \u2014 operator fusion",
+      "supports": [
+        "A"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,
@@ -56,8 +87,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-TVMFUS-015.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

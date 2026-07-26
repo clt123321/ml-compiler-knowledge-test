@@ -56,7 +56,7 @@
   "correctAnswers": [
     "A"
   ],
-  "explanation": "Hillis-Steele scan: at each of log N steps, thread `t` adds the value from `t - offset` — total work per element is O(log N), so total work is O(N log N). Blelloch (balanced tree) scan: up-sweep builds partial sums, down-sweep propagates prefixes; both phases have log N depth, but each thread participates in only a fraction of the tree — total work is O(N). On GPUs, Blelloch is 'work-efficient' (fewer ops), but its non-uniform access pattern requires care with shared-memory bank conflicts (padding trick). Hillis-Steele is simpler and can win in practice on small N due to its uniform access pattern.",
+  "explanation": "Hillis-Steele scan: at each of log N steps, thread `t` adds the value from `t - offset` \u2014 total work per element is O(log N), so total work is O(N log N). Blelloch (balanced tree) scan: up-sweep builds partial sums, down-sweep propagates prefixes; both phases have log N depth, but each thread participates in only a fraction of the tree \u2014 total work is O(N). On GPUs, Blelloch is 'work-efficient' (fewer ops), but its non-uniform access pattern requires care with shared-memory bank conflicts (padding trick). Hillis-Steele is simpler and can win in practice on small N due to its uniform access pattern.",
   "optionExplanations": {
     "A": "Correct: work vs depth trade-off; Blelloch is work-efficient but pattern-heavier.",
     "B": "Wrong: work costs differ (O(N log N) vs O(N)).",
@@ -83,7 +83,7 @@
   "sourceRefs": [
     {
       "ref": "BOOK:pmpp4",
-      "locator": "Scan/Prefix-sum chapter — Hillis-Steele vs Blelloch",
+      "locator": "Scan/Prefix-sum chapter \u2014 Hillis-Steele vs Blelloch",
       "supports": [
         "A"
       ]
@@ -103,8 +103,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-SCAN-012.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -42,10 +42,10 @@
     "C",
     "D"
   ],
-  "explanation": "C: W4A16's design intent is exactly memory-bandwidth-bound decode; INT4 halves weight traffic vs. INT8 while dequant-in-register keeps compute in FP16 Tensor Cores — INT4 Tensor Core hardware is NOT required (contradicting A). D: W8A8 targets compute-bound cases where INT8 Tensor Core throughput dominates and activations can be quantized cheaply. A is false: W4A16 GEMMs typically dequant INT4 to FP16 in registers and use FP16 Tensor Cores. B is false: W8A16 is weight-only quantization; activations stay in FP16, so no activation-calibration step is needed and the matmul uses FP16 Tensor Cores with dequantized weights, not INT8.",
+  "explanation": "C: W4A16's design intent is exactly memory-bandwidth-bound decode; INT4 halves weight traffic vs. INT8 while dequant-in-register keeps compute in FP16 Tensor Cores \u2014 INT4 Tensor Core hardware is NOT required (contradicting A). D: W8A8 targets compute-bound cases where INT8 Tensor Core throughput dominates and activations can be quantized cheaply. A is false: W4A16 GEMMs typically dequant INT4 to FP16 in registers and use FP16 Tensor Cores. B is false: W8A16 is weight-only quantization; activations stay in FP16, so no activation-calibration step is needed and the matmul uses FP16 Tensor Cores with dequantized weights, not INT8.",
   "optionExplanations": {
     "A": "Wrong: W4A16 does not require INT4 Tensor Cores.",
-    "B": "Wrong: W8A16 is weight-only — activations stay in FP16, no activation calibration needed, matmul uses FP16 TCs.",
+    "B": "Wrong: W8A16 is weight-only \u2014 activations stay in FP16, no activation calibration needed, matmul uses FP16 TCs.",
     "C": "Correct: W4A16 memory-bandwidth logic and dequant-in-register.",
     "D": "Correct: W8A8 use case description."
   },
@@ -98,8 +98,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/H/H-WQUANT-013.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

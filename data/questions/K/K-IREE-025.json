@@ -21,12 +21,26 @@
   },
   "stem": "Which statement best captures IREE's architecture?",
   "options": [
-    { "id": "A", "text": "IREE is a Python-based interpreter that JIT-compiles PyTorch models directly to CUDA at each inference call; it does not use MLIR and does not target hardware other than NVIDIA GPUs." },
-    { "id": "B", "text": "IREE is an MLIR-based compilation pipeline that lowers input (e.g., StableHLO, TOSA) to a target-specific VM module plus binary kernels; the IREE runtime consists of a bytecode VM and a Hardware Abstraction Layer (HAL) that abstracts over Vulkan, CUDA, ROCm, CPU and WebGPU backends." },
-    { "id": "C", "text": "IREE is a thin wrapper around cuDNN that exposes an ONNX-compatible API; it has no MLIR pipeline of its own and forwards all ops to cuDNN kernels." },
-    { "id": "D", "text": "IREE is a training framework based on JAX's tracing; it does not provide inference deployment and cannot produce a compiled artifact for embedded targets such as WebGPU or edge accelerators." }
+    {
+      "id": "A",
+      "text": "IREE is a Python-based interpreter that JIT-compiles PyTorch models directly to CUDA at each inference call; it does not use MLIR and does not target hardware other than NVIDIA GPUs."
+    },
+    {
+      "id": "B",
+      "text": "IREE is an MLIR-based compilation pipeline that lowers input (e.g., StableHLO, TOSA) to a target-specific VM module plus binary kernels; the IREE runtime consists of a bytecode VM and a Hardware Abstraction Layer (HAL) that abstracts over Vulkan, CUDA, ROCm, CPU and WebGPU backends."
+    },
+    {
+      "id": "C",
+      "text": "IREE is a thin wrapper around cuDNN that exposes an ONNX-compatible API; it has no MLIR pipeline of its own and forwards all ops to cuDNN kernels."
+    },
+    {
+      "id": "D",
+      "text": "IREE is a training framework based on JAX's tracing; it does not provide inference deployment and cannot produce a compiled artifact for embedded targets such as WebGPU or edge accelerators."
+    }
   ],
-  "correctAnswers": ["B"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "IREE (Intermediate Representation Execution Environment) is an MLIR-based compiler + runtime. It ingests a high-level dialect (StableHLO / TOSA / Torch-MLIR), lowers through several MLIR dialects, and emits an IREE VM module plus compiled binary payloads (SPIR-V, PTX, LLVM-object, WebGPU, etc.). The runtime consists of a bytecode VM to dispatch work plus a HAL to abstract device backends. This gives it a strong compiler/runtime separation and multi-backend portability.",
   "optionExplanations": {
     "A": "Wrong: IREE is MLIR-based, not a Python interpreter, and supports many backends.",
@@ -41,14 +55,23 @@
     "Does not imply IREE always outperforms other stacks; performance is workload- and target-dependent.",
     "Does not imply IREE is the only MLIR-based ML compiler; XLA, Torch-MLIR and others exist in the same space."
   ],
-  "misconceptionTags": ["iree_python_myth", "iree_cudnn_wrapper_myth"],
+  "misconceptionTags": [
+    "iree_python_myth",
+    "iree_cudnn_wrapper_myth"
+  ],
   "distractorRationales": {
     "A": "Wrong technology stack.",
     "C": "Fabricates dependency on cuDNN.",
     "D": "Wrong scope (training vs inference)."
   },
   "sourceRefs": [
-    { "ref": "DOC:iree", "locator": "IREE architecture: compiler, VM, HAL", "supports": ["B"] }
+    {
+      "ref": "DOC:iree",
+      "locator": "IREE architecture: compiler, VM, HAL",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,
@@ -56,8 +79,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/K/K-IREE-025.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

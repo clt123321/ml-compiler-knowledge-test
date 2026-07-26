@@ -40,7 +40,7 @@
     "C",
     "D"
   ],
-  "explanation": "Loop fission is the inverse of fusion. Legitimate uses: (A) split a register-heavy body so each half fits in the register budget without spills; (B) isolate vectorizable statements from unvectorizable ones so the vectorizer can act on one half; (C) allow independent scheduling / tiling for the two halves. (D) is the opposite of the fission use case: if a single body already fits in cache and reuses intermediates, fusion is preferred; fission would force materialization of the intermediates. (E) is wrong: fission is a semantics-preserving transformation only when the dependence graph permits it — it cannot fix bugs, only preserve behavior.",
+  "explanation": "Loop fission is the inverse of fusion. Legitimate uses: (A) split a register-heavy body so each half fits in the register budget without spills; (B) isolate vectorizable statements from unvectorizable ones so the vectorizer can act on one half; (C) allow independent scheduling / tiling for the two halves. (D) is the opposite of the fission use case: if a single body already fits in cache and reuses intermediates, fusion is preferred; fission would force materialization of the intermediates. (E) is wrong: fission is a semantics-preserving transformation only when the dependence graph permits it \u2014 it cannot fix bugs, only preserve behavior.",
   "optionExplanations": {
     "A": "Wrong: describes a case where fusion is preferred; fission would hurt cache behavior.",
     "B": "Correct: canonical register-pressure motivation for fission.",
@@ -77,8 +77,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-LOOPFISS-007.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -2,7 +2,7 @@
   "id": "F-ATOMIC-032",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / Atomic operations — semantics and contention",
+  "subtopic": "CUDA / Atomic operations \u2014 semantics and contention",
   "learningObjective": "Reason about CUDA atomic operations: correctness and the performance impact of contention on hot addresses.",
   "archetype": "code_implementation",
   "difficulty": 3,
@@ -43,7 +43,7 @@
   "options": [
     {
       "id": "A",
-      "text": "Both kernels are correct; kernel (X) suffers heavy contention because thousands of threads target the same address, serializing at the atomic unit — kernel (Y) reduces this to one atomic per block (potentially 1000x fewer) while giving the same result modulo FP32 non-associativity."
+      "text": "Both kernels are correct; kernel (X) suffers heavy contention because thousands of threads target the same address, serializing at the atomic unit \u2014 kernel (Y) reduces this to one atomic per block (potentially 1000x fewer) while giving the same result modulo FP32 non-associativity."
     },
     {
       "id": "B",
@@ -61,7 +61,7 @@
   "correctAnswers": [
     "A"
   ],
-  "explanation": "Both kernels are functionally correct (same mathematical sum modulo FP non-associativity); the difference is contention. Kernel (X) issues N `atomicAdd` calls to a single address, serializing at the atomic unit — this is the canonical anti-pattern. Kernel (Y) reduces contention by factor of blockDim.x (typically 256), giving orders-of-magnitude better throughput on large N. Choice B misreads `atomicAdd` semantics (the return value is optional; it still commits the add). Choice C fabricates infinite atomic bandwidth. Choice D misdescribes `__syncthreads` behavior — it does provide the required synchronization; extra `__syncwarp` is unnecessary here.",
+  "explanation": "Both kernels are functionally correct (same mathematical sum modulo FP non-associativity); the difference is contention. Kernel (X) issues N `atomicAdd` calls to a single address, serializing at the atomic unit \u2014 this is the canonical anti-pattern. Kernel (Y) reduces contention by factor of blockDim.x (typically 256), giving orders-of-magnitude better throughput on large N. Choice B misreads `atomicAdd` semantics (the return value is optional; it still commits the add). Choice C fabricates infinite atomic bandwidth. Choice D misdescribes `__syncthreads` behavior \u2014 it does provide the required synchronization; extra `__syncwarp` is unnecessary here.",
   "optionExplanations": {
     "A": "Correct: (X) contention-serialized; (Y) block-local reduction + one atomic wins.",
     "B": "Wrong: `atomicAdd` commits the add regardless of return capture.",
@@ -88,7 +88,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:cuda-guide",
-      "locator": "Atomic Functions — semantics and contention",
+      "locator": "Atomic Functions \u2014 semantics and contention",
       "supports": [
         "A"
       ]
@@ -108,8 +108,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-ATOMIC-032.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

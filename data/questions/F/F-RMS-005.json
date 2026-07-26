@@ -69,7 +69,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "The kernel is row-parallel: one program per row, loading all N elements at once. The per-program working set is roughly N × 4 B = 16 KB for FP32, held in registers or SRAM depending on Triton's lowering. This footprint constrains how many programs can be resident per SM (occupancy). The masked load with `other=0.0` correctly zeros tail lanes, so `tl.sum(x*x)` on masked-off lanes contributes 0 (no extra `mask` argument needed on the reduction). Removing `other=0.0` does not deliver a 20% speedup, and `tl.sqrt` reciprocal lowering is not bit-identical across architectures.",
+  "explanation": "The kernel is row-parallel: one program per row, loading all N elements at once. The per-program working set is roughly N \u00d7 4 B = 16 KB for FP32, held in registers or SRAM depending on Triton's lowering. This footprint constrains how many programs can be resident per SM (occupancy). The masked load with `other=0.0` correctly zeros tail lanes, so `tl.sum(x*x)` on masked-off lanes contributes 0 (no extra `mask` argument needed on the reduction). Removing `other=0.0` does not deliver a 20% speedup, and `tl.sqrt` reciprocal lowering is not bit-identical across architectures.",
   "optionExplanations": {
     "A": "Wrong: `other=0.0` in the load makes tail lanes contribute 0 to `x * x`, so `tl.sum` is correct without an explicit mask argument.",
     "B": "Correct: this is the row-parallel design pattern for LN/RMSNorm; the per-program footprint sets the practical block-size ceiling.",
@@ -116,8 +116,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-RMS-005.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

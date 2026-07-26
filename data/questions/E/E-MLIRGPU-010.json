@@ -2,7 +2,7 @@
   "id": "E-MLIRGPU-010",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "MLIR / GPU dialect — kernel launch, memory space, workgroup semantics",
+  "subtopic": "MLIR / GPU dialect \u2014 kernel launch, memory space, workgroup semantics",
   "learningObjective": "Interpret an MLIR `gpu.launch_func` and identify how the GPU dialect represents grid/block dimensions and memory spaces.",
   "archetype": "ir_transformation",
   "difficulty": 3,
@@ -32,7 +32,7 @@
     },
     {
       "id": "C",
-      "text": "The launch spawns 4 blocks × 256 threads = 1024 threads; `%arg` in memory space 1 (global) is captured as a kernel argument; `gpu.thread_id x` and `gpu.block_id x` give per-thread coordinates, and the bug in the kernel is that `%idx = %bid + %tid` should be `%bid * blockDim + %tid` — as written, indices repeat across blocks and only the first 256 elements are read."
+      "text": "The launch spawns 4 blocks \u00d7 256 threads = 1024 threads; `%arg` in memory space 1 (global) is captured as a kernel argument; `gpu.thread_id x` and `gpu.block_id x` give per-thread coordinates, and the bug in the kernel is that `%idx = %bid + %tid` should be `%bid * blockDim + %tid` \u2014 as written, indices repeat across blocks and only the first 256 elements are read."
     },
     {
       "id": "D",
@@ -42,10 +42,10 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "MLIR `gpu.launch_func` explicitly separates grid (`blocks in`) and block (`threads in`) dimensions; total threads = product of both. `gpu.func` marked `kernel` is a device-side entry point; its arguments may include memrefs (typically lowered to pointer + shape + strides). `gpu.thread_id x` returns per-thread index within a block; `gpu.block_id x` returns per-block index. To compute a globally unique linear index, the canonical formula is `bid * blockDim + tid` (or equivalent), not `bid + tid`. As written, `%idx = %bid + %tid` maps blocks 0..3 to overlapping index ranges — a real bug. Memory space 1 conventionally denotes global (not shared) in the gpu-to-nvvm/rocdl lowering.",
+  "explanation": "MLIR `gpu.launch_func` explicitly separates grid (`blocks in`) and block (`threads in`) dimensions; total threads = product of both. `gpu.func` marked `kernel` is a device-side entry point; its arguments may include memrefs (typically lowered to pointer + shape + strides). `gpu.thread_id x` returns per-thread index within a block; `gpu.block_id x` returns per-block index. To compute a globally unique linear index, the canonical formula is `bid * blockDim + tid` (or equivalent), not `bid + tid`. As written, `%idx = %bid + %tid` maps blocks 0..3 to overlapping index ranges \u2014 a real bug. Memory space 1 conventionally denotes global (not shared) in the gpu-to-nvvm/rocdl lowering.",
   "optionExplanations": {
     "C": "Correct: identifies the launch geometry, the memref-arg mechanism, and the indexing bug.",
-    "B": "Wrong: total threads is blocks × threads-per-block, and memory space 1 is not shared on standard lowerings.",
+    "B": "Wrong: total threads is blocks \u00d7 threads-per-block, and memory space 1 is not shared on standard lowerings.",
     "A": "Wrong: `kernel` attribute is required; and `gpu.block_id x` returns the block index only.",
     "D": "Wrong: memref args are the standard way to pass tensors to GPU kernels."
   },
@@ -69,7 +69,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
-      "locator": "GPU dialect — gpu.launch_func, gpu.func, thread_id/block_id",
+      "locator": "GPU dialect \u2014 gpu.launch_func, gpu.func, thread_id/block_id",
       "supports": [
         "C"
       ]
@@ -81,8 +81,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIRGPU-010.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

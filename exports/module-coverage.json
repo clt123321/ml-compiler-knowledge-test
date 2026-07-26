@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2026-07-26",
+  "moduleCoverage": {
+    "A": {
+      "code": "A",
+      "label": "计算机体系结构与性能模型",
+      "count": 30,
+      "expected": 30
+    },
+    "B": {
+      "code": "B",
+      "label": "编译器基础与程序分析",
+      "count": 25,
+      "expected": 25
+    },
+    "C": {
+      "code": "C",
+      "label": "计算图、张量程序与中间表示",
+      "count": 30,
+      "expected": 30
+    },
+    "D": {
+      "code": "D",
+      "label": "PyTorch Compiler 与动态图捕获",
+      "count": 35,
+      "expected": 35
+    },
+    "E": {
+      "code": "E",
+      "label": "MLIR / TVM / XLA 与编译器生态",
+      "count": 30,
+      "expected": 30
+    },
+    "F": {
+      "code": "F",
+      "label": "CUDA / Triton / GPU Kernel",
+      "count": 40,
+      "expected": 40
+    },
+    "G": {
+      "code": "G",
+      "label": "图优化 / 循环变换 / 调度 / 自动调优",
+      "count": 30,
+      "expected": 30
+    },
+    "H": {
+      "code": "H",
+      "label": "数值表示、混合精度与模型量化",
+      "count": 35,
+      "expected": 35
+    },
+    "I": {
+      "code": "I",
+      "label": "核心算子、融合 Kernel 与 Attention",
+      "count": 30,
+      "expected": 30
+    },
+    "J": {
+      "code": "J",
+      "label": "LLM 推理优化与生成系统",
+      "count": 30,
+      "expected": 30
+    },
+    "K": {
+      "code": "K",
+      "label": "Runtime、模型交换与部署",
+      "count": 30,
+      "expected": 30
+    },
+    "L": {
+      "code": "L",
+      "label": "Profiling / Benchmark / Debug / 正确性",
+      "count": 30,
+      "expected": 30
+    },
+    "M": {
+      "code": "M",
+      "label": "分布式、通信编译与异构执行",
+      "count": 15,
+      "expected": 15
+    },
+    "N": {
+      "code": "N",
+      "label": "论文设计、系统权衡与研究判断",
+      "count": 10,
+      "expected": 10
+    }
+  },
+  "typeDist": {
+    "single": 286,
+    "multiple": 114
+  },
+  "difficultyDist": {
+    "1": 0,
+    "2": 73,
+    "3": 249,
+    "4": 78,
+    "5": 0
+  },
+  "archetypeDist": {
+    "formula_performance": 21,
+    "performance_diagnosis": 53,
+    "concept_boundary": 115,
+    "systems_dataflow": 42,
+    "precise_definition": 58,
+    "ir_transformation": 36,
+    "code_implementation": 57,
+    "paper_design_intent": 18
+  },
+  "depthDist": {
+    "textbook": 36,
+    "implementation": 179,
+    "systems": 149,
+    "research": 36
+  },
+  "statusDist": {
+    "draft": 4,
+    "agent_reviewed": 396,
+    "human_reviewed": 0,
+    "deprecated": 0
+  }
+}

@@ -2,7 +2,7 @@
   "id": "F-MMA-016",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / mma.sync — matrix operand layout and warp-level cooperation",
+  "subtopic": "CUDA / mma.sync \u2014 matrix operand layout and warp-level cooperation",
   "learningObjective": "Understand the warp-cooperative nature of mma.sync and the register-fragment layout it requires.",
   "archetype": "precise_definition",
   "difficulty": 3,
@@ -30,7 +30,7 @@
     },
     {
       "id": "B",
-      "text": "`mma.sync` is a per-thread instruction: each of 32 lanes independently multiplies its 16×8 block by its 8×16 block, so the warp effectively performs 32 independent MMAs per cycle."
+      "text": "`mma.sync` is a per-thread instruction: each of 32 lanes independently multiplies its 16\u00d78 block by its 8\u00d716 block, so the warp effectively performs 32 independent MMAs per cycle."
     },
     {
       "id": "C",
@@ -44,7 +44,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "Tensor Core `mma.sync` instructions are warp-cooperative: a single mma reads a fixed-shape matrix (e.g., 16×16 for `m16n8k16`) that is distributed across the warp's 32 lanes' registers per a hardware-mandated fragment layout. Individual lanes hold only pieces of the operands and produce pieces of the accumulator. The operands must be in registers at issue time; loading from SMEM uses `ldmatrix` (a warp-cooperative load that produces the required layout), and from GMEM typically goes via `cp.async` → SMEM → `ldmatrix`.",
+  "explanation": "Tensor Core `mma.sync` instructions are warp-cooperative: a single mma reads a fixed-shape matrix (e.g., 16\u00d716 for `m16n8k16`) that is distributed across the warp's 32 lanes' registers per a hardware-mandated fragment layout. Individual lanes hold only pieces of the operands and produce pieces of the accumulator. The operands must be in registers at issue time; loading from SMEM uses `ldmatrix` (a warp-cooperative load that produces the required layout), and from GMEM typically goes via `cp.async` \u2192 SMEM \u2192 `ldmatrix`.",
   "optionExplanations": {
     "A": "Wrong: operands must be in registers, not global memory.",
     "B": "Wrong: it is not 32 independent MMAs; it is one warp-wide MMA.",
@@ -70,7 +70,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:cuda-guide",
-      "locator": "PTX ISA — mma.sync warp-cooperative semantics",
+      "locator": "PTX ISA \u2014 mma.sync warp-cooperative semantics",
       "supports": [
         "C"
       ]
@@ -89,8 +89,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-MMA-016.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

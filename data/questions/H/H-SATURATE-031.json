@@ -24,7 +24,7 @@
     },
     {
       "id": "B",
-      "text": "Saturation clamps the out-of-range value to the boundary (200 → 127); this loses information about the extreme but preserves ordinal relationships and is the mathematically-desired behavior for neural-network quantization. Wrap-around uses modular arithmetic (200 → 200-256 = -56); it turns a large positive into a moderately-negative value, which is catastrophic for signal-carrying activations."
+      "text": "Saturation clamps the out-of-range value to the boundary (200 \u2192 127); this loses information about the extreme but preserves ordinal relationships and is the mathematically-desired behavior for neural-network quantization. Wrap-around uses modular arithmetic (200 \u2192 200-256 = -56); it turns a large positive into a moderately-negative value, which is catastrophic for signal-carrying activations."
     },
     {
       "id": "C",
@@ -49,8 +49,8 @@
     "Standard integer quantization for DNN inference; not a bit-level cryptographic use case."
   ],
   "nonImplications": [
-    "Does not imply saturation is free — repeated saturation on many activations indicates a scale choice problem.",
-    "Does not imply wrap-around is never used — some cryptographic or checksum contexts require it."
+    "Does not imply saturation is free \u2014 repeated saturation on many activations indicates a scale choice problem.",
+    "Does not imply wrap-around is never used \u2014 some cryptographic or checksum contexts require it."
   ],
   "misconceptionTags": [
     "saturation_vs_wrap"
@@ -82,8 +82,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-SATURATE-031.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -11,29 +11,73 @@
     "vendor": "generic",
     "architecture": "generic CPU / GPU vector unit",
     "device": "CPU",
-    "requiredFeatures": ["8-lane FP32 vector unit (e.g., AVX2 or GPU SIMT)"]
+    "requiredFeatures": [
+      "8-lane FP32 vector unit (e.g., AVX2 or GPU SIMT)"
+    ]
   },
   "softwareContext": {
     "stability": "stable_principle"
   },
   "tensorContext": {
-    "shapes": [["N"], ["N"], ["N"]],
-    "dtypes": ["float32", "float32", "float32"],
-    "layouts": ["contiguous", "contiguous", "contiguous"],
-    "strides": [[1], [1], [1]]
+    "shapes": [
+      [
+        "N"
+      ],
+      [
+        "N"
+      ],
+      [
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ],
+    "strides": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ]
   },
   "codeSnippet": "// Candidate loop for 8-lane FP32 vectorization\nfor (int i = 0; i < N; i++) {\n    C[i] = A[i] * B[i] + A[i-1];   // A[i-1] introduces a cross-iteration read\n}\n// A, B, C are FP32 contiguous, aligned to 32 bytes at index 0",
   "stem": "The loop above is a candidate for 8-lane FP32 SIMD vectorization on an AVX2-like unit. Which is the correct summary of its vectorizability?",
   "options": [
-    { "id": "A", "text": "The loop is trivially vectorizable: `A[i-1]` and `A[i]` reads are independent, so 8 consecutive iterations can execute in parallel with no data reorganization." },
-    { "id": "B", "text": "Vectorization is legal (no cross-iteration write dependence, only reads), but the compiler must handle two extras: an unaligned or shifted load for `A[i-1]` (vector-shift or unaligned move), and a tail block for iterations where `N mod 8 != 0`." },
-    { "id": "C", "text": "The loop cannot be vectorized because reading `A[i-1]` in iteration `i` creates a loop-carried dependence via the read of a value written in a hypothetical earlier iteration; the vectorizer must serialize the loop." },
-    { "id": "D", "text": "The loop cannot be vectorized because FP32 multiplication is not associative; vector reductions must always use FP64 to preserve precision." }
+    {
+      "id": "A",
+      "text": "The loop is trivially vectorizable: `A[i-1]` and `A[i]` reads are independent, so 8 consecutive iterations can execute in parallel with no data reorganization."
+    },
+    {
+      "id": "B",
+      "text": "Vectorization is legal (no cross-iteration write dependence, only reads), but the compiler must handle two extras: an unaligned or shifted load for `A[i-1]` (vector-shift or unaligned move), and a tail block for iterations where `N mod 8 != 0`."
+    },
+    {
+      "id": "C",
+      "text": "The loop cannot be vectorized because reading `A[i-1]` in iteration `i` creates a loop-carried dependence via the read of a value written in a hypothetical earlier iteration; the vectorizer must serialize the loop."
+    },
+    {
+      "id": "D",
+      "text": "The loop cannot be vectorized because FP32 multiplication is not associative; vector reductions must always use FP64 to preserve precision."
+    }
   ],
-  "correctAnswers": ["B"],
-  "explanation": "There is no cross-iteration write dependence — `C[i]` is written once per iteration, and `A` is only read. Reads of `A[i-1]` and `A[i]` are legal to vectorize; the vectorizer must produce a shifted vector load (or an unaligned move) for the `A[i-1]` operand relative to the `A[i]` operand. In addition, if `N` is not a multiple of 8, a scalar or masked epilogue loop handles the tail. Option A ignores the shift/tail; C fabricates a loop-carried write dependence (there is none — only a read); D confuses reduction associativity with per-element vectorization.",
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "There is no cross-iteration write dependence \u2014 `C[i]` is written once per iteration, and `A` is only read. Reads of `A[i-1]` and `A[i]` are legal to vectorize; the vectorizer must produce a shifted vector load (or an unaligned move) for the `A[i-1]` operand relative to the `A[i]` operand. In addition, if `N` is not a multiple of 8, a scalar or masked epilogue loop handles the tail. Option A ignores the shift/tail; C fabricates a loop-carried write dependence (there is none \u2014 only a read); D confuses reduction associativity with per-element vectorization.",
   "optionExplanations": {
-    "A": "Wrong: not 'trivial' — a vector-shift or unaligned load is needed, and the tail block must be handled.",
+    "A": "Wrong: not 'trivial' \u2014 a vector-shift or unaligned load is needed, and the tail block must be handled.",
     "B": "Correct: identifies both the legality (read-only cross-iteration access) and the two practical implementation obligations.",
     "C": "Wrong: cross-iteration READ of an already-written value is not a legality blocker; only cross-iteration WRITES pose loop-carried dependences.",
     "D": "Wrong: this is a pointwise loop, not a reduction; associativity is not at issue."
@@ -46,15 +90,30 @@
     "Does not imply vectorization always yields a speedup; memory-bound loops gain little.",
     "Does not imply the shifted-load cost is negligible on every architecture."
   ],
-  "misconceptionTags": ["read_creates_loop_carried_dependence", "vectorization_trivial_no_shift"],
+  "misconceptionTags": [
+    "read_creates_loop_carried_dependence",
+    "vectorization_trivial_no_shift"
+  ],
   "distractorRationales": {
     "A": "Ignores shift and tail concerns.",
     "C": "Confuses cross-iteration read with cross-iteration write dependence.",
     "D": "Applies reduction-associativity concern to a pointwise loop."
   },
   "sourceRefs": [
-    { "ref": "BOOK:eac3", "locator": "Vectorization legality and preconditions", "supports": ["B"] },
-    { "ref": "DOC:llvm-langref", "locator": "LLVM loop vectorizer overview", "supports": ["B"] }
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Vectorization legality and preconditions",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:llvm-langref",
+      "locator": "LLVM loop vectorizer overview",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,
@@ -62,8 +121,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-VECTOR-012.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

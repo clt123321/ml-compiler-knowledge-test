@@ -2,7 +2,7 @@
   "id": "E-MLIRAFF-007",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "MLIR / Affine dialect — affine maps, integer sets, loop nests",
+  "subtopic": "MLIR / Affine dialect \u2014 affine maps, integer sets, loop nests",
   "learningObjective": "Reason about MLIR affine dialect semantics: what makes a loop-nest 'affine' and what transformations rely on that structure.",
   "archetype": "ir_transformation",
   "difficulty": 3,
@@ -40,7 +40,7 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "MLIR's `affine` dialect imposes strict structural constraints so that polyhedral analyses and transformations (tiling, fusion, vectorization) can be applied. Loop bounds must be affine expressions in the enclosing IVs and 'symbols' — where 'symbol' is a specific MLIR concept, essentially SSA values that are loop-invariant and either function arguments, `dim` results, or values produced by ops flagged as symbolic. Data-dependent bounds from `memref.load` are NOT symbols; such loops must be written in a different dialect (e.g., `scf.for`). Fragment 1 is fully affine (linear expressions in IVs + symbol `%N`, `%M`); Fragment 2 violates the symbol restriction.",
+  "explanation": "MLIR's `affine` dialect imposes strict structural constraints so that polyhedral analyses and transformations (tiling, fusion, vectorization) can be applied. Loop bounds must be affine expressions in the enclosing IVs and 'symbols' \u2014 where 'symbol' is a specific MLIR concept, essentially SSA values that are loop-invariant and either function arguments, `dim` results, or values produced by ops flagged as symbolic. Data-dependent bounds from `memref.load` are NOT symbols; such loops must be written in a different dialect (e.g., `scf.for`). Fragment 1 is fully affine (linear expressions in IVs + symbol `%N`, `%M`); Fragment 2 violates the symbol restriction.",
   "optionExplanations": {
     "D": "Correct: affine dialect requires affine expressions in IVs/symbols; data-dependent values from loads are not symbols.",
     "B": "Wrong: the affine verifier does enforce these constraints.",
@@ -66,7 +66,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
-      "locator": "Affine dialect — affine maps, integer sets, symbols",
+      "locator": "Affine dialect \u2014 affine maps, integer sets, symbols",
       "supports": [
         "D"
       ]
@@ -78,8 +78,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIRAFF-007.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

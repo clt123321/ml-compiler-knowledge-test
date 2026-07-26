@@ -3,7 +3,7 @@
   "type": "single",
   "module": "quantization",
   "subtopic": "Dequantization / In-register dequant for W4A16",
-  "learningObjective": "Given a W4A16 kernel snippet, identify the correct dequantization sequence: unpack INT4 → convert → scale.",
+  "learningObjective": "Given a W4A16 kernel snippet, identify the correct dequantization sequence: unpack INT4 \u2192 convert \u2192 scale.",
   "archetype": "code_implementation",
   "difficulty": 3,
   "depth": "implementation",
@@ -28,7 +28,7 @@
     },
     {
       "id": "B",
-      "text": "It unpacks two 4-bit weights per byte (sign-extending each nibble to signed int), converts to FP16, then multiplies by the group's FP16 scale to reconstruct the FP16 weight vector; the resulting FP16 vector is fed to an FP16 Tensor Core matmul. HBM traffic is reduced by ~4× vs FP16 storage while compute stays on standard FP16 Tensor Cores."
+      "text": "It unpacks two 4-bit weights per byte (sign-extending each nibble to signed int), converts to FP16, then multiplies by the group's FP16 scale to reconstruct the FP16 weight vector; the resulting FP16 vector is fed to an FP16 Tensor Core matmul. HBM traffic is reduced by ~4\u00d7 vs FP16 storage while compute stays on standard FP16 Tensor Cores."
     },
     {
       "id": "C",
@@ -42,7 +42,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "The snippet is the canonical W4A16 dequant-in-register pattern: (1) load packed INT4 bytes from HBM, (2) unpack via nibble sign-extension into signed int, (3) convert to FP16 (`__int2half_rn` is a real conversion instruction), (4) multiply by the group's FP16 scale to reconstruct the FP16 weight, (5) feed to an FP16 Tensor Core matmul. HBM traffic drops by ~4× because packed INT4 is stored, but compute uses standard FP16 Tensor Cores (no INT4 Tensor Core is required). Option B fabricates a no-op conversion. Option C misdescribes the numerical composition. Option D wrongly claims INT4 GEMM, which would require INT4 Tensor Core hardware.",
+  "explanation": "The snippet is the canonical W4A16 dequant-in-register pattern: (1) load packed INT4 bytes from HBM, (2) unpack via nibble sign-extension into signed int, (3) convert to FP16 (`__int2half_rn` is a real conversion instruction), (4) multiply by the group's FP16 scale to reconstruct the FP16 weight, (5) feed to an FP16 Tensor Core matmul. HBM traffic drops by ~4\u00d7 because packed INT4 is stored, but compute uses standard FP16 Tensor Cores (no INT4 Tensor Core is required). Option B fabricates a no-op conversion. Option C misdescribes the numerical composition. Option D wrongly claims INT4 GEMM, which would require INT4 Tensor Core hardware.",
   "optionExplanations": {
     "A": "Wrong: conversion is a real instruction, not a no-op.",
     "B": "Correct: standard W4A16 dequant-in-register + FP16 TC.",
@@ -55,8 +55,8 @@
     "Weights packed as two INT4 per byte."
   ],
   "nonImplications": [
-    "Does not imply the dequant + scale is free — it adds a small number of ops per weight; in bandwidth-bound regimes this is negligible.",
-    "Does not imply the same sequence works for asymmetric per-group quantization — an extra zero-point subtraction is needed."
+    "Does not imply the dequant + scale is free \u2014 it adds a small number of ops per weight; in bandwidth-bound regimes this is negligible.",
+    "Does not imply the same sequence works for asymmetric per-group quantization \u2014 an extra zero-point subtraction is needed."
   ],
   "misconceptionTags": [
     "w4a16_uses_int4_tc",
@@ -89,8 +89,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-DEQ-029.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

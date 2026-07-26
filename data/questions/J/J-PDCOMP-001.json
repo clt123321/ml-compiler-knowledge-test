@@ -19,12 +19,26 @@
   },
   "stem": "Which characterization of prefill vs decode in a batch-1 LLM inference is correct?",
   "options": [
-    { "id": "A", "text": "Both prefill and decode are memory-bandwidth bound because both phases read the same model weights from HBM per forward pass; the difference in wall time between them reflects only the number of tokens processed." },
-    { "id": "B", "text": "Prefill is memory-bound (streaming weights once) and decode is compute-bound (each token performs a full transformer forward with high arithmetic intensity on cached KV)." },
-    { "id": "C", "text": "Prefill (processing a prompt of P tokens together) is typically compute-bound on the QKV / MLP GEMMs because arithmetic intensity per weight scales with P; decode (batch-1, one token at a time) is memory-bandwidth bound because each linear layer becomes a batch-1 GEMV with intensity ~1 flop/byte." },
-    { "id": "D", "text": "Prefill and decode both incur the same arithmetic intensity because they use the same weights and the same operators; the choice of prefill vs decode is entirely a scheduling artifact with no impact on where the bottleneck lies." }
+    {
+      "id": "A",
+      "text": "Both prefill and decode are memory-bandwidth bound because both phases read the same model weights from HBM per forward pass; the difference in wall time between them reflects only the number of tokens processed."
+    },
+    {
+      "id": "B",
+      "text": "Prefill is memory-bound (streaming weights once) and decode is compute-bound (each token performs a full transformer forward with high arithmetic intensity on cached KV)."
+    },
+    {
+      "id": "C",
+      "text": "Prefill (processing a prompt of P tokens together) is typically compute-bound on the QKV / MLP GEMMs because arithmetic intensity per weight scales with P; decode (batch-1, one token at a time) is memory-bandwidth bound because each linear layer becomes a batch-1 GEMV with intensity ~1 flop/byte."
+    },
+    {
+      "id": "D",
+      "text": "Prefill and decode both incur the same arithmetic intensity because they use the same weights and the same operators; the choice of prefill vs decode is entirely a scheduling artifact with no impact on where the bottleneck lies."
+    }
   ],
-  "correctAnswers": ["C"],
+  "correctAnswers": [
+    "C"
+  ],
   "explanation": "Prefill: a prompt of P tokens is processed simultaneously. Each weight matrix W is used with a [P, D] input, so intensity per weight fetch scales with P; for even modest P this pushes prefill into the compute-bound region (GEMM). Decode: one new token per step at batch-1 means each weight matrix is used against a single [1, D] activation — a GEMV with ~1 flop/byte, well below the ridge point. This is the classic asymmetry that drives all decode-oriented optimizations (batching, quantization, speculative decoding).",
   "optionExplanations": {
     "C": "Correct: prefill compute-bound, decode memory-bandwidth bound.",
@@ -40,15 +54,30 @@
     "Does not imply prefill is always faster than decode per token; prefill still processes many tokens.",
     "Does not imply decode is always memory-bound at large batch; with big batch it can become compute-bound."
   ],
-  "misconceptionTags": ["prefill_decode_symmetric", "decode_compute_bound_myth"],
+  "misconceptionTags": [
+    "prefill_decode_symmetric",
+    "decode_compute_bound_myth"
+  ],
   "distractorRationales": {
     "A": "Denies the intensity gap.",
     "B": "Reverses bottleneck class.",
     "D": "Ignores activation-shape dependence."
   },
   "sourceRefs": [
-    { "ref": "PAPER:vllm", "locator": "Sec 2 — prefill/decode compute characterization", "supports": ["C"] },
-    { "ref": "PAPER:orca", "locator": "Sec 3 — batching in prefill and decode", "supports": ["C"] }
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 2 — prefill/decode compute characterization",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:orca",
+      "locator": "Sec 3 — batching in prefill and decode",
+      "supports": [
+        "C"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,
@@ -57,8 +86,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/J/J-PDCOMP-001.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

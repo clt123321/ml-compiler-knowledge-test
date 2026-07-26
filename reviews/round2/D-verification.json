@@ -1,0 +1,829 @@
+[
+  {
+    "id": "D-AOT-004",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-AOTAG-011",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-AOTI-020",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-AOTIRT-021",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-AUTODYN-009",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-BREAK-005",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-BWSHAPE-033",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-CACHE-024",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-COMPILET-032",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-COND-027",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-CPPBACK-017",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-CUSTOM-022",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-DECOMP-012",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-DYNAMIC-002",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-DYNAMO-001",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-DYNKW-010",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-EXPCONS-019",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-EXPORT-018",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-FAKE-026",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-FALLBACK-025",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-FULL-028",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-FUNCT-013",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-FX-035",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-GUARD-006",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-GUARDEXPR-034",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-INDUCTOR-003",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-MARK-007",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-MINIFIER-029",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-MODE-031",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-MUT-023",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-RECDIAG-030",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-REDUCE-014",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-SCHED-015",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-SYMINT-008",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  },
+  {
+    "id": "D-TRITON-016",
+    "reviewer": "verifier-batch1",
+    "round": "round2",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswer": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "openBlocker": false,
+    "openMajor": false,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "round1_repair_verified",
+        "note": "Round 1 flagged MAJOR (poison-tail on correct option); Repair Agent stripped the trailing self-contradicting paragraph (v1->v2). Round 2 independent answer confirms the correct option's headline claim; repair is sound. No open issues."
+      }
+    ],
+    "verificationResult": "PASS"
+  }
+]

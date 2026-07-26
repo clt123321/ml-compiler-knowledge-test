@@ -23,12 +23,26 @@
   "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    return x.sin() + x.cos()\n\nfor n in [128, 256, 512, 128, 256, 512]:\n    x = torch.randn(n, device=\"cuda\")\n    f(x)\n\n# TORCH_LOGS=\"recompiles\" (excerpt):\n#   Recompiling function f\n#     triggered by the following guard failure(s):\n#       - L['x'].size()[0] == 128\n#   Recompiling function f\n#     triggered by the following guard failure(s):\n#       - L['x'].size()[0] == 256\n#   (no further recompiles observed after the third distinct size)",
   "profileData": "Recompile events: 3 distinct compiled variants observed (one per unique input first-dim size); subsequent same-size calls hit the compilation cache.",
   "options": [
-    { "id": "A", "text": "Recompilation is triggered only when the tensor dtype changes; the shape is treated dynamically by default in current PyTorch releases, so the observed guards on `size()[0]` must be from a bug in the TORCH_LOGS reporting layer." },
-    { "id": "B", "text": "`x.sin() + x.cos()` cannot be traced by Dynamo; the log actually indicates a graph break rather than a recompilation, and the `guard failure` label is a misnomer for the same underlying event." },
-    { "id": "C", "text": "Guards are only inserted on strides, not on shapes, in current PyTorch releases; the recompiles observed here are therefore unexpected and indicate a version incompatibility between the compile cache and the runtime." },
-    { "id": "D", "text": "Default `torch.compile` installs shape guards specializing on leading dims; each new size fails a guard and triggers a fresh compile. `dynamic=True` compiles symbolically so one graph serves multiple sizes." }
+    {
+      "id": "A",
+      "text": "Recompilation is triggered only when the tensor dtype changes; the shape is treated dynamically by default in current PyTorch releases, so the observed guards on `size()[0]` must be from a bug in the TORCH_LOGS reporting layer."
+    },
+    {
+      "id": "B",
+      "text": "`x.sin() + x.cos()` cannot be traced by Dynamo; the log actually indicates a graph break rather than a recompilation, and the `guard failure` label is a misnomer for the same underlying event."
+    },
+    {
+      "id": "C",
+      "text": "Guards are only inserted on strides, not on shapes, in current PyTorch releases; the recompiles observed here are therefore unexpected and indicate a version incompatibility between the compile cache and the runtime."
+    },
+    {
+      "id": "D",
+      "text": "Default `torch.compile` installs shape guards specializing on leading dims; each new size fails a guard and triggers a fresh compile. `dynamic=True` compiles symbolically so one graph serves multiple sizes."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "D"
+  ],
   "explanation": "In current PyTorch 2.x releases, torch.compile default behavior for shape handling installs guards on tensor sizes; when a guard fails on a new input, Dynamo recompiles. Three distinct sizes produce three compiled variants. `dynamic=True` (or automatic dynamic shape promotion after N recompiles, depending on version) instructs Dynamo to trace with symbolic integers, generating a single compiled graph that serves multiple sizes.",
   "optionExplanations": {
     "A": "Wrong: shape guards are installed by default; dtype changes are one of several guard sources but not the exclusive one.",
@@ -44,15 +58,30 @@
     "Does not imply that `dynamic=True` is always faster; symbolic-shape kernels may miss size-specific optimizations.",
     "Does not imply that only the first dim triggers guards; any statically observed dim can."
   ],
-  "misconceptionTags": ["shape_guard_ignored", "dynamic_true_free_lunch"],
+  "misconceptionTags": [
+    "shape_guard_ignored",
+    "dynamic_true_free_lunch"
+  ],
   "distractorRationales": {
     "A": "Wrong claim that shape is always dynamic by default.",
     "B": "Conflates recompile with graph break.",
     "C": "Wrong claim about strides-only guards."
   },
   "sourceRefs": [
-    { "ref": "DOC:torch-compile", "locator": "Dynamic shapes and recompilation section", "supports": ["D"] },
-    { "ref": "DOC:torch-dynamo", "locator": "Guards / recompilation semantics", "supports": ["D"] }
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Dynamic shapes and recompilation section",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Guards / recompilation semantics",
+      "supports": [
+        "D"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,
@@ -60,7 +89,7 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/D/D-DYNAMIC-002.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-26"

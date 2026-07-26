@@ -57,7 +57,7 @@
   ],
   "nonImplications": [
     "Does not imply all splits produce correct code once combined with subsequent primitives; downstream primitives (like vectorize) still have their own preconditions.",
-    "Does not imply MetaSchedule's search never generates illegal candidates internally — it may, but the primitives reject them at application."
+    "Does not imply MetaSchedule's search never generates illegal candidates internally \u2014 it may, but the primitives reject them at application."
   ],
   "misconceptionTags": [
     "parallel_semantically_neutral",
@@ -83,8 +83,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-TVMSCHED-028.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

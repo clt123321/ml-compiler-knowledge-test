@@ -28,7 +28,7 @@
     },
     {
       "id": "C",
-      "text": "SmoothQuant chooses a per-channel diagonal scaling vector `s` and rewrites `Y = XW` as `Y = (X · diag(1/s)) · (diag(s) · W)`; the activation channels are 'smoothed' (outlier magnitude reduced), while the weights absorb the migrated magnitude. Since weights are easy to per-channel-quantize but activations are usually per-tensor, this makes W8A8 tractable."
+      "text": "SmoothQuant chooses a per-channel diagonal scaling vector `s` and rewrites `Y = XW` as `Y = (X \u00b7 diag(1/s)) \u00b7 (diag(s) \u00b7 W)`; the activation channels are 'smoothed' (outlier magnitude reduced), while the weights absorb the migrated magnitude. Since weights are easy to per-channel-quantize but activations are usually per-tensor, this makes W8A8 tractable."
     },
     {
       "id": "D",
@@ -38,7 +38,7 @@
   "correctAnswers": [
     "C"
   ],
-  "explanation": "SmoothQuant's core observation: activation outliers concentrate in a small number of channels; per-tensor activation quantization suffers, but per-channel weight quantization is cheap. Multiplying activations by `diag(1/s)` (which requires `s` on their per-channel scale) and correspondingly multiplying weights by `diag(s)` is a mathematically-equivalent rewrite that pushes the outlier magnitude from activations into weights. The rewritten activations are 'smooth' (small dynamic range → good per-tensor INT8), while the rewritten weights have per-channel-magnitude variation that per-channel weight quantization already handles well. Option B describes LLM.int8, not SmoothQuant. Option C invents a filtering-based approach. Option D invents a training-based method.",
+  "explanation": "SmoothQuant's core observation: activation outliers concentrate in a small number of channels; per-tensor activation quantization suffers, but per-channel weight quantization is cheap. Multiplying activations by `diag(1/s)` (which requires `s` on their per-channel scale) and correspondingly multiplying weights by `diag(s)` is a mathematically-equivalent rewrite that pushes the outlier magnitude from activations into weights. The rewritten activations are 'smooth' (small dynamic range \u2192 good per-tensor INT8), while the rewritten weights have per-channel-magnitude variation that per-channel weight quantization already handles well. Option B describes LLM.int8, not SmoothQuant. Option C invents a filtering-based approach. Option D invents a training-based method.",
   "optionExplanations": {
     "A": "Wrong: SmoothQuant is a mathematical rewrite, not signal smoothing.",
     "B": "Wrong: describes LLM.int8's mixed-precision fallback.",
@@ -50,8 +50,8 @@
     "Weights are per-channel quantized (standard for INT8 W8A8)."
   ],
   "nonImplications": [
-    "Does not imply the diagonal scaling absorbs the entire outlier — the migration factor `s` is a tunable hyperparameter balancing activation smoothness vs. weight quantization difficulty.",
-    "Does not imply SmoothQuant matches every FP16 accuracy — some residual loss is typical, though small."
+    "Does not imply the diagonal scaling absorbs the entire outlier \u2014 the migration factor `s` is a tunable hyperparameter balancing activation smoothness vs. weight quantization difficulty.",
+    "Does not imply SmoothQuant matches every FP16 accuracy \u2014 some residual loss is typical, though small."
   ],
   "misconceptionTags": [
     "smoothquant_llm_int8_confusion",
@@ -78,8 +78,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-SMOOTH-019.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

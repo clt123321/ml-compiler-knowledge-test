@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere (sm_80, A100) or newer",
     "device": "GPU",
-    "requiredFeatures": ["FP32 global atomic add"]
+    "requiredFeatures": [
+      "FP32 global atomic add"
+    ]
   },
   "softwareContext": {
     "framework": "Triton",
@@ -20,20 +22,54 @@
     "stability": "version_sensitive"
   },
   "tensorContext": {
-    "shapes": [["N"], ["N"], [1]],
-    "dtypes": ["float32", "float32", "float32"],
-    "layouts": ["contiguous", "contiguous", "contiguous"]
+    "shapes": [
+      [
+        "N"
+      ],
+      [
+        "N"
+      ],
+      [
+        1
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
   },
   "stem": "Consider the Triton kernel below computing a global FP32 dot product via per-block partials accumulated with `tl.atomic_add` into a single-element output `out`. Assume `x, y` are FP32 contiguous CUDA tensors of length N, and the caller sets `out` to 0 before launching. Which of the following statements are correct? (Select all that apply.)",
   "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef dot_prod(x_ptr, y_ptr, out_ptr, N, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    x = tl.load(x_ptr + offsets, mask=mask, other=0.0)\n    y = tl.load(y_ptr + offsets, mask=mask, other=0.0)\n    partial = tl.sum(x * y, axis=0)\n    tl.atomic_add(out_ptr, partial)\n\n# Caller:\n#   out.zero_()\n#   grid = (triton.cdiv(N, BLOCK),)\n#   dot_prod[grid](x, y, out, N, BLOCK=1024)",
   "options": [
-    { "id": "A", "text": "The kernel is correct: final `out[0]` equals the sum of all partials, and `tl.atomic_add` is necessary because programs concurrently accumulate into the same address." },
-    { "id": "B", "text": "Reduction order across programs is non-deterministic; for FP32 this can yield bitwise-different results across runs due to floating-point non-associativity." },
-    { "id": "C", "text": "The `mask=mask, other=0.0` combination in the loads ensures tail lanes contribute 0 to `partial` (since 0 * anything = 0), preserving mask semantics through `tl.sum`." },
-    { "id": "D", "text": "Setting `out` to a non-zero initial value has no effect on correctness because `tl.atomic_add` overwrites the previous value with each incoming partial, so only the last program's contribution determines the final result stored in memory." }
+    {
+      "id": "A",
+      "text": "The kernel is correct: final `out[0]` equals the sum of all partials, and `tl.atomic_add` is necessary because programs concurrently accumulate into the same address."
+    },
+    {
+      "id": "B",
+      "text": "Reduction order across programs is non-deterministic; for FP32 this can yield bitwise-different results across runs due to floating-point non-associativity."
+    },
+    {
+      "id": "C",
+      "text": "The `mask=mask, other=0.0` combination in the loads ensures tail lanes contribute 0 to `partial` (since 0 * anything = 0), preserving mask semantics through `tl.sum`."
+    },
+    {
+      "id": "D",
+      "text": "Setting `out` to a non-zero initial value has no effect on correctness because `tl.atomic_add` overwrites the previous value with each incoming partial, so only the last program's contribution determines the final result stored in memory."
+    }
   ],
-  "correctAnswers": ["A", "B", "C"],
-  "explanation": "A: `tl.atomic_add` serializes concurrent updates from many programs, so the final sum equals the algebraic total of the partials. B: The order of atomic operations across programs is unspecified; FP32 addition is not associative, so different execution orders can produce different bitwise sums. C: With `other=0.0`, tail lanes contribute 0.0 to `x * y`, so `tl.sum` yields the correct partial. D: This is wrong — `tl.atomic_add` accumulates onto the existing value; a non-zero initial value would offset the final answer.",
+  "correctAnswers": [
+    "A",
+    "B",
+    "C"
+  ],
+  "explanation": "A: `tl.atomic_add` serializes concurrent updates from many programs, so the final sum equals the algebraic total of the partials. B: The order of atomic operations across programs is unspecified; FP32 addition is not associative, so different execution orders can produce different bitwise sums. C: With `other=0.0`, tail lanes contribute 0.0 to `x * y`, so `tl.sum` yields the correct partial. D: This is wrong \u2014 `tl.atomic_add` accumulates onto the existing value; a non-zero initial value would offset the final answer.",
   "optionExplanations": {
     "A": "Correct: atomic add makes the concurrent accumulation safe and produces the total.",
     "B": "Correct: FP32 sums depend on order; concurrent atomics have no fixed order.",
@@ -48,13 +84,31 @@
     "Does not imply that `tl.atomic_add` is always the fastest reduction primitive; multi-stage tree reductions can avoid the cross-program atomic on the hot output.",
     "Does not imply that FP32 non-determinism is a bug; it is inherent to concurrent floating-point reductions."
   ],
-  "misconceptionTags": ["atomic_replaces_add", "reduction_determinism_myth"],
+  "misconceptionTags": [
+    "atomic_replaces_add",
+    "reduction_determinism_myth"
+  ],
   "distractorRationales": {
     "D": "Confuses `atomic_add` (accumulate) with `atomic_exchange` (overwrite)."
   },
   "sourceRefs": [
-    { "ref": "DOC:triton", "locator": "tl.atomic_add and tl.sum reduction semantics", "supports": ["A", "B", "C"] },
-    { "ref": "DOC:cuda-guide", "locator": "Atomic functions section (add) — semantics and ordering", "supports": ["A", "B"] }
+    {
+      "ref": "DOC:triton",
+      "locator": "tl.atomic_add and tl.sum reduction semantics",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Atomic functions section (add) \u2014 semantics and ordering",
+      "supports": [
+        "A",
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": false,
@@ -62,8 +116,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-DOTPROD-004.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

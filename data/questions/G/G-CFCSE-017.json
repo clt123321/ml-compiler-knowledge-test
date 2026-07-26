@@ -39,7 +39,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): mischaracterizes the reach of CSE and DCE. B (Correct): constant folding + CSE + DCE composition; all semantics-preserving. C (Wrong): SSA allows a value to have many uses. D (Wrong): no loop is present; LICM is irrelevant to this fragment. General context: The 'Before → After' rewrite is a canonical composition of three classical optimizations: constant folding (evaluate `mul 2, 3` at compile time), CSE (recognize `%t3` and `%t4` compute the same expression on the same operands, so they are one value), and DCE (remove `%unused` since it has no consumer and no side effect). All three are semantics-preserving on pure operations. Option D introduces an irrelevant loop context.",
+  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): mischaracterizes the reach of CSE and DCE. B (Correct): constant folding + CSE + DCE composition; all semantics-preserving. C (Wrong): SSA allows a value to have many uses. D (Wrong): no loop is present; LICM is irrelevant to this fragment. General context: The 'Before \u2192 After' rewrite is a canonical composition of three classical optimizations: constant folding (evaluate `mul 2, 3` at compile time), CSE (recognize `%t3` and `%t4` compute the same expression on the same operands, so they are one value), and DCE (remove `%unused` since it has no consumer and no side effect). All three are semantics-preserving on pure operations. Option D introduces an irrelevant loop context.",
   "optionExplanations": {
     "A": "Wrong: mischaracterizes the reach of CSE and DCE.",
     "B": "Correct: constant folding + CSE + DCE composition; all semantics-preserving.",
@@ -51,8 +51,8 @@
     "The return signature is a tuple that can hold two references to the same SSA value."
   ],
   "nonImplications": [
-    "Does not imply CSE can always eliminate `add %x, %c6` duplicates across function boundaries — it operates within a scope defined by the pass.",
-    "Does not imply DCE can always remove any unused op — ops with observable side effects are exempt."
+    "Does not imply CSE can always eliminate `add %x, %c6` duplicates across function boundaries \u2014 it operates within a scope defined by the pass.",
+    "Does not imply DCE can always remove any unused op \u2014 ops with observable side effects are exempt."
   ],
   "misconceptionTags": [
     "ssa_prohibits_multiple_uses",
@@ -85,8 +85,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-CFCSE-017.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

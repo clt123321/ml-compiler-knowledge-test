@@ -2,7 +2,7 @@
   "id": "F-GEMMSM-014",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA GEMM / Shared-memory tiling — tile shape and reuse",
+  "subtopic": "CUDA GEMM / Shared-memory tiling \u2014 tile shape and reuse",
   "learningObjective": "Reason about the compute-to-memory ratio of a shared-memory tiled GEMM and identify how tile size affects reuse.",
   "archetype": "formula_performance",
   "difficulty": 3,
@@ -12,7 +12,7 @@
     "architecture": "Ampere (sm_80, A100)",
     "device": "GPU",
     "requiredFeatures": [
-      "shared memory ≥ 96 KB / SM"
+      "shared memory \u2265 96 KB / SM"
     ]
   },
   "softwareContext": {
@@ -46,7 +46,7 @@
       "row_major"
     ]
   },
-  "stem": "In a shared-memory tiled FP32 GEMM using thread-block tile size `BM × BN × BK` (with A tile `BM × BK` and B tile `BK × BN`), the number of GMEM bytes loaded per output tile and the number of FMA ops per output tile determine the arithmetic intensity. For a `128 × 128 × 32` thread-block tile, which statement is correct?",
+  "stem": "In a shared-memory tiled FP32 GEMM using thread-block tile size `BM \u00d7 BN \u00d7 BK` (with A tile `BM \u00d7 BK` and B tile `BK \u00d7 BN`), the number of GMEM bytes loaded per output tile and the number of FMA ops per output tile determine the arithmetic intensity. For a `128 \u00d7 128 \u00d7 32` thread-block tile, which statement is correct?",
   "options": [
     {
       "id": "A",
@@ -54,7 +54,7 @@
     },
     {
       "id": "B",
-      "text": "Each output tile `128 × 128` requires K/BK iterations of the K-loop. Per iteration: load 128*32*4 + 32*128*4 = 32768 B into SMEM; do 128*128*32*2 = 1_048_576 FLOPs. Per-iteration arithmetic intensity ≈ 1_048_576 / 32768 = 32 FLOPs/byte — high enough to become compute-bound on A100 FP32."
+      "text": "Each output tile `128 \u00d7 128` requires K/BK iterations of the K-loop. Per iteration: load 128*32*4 + 32*128*4 = 32768 B into SMEM; do 128*128*32*2 = 1_048_576 FLOPs. Per-iteration arithmetic intensity \u2248 1_048_576 / 32768 = 32 FLOPs/byte \u2014 high enough to become compute-bound on A100 FP32."
     },
     {
       "id": "C",
@@ -68,16 +68,16 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "For a `BM × BN × BK` tile, per K-loop iteration: A tile bytes = BM*BK*4, B tile bytes = BK*BN*4; total load = 4*BK*(BM+BN). FMAs per iter = 2*BM*BN*BK (2 FLOPs per FMA). Arithmetic intensity per iteration = (2*BM*BN*BK)/(4*BK*(BM+BN)) = BM*BN/(2*(BM+BN)). For BM=BN=128: 128*128/(2*256) = 32 FLOPs/byte. On A100 (FP32 ~ 19.5 TFLOPs / ~1.5 TB/s = ~13 FLOPs/byte), this is above the ridge point → compute-bound. Larger tiles increase intensity (that is why big tiles matter for GEMM). Choice B misunderstands the tile-size effect. Choice C confuses accumulator storage (registers per thread) with block-total; accumulators are distributed across threads. Choice D denies the effect of tile size.",
+  "explanation": "For a `BM \u00d7 BN \u00d7 BK` tile, per K-loop iteration: A tile bytes = BM*BK*4, B tile bytes = BK*BN*4; total load = 4*BK*(BM+BN). FMAs per iter = 2*BM*BN*BK (2 FLOPs per FMA). Arithmetic intensity per iteration = (2*BM*BN*BK)/(4*BK*(BM+BN)) = BM*BN/(2*(BM+BN)). For BM=BN=128: 128*128/(2*256) = 32 FLOPs/byte. On A100 (FP32 ~ 19.5 TFLOPs / ~1.5 TB/s = ~13 FLOPs/byte), this is above the ridge point \u2192 compute-bound. Larger tiles increase intensity (that is why big tiles matter for GEMM). Choice B misunderstands the tile-size effect. Choice C confuses accumulator storage (registers per thread) with block-total; accumulators are distributed across threads. Choice D denies the effect of tile size.",
   "optionExplanations": {
     "B": "Correct: canonical per-iteration arithmetic-intensity calculation for tiled GEMM.",
     "A": "Wrong: increasing BK does not halve SMEM (it grows the tile).",
-    "C": "Wrong: 128*128 FP32 accumulators = 64 KB across the block (e.g., 256 threads × 64 accumulators each), not per thread.",
+    "C": "Wrong: 128*128 FP32 accumulators = 64 KB across the block (e.g., 256 threads \u00d7 64 accumulators each), not per thread.",
     "D": "Wrong: tile size directly changes arithmetic intensity."
   },
   "assumptions": [
     "FP32, no Tensor Cores; single-precision FLOPs on A100 ~19.5 TFLOPs; HBM ~1.5 TB/s.",
-    "One thread block computes one output tile of size 128×128."
+    "One thread block computes one output tile of size 128\u00d7128."
   ],
   "nonImplications": [
     "Does not imply tiny tiles are usable; occupancy and SMEM per SM constrain feasible tile sizes.",
@@ -115,8 +115,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-GEMMSM-014.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

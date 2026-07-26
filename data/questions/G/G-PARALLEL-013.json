@@ -40,7 +40,7 @@
     "C",
     "D"
   ],
-  "explanation": "Parallelization requires the absence of cross-iteration dependences on the same memory location. A (output dependence: WAW), B (true/anti dependence: RAW/WAR across iterations), and C (reduction treated with an appropriate associative combiner) are the standard legality conditions. Branch-free bodies (D) and compile-time trip counts (E) are neither required — SIMT / OpenMP happily parallelize branchy bodies (with warp divergence penalties) and runtime trip counts (`omp parallel for` on a variable N is standard).",
+  "explanation": "Parallelization requires the absence of cross-iteration dependences on the same memory location. A (output dependence: WAW), B (true/anti dependence: RAW/WAR across iterations), and C (reduction treated with an appropriate associative combiner) are the standard legality conditions. Branch-free bodies (D) and compile-time trip counts (E) are neither required \u2014 SIMT / OpenMP happily parallelize branchy bodies (with warp divergence penalties) and runtime trip counts (`omp parallel for` on a variable N is standard).",
   "optionExplanations": {
     "A": "Correct: reductions require an associative combiner or an explicit clause.",
     "B": "Wrong: branchy bodies are legal to parallelize; divergence is a performance concern, not legality.",
@@ -79,8 +79,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/G/G-PARALLEL-013.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

@@ -3,7 +3,7 @@
   "type": "single",
   "module": "cuda_triton_kernel",
   "subtopic": "CUDA / cp.async and asynchronous global-to-shared copies",
-  "learningObjective": "Understand cp.async: what it does, on which architectures, and how it enables software pipelining of GMEM→SMEM copies with compute.",
+  "learningObjective": "Understand cp.async: what it does, on which architectures, and how it enables software pipelining of GMEM\u2192SMEM copies with compute.",
   "archetype": "precise_definition",
   "difficulty": 3,
   "depth": "implementation",
@@ -34,7 +34,7 @@
     },
     {
       "id": "C",
-      "text": "`cp.async` is a Hopper-only instruction; on Ampere, all GMEM→SMEM copies must go through registers."
+      "text": "`cp.async` is a Hopper-only instruction; on Ampere, all GMEM\u2192SMEM copies must go through registers."
     },
     {
       "id": "D",
@@ -44,12 +44,12 @@
   "correctAnswers": [
     "A"
   ],
-  "explanation": "`cp.async` is a PTX instruction introduced with Ampere (sm_80) that copies data from global memory directly to shared memory, bypassing registers. This frees registers, reduces instruction count, and (crucially) allows compute to overlap with the copy — the copy runs asynchronously and the thread proceeds. `cp.async.commit_group` groups pending copies; `cp.async.wait_group N` waits until at most N outstanding groups remain. This is the mechanism behind Ampere-era software-pipelined GEMM kernels (e.g., CUTLASS multi-stage). Hopper adds TMA (Tensor Memory Accelerator) which extends this asynchronous-copy model.",
+  "explanation": "`cp.async` is a PTX instruction introduced with Ampere (sm_80) that copies data from global memory directly to shared memory, bypassing registers. This frees registers, reduces instruction count, and (crucially) allows compute to overlap with the copy \u2014 the copy runs asynchronously and the thread proceeds. `cp.async.commit_group` groups pending copies; `cp.async.wait_group N` waits until at most N outstanding groups remain. This is the mechanism behind Ampere-era software-pipelined GEMM kernels (e.g., CUTLASS multi-stage). Hopper adds TMA (Tensor Memory Accelerator) which extends this asynchronous-copy model.",
   "optionExplanations": {
-    "A": "Correct: async GMEM→SMEM without registers; enables SW pipelining.",
+    "A": "Correct: async GMEM\u2192SMEM without registers; enables SW pipelining.",
     "B": "Wrong: `cp.async` is genuinely asynchronous and bypasses registers.",
     "C": "Wrong: cp.async is Ampere+; Hopper adds TMA on top.",
-    "D": "Wrong: direction is GMEM → SMEM."
+    "D": "Wrong: direction is GMEM \u2192 SMEM."
   },
   "assumptions": [
     "PTX ISA as of CUDA 11+; sm_80+ hardware."
@@ -89,8 +89,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-CPASYNC-027.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

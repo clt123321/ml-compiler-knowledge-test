@@ -30,7 +30,7 @@
     },
     {
       "id": "C",
-      "text": "`add-zero` and `mul-one` are folded, but `sub %x, %x → 0` is a semantic transformation outside the scope of canonicalization, since it changes the SSA def-use chain and thus requires an explicit `-fold-symmetric-ops` pass."
+      "text": "`add-zero` and `mul-one` are folded, but `sub %x, %x \u2192 0` is a semantic transformation outside the scope of canonicalization, since it changes the SSA def-use chain and thus requires an explicit `-fold-symmetric-ops` pass."
     },
     {
       "id": "D",
@@ -40,11 +40,11 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "MLIR canonicalization runs a greedy pattern-rewrite driver that iterates to fixed point. Ops implementing `foldFor()` / registered canonicalization patterns for `arith.addi`, `arith.muli`, `arith.subi` produce: `add %x, 0 → %x`, `mul %x, 1 → %x`, `sub %x, %x → 0`. The driver also runs DCE on the resulting dead constants because canonicalization includes constant folding and dead-op removal in its loop. The pattern driver is not source-order-limited; it re-applies patterns until convergence.",
+  "explanation": "MLIR canonicalization runs a greedy pattern-rewrite driver that iterates to fixed point. Ops implementing `foldFor()` / registered canonicalization patterns for `arith.addi`, `arith.muli`, `arith.subi` produce: `add %x, 0 \u2192 %x`, `mul %x, 1 \u2192 %x`, `sub %x, %x \u2192 0`. The driver also runs DCE on the resulting dead constants because canonicalization includes constant folding and dead-op removal in its loop. The pattern driver is not source-order-limited; it re-applies patterns until convergence.",
   "optionExplanations": {
     "A": "Wrong: canonicalization removes dead constants as part of its loop.",
     "B": "Wrong: the greedy driver applies patterns to fixed point, not once in source order.",
-    "C": "Wrong: `sub %x, %x → 0` is a standard `arith.subi` canonicalization pattern in upstream MLIR.",
+    "C": "Wrong: `sub %x, %x \u2192 0` is a standard `arith.subi` canonicalization pattern in upstream MLIR.",
     "D": "Correct: canonicalization applies folders + DCE to fixed point."
   },
   "assumptions": [
@@ -86,8 +86,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIRPAT-005.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

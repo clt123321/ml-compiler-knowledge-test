@@ -2,7 +2,7 @@
   "id": "F-LN-020",
   "type": "single",
   "module": "cuda_triton_kernel",
-  "subtopic": "CUDA / LayerNorm — welford / two-pass mean-variance",
+  "subtopic": "CUDA / LayerNorm \u2014 welford / two-pass mean-variance",
   "learningObjective": "Reason about a two-pass LayerNorm's memory-traffic cost vs a fused single-pass variant.",
   "archetype": "code_implementation",
   "difficulty": 3,
@@ -121,8 +121,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/F/F-LN-020.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

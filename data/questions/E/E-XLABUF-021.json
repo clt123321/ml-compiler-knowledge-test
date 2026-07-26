@@ -3,7 +3,7 @@
   "type": "single",
   "module": "mlir_tvm_xla",
   "subtopic": "XLA / Buffer assignment, aliasing, in-place operations",
-  "learningObjective": "Understand XLA's buffer assignment: value → buffer mapping, aliasing, and how in-place execution is decided.",
+  "learningObjective": "Understand XLA's buffer assignment: value \u2192 buffer mapping, aliasing, and how in-place execution is decided.",
   "archetype": "systems_dataflow",
   "difficulty": 3,
   "depth": "systems",
@@ -77,8 +77,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-XLABUF-021.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

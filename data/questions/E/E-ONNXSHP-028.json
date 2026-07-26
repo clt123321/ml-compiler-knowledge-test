@@ -2,7 +2,7 @@
   "id": "E-ONNXSHP-028",
   "type": "single",
   "module": "mlir_tvm_xla",
-  "subtopic": "ONNX / Shape inference — dynamic vs static shapes",
+  "subtopic": "ONNX / Shape inference \u2014 dynamic vs static shapes",
   "learningObjective": "Understand ONNX shape inference and how dynamic dimensions are represented in a model.",
   "archetype": "precise_definition",
   "difficulty": 2,
@@ -33,7 +33,7 @@
     },
     {
       "id": "D",
-      "text": "ONNX supports symbolic (named) dynamic dimensions on tensor shapes; `onnx.shape_inference` propagates concrete or symbolic shape/dtype information through the graph where op rules allow it, and unresolved dimensions remain symbolic — consumers use this info for planning but do not require full staticity."
+      "text": "ONNX supports symbolic (named) dynamic dimensions on tensor shapes; `onnx.shape_inference` propagates concrete or symbolic shape/dtype information through the graph where op rules allow it, and unresolved dimensions remain symbolic \u2014 consumers use this info for planning but do not require full staticity."
     }
   ],
   "correctAnswers": [
@@ -77,8 +77,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-ONNXSHP-028.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

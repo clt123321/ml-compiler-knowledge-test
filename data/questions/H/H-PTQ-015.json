@@ -49,7 +49,7 @@
     "Standard framework terminology (TensorRT, PyTorch, TF-Lite)."
   ],
   "nonImplications": [
-    "Does not imply QAT is always better — for INT8, PTQ often matches QAT accuracy.",
+    "Does not imply QAT is always better \u2014 for INT8, PTQ often matches QAT accuracy.",
     "Does not imply PTQ is training-free in all cases; GPTQ / AWQ do run per-layer optimization that is not full retraining."
   ],
   "misconceptionTags": [
@@ -82,8 +82,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-PTQ-015.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

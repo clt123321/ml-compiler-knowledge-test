@@ -65,7 +65,7 @@
   "sourceRefs": [
     {
       "ref": "DOC:mlir-langref",
-      "locator": "Pass Infrastructure — nesting, op-scoped passes",
+      "locator": "Pass Infrastructure \u2014 nesting, op-scoped passes",
       "supports": [
         "A"
       ]
@@ -77,8 +77,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/E/E-MLIRPASS-008.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

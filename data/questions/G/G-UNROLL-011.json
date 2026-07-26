@@ -32,7 +32,7 @@
     },
     {
       "id": "D",
-      "text": "A tight inner loop over a large array where the loop-overhead instructions (increment, compare, branch) already fit within a single instruction issue slot per iteration; unrolling 8× triples the object-code size, evicts hot code from the L1 instruction cache, and materially slows the surrounding function."
+      "text": "A tight inner loop over a large array where the loop-overhead instructions (increment, compare, branch) already fit within a single instruction issue slot per iteration; unrolling 8\u00d7 triples the object-code size, evicts hot code from the L1 instruction cache, and materially slows the surrounding function."
     }
   ],
   "correctAnswers": [
@@ -46,7 +46,7 @@
     "D": "Correct: code-bloat and I-cache pressure are the classic anti-unrolling scenarios."
   },
   "assumptions": [
-    "The 'unrolled 8×' body substantially increases the number of instructions in the outer function.",
+    "The 'unrolled 8\u00d7' body substantially increases the number of instructions in the outer function.",
     "The I-cache and register file have finite capacity."
   ],
   "nonImplications": [
@@ -85,8 +85,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-UNROLL-011.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 2,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }

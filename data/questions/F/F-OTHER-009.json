@@ -57,15 +57,15 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "For a reduction, the `other` value must be the reduction's identity so that masked-off lanes do not perturb the result. Additive identity is `0`; multiplicative identity is `1`; **max identity is −∞**; min identity is +∞. So for a `tl.max` reduction, `other=-float('inf')` is correct: any real element beats it. `other=0.0` (choice B) is wrong when the true maximum is negative: a masked lane would then win with 0.0. `other=+inf` (choice C) is obviously wrong: it dominates any real value. `x_ptr[0]` (choice D) is unsafe: if `x_ptr[0] > true tail max`, it can bias the reduction upward.",
+  "explanation": "For a reduction, the `other` value must be the reduction's identity so that masked-off lanes do not perturb the result. Additive identity is `0`; multiplicative identity is `1`; **max identity is \u2212\u221e**; min identity is +\u221e. So for a `tl.max` reduction, `other=-float('inf')` is correct: any real element beats it. `other=0.0` (choice B) is wrong when the true maximum is negative: a masked lane would then win with 0.0. `other=+inf` (choice C) is obviously wrong: it dominates any real value. `x_ptr[0]` (choice D) is unsafe: if `x_ptr[0] > true tail max`, it can bias the reduction upward.",
   "optionExplanations": {
     "A": "Wrong: 0.0 is the identity for sum, not max; fails when the true max is negative.",
-    "B": "Correct: −∞ is the identity for max.",
-    "C": "Wrong: +∞ dominates any real value and would give an incorrect maximum.",
+    "B": "Correct: \u2212\u221e is the identity for max.",
+    "C": "Wrong: +\u221e dominates any real value and would give an incorrect maximum.",
     "D": "Wrong: `x_ptr[0]` is data-dependent and can bias the result."
   },
   "assumptions": [
-    "IEEE-754 FP32 with support for ±inf.",
+    "IEEE-754 FP32 with support for \u00b1inf.",
     "`tl.max` returns the maximum of the input tile."
   ],
   "nonImplications": [
@@ -96,8 +96,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/F/F-OTHER-009.json",
-  "reviewStatus": "draft",
+  "reviewStatus": "agent_reviewed",
   "version": 1,
   "createdAt": "2026-07-26",
-  "updatedAt": "2026-07-26"
+  "updatedAt": "2026-07-27"
 }
