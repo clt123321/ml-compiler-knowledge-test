@@ -1,0 +1,60 @@
+{
+  "id": "E-XLAFUS-020",
+  "type": "multiple",
+  "module": "mlir_tvm_xla",
+  "subtopic": "XLA / Fusion — kinds and boundaries",
+  "learningObjective": "Distinguish the kinds of fusion XLA performs (loop, input, output) and their motivations.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "XLA",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about XLA's operator fusion are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "XLA distinguishes multiple fusion kinds (e.g., 'loop' fusion, 'input' fusion, 'output' fusion) chosen based on producer/consumer memory-access patterns, so that fused kernels avoid materializing intermediate tensors when the access pattern is compatible." },
+    { "id": "B", "text": "Elementwise ops chained with reductions can be output-fused into the reduction kernel so the elementwise stage runs inside the reduction's inner loop and no intermediate tensor is written to global memory." },
+    { "id": "C", "text": "XLA always fuses any two adjacent ops in the HLO graph; fusion has no cost model and no boundaries, so producer/consumer pairs are unconditionally combined into one kernel." },
+    { "id": "D", "text": "Fusion in XLA operates by cloning the producer's HLO source into the consumer's IR file at compile time; there is no compiler-side representation of a fused kernel, only a copy at the string level." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "XLA's fusion pass has multiple named kinds (loop, input, output, custom) and a heuristic/cost-model-driven decision procedure. Loop fusion combines elementwise producer/consumer chains; input fusion pulls producer computation into a consumer's input load; output fusion combines an elementwise epilogue into a reduction or dot's output. Fusion is bounded — not every adjacent pair is fused (register pressure, shape mismatch, opaque calls, etc. all create boundaries). Fusion is a proper IR transformation: XLA represents a fused kernel as an HLO `fusion` op with a nested computation, not as source cloning.",
+  "optionExplanations": {
+    "A": "Correct: multiple fusion kinds with memory-access rationale.",
+    "B": "Correct: output/epilogue fusion is a canonical XLA optimization.",
+    "C": "Wrong: fusion is bounded by cost heuristics.",
+    "D": "Wrong: fusion is an IR-level `fusion` op with a nested computation, not source cloning."
+  },
+  "assumptions": [
+    "XLA fusion pass as documented; naming may evolve but the taxonomy is stable."
+  ],
+  "nonImplications": [
+    "Does not imply that maximally fused code is always fastest; register/SMEM pressure creates trade-offs.",
+    "Does not imply fusion is only for GPU; XLA does CPU fusion too."
+  ],
+  "misconceptionTags": ["fusion_unconditional_myth", "fusion_as_source_clone_myth"],
+  "distractorRationales": {
+    "C": "Ignores fusion boundaries and heuristics.",
+    "D": "Confuses IR fusion op with textual duplication."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:stablehlo", "locator": "OpenXLA / XLA fusion documentation", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-XLAFUS-020.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

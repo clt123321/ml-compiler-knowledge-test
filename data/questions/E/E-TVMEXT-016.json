@@ -1,0 +1,86 @@
+{
+  "id": "E-TVMEXT-016",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "TVM / External library integration — BYOC, extern ops",
+  "learningObjective": "Understand how TVM integrates external kernel libraries (cuBLAS, cuDNN, TensorRT) into a Relax program.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM BYOC / external ops",
+    "frameworkVersionScope": "TVM Unity",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement about how TVM integrates external libraries (e.g., cuBLAS, cuDNN, TensorRT) into a Relax program is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "External library calls are inlined into TensorIR PrimFunc bodies at compile time; the compiler then applies MetaSchedule to tune the library implementation just like any generated code."
+    },
+    {
+      "id": "B",
+      "text": "TVM's Bring-Your-Own-Codegen (BYOC) and extern-op mechanisms let a Relax op be lowered to an opaque call into a target library instead of a generated PrimFunc; the compiler treats such calls as black boxes at fusion and scheduling time but still tracks shapes/dtypes at the graph level."
+    },
+    {
+      "id": "C",
+      "text": "TVM cannot call any external library from a compiled Relax program; all compute must be expressed as generated PrimFunc bodies to be executable by the Relax VM."
+    },
+    {
+      "id": "D",
+      "text": "BYOC only supports CPU targets; GPU external libraries like cuBLAS must be linked at runtime via the host Python interpreter and cannot be encoded into the compiled artifact."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "TVM's BYOC framework and extern-op mechanism allow a Relax op or subgraph to be lowered to an opaque call into a third-party library (cuBLAS, cuDNN, TensorRT, MKL, etc.). The compiler still knows the shape/dtype at the graph level (for verification and downstream layout planning) but does not see the library's internal loops — so the call is a black box for TensorIR-level scheduling and fusion. This coexists with generated PrimFunc code paths, and both can appear in a single compiled artifact.",
+  "optionExplanations": {
+    "B": "Correct: BYOC/extern ops give opaque calls with graph-level shape/dtype visibility.",
+    "A": "Wrong: external calls are not inlined into TensorIR; the library is not a PrimFunc.",
+    "C": "Wrong: external calls are supported.",
+    "D": "Wrong: GPU libraries (cuBLAS/cuDNN/TensorRT) are core BYOC targets."
+  },
+  "assumptions": [
+    "Standard TVM Unity BYOC and extern-op flows."
+  ],
+  "nonImplications": [
+    "Does not imply external calls always outperform generated kernels; the choice is workload-specific.",
+    "Does not imply the BYOC backend has to be a single library; multi-backend dispatch is possible."
+  ],
+  "misconceptionTags": [
+    "extern_inlined_myth",
+    "byoc_cpu_only_myth"
+  ],
+  "distractorRationales": {
+    "A": "Confuses opaque calls with inlined loops.",
+    "C": "Ignores extern-op support entirely.",
+    "D": "Wrong claim that BYOC is CPU-only."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "BYOC / external library integration",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-TVMEXT-016.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

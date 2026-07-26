@@ -1,0 +1,67 @@
+{
+  "questionId": "C-STABLEHLO-014",
+  "learningObjective": "Understand how StableHLO represents dynamic shapes and identify true statements about StableHLO's design intent regarding portability and shape.",
+  "canonicalClaims": [
+    {
+      "claim": "StableHLO is a portable, framework-independent op set that supports both static and dynamic tensor shapes (with optional per-dim bounds), and is designed to be consumed by multiple compiler backends.",
+      "conditions": [
+        "The reference is StableHLO's specification (2024-2026).",
+        "The framework emits StableHLO consistent with the spec's op signatures."
+      ],
+      "nonImplications": [
+        "Does not imply every backend implements every StableHLO op; portability is at the spec level.",
+        "Does not imply StableHLO includes runtime/device concerns; those live in downstream layers."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "StableHLO spec: portability and dynamic shape" }
+      ]
+    },
+    {
+      "claim": "StableHLO permits dynamic shape via `?` dims and optional bounds encoded on the tensor type; static and dynamic-shape programs coexist in the spec.",
+      "conditions": [
+        "The IR uses the specified dynamic shape syntax."
+      ],
+      "nonImplications": [
+        "Does not imply dynamic-shape programs are always as fast as specialized-shape programs."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "Dynamic shape / bounds" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "StableHLO requires all shapes to be static.",
+      "errorType": "scope_error",
+      "whyWrong": "StableHLO explicitly supports dynamic dims.",
+      "sourceOrEvidence": "StableHLO spec"
+    },
+    {
+      "claim": "StableHLO is a runtime that executes the graph directly.",
+      "errorType": "definition_confusion",
+      "whyWrong": "StableHLO is an IR/interchange format; execution is by downstream compilers/runtimes.",
+      "sourceOrEvidence": "StableHLO spec"
+    },
+    {
+      "claim": "StableHLO ops carry device placement and stream scheduling attributes.",
+      "errorType": "scope_error",
+      "whyWrong": "Device/stream/runtime concerns are not part of the StableHLO op set.",
+      "sourceOrEvidence": "StableHLO spec"
+    },
+    {
+      "claim": "StableHLO is specific to Google TPUs and cannot target GPU/CPU backends.",
+      "errorType": "scope_error",
+      "whyWrong": "StableHLO is a portable IR; XLA and other compilers target CPU/GPU/TPU from StableHLO.",
+      "sourceOrEvidence": "StableHLO / OpenXLA docs"
+    }
+  ],
+  "implementationFacts": [
+    "StableHLO ops carry per-value shape/dtype annotations",
+    "Dynamic dims are written as `?`; bounds attributes are optional per dim",
+    "Consumers include XLA compilers (CPU/GPU/TPU) and IREE"
+  ],
+  "performanceScenarios": [
+    "Backends specialize dynamic-shape programs to concrete shapes when profitable; the IR permits both modes."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

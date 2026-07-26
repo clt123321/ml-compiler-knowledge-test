@@ -1,0 +1,60 @@
+{
+  "id": "A-THROUGH-017",
+  "type": "multiple",
+  "module": "arch_perf_model",
+  "subtopic": "Latency vs throughput",
+  "learningObjective": "Distinguish latency from throughput and identify architectural strategies that optimize one at the expense of the other.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic parallel processor",
+    "device": "generic",
+    "requiredFeatures": ["pipelined execution", "many parallel workers"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following correctly distinguish latency from throughput in an architectural context? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "Latency is the time to complete one unit of work end-to-end; throughput is the rate of completed work per unit time. On pipelined or heavily parallel systems, throughput can be high while individual latency remains long." },
+    { "id": "B", "text": "GPU architectures optimize primarily for throughput via massive parallelism and latency hiding through overlapping many warps, at the cost of higher per-op latency than a CPU on isolated operations." },
+    { "id": "C", "text": "Latency and throughput are reciprocals of each other, so improving one automatically improves the other by the same factor." },
+    { "id": "D", "text": "A workload's latency floor is at least the longest sequential dependency chain; increasing parallelism reduces throughput bottlenecks but cannot shrink an unavoidable data dependency's contribution to latency." }
+  ],
+  "correctAnswers": ["A", "B", "D"],
+  "explanation": "A: Textbook definition and the observation that pipelined systems trade single-item latency for aggregate throughput. B: GPUs use SIMT with many warps and latency-hiding memory pipelines; single-issue latency on a CPU is often lower for a lone dependent instruction stream. D: Sequential dependencies (critical path) bound latency; parallelism can widen the pipeline but cannot fold two dependent ops in half. C is wrong: latency and throughput are not reciprocals when pipelining or parallelism is involved; throughput can be N-way while per-item latency is still 1 unit of pipeline depth.",
+  "optionExplanations": {
+    "A": "Correct: standard definitions with the pipeline caveat.",
+    "B": "Correct: canonical characterization of GPU throughput orientation vs CPU latency orientation.",
+    "C": "Wrong: they are not simple reciprocals; pipelining and parallelism decouple them.",
+    "D": "Correct: critical path (sequential dependencies) sets a latency floor even with unlimited workers."
+  },
+  "assumptions": [
+    "Comparison of GPUs and CPUs as throughput- vs latency-oriented, respectively, per architectural design goals.",
+    "The workload can be pipelined or parallelized; a purely sequential critical-path workload is not the general case."
+  ],
+  "nonImplications": [
+    "Does not imply CPUs are always slower per-op than GPUs; per-thread latency on CPUs is often lower for scalar workloads.",
+    "Does not imply throughput and latency are unrelated; they are related by Little's Law, but not as simple reciprocals."
+  ],
+  "misconceptionTags": ["latency_throughput_reciprocal_myth", "critical_path_ignored"],
+  "distractorRationales": {
+    "C": "Overly simple algebraic relation that ignores pipelining and parallelism."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:hp6", "locator": "Ch. 1, latency vs throughput and pipeline chapters", "supports": ["A", "B", "D"] },
+    { "ref": "BOOK:pmpp4", "locator": "Ch. 1, GPU throughput orientation", "supports": ["A", "B", "D"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/A/A-THROUGH-017.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

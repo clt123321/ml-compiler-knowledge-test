@@ -1,0 +1,49 @@
+{
+  "questionId": "F-TCORE-018",
+  "learningObjective": "Understand generation-by-generation Tensor Core dtype support and portability implications.",
+  "canonicalClaims": [
+    {
+      "claim": "NVIDIA Tensor Core dtype support grew generation-by-generation: Volta FP16 → Turing INT8 → Ampere TF32/BF16/FP64 → Ada/Hopper FP8. Kernels using specific dtypes require the matching compute capability.",
+      "conditions": ["NVIDIA architecture history through 2025."],
+      "nonImplications": [
+        "Does not imply future architectures will keep all past dtypes.",
+        "Does not imply per-dtype throughput ratios are stable."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Compute capability tables" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "All Tensor Core dtypes are available from Volta onwards.",
+      "errorType": "version_leak",
+      "whyWrong": "BF16/TF32 arrived with Ampere; FP8 with Ada/Hopper.",
+      "sourceOrEvidence": "NVIDIA architecture whitepapers"
+    },
+    {
+      "claim": "FP8 is available on Ampere GPUs.",
+      "errorType": "version_leak",
+      "whyWrong": "FP8 arrived with Ada (sm_89) / Hopper (sm_90).",
+      "sourceOrEvidence": "Hopper whitepaper"
+    },
+    {
+      "claim": "BF16/TF32/FP8 are software emulations on FP16 hardware.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They have distinct hardware datapaths.",
+      "sourceOrEvidence": "Ampere/Hopper whitepapers"
+    },
+    {
+      "claim": "Tensor Core throughput per dtype is identical across generations.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Peak MMA rates change per architecture; FP32 accumulator handling differs.",
+      "sourceOrEvidence": "NVIDIA specs"
+    }
+  ],
+  "implementationFacts": [
+    "sm_70: FP16; sm_75: +INT8; sm_80: +TF32/BF16/FP64; sm_89: +FP8; sm_90: FP8 formalized with new throughput.",
+    "__CUDA_ARCH__ macro guards dtype-specific code paths."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

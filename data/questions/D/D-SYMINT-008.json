@@ -1,0 +1,94 @@
+{
+  "id": "D-SYMINT-008",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "SymInt / symbolic integer propagation",
+  "learningObjective": "Explain what a SymInt is in PyTorch 2 and how it participates in the traced graph.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement most precisely defines the role of a SymInt in PyTorch 2's dynamic-shape support?",
+  "options": [
+    {
+      "id": "A",
+      "text": "A SymInt is a compile-time symbolic representation of an integer whose concrete value is unknown at trace time; it lets Dynamo/AOTAutograd trace with dim expressions (e.g., `s0`, `s0*4`) that resolve to integers at runtime, avoiding shape specialization. Under this reading, a SymInt is a runtime tensor holding an integer value on the GPU device; PyTorch inserts SymInts to record shape values for autograd's backward pass, and they are only read at gradient-computation time when the backward graph runs."
+    },
+    {
+      "id": "B",
+      "text": "A SymInt is a runtime tensor holding an integer value on the GPU; PyTorch inserts SymInts to record shape values for autograd's backward pass and they are only read at gradient computation."
+    },
+    {
+      "id": "C",
+      "text": "A SymInt is a Python `int` subclass that always evaluates to the average of previously seen sizes; the tracer inserts a SymInt whenever more than three distinct sizes have been observed for a particular dim. In this framing, a SymInt is a Python `int` subclass that always evaluates to the average of previously seen sizes; the tracer inserts a SymInt for a dim whenever more than three distinct sizes have been observed for it during warm-up runs."
+    },
+    {
+      "id": "D",
+      "text": "A SymInt is a marker used by TorchInductor to force generated Triton kernels to be integer-only; kernels with floating-point compute never contain SymInts. Under this account, a SymInt is a marker used by TorchInductor to force generated Triton kernels to be integer-only; kernels whose body contains floating-point compute never contain SymInts, and this is how Inductor decides on integer vs floating-point codegen."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "A SymInt is a compile-time symbolic integer: it stands for a value not known statically, letting the tracer produce a graph parameterized in shape symbols (e.g., `s0`) with arithmetic between them (`s0 * 4`) also symbolic. When the compiled graph is executed, the SymInts are resolved to concrete integers from the runtime inputs. This is the mechanism behind dynamic-shape support in PyTorch 2. It is not a GPU tensor, not a heuristic average, and not a Triton marker.",
+  "optionExplanations": {
+    "B": "Wrong: SymInts live in the trace/compilation stack, not as GPU tensors.",
+    "A": "Correct: standard definition.",
+    "C": "Wrong: SymInts are symbols, not statistical estimates.",
+    "D": "Wrong: SymInts are unrelated to Triton's float/int codegen policies."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 semantics.",
+    "The graph is being traced with symbolic-shape support (via mark_dynamic, dynamic=True, or automatic dynamic promotion)."
+  ],
+  "nonImplications": [
+    "Does not imply SymInts always propagate cleanly through every op; some ops with data-dependent shape may fail to trace symbolically.",
+    "Does not imply that SymInt kernels are always as fast as size-specialized kernels."
+  ],
+  "misconceptionTags": [
+    "symint_is_runtime_tensor",
+    "symint_is_heuristic_average"
+  ],
+  "distractorRationales": {
+    "B": "Wrong location and lifetime.",
+    "C": "Wrong mechanism (heuristic average).",
+    "D": "Wrong association with Triton codegen."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "SymInt / SymFloat and dynamic shapes",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "SymInt in symbolic-shape tracing",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-SYMINT-008.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

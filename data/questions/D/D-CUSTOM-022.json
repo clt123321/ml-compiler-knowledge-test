@@ -1,0 +1,95 @@
+{
+  "id": "D-CUSTOM-022",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Custom op registration + meta implementation",
+  "learningObjective": "Understand why a custom operator must provide a meta / FakeTensor implementation to be compatible with torch.compile.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "A user registers a custom CUDA kernel via `torch.library` and calls it from a `torch.compile`d function. Which statement most accurately explains what the 'meta' (aka FakeTensor) implementation is for?",
+  "codeSnippet": "import torch\nfrom torch import Tensor\nfrom torch.library import Library, impl\n\nmy_lib = Library(\"mylib\", \"DEF\")\nmy_lib.define(\"my_gemm(Tensor a, Tensor b) -> Tensor\")\n\n@impl(my_lib, \"my_gemm\", \"CUDA\")\ndef my_gemm_cuda(a: Tensor, b: Tensor) -> Tensor:\n    # Real GEMM launched here (details omitted)\n    return torch.matmul(a, b)\n\n@impl(my_lib, \"my_gemm\", \"Meta\")\ndef my_gemm_meta(a: Tensor, b: Tensor) -> Tensor:\n    # Returns a fake tensor with the correct output shape/dtype; no data\n    return torch.empty(a.shape[0], b.shape[1], dtype=a.dtype, device=\"meta\")\n\n@torch.compile\ndef f(x, w):\n    return torch.ops.mylib.my_gemm(x, w)",
+  "options": [
+    {
+      "id": "A",
+      "text": "The Meta implementation lets Dynamo / AOTAutograd trace the custom op without actually executing it: it propagates shape, dtype, and device without touching real data, enabling FakeTensor propagation and downstream analysis (shape guards, fusion boundaries)."
+    },
+    {
+      "id": "B",
+      "text": "The Meta implementation is required by Inductor to convert the CUDA kernel into Triton code; without it, Inductor recompiles the CUDA implementation into a Triton equivalent from LLVM IR at trace time. In this reading, the Meta implementation is required by Inductor to convert the CUDA kernel into a Triton equivalent; without it, Inductor recompiles the CUDA implementation into a Triton kernel from LLVM IR at trace time using a source-to-source translator."
+    },
+    {
+      "id": "C",
+      "text": "The Meta implementation only matters for TorchScript export; torch.compile does not use it and instead runs the CUDA kernel eagerly during tracing. Under this framing, the Meta implementation matters only for TorchScript export; torch.compile does not consult it during tracing and instead runs the actual CUDA kernel eagerly to observe the concrete output shape and dtype for each traced call."
+    },
+    {
+      "id": "D",
+      "text": "Meta implementations are deprecated in favor of DispatchKey::CompositeExplicitAutograd; providing one causes torch.compile to skip the CUDA implementation entirely at runtime. In this account, Meta implementations are deprecated in favor of `DispatchKey::CompositeExplicitAutograd`; providing one now causes torch.compile to skip the CUDA implementation entirely at runtime, silently falling back to the composite ATen decomposition."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "During torch.compile tracing, ops are executed on FakeTensors that model shape / dtype / device without holding real data. To trace a custom op, PyTorch calls its 'meta' implementation to propagate output shape/dtype/device symbolically. Without a meta implementation the tracer either graph-breaks or errors. The meta impl does not turn CUDA kernels into Triton and is not a TorchScript-only artifact.",
+  "optionExplanations": {
+    "A": "Correct: standard reason for providing a meta impl.",
+    "B": "Wrong: meta impl does not drive Triton codegen.",
+    "C": "Wrong: torch.compile relies on meta impl.",
+    "D": "Wrong: meta impls remain the standard mechanism for custom op tracing."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 with torch.library API.",
+    "The custom op is called only through torch.ops.mylib.my_gemm (not via Python-level dispatch that would bypass the meta impl)."
+  ],
+  "nonImplications": [
+    "Does not imply the meta impl must be perfectly accurate for every dim; obvious symbolic propagation suffices.",
+    "Does not imply Inductor fuses the custom op with surrounding pointwise ops; opaque custom ops typically form fusion boundaries."
+  ],
+  "misconceptionTags": [
+    "meta_generates_triton",
+    "meta_only_for_torchscript"
+  ],
+  "distractorRationales": {
+    "B": "Wrong claim about Triton codegen.",
+    "C": "Wrong claim about TorchScript scope.",
+    "D": "Wrong claim about deprecation."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Custom ops: meta / FakeTensor requirement",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "FakeTensor propagation during tracing",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-CUSTOM-022.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

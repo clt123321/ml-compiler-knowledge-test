@@ -1,0 +1,56 @@
+{
+  "questionId": "G-UNROLL-011",
+  "learningObjective": "Recognize scenarios where loop unrolling degrades rather than improves performance.",
+  "canonicalClaims": [
+    {
+      "claim": "Aggressive loop unrolling can degrade performance by increasing code size beyond the instruction cache's capacity and, on GPUs, by inflating per-thread register usage past the spill threshold.",
+      "conditions": [
+        "The unrolled body's total instruction count exceeds the I-cache working set (CPU) or per-thread register budget (GPU).",
+        "The un-unrolled loop's overhead was already amortized over enough work per iteration."
+      ],
+      "nonImplications": [
+        "Does not imply unrolling is generally harmful; small unroll factors often help exposed ILP and reduce branch overhead.",
+        "Does not imply compilers cannot self-tune; production compilers use heuristics."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Loop unrolling trade-offs" },
+        { "ref": "DOC:cuda-best", "locator": "Register-pressure implications of unrolling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Full unrolling of a fixed small trip-count loop violates SSA form.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Full unrolling replaces the loop with straight-line code — this is the canonical way to eliminate a loop and is SSA-preserving.",
+      "sourceOrEvidence": "Compiler textbooks"
+    },
+    {
+      "claim": "Unrolling never helps with data-dependent memory accesses.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Unrolling can expose ILP between independent lanes, allowing the CPU to issue multiple independent loads even when each address is data-dependent.",
+      "sourceOrEvidence": "H&P Computer Architecture, ILP chapter"
+    },
+    {
+      "claim": "Unrolling is a free optimization because it only affects the front-end (branch/increment); the back-end always benefits.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Back-end register allocation and I-cache pressure both scale with unrolled body size; unrolling is not free.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "GPU compilers always ignore unroll pragmas because loops on GPUs execute in warp-lockstep.",
+      "errorType": "definition_confusion",
+      "whyWrong": "nvcc / Triton respect unroll pragmas; warp lockstep is orthogonal to per-thread control flow unrolling.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, `#pragma unroll`"
+    }
+  ],
+  "implementationFacts": [
+    "GCC/Clang expose `#pragma unroll` and `-funroll-loops` flags.",
+    "nvcc / Triton support `#pragma unroll` and `tl.static_range`.",
+    "MLIR affine has `affine.unroll` transformation."
+  ],
+  "performanceScenarios": [
+    "Unrolling an 8-element inner GEMM K-loop is beneficial (exposes ILP); unrolling the outer M-loop by 8× rarely helps and inflates code."
+  ],
+  "versionSensitivity": "stable_principle"
+}

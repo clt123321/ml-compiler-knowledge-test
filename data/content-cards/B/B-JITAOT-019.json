@@ -1,0 +1,50 @@
+{
+  "questionId": "B-JITAOT-019",
+  "learningObjective": "Compare JIT and AOT compilation on optimization opportunities, deployment characteristics, and cold-start behavior.",
+  "canonicalClaims": [
+    {
+      "claim": "JIT compilation exploits runtime information for adaptive specialization at the cost of a warm-up phase, while AOT compilation produces deployable artifacts without runtime compile overhead but lacks dynamic profile; modern systems commonly combine both via tiered compilation.",
+      "conditions": [
+        "Language/framework supports either or both compilation modes.",
+        "Runtime specialization requires safe deoptimization or guarded reuse."
+      ],
+      "nonImplications": [
+        "Does not imply JIT is always less optimized than AOT.",
+        "Does not imply JIT and AOT are mutually exclusive; hybrid systems are common."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Compilation techniques chapter" },
+        { "ref": "BOOK:dragon2", "locator": "JIT section" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "JIT is inherently less optimized because compile time is limited.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Hot code in modern JITs (V8 TurboFan, HotSpot C2, PyTorch's Inductor) receives significant optimization time; JITs also benefit from runtime specialization that AOT lacks.",
+      "sourceOrEvidence": "V8 / HotSpot documentation"
+    },
+    {
+      "claim": "JIT and AOT cannot coexist in the same pipeline.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Tiered compilation combines interpreter, baseline JIT, and optimizing JIT; AOT caches and native-image compilation coexist with JIT tiers.",
+      "sourceOrEvidence": "GraalVM native-image; HotSpot AppCDS"
+    },
+    {
+      "claim": "AOT eliminates cold-start latency entirely.",
+      "errorType": "overgeneralization",
+      "whyWrong": "AOT avoids compile cost at startup but does not eliminate other startup costs (memory allocation, dynamic library loading, GPU context init).",
+      "sourceOrEvidence": "Native-image cold-start analyses"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch torch.compile is JIT; torch.export + AOTInductor is AOT.",
+    "V8 uses tiered JIT (Ignition interpreter → Sparkplug → Maglev → TurboFan).",
+    "HotSpot JVM uses tiered compilation (C1 baseline, C2 optimizing) with AOT hooks."
+  ],
+  "performanceScenarios": [
+    "Serverless functions favor AOT to minimize cold-start; long-running services often benefit from JIT's adaptive specialization on hot paths."
+  ],
+  "versionSensitivity": "stable_principle"
+}

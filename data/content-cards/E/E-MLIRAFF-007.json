@@ -1,0 +1,51 @@
+{
+  "questionId": "E-MLIRAFF-007",
+  "learningObjective": "Reason about MLIR affine dialect semantics: valid loop nests, affine expressions, symbols.",
+  "canonicalClaims": [
+    {
+      "claim": "MLIR's `affine` dialect requires loop bounds and access indices to be affine expressions of enclosing IVs and MLIR symbols. Data-dependent values loaded from memory are not symbols, so loops using them for bounds are not valid affine IR (use `scf.for` instead).",
+      "conditions": ["Standard upstream affine dialect verifier."],
+      "nonImplications": [
+        "Does not imply that all data-dependent programs cannot be expressed in MLIR — `scf` and other dialects allow arbitrary bounds.",
+        "Does not imply affine constraints are optional at the verifier."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Affine dialect definitions" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`affine.load` only accepts single-IV indices, no compound expressions.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Any affine expression of IVs and symbols is allowed; `%i + 1`, `%i*2`, `%i + %s` are all valid.",
+      "sourceOrEvidence": "Affine dialect doc"
+    },
+    {
+      "claim": "Any SSA value in scope may be used as an `affine.for` upper bound.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Only symbols and loop IVs count; data-dependent values need `scf.for`.",
+      "sourceOrEvidence": "Affine dialect doc"
+    },
+    {
+      "claim": "The affine verifier is syntactic and only checks op names.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It enforces affine-expression constraints structurally on bounds and indices.",
+      "sourceOrEvidence": "Affine dialect verifier"
+    },
+    {
+      "claim": "Casting a data-dependent load result to `index` promotes it to an MLIR symbol.",
+      "errorType": "definition_confusion",
+      "whyWrong": "MLIR symbols are a static classification of specific SSA values (function args, dim results, values marked as symbolic), not any index-typed value.",
+      "sourceOrEvidence": "Affine dialect symbol definition"
+    }
+  ],
+  "implementationFacts": [
+    "Symbols: function args, `memref.dim` results, `affine.symbol`-marked values.",
+    "Non-affine loops go in `scf.for` / `scf.while`."
+  ],
+  "performanceScenarios": [
+    "Affine constraints enable polyhedral tiling, fusion, and dependence analysis; giving them up loses those transformations."
+  ],
+  "versionSensitivity": "stable_principle"
+}

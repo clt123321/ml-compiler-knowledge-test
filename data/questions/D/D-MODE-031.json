@@ -1,0 +1,97 @@
+{
+  "id": "D-MODE-031",
+  "type": "multiple",
+  "module": "pytorch_compiler",
+  "subtopic": "torch.compile modes: default, reduce-overhead, max-autotune",
+  "learningObjective": "Distinguish the intent of `torch.compile` `mode` presets and identify correct behavior claims.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statements about `torch.compile` `mode` presets are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "`mode='reduce-overhead'` uses CUDA Graph capture to lower per-launch dispatch and kernel-launch overhead, which is helpful for many-small-kernel workloads."
+    },
+    {
+      "id": "B",
+      "text": "`mode='max-autotune'` enables aggressive kernel-selection / autotuning (e.g., trying multiple Triton block configurations) at the cost of longer compilation time."
+    },
+    {
+      "id": "C",
+      "text": "The default mode is functionally different from `reduce-overhead` and `max-autotune` in what it compiles; the modes tune codegen/runtime knobs rather than changing which ops are captured."
+    },
+    {
+      "id": "D",
+      "text": "`mode='max-autotune'` is required to enable any Triton codegen; the default mode always emits pure Python fallback for CUDA tensors. Under this framing, `mode='max-autotune'` is required to enable any Triton codegen; the default mode always emits a pure Python fallback for CUDA tensors, and reduce-overhead is a legacy alias for the default mode retained for backward compatibility with older scripts."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "C"
+  ],
+  "explanation": "A: `reduce-overhead` uses CUDA Graph capture to lower per-launch overhead. B: `max-autotune` opts into more aggressive autotuning (multi-config Triton search, Cutlass/GEMM template exploration) with a compile-time cost. C: modes tune codegen/runtime knobs; the traced graph structure is largely unchanged. D is wrong: default mode emits Triton for CUDA tensors already; `max-autotune` is not required to enable codegen.",
+  "optionExplanations": {
+    "A": "Correct.",
+    "B": "Correct.",
+    "C": "Correct.",
+    "D": "Wrong: default mode already uses Triton codegen for CUDA tensors."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 mode-preset semantics.",
+    "CUDA tensors are used (Triton codegen path)."
+  ],
+  "nonImplications": [
+    "Does not imply reduce-overhead is always faster than default; CUDA Graph capture introduces its own constraints (e.g., static shapes for captured region).",
+    "Does not imply max-autotune is always worth the compile-time cost; it can dominate startup time for training runs."
+  ],
+  "misconceptionTags": [
+    "default_no_triton",
+    "modes_change_captured_ops"
+  ],
+  "distractorRationales": {
+    "D": "Wrong claim about default mode."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "mode parameter: default / reduce-overhead / max-autotune",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Autotune and CUDA Graph capture",
+      "supports": [
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-MODE-031.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

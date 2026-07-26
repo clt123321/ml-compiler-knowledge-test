@@ -1,0 +1,58 @@
+{
+  "questionId": "A-BW-006",
+  "learningObjective": "Compute the arithmetic intensity of a batched matrix multiplication and compare it against a GPU's ridge point to determine bind regime.",
+  "canonicalClaims": [
+    {
+      "claim": "For a dense square GEMM M=N=K=n loaded once from HBM, arithmetic intensity is approximately n/3 FLOP/byte for FP16 operands (2·n^3 FLOPs / (3·n^2·2 B)), so AI scales with n and typical modern GPU ridge points place n ≥ ~few hundred squarely compute-bound.",
+      "conditions": [
+        "All three matrices are streamed once from HBM and the tiled schedule realizes their intra-tile reuse.",
+        "AI is measured against HBM traffic rather than L1/SMEM traffic.",
+        "FP16 operands stored as 2 bytes each; accumulation precision does not affect HBM traffic."
+      ],
+      "nonImplications": [
+        "Does not imply that any GEMM launch will reach the compute peak; occupancy, MMA scheduling and shared-memory bank behavior all affect achieved throughput.",
+        "Does not imply that GEMV (K=1024 but M=1) is compute-bound; GEMV has AI ≈ 1 FLOP/byte."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "GEMM chapter, tile-level reuse and arithmetic intensity" },
+        { "ref": "BOOK:hp6", "locator": "Ch. 4 dense linear algebra performance" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GEMM has the same arithmetic intensity as GEMV because both perform 2·N·K FLOPs per row of output.",
+      "errorType": "definition_confusion",
+      "whyWrong": "GEMV amortizes weight loads over a single output vector (AI ≈ 1 FLOP/byte); GEMM amortizes them over N output columns, giving AI proportional to the tile K dimension.",
+      "sourceOrEvidence": "PMPP4 chapter on GEMM tiling"
+    },
+    {
+      "claim": "The Roofline classification depends on launch grid configuration.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The Roofline model classifies based on AI (algorithmic property) vs ridge point (hardware property); launch grid affects achieved efficiency toward that ceiling, not the ceiling itself.",
+      "sourceOrEvidence": "PMPP4 Roofline model definition"
+    },
+    {
+      "claim": "FP16 accumulation makes a GEMM memory-bound because accumulators spill.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Accumulation precision affects numeric behavior and Tensor Core selection, not the ratio of FLOPs to HBM bytes moved. Accumulator spills, if they occur, go to registers/local memory, and are unrelated to the AI vs ridge comparison.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, WMMA/MMA docs"
+    },
+    {
+      "claim": "Modern GEMM kernels reach the ridge line automatically once AI > ridge point.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Being compute-bound in Roofline is necessary but not sufficient for peak throughput; scheduling, register/shared-memory pressure, and Tensor Core operand alignment all further gate achievable performance.",
+      "sourceOrEvidence": "CUDA C++ Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "GEMM FLOPs = 2·M·N·K; HBM bytes ≈ (M·K + K·N + M·N)·sizeof(dtype).",
+    "For M=N=K=n FP16, AI ≈ (2·n^3) / (3·n^2·2) = n/3 FLOP/byte.",
+    "A100 FP16 Tensor Core ridge ≈ 312 TFLOP/s ÷ 2 TB/s ≈ 156 FLOP/byte."
+  ],
+  "performanceScenarios": [
+    "LLM training and prefill use large GEMMs with large K; they are typically compute-bound.",
+    "LLM decode uses GEMV (batch-1 linear); these are memory-bound and motivate weight quantization."
+  ],
+  "versionSensitivity": "stable_principle"
+}

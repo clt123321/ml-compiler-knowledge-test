@@ -1,0 +1,49 @@
+{
+  "questionId": "E-TVMVM-017",
+  "learningObjective": "Understand the role of the Relax VM in executing compiled TVM programs.",
+  "canonicalClaims": [
+    {
+      "claim": "The Relax VM is a bytecode-based runtime that dispatches PrimFunc calls, external-library calls, and control flow, and handles dynamic-shape memory allocation and object lifetime. It separates static AOT compilation of tensor programs from dynamic runtime dispatch of graph structure.",
+      "conditions": ["Standard TVM Unity deployment path."],
+      "nonImplications": [
+        "Does not imply zero-overhead dispatch.",
+        "Does not imply the VM is the only deployment path."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "Relax VM runtime" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Relax VM is a Python interpreter that executes IR line-by-line.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a compiled bytecode VM, not a Python interpreter of IR.",
+      "sourceOrEvidence": "TVM Relax VM doc"
+    },
+    {
+      "claim": "The Relax VM JIT-compiles TensorIR at every function call.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PrimFuncs are AOT-compiled to target code; the VM only dispatches them.",
+      "sourceOrEvidence": "TVM Relax VM doc"
+    },
+    {
+      "claim": "The Relax VM supports only CPU targets.",
+      "errorType": "overgeneralization",
+      "whyWrong": "GPU targets are supported via device-side kernels dispatched by the VM.",
+      "sourceOrEvidence": "TVM docs"
+    },
+    {
+      "claim": "The VM removes the need for AOT compilation.",
+      "errorType": "scope_error",
+      "whyWrong": "AOT compilation of PrimFunc is still required; the VM ties compiled artifacts together.",
+      "sourceOrEvidence": "TVM docs"
+    }
+  ],
+  "implementationFacts": [
+    "Bytecode instructions include Call, AllocTensor, AllocStorage, If, Return.",
+    "Dynamic-shape allocation is orchestrated by the VM using shape variables."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

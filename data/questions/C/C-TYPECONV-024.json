@@ -1,0 +1,93 @@
+{
+  "id": "C-TYPECONV-024",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Type conversion in dialect conversion",
+  "learningObjective": "Understand what a TypeConverter's `addSourceMaterialization`/`addTargetMaterialization` do in MLIR dialect conversion, and why they matter for cross-type IR boundaries.",
+  "archetype": "ir_transformation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "A partial conversion legalizes ops in a tensor-typed IR to a memref-typed IR, but some ops in the same function are legal (or must remain) at the tensor level. What is the role of the TypeConverter's `addSourceMaterialization` and `addTargetMaterialization` hooks in making this work?",
+  "irSnippet": "// During partial conversion, an op that was rewritten to memref feeds into an unconverted op still expecting tensor.\n// The Dialect Conversion driver inserts an `unrealized_conversion_cast` at the boundary and asks the\n// TypeConverter for a materialization to legalize the cast into a real op.\n\n// Example boundary insertion (pre-materialization):\n%m0 = memref.alloc() : memref<Nxf32>\n// ... writes into %m0 via new memref-based ops ...\n%t0 = builtin.unrealized_conversion_cast %m0 : memref<Nxf32> to tensor<Nxf32>\n\n// Materialization (via `addTargetMaterialization` inserting bufferization.to_tensor):\n%t0 = bufferization.to_tensor %m0 : memref<Nxf32>",
+  "options": [
+    {
+      "id": "A",
+      "text": "The materialization callbacks provide the driver with a way to insert real ops that legalize `unrealized_conversion_cast` at boundaries where converted and unconverted values meet, so the final IR has no unrealized casts left."
+    },
+    {
+      "id": "B",
+      "text": "`addSourceMaterialization` and `addTargetMaterialization` are debug-only hooks that the driver ignores in production; the `unrealized_conversion_cast` op stays in the IR permanently as an implicit reinterpretation."
+    },
+    {
+      "id": "C",
+      "text": "They rename SSA values across dialects; they do not insert any ops but rewrite variable names via textual substitution during printing. Under this reading, they rename SSA values across dialects by textual substitution during printing; no ops are inserted, and the driver relies on the printer to reconcile any cross-dialect operand references that would otherwise fail to parse."
+    },
+    {
+      "id": "D",
+      "text": "They are only used when converting from tensor to LLVM types; for tensor <-> memref conversion, MLIR uses a completely separate `TensorMemRefConverter` interface not tied to the Dialect Conversion framework. In this account, materialization hooks are only used when converting from tensor to LLVM types; for tensor <-> memref conversion, MLIR uses a completely separate `TensorMemRefConverter` interface that is not tied to the Dialect Conversion framework."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "In MLIR's Dialect Conversion framework, when a converted value must feed an unconverted op (or vice versa), the driver inserts a temporary `builtin.unrealized_conversion_cast` at the boundary. The TypeConverter's `addSourceMaterialization` and `addTargetMaterialization` hooks provide the driver with real ops to legalize these casts (for example, `bufferization.to_tensor` / `bufferization.to_memref`). At the end of a successful conversion, no unrealized casts should remain.",
+  "optionExplanations": {
+    "B": "Wrong: unrealized casts are transient and should be resolved by materializations.",
+    "A": "Correct: exactly describes their role.",
+    "C": "Wrong: materialization inserts ops, not textual renames.",
+    "D": "Wrong: the same framework covers arbitrary type conversions."
+  },
+  "assumptions": [
+    "The pipeline uses MLIR's built-in Dialect Conversion driver.",
+    "The TypeConverter is registered for the relevant type pairs."
+  ],
+  "nonImplications": [
+    "Does not imply materializations are always cheap; a `bufferization.to_tensor` may introduce or hide copies.",
+    "Does not imply successful partial conversion means the resulting IR is optimal; further passes typically follow."
+  ],
+  "misconceptionTags": [
+    "materialization_is_debug",
+    "materialization_renames"
+  ],
+  "distractorRationales": {
+    "B": "Understates the role of materializations.",
+    "C": "Wrong mechanism (rename vs. insert).",
+    "D": "Wrong scope claim."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-dialect-conversion",
+      "locator": "TypeConverter materializations; unrealized_conversion_cast",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "builtin.unrealized_conversion_cast semantics",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-TYPECONV-024.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

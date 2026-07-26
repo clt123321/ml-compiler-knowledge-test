@@ -1,0 +1,62 @@
+{
+  "id": "B-REGALLOC-015",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Register allocation via graph coloring",
+  "learningObjective": "Explain the graph-coloring formulation of register allocation, including the meaning of interference and spilling.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic scalar target with K physical registers",
+    "device": "generic",
+    "requiredFeatures": ["fixed K-color register file"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "In the classical graph-coloring formulation of register allocation, what do the nodes, edges, K colors, and 'spill' correspond to?",
+  "options": [
+    { "id": "A", "text": "Nodes = live ranges (virtual registers). Edges = interference (two live ranges are live simultaneously and therefore cannot share a physical register). K colors = number of physical registers. Spill = assign a live range to memory because coloring with K colors is impossible; spilled uses/defs become loads/stores." },
+    { "id": "B", "text": "Nodes = basic blocks. Edges = CFG edges. K colors = number of basic blocks the register allocator can process in parallel. Spill = block-level rearrangement." },
+    { "id": "C", "text": "Nodes = phi nodes. Edges = phi operands. K colors = SSA versions of a variable. Spill = eliminate a phi." },
+    { "id": "D", "text": "Nodes = instructions. Edges = data dependencies. K colors = pipeline stages. Spill = pipeline stall." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "The standard graph-coloring formulation: build the interference graph where nodes are live ranges (virtual registers), edges connect live ranges that are simultaneously live (must not share a physical register). K colors correspond to physical registers. If the graph is not K-colorable, one or more live ranges are spilled to memory (their uses/defs replaced by loads/stores), then the process repeats until success. Options B, C, D describe unrelated formulations.",
+  "optionExplanations": {
+    "A": "Correct: canonical Chaitin/Briggs graph-coloring formulation.",
+    "B": "Wrong: describes CFG partitioning, not register allocation.",
+    "C": "Wrong: SSA and phi nodes are input to the allocator, not the coloring model.",
+    "D": "Wrong: describes instruction scheduling, not register allocation."
+  },
+  "assumptions": [
+    "Non-SSA IR at register-allocation time (SSA is typically destructed first, though SSA-based allocation variants exist).",
+    "Fixed K physical registers on the target."
+  ],
+  "nonImplications": [
+    "Does not imply graph coloring is always used; linear-scan and PBQP are alternative modern algorithms.",
+    "Does not imply spilling to memory means all uses require memory access; live-range splitting can localize spills."
+  ],
+  "misconceptionTags": ["regalloc_ssa_confusion", "regalloc_coloring_scope"],
+  "distractorRationales": {
+    "B": "Confuses register allocation with CFG partitioning.",
+    "C": "Confuses SSA constructs with allocation model.",
+    "D": "Confuses register allocation with scheduling."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:eac3", "locator": "Register allocation via graph coloring chapter", "supports": ["A"] },
+    { "ref": "BOOK:appel", "locator": "Register allocation chapter (Chaitin, Briggs)", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/B/B-REGALLOC-015.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

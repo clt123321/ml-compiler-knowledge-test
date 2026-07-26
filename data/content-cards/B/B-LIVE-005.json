@@ -1,0 +1,50 @@
+{
+  "questionId": "B-LIVE-005",
+  "learningObjective": "Compute liveness at a program point given standard live-in / live-out equations.",
+  "canonicalClaims": [
+    {
+      "claim": "For instruction I with use[I] and def[I]: live_in[I] = (live_out[I] − def[I]) ∪ use[I]. Liveness is a backward may-analysis; at a block boundary, live_out[B] = ∪ live_in[succ].",
+      "conditions": [
+        "SSA or non-SSA IR with well-defined use/def sets per instruction.",
+        "No aliasing between named variables (each name is a distinct value)."
+      ],
+      "nonImplications": [
+        "Does not imply liveness alone determines register allocation; interference graphs and coloring add further constraints.",
+        "Does not imply must-live and may-live variants agree; the standard formulation is may-live."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Data-flow analysis chapter" },
+        { "ref": "BOOK:appel", "locator": "Liveness analysis chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Liveness is a forward analysis computing which variables have been defined.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Liveness is backward; it computes which variables will be used before being redefined along some future path.",
+      "sourceOrEvidence": "EAC3 data-flow chapter"
+    },
+    {
+      "claim": "Defined variables are always included in live-in of their defining instruction.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Definitions kill live-in; a variable is only live-in if it is used before being (re)defined.",
+      "sourceOrEvidence": "Appel liveness"
+    },
+    {
+      "claim": "Liveness only propagates through the same block.",
+      "errorType": "scope_error",
+      "whyWrong": "Liveness is a global analysis; live_out[B] aggregates live_in of successor blocks.",
+      "sourceOrEvidence": "EAC3 global data-flow"
+    }
+  ],
+  "implementationFacts": [
+    "Meet operator for liveness: union (may-analysis).",
+    "Initial live-out at exit block: empty.",
+    "Iterate to fixpoint over the CFG (typically in reverse post-order for efficient convergence)."
+  ],
+  "performanceScenarios": [
+    "Register allocators use liveness to build interference graphs; more precise liveness (SSA-based) yields tighter graphs."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,122 @@
+{
+  "id": "F-GEMMSM-014",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA GEMM / Shared-memory tiling — tile shape and reuse",
+  "learningObjective": "Reason about the compute-to-memory ratio of a shared-memory tiled GEMM and identify how tile size affects reuse.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "shared memory ≥ 96 KB / SM"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "K"
+      ],
+      [
+        "K",
+        "N"
+      ],
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major",
+      "row_major"
+    ]
+  },
+  "stem": "In a shared-memory tiled FP32 GEMM using thread-block tile size `BM × BN × BK` (with A tile `BM × BK` and B tile `BK × BN`), the number of GMEM bytes loaded per output tile and the number of FMA ops per output tile determine the arithmetic intensity. For a `128 × 128 × 32` thread-block tile, which statement is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Increasing BK from 32 to 64 halves the SMEM footprint per iteration because the A and B tiles get smaller; therefore, larger BK always improves performance."
+    },
+    {
+      "id": "B",
+      "text": "Each output tile `128 × 128` requires K/BK iterations of the K-loop. Per iteration: load 128*32*4 + 32*128*4 = 32768 B into SMEM; do 128*128*32*2 = 1_048_576 FLOPs. Per-iteration arithmetic intensity ≈ 1_048_576 / 32768 = 32 FLOPs/byte — high enough to become compute-bound on A100 FP32."
+    },
+    {
+      "id": "C",
+      "text": "The output tile requires 128*128*4 = 64 KB of registers per thread block for accumulator storage, exceeding the register file on A100; the compiler therefore spills registers to global memory, making this tile size unusable in practice."
+    },
+    {
+      "id": "D",
+      "text": "Because GEMM is memory-bound at every tile size, changing BM/BN/BK cannot alter the arithmetic intensity; the only way to increase FLOPs/byte is to switch to Tensor Cores."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "For a `BM × BN × BK` tile, per K-loop iteration: A tile bytes = BM*BK*4, B tile bytes = BK*BN*4; total load = 4*BK*(BM+BN). FMAs per iter = 2*BM*BN*BK (2 FLOPs per FMA). Arithmetic intensity per iteration = (2*BM*BN*BK)/(4*BK*(BM+BN)) = BM*BN/(2*(BM+BN)). For BM=BN=128: 128*128/(2*256) = 32 FLOPs/byte. On A100 (FP32 ~ 19.5 TFLOPs / ~1.5 TB/s = ~13 FLOPs/byte), this is above the ridge point → compute-bound. Larger tiles increase intensity (that is why big tiles matter for GEMM). Choice B misunderstands the tile-size effect. Choice C confuses accumulator storage (registers per thread) with block-total; accumulators are distributed across threads. Choice D denies the effect of tile size.",
+  "optionExplanations": {
+    "B": "Correct: canonical per-iteration arithmetic-intensity calculation for tiled GEMM.",
+    "A": "Wrong: increasing BK does not halve SMEM (it grows the tile).",
+    "C": "Wrong: 128*128 FP32 accumulators = 64 KB across the block (e.g., 256 threads × 64 accumulators each), not per thread.",
+    "D": "Wrong: tile size directly changes arithmetic intensity."
+  },
+  "assumptions": [
+    "FP32, no Tensor Cores; single-precision FLOPs on A100 ~19.5 TFLOPs; HBM ~1.5 TB/s.",
+    "One thread block computes one output tile of size 128×128."
+  ],
+  "nonImplications": [
+    "Does not imply tiny tiles are usable; occupancy and SMEM per SM constrain feasible tile sizes.",
+    "Does not imply Tensor Cores are unnecessary; TF32/FP16 TC changes the balance point entirely."
+  ],
+  "misconceptionTags": [
+    "tile_size_intensity_confusion",
+    "accum_register_myth"
+  ],
+  "distractorRationales": {
+    "A": "Inverts the effect of BK on SMEM footprint.",
+    "C": "Confuses block-level accumulator storage with per-thread register spill.",
+    "D": "Denies the primary effect of tiling."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "GEMM tiling / SMEM chapter",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "GEMM tiling guidance",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "FP32 tiled GEMM arithmetic intensity on sm_80",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-GEMMSM-014.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

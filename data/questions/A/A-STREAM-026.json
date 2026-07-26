@@ -1,0 +1,65 @@
+{
+  "id": "A-STREAM-026",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "CUDA streams / H2D-kernel-D2H overlap",
+  "learningObjective": "Estimate the ideal wall time of a 3-stage H2D → kernel → D2H pipeline using multi-stream chunking, and identify the resource limits.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere with 2 DMA copy engines",
+    "device": "GPU",
+    "requiredFeatures": ["separate H2D and D2H copy engines", "async streams"]
+  },
+  "softwareContext": {
+    "framework": "CUDA runtime",
+    "stability": "stable_principle"
+  },
+  "stem": "You process N chunks of equal size. Each chunk requires 10 ms H2D, 20 ms kernel, and 10 ms D2H. The GPU has two DMA copy engines (one H2D, one D2H), one kernel engine, and you use N ≥ 3 CUDA streams so H2D of chunk i+1, kernel of chunk i, and D2H of chunk i−1 can overlap. What is the approximate steady-state wall time per chunk, and what limits it?",
+  "options": [
+    { "id": "A", "text": "≈ 20 ms per chunk: the kernel stage (longest) sets the pipeline period; H2D and D2H run in parallel on separate copy engines, and kernel throughput is the bottleneck." },
+    { "id": "B", "text": "≈ 40 ms per chunk: the three stages serialize into 10+20+10 ms because CUDA streams do not truly overlap H2D and D2H on the same GPU." },
+    { "id": "C", "text": "≈ 10 ms per chunk: overlapping N streams with N ≥ 3 divides the total time by 3, so the effective per-chunk cost drops below the kernel time." },
+    { "id": "D", "text": "≈ 30 ms per chunk: H2D and D2H must share a single copy engine, so their times add (10 + 10) and run in parallel with the kernel; max(20, 20) = 20 ms but plus a 10 ms merge overhead per stage." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Standard pipeline analysis: per-chunk steady-state period = max(stage times) = max(10, 20, 10) = 20 ms, provided the three stages run on independent hardware engines (H2D copy engine, kernel engine, D2H copy engine). Modern NVIDIA GPUs typically have separate H2D and D2H engines, so this holds. Kernel is the bottleneck; halving kernel time would drop steady-state period to 10 ms (max of the remaining stages).",
+  "optionExplanations": {
+    "A": "Correct: pipeline steady-state period = max of stage times when stages use independent engines.",
+    "B": "Wrong: CUDA streams do overlap H2D/kernel/D2H on modern GPUs with separate engines; serial 10+20+10 = 40 ms is the non-overlapped worst case for a single chunk, not steady state.",
+    "C": "Wrong: pipelining does not shrink per-chunk period below the slowest stage; it hides fill/drain latency across chunks.",
+    "D": "Wrong: modern data-center GPUs (Ampere, Hopper) have two independent copy engines (H2D and D2H); no merge overhead applies."
+  },
+  "assumptions": [
+    "Ampere+ data-center GPU with separate H2D and D2H copy engines.",
+    "Enough pinned memory and independent streams to keep the pipeline filled.",
+    "No dependencies between chunks other than pipeline ordering."
+  ],
+  "nonImplications": [
+    "Does not imply pipeline start-up and drain are free; the first chunk still incurs 10+20+10 = 40 ms end-to-end.",
+    "Does not imply overlap is automatic; the programmer must issue kernels and copies on non-default streams to enable overlap."
+  ],
+  "misconceptionTags": ["pipeline_shrink_myth", "copy_engine_sharing_myth"],
+  "distractorRationales": {
+    "B": "Ignores multi-engine overlap.",
+    "C": "Confuses parallel workers with pipelined stages.",
+    "D": "Wrong assumption about single copy engine on modern data-center GPUs."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Streams, asynchronous concurrent execution, copy engines", "supports": ["A"] },
+    { "ref": "DOC:cuda-best", "locator": "Overlapping computation and data transfers", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "3-stage CUDA stream pipeline steady state",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-STREAM-026.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

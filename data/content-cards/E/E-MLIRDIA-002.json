@@ -1,0 +1,50 @@
+{
+  "questionId": "E-MLIRDIA-002",
+  "learningObjective": "Explain the roles of Dialect, Trait, and Interface in MLIR extensibility.",
+  "canonicalClaims": [
+    {
+      "claim": "Dialects are namespaces grouping Ops/Types/Attrs; Traits are compile-time metadata on Op classes for uniform static handling; Interfaces are virtual dispatch tables allowing polymorphic behavior on Ops/Types/Dialects.",
+      "conditions": ["Standard MLIR extensibility mechanisms as documented in LangRef."],
+      "nonImplications": [
+        "Does not imply Traits can carry runtime state.",
+        "Does not imply every Op has all three artifacts."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Dialect, Trait, Interface" },
+        { "ref": "PAPER:mlir", "locator": "MLIR extensibility" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Traits and Interfaces are the same mechanism with different names.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Traits are static compile-time markers; Interfaces are virtual dispatch tables (runtime polymorphism).",
+      "sourceOrEvidence": "MLIR LangRef, Traits/Interfaces sections"
+    },
+    {
+      "claim": "Dialects are exclusive: only one Dialect can exist per IRModule.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Multiple dialects coexist in one module — that is the whole point of progressive lowering.",
+      "sourceOrEvidence": "MLIR LangRef, Dialects"
+    },
+    {
+      "claim": "Cross-Dialect lowering requires manual clone-and-rewrite of every Op.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Dialect Conversion framework + patterns + interfaces replace Ops with new ones, wiring uses automatically.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    },
+    {
+      "claim": "A Trait can override an Op's builder to inject runtime logic.",
+      "errorType": "scope_error",
+      "whyWrong": "Traits are static; runtime behavior is handled by Interfaces or explicit Op methods.",
+      "sourceOrEvidence": "MLIR LangRef"
+    }
+  ],
+  "implementationFacts": [
+    "`SameOperandsAndResultType`, `Commutative`, `NoSideEffect` are common Traits.",
+    "`InferShapedTypeOpInterface`, `MemoryEffectOpInterface` are common Interfaces."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

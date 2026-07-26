@@ -1,0 +1,50 @@
+{
+  "questionId": "A-STREAM-026",
+  "learningObjective": "Estimate the ideal wall time of a 3-stage H2D → kernel → D2H pipeline using multi-stream chunking, and identify the resource limits.",
+  "canonicalClaims": [
+    {
+      "claim": "Steady-state pipeline period equals the longest stage time when each pipeline stage uses an independent hardware engine (e.g., H2D copy engine, kernel engine, D2H copy engine on modern NVIDIA GPUs).",
+      "conditions": [
+        "Multiple CUDA streams issued so stages can run concurrently.",
+        "Pinned host memory for full DMA bandwidth.",
+        "No cross-chunk dependencies beyond pipeline ordering."
+      ],
+      "nonImplications": [
+        "Does not remove pipeline fill/drain latency; the first chunk pays full serial time.",
+        "Does not remove per-chunk resource conflicts (e.g., HBM bandwidth if kernel and copies contend)."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Asynchronous concurrent execution" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "CUDA streams do not truly overlap H2D and D2H on the same GPU.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Modern data-center GPUs have separate H2D and D2H DMA engines; both can operate concurrently with kernel execution.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, streams section"
+    },
+    {
+      "claim": "N streams reduce steady-state period by 1/N.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Pipelining hides fill/drain latency, but steady-state period is set by the slowest stage; adding more streams cannot make the slowest stage faster.",
+      "sourceOrEvidence": "Basic pipeline analysis, HP6"
+    },
+    {
+      "claim": "Overlap is automatic once cudaMemcpyAsync is used.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The programmer must issue kernels and copies on non-default streams and use pinned host memory; default stream serializes.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "Ampere and Hopper data-center GPUs typically have two DMA copy engines (one H2D, one D2H).",
+    "Pinned host memory is required for full DMA throughput and asynchronous overlap.",
+    "Default stream serializes with other streams; use explicit non-default streams for concurrency."
+  ],
+  "performanceScenarios": [
+    "Data-loading pipelines for GPU training use CUDA streams to overlap H2D with GPU compute, hiding transfer time behind training kernels."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -11,7 +11,9 @@
     "vendor": "NVIDIA",
     "architecture": "Ampere (sm_80, A100)",
     "device": "GPU",
-    "requiredFeatures": ["128-byte L1/L2 sector transactions"]
+    "requiredFeatures": [
+      "128-byte L1/L2 sector transactions"
+    ]
   },
   "softwareContext": {
     "framework": "Triton",
@@ -20,26 +22,60 @@
     "stability": "version_sensitive"
   },
   "tensorContext": {
-    "shapes": [["N * stride"], ["N"]],
-    "dtypes": ["float32", "float32"],
-    "layouts": ["contiguous", "contiguous"],
-    "strides": [[1], [1]]
+    "shapes": [
+      [
+        "N * stride"
+      ],
+      [
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous"
+    ],
+    "strides": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ]
   },
   "stem": "The Triton kernel below reads FP32 values from `in_ptr` with a compile-time stride and writes them to `out_ptr` (dense). Launch config: BLOCK=256, stride=8, `in` is a contiguous FP32 tensor of length `N*stride`. On sm_80 (A100), which is the primary performance issue for the load?",
   "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef strided_load(in_ptr, out_ptr, N, stride: tl.constexpr, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    # in has one useful element per `stride` elements; we sample them all.\n    x = tl.load(in_ptr + offsets * stride, mask=mask)   # <-- strided load\n    tl.store(out_ptr + offsets, x, mask=mask)\n\n# Launch: grid = (triton.cdiv(N, BLOCK),), BLOCK = 256, stride = 8\n# `in`  : FP32 contiguous, length = N * stride\n# `out` : FP32 contiguous, length = N",
   "options": [
-    { "id": "A", "text": "Because `mask` is applied to the load, no memory transactions occur for lanes with `offsets >= N`; the mask also eliminates any coalescing penalty for the strided access among the valid lanes." },
-    { "id": "B", "text": "The load triggers shared-memory bank conflicts because 32 threads access addresses 32 bytes apart, and sm_80's bank layout is designed for stride-1 accesses; the conflict serializes each warp into 32 transactions." },
-    { "id": "C", "text": "The performance impact of strided access is negligible when `BLOCK = 256` because Triton automatically inserts asynchronous copies via `cp.async` that hide the stride penalty behind compute overlap." },
-    { "id": "D", "text": "Consecutive lanes read addresses stride*4 = 32 B apart; each 128 B L1/L2 sector delivers only 4 useful bytes per lane, so effective global BW is ~1/stride of peak (~ 1/8)." }
+    {
+      "id": "A",
+      "text": "Because `mask` is applied to the load, no memory transactions occur for lanes with `offsets >= N`; the mask also eliminates any coalescing penalty for the strided access among the valid lanes."
+    },
+    {
+      "id": "B",
+      "text": "Consecutive lanes read addresses stride*4 = 32 B apart; each 128 B L1/L2 sector delivers only 4 useful bytes per lane, so effective global BW is ~1/stride of peak (~ 1/8)."
+    },
+    {
+      "id": "C",
+      "text": "The performance impact of strided access is negligible when `BLOCK = 256` because Triton automatically inserts asynchronous copies via `cp.async` that hide the stride penalty behind compute overlap."
+    },
+    {
+      "id": "D",
+      "text": "The load triggers shared-memory bank conflicts because 32 threads access addresses 32 bytes apart, and sm_80's bank layout is designed for stride-1 accesses; the conflict serializes each warp into 32 transactions."
+    }
   ],
-  "correctAnswers": ["D"],
+  "correctAnswers": [
+    "B"
+  ],
   "explanation": "On sm_80, a warp's coalesced global load is optimally satisfied by 32-byte / 128-byte L1/L2 sector transactions covering a contiguous span. With stride=8 in FP32, adjacent lanes are 32 B apart; a 128-byte sector transaction now covers only 4 lanes' worth of useful data (one FP32 out of 32 B per lane). Effective bandwidth utilization is roughly `1/stride` of peak (~ 12.5% here). Masking does not remove this cost for valid lanes; there is no shared memory involved, hence no bank conflicts; and Triton does not automatically eliminate stride penalties.",
   "optionExplanations": {
     "A": "Wrong: masking suppresses OOB lanes only; strided access among valid lanes still under-utilizes each transaction.",
-    "B": "Wrong: no shared memory access appears in the code; bank conflicts only apply to `__shared__` accesses.",
+    "D": "Wrong: no shared memory access appears in the code; bank conflicts only apply to `__shared__` accesses.",
     "C": "Wrong: `cp.async` overlaps latency but does not increase per-transaction utilization; strided access still wastes bandwidth.",
-    "D": "Correct: this is the canonical coalescing loss for strided global reads."
+    "B": "Correct: this is the canonical coalescing loss for strided global reads."
   },
   "assumptions": [
     "The pointer arithmetic `in_ptr + offsets * stride` produces a strided address pattern within a warp.",
@@ -50,15 +86,30 @@
     "Does not imply the kernel is broken; it produces correct results, just with wasted bandwidth.",
     "Does not imply the fix is to reduce `stride`; the fix depends on the surrounding algorithm — often reshaping the input so the desired axis is fastest-varying."
   ],
-  "misconceptionTags": ["bank_conflict_confusion_global", "cp_async_removes_stride"],
+  "misconceptionTags": [
+    "bank_conflict_confusion_global",
+    "cp_async_removes_stride"
+  ],
   "distractorRationales": {
     "A": "Wrong scope of `mask`.",
-    "B": "Applies SMEM concept to global memory.",
+    "D": "Applies SMEM concept to global memory.",
     "C": "Overstates `cp.async` capability."
   },
   "sourceRefs": [
-    { "ref": "DOC:cuda-best", "locator": "Coalesced access / memory-bandwidth section", "supports": ["D"] },
-    { "ref": "BOOK:pmpp4", "locator": "Global memory coalescing chapter", "supports": ["D"] }
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Coalesced access / memory-bandwidth section",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Global memory coalescing chapter",
+      "supports": [
+        "B"
+      ]
+    }
   ],
   "performanceClaim": {
     "present": true,

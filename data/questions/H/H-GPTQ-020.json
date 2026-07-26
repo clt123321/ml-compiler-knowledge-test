@@ -1,0 +1,62 @@
+{
+  "id": "H-GPTQ-020",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "GPTQ / Design intent",
+  "learningObjective": "Explain GPTQ's central technique: per-layer weight quantization via second-order (Hessian-inverse-based) error compensation.",
+  "archetype": "paper_design_intent",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "GPTQ (Frantar et al., ICLR 2023) is a PTQ algorithm that quantizes LLM weights to INT4 with small accuracy loss. Which best captures its central technique?",
+  "options": [
+    { "id": "A", "text": "GPTQ quantizes weights column-by-column, and after each column's quantization it updates the remaining unquantized columns using the Hessian of the per-layer reconstruction error (approximated as `H = 2 X^T X` from calibration activations); this compensates for the just-introduced quantization error and dramatically improves the fit versus naive round-to-nearest." },
+    { "id": "B", "text": "GPTQ retrains the entire model with a straight-through estimator on the quantized weights; it is essentially QAT with a specific initializer." },
+    { "id": "C", "text": "GPTQ uses reinforcement learning to search for optimal per-tensor scales; the 'GPT' in the name refers to a GPT-2 policy network." },
+    { "id": "D", "text": "GPTQ is a runtime dequantization technique that computes INT4 → FP16 dequants faster than standard kernels; it does not change how weights are quantized offline." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "GPTQ's core technique is a per-layer optimization: quantize one column of the weight matrix at a time, then use the (once-computed) Cholesky-inverse of the Hessian of the reconstruction error to update the still-unquantized columns to compensate for the introduced error. This is a second-order variant of OBS/OBQ adapted for LLM-scale weight matrices. It runs offline (no full model training) and produces INT4 weights with 1-4% perplexity increase on 175B-parameter models. Options B, C, D are unrelated inventions.",
+  "optionExplanations": {
+    "A": "Correct: matches GPTQ paper's algorithm description.",
+    "B": "Wrong: GPTQ is PTQ, not QAT.",
+    "C": "Wrong: 'GPT' refers to the target model class (GPT-family), not RL.",
+    "D": "Wrong: GPTQ is an offline quantization algorithm."
+  },
+  "assumptions": [
+    "The layer is a linear layer with a computable per-layer Hessian.",
+    "A calibration set of activations is available."
+  ],
+  "nonImplications": [
+    "Does not imply GPTQ handles activation outliers — it focuses purely on weight quantization; W4A16 is its typical deployment.",
+    "Does not imply GPTQ is the only choice; AWQ and RTN are alternatives with different trade-offs."
+  ],
+  "misconceptionTags": ["gptq_qat", "gptq_runtime"],
+  "distractorRationales": {
+    "B": "Confuses PTQ with QAT.",
+    "C": "Invents RL-based mechanism.",
+    "D": "Confuses offline algorithm with runtime kernel."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:gptq", "locator": "Sections 3-4: algorithm description and Hessian update rule", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GPTQ INT4 weight-quantization technique for LLMs",
+    "evidenceType": "paper_result",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-GPTQ-020.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

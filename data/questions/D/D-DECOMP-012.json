@@ -1,0 +1,97 @@
+{
+  "id": "D-DECOMP-012",
+  "type": "multiple",
+  "module": "pytorch_compiler",
+  "subtopic": "Decomposition of ATen ops in torch.compile",
+  "learningObjective": "Identify the purpose and effect of ATen op decomposition in PyTorch 2's compile stack.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "PyTorch 2's compile stack applies 'decompositions' that rewrite higher-level ATen ops into simpler primitive ops before Inductor codegen. Which statements about this decomposition are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Decomposition reduces the effective op vocabulary Inductor must generate code for; composite ops (e.g., `nn.functional.layer_norm`) are rewritten into simpler primitives (mul, add, sqrt, mean, etc.)."
+    },
+    {
+      "id": "B",
+      "text": "Decomposition is performed in the AOTAutograd/pre-Inductor stage over the traced FX graph, before Inductor's scheduler and codegen phases."
+    },
+    {
+      "id": "C",
+      "text": "Every ATen op is always fully decomposed to elementwise ops; there are no exceptions such as `matmul`, `convolution`, or attention that remain opaque to Inductor."
+    },
+    {
+      "id": "D",
+      "text": "Decomposition rules are user-extensible: users can register a decomposition for a custom op to make it lowerable by Inductor without changing Inductor internals."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
+  "explanation": "A: decomposition shrinks the op vocabulary Inductor must handle. B: it runs before Inductor codegen (typically in AOTAutograd's decomposition table application). D: users can extend the decomposition table for custom ops to make them lowerable. C is wrong: many ops (matmul, convolution, attention) remain as high-level ops and are handled by Inductor's specialized paths or by ATen fallbacks, not decomposed all the way to elementwise primitives.",
+  "optionExplanations": {
+    "A": "Correct.",
+    "B": "Correct: decomposition runs pre-Inductor.",
+    "C": "Wrong: matmul/convolution/attention are commonly preserved for kernel selection.",
+    "D": "Correct: decomposition tables are extensible."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 defaults.",
+    "The user has not overridden the decomposition table with an incompatible custom set."
+  ],
+  "nonImplications": [
+    "Does not imply that every decomposition is faster; sometimes the composite form has a better hand-written kernel.",
+    "Does not imply decompositions are unique; different pipelines may choose different decomps for the same op."
+  ],
+  "misconceptionTags": [
+    "decomp_all_to_elementwise",
+    "decomp_after_codegen"
+  ],
+  "distractorRationales": {
+    "C": "Wrong claim of complete elementwise decomposition for all ops."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Decomposition table and pre-Inductor lowering",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Decompositions in the compile stack",
+      "supports": [
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-DECOMP-012.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

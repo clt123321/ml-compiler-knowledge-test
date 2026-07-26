@@ -1,0 +1,50 @@
+{
+  "questionId": "B-SEMPRES-021",
+  "learningObjective": "Identify what semantic preservation guarantees a compiler optimization must uphold and where common flags relax it.",
+  "canonicalClaims": [
+    {
+      "claim": "Semantics-preserving optimization means the optimized program's observable behaviors are a subset of the source's under the source language's semantics; flags like -ffast-math and UB-based reasoning explicitly relax this contract in controlled ways.",
+      "conditions": [
+        "Source language defines observable behaviors and permitted UB.",
+        "Optimization flags document the relaxation clearly."
+      ],
+      "nonImplications": [
+        "Does not imply -ffast-math is universally unsafe.",
+        "Does not imply UB-based optimizations are bugs; they are documented compiler behavior."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Optimization correctness" },
+        { "ref": "DOC:llvm-langref", "locator": "Fast-math and UB semantics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any optimization that reduces the number of instructions is semantics-preserving.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Dropping stores, calls, or exceptions can change observable behavior; instruction count is not a proxy for behavior preservation.",
+      "sourceOrEvidence": "EAC3 optimization correctness chapter"
+    },
+    {
+      "claim": "IEEE-754 addition/multiplication are associative, so reassociation is always semantics-preserving.",
+      "errorType": "wrong_condition",
+      "whyWrong": "IEEE-754 FP operations are not associative; reassociation can change rounding results and NaN behavior. -ffast-math opts into unsafe reassociation.",
+      "sourceOrEvidence": "IEEE 754 standard"
+    },
+    {
+      "claim": "Undefined behavior at runtime means the compiler must emit a runtime check.",
+      "errorType": "definition_confusion",
+      "whyWrong": "UB gives the compiler license to assume it does not occur and optimize accordingly; runtime checks are opt-in (sanitizers, UB traps).",
+      "sourceOrEvidence": "C/C++ standards and LLVM documentation"
+    }
+  ],
+  "implementationFacts": [
+    "-ffast-math: reassociation, no-signed-zeros, no-NaNs, no-infs, reciprocal approximations.",
+    "LLVM `nsw`/`nuw` flags let the optimizer assume no-signed/unsigned overflow.",
+    "Undefined behavior can propagate through poison values in LLVM IR."
+  ],
+  "performanceScenarios": [
+    "Deep-learning kernels routinely use -ffast-math-style relaxations to enable FMA reassociation and vectorization."
+  ],
+  "versionSensitivity": "stable_principle"
+}

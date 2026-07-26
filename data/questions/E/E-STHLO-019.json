@@ -1,0 +1,61 @@
+{
+  "id": "E-STHLO-019",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "StableHLO / Operator set stability and framework/compiler portability",
+  "learningObjective": "Explain the design goal of StableHLO as a portable operator set between frameworks and compilers.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "StableHLO",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement best describes the design purpose of StableHLO?",
+  "options": [
+    { "id": "A", "text": "StableHLO is a versioned operator set with a formal specification that acts as a portability contract between ML frameworks (as producers) and compilers (as consumers), providing forward/backward compatibility guarantees so framework upgrades and compiler upgrades can proceed independently." },
+    { "id": "B", "text": "StableHLO is a hardware-independent runtime that directly executes ML models on GPU/TPU/CPU without invoking any downstream compiler; it replaces XLA at the execution layer." },
+    { "id": "C", "text": "StableHLO is a Python DSL for defining new ops in JAX; it is not an IR and cannot be serialized to disk." },
+    { "id": "D", "text": "StableHLO is a strict subset of TensorFlow's SavedModel format; every StableHLO program is directly a SavedModel and vice versa." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "StableHLO is the OpenXLA project's versioned, specified operator set designed to serve as a stable interchange format between framework frontends (PyTorch/JAX/TensorFlow) and compiler backends (XLA, IREE, etc.). It has a formal spec, an MLIR dialect, and versioning with forward/backward compatibility guarantees. The goal is to decouple framework release cycles from compiler release cycles.",
+  "optionExplanations": {
+    "A": "Correct: portability contract with versioning and compatibility guarantees.",
+    "B": "Wrong: StableHLO is a spec/IR, not a runtime.",
+    "C": "Wrong: it is an MLIR dialect and a serializable IR, not a Python DSL.",
+    "D": "Wrong: StableHLO is not equivalent to SavedModel."
+  },
+  "assumptions": [
+    "OpenXLA StableHLO project design as documented at openxla.org/stablehlo."
+  ],
+  "nonImplications": [
+    "Does not imply StableHLO covers every op; the operator set is intentionally scoped.",
+    "Does not imply StableHLO removes the need for a compiler; consumers still lower it."
+  ],
+  "misconceptionTags": ["stablehlo_as_runtime_myth", "stablehlo_savedmodel_conflation"],
+  "distractorRationales": {
+    "B": "Confuses IR with runtime.",
+    "C": "Confuses IR with a Python DSL.",
+    "D": "Confuses interchange formats."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:stablehlo", "locator": "StableHLO spec / compatibility guarantees", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-STHLO-019.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

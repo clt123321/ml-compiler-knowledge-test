@@ -1,0 +1,94 @@
+{
+  "id": "D-MINIFIER-029",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Minifier / repro tool for torch.compile bugs",
+  "learningObjective": "Explain the purpose of TorchDynamo's minifier / repro tool.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "A user hits a crash inside a compiled function and wants a minimal reproducer. Which statement best describes what TorchDynamo's minifier / repro tool does?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The minifier retries the compile with different random seeds until the crash disappears; the resulting compile config is the reproducer to share with maintainers. Under this framing, the minifier retries the failed compile with different random seeds until the crash disappears; the seed / config pair for which the failure vanished is then the reproducer that users share upstream when filing torch.compile bug reports."
+    },
+    {
+      "id": "B",
+      "text": "The minifier is a static analyzer that reads the user's Python source and highlights lines likely to cause a graph break; it does not produce a runnable reproducer."
+    },
+    {
+      "id": "C",
+      "text": "The minifier takes a failing compiled call, iteratively strips ops from the traced FX graph while checking that the failure persists, and produces a minimal graph plus a runnable script; users share that script as a reproducer for compiler-side bugs."
+    },
+    {
+      "id": "D",
+      "text": "The minifier is a runtime option that disables all compilation and runs eager mode with extra logging; the log itself is called the 'repro'. In this reading, the minifier is a runtime option that disables all compilation and runs the compiled function in eager mode with extra logging enabled; the resulting log file is what the community refers to as the 'repro', and the tool does not emit any script."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "TorchDynamo ships a minifier that isolates compiler-side failures by iteratively deleting nodes from the failing FX graph while checking that the failure still reproduces, until it converges on a minimal graph. It then emits a runnable script containing that minimal graph and the required inputs. This script is what users share with PyTorch maintainers to file bug reports. It does not retry with different seeds, is not a static analyzer, and is not merely a logging mode.",
+  "optionExplanations": {
+    "A": "Wrong: not seed-based.",
+    "C": "Correct: standard minifier behavior.",
+    "B": "Wrong: not a static analyzer.",
+    "D": "Wrong: not a logging-only mode."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5.",
+    "The failure is deterministic and reproducible from the traced graph."
+  ],
+  "nonImplications": [
+    "Does not imply the minifier can shrink every kind of bug; nondeterministic or environment-specific bugs may not reduce well.",
+    "Does not imply the minified reproducer contains sensitive user data; users should still review before sharing."
+  ],
+  "misconceptionTags": [
+    "minifier_seeds_retry",
+    "minifier_static_analyzer"
+  ],
+  "distractorRationales": {
+    "A": "Wrong mechanism (seeds).",
+    "B": "Wrong tool type (static analyzer).",
+    "D": "Wrong scope (logging-only)."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Debugging / minifier / repro tool",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Minifier overview",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-MINIFIER-029.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

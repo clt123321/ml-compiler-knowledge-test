@@ -1,0 +1,50 @@
+{
+  "questionId": "B-PARTIAL-018",
+  "learningObjective": "Precisely characterize partial evaluation and identify a canonical use case.",
+  "canonicalClaims": [
+    {
+      "claim": "Partial evaluation specializes a program p(s, d) with respect to static input s, producing a residual program p_s(d) that behaves equivalently to p(s, d) for all d; constant folding, template specialization, and shape specialization are instances.",
+      "conditions": [
+        "The partition of inputs into static and dynamic is well-defined.",
+        "Semantics preservation: residual program equals original for all dynamic inputs given the fixed static inputs."
+      ],
+      "nonImplications": [
+        "Does not imply the residual program is always faster or smaller; specialization can increase code size.",
+        "Does not imply partial evaluation is always applicable; some computations depend on d in ways that resist specialization."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Program specialization" },
+        { "ref": "BOOK:dragon2", "locator": "Specialization sections" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Partial evaluation is the same as lazy evaluation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Lazy evaluation defers computation until a value is needed at runtime; partial evaluation performs computation at specialization/compile time.",
+      "sourceOrEvidence": "Jones, Gomard, Sestoft — Partial Evaluation textbook"
+    },
+    {
+      "claim": "Partial evaluation is a peephole optimization.",
+      "errorType": "scope_error",
+      "whyWrong": "Peephole is a local backend optimization on a small instruction window; partial evaluation specializes whole subprograms with respect to static inputs.",
+      "sourceOrEvidence": "EAC3 optimization taxonomy"
+    },
+    {
+      "claim": "Partial evaluation only works with constant inputs.",
+      "errorType": "overgeneralization",
+      "whyWrong": "It applies to any known-at-specialization input, including partial data structures, shapes, and types.",
+      "sourceOrEvidence": "Jones, Gomard, Sestoft textbook"
+    }
+  ],
+  "implementationFacts": [
+    "Futamura's first projection: partially evaluating an interpreter with respect to a source program yields a compiled program.",
+    "TorchDynamo/TorchInductor specialize on tensor shapes at compile time (a form of partial evaluation).",
+    "C++ template instantiation is a limited compile-time PE."
+  ],
+  "performanceScenarios": [
+    "Shape specialization in ML compilers trades compile time and cache footprint for faster kernel dispatch."
+  ],
+  "versionSensitivity": "stable_principle"
+}

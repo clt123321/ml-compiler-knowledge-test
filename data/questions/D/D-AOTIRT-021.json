@@ -1,0 +1,96 @@
+{
+  "id": "D-AOTIRT-021",
+  "type": "multiple",
+  "module": "pytorch_compiler",
+  "subtopic": "AOTInductor runtime behavior on shape mismatch",
+  "learningObjective": "Understand how AOTInductor artifacts behave at runtime with respect to dynamic shapes and shape mismatch.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "An AOTInductor artifact was produced from an ExportedProgram with sequence dim declared dynamic via `Dim(\"seq\", min=1, max=8192)`. Which statements about its runtime behavior are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Loading and running the artifact does not re-invoke torch.compile; the shared library already contains compiled kernels and a small runtime wrapper."
+    },
+    {
+      "id": "B",
+      "text": "Calling the artifact with a sequence length outside the declared `[1, 8192]` range is expected to raise a shape-constraint error at runtime rather than to trigger recompilation."
+    },
+    {
+      "id": "C",
+      "text": "Calling the artifact with a sequence length inside the declared range but with a different device (e.g., CPU when the artifact was compiled for CUDA) transparently migrates execution to the runtime device with a small performance penalty."
+    },
+    {
+      "id": "D",
+      "text": "AOTInductor artifacts require dimensions not declared dynamic to match the export-time example exactly at runtime."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
+  "explanation": "A, B, D are correct: the artifact does not re-invoke torch.compile at load time; violations of declared shape constraints raise runtime errors (not recompiles, since the artifact was compiled AOT); and dims not declared dynamic are treated as static and must match the export-time example. C is wrong: the artifact targets the hardware present at compile time; running on a different device does not transparently migrate.",
+  "optionExplanations": {
+    "A": "Correct.",
+    "B": "Correct: AOTInductor's model is static after compile, so constraint violations are errors.",
+    "C": "Wrong: no transparent cross-device migration.",
+    "D": "Correct."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 AOTInductor semantics.",
+    "The user supplied the necessary Dim constraints at export time; other dims stay static."
+  ],
+  "nonImplications": [
+    "Does not imply AOTInductor cannot serve dynamic-batch scenarios; users must declare dynamic dims explicitly.",
+    "Does not imply the compile-time target must match every deployment detail (some minor toolchain versions are fine)."
+  ],
+  "misconceptionTags": [
+    "aoti_cross_device_migration"
+  ],
+  "distractorRationales": {
+    "C": "Wrong claim about cross-device migration."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-aoti",
+      "locator": "AOTInductor runtime behavior; dynamic shapes; device targeting",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:torch-export",
+      "locator": "Dim constraints propagated to AOTInductor",
+      "supports": [
+        "B",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-AOTIRT-021.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

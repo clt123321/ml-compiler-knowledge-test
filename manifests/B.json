@@ -1,0 +1,182 @@
+{
+  "module": "compiler_basics",
+  "code": "B",
+  "expectedCount": 25,
+  "questions": [
+    {
+      "id": "B-SSA-001",
+      "file": "data/questions/B/B-SSA-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-SSA-001.json",
+      "version": 1
+    },
+    {
+      "id": "B-PHI-002",
+      "file": "data/questions/B/B-PHI-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-PHI-002.json",
+      "version": 1
+    },
+    {
+      "id": "B-CFG-003",
+      "file": "data/questions/B/B-CFG-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-CFG-003.json",
+      "version": 1
+    },
+    {
+      "id": "B-DOM-004",
+      "file": "data/questions/B/B-DOM-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-DOM-004.json",
+      "version": 1
+    },
+    {
+      "id": "B-LIVE-005",
+      "file": "data/questions/B/B-LIVE-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-LIVE-005.json",
+      "version": 1
+    },
+    {
+      "id": "B-DEFUSE-006",
+      "file": "data/questions/B/B-DEFUSE-006.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-DEFUSE-006.json",
+      "version": 1
+    },
+    {
+      "id": "B-ALIAS-007",
+      "file": "data/questions/B/B-ALIAS-007.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-ALIAS-007.json",
+      "version": 1
+    },
+    {
+      "id": "B-ESCAPE-008",
+      "file": "data/questions/B/B-ESCAPE-008.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-ESCAPE-008.json",
+      "version": 1
+    },
+    {
+      "id": "B-CFOLD-009",
+      "file": "data/questions/B/B-CFOLD-009.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-CFOLD-009.json",
+      "version": 1
+    },
+    {
+      "id": "B-CPROP-010",
+      "file": "data/questions/B/B-CPROP-010.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-CPROP-010.json",
+      "version": 1
+    },
+    {
+      "id": "B-DCE-011",
+      "file": "data/questions/B/B-DCE-011.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-DCE-011.json",
+      "version": 1
+    },
+    {
+      "id": "B-CSE-012",
+      "file": "data/questions/B/B-CSE-012.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-CSE-012.json",
+      "version": 1
+    },
+    {
+      "id": "B-LICM-013",
+      "file": "data/questions/B/B-LICM-013.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-LICM-013.json",
+      "version": 1
+    },
+    {
+      "id": "B-INLINE-014",
+      "file": "data/questions/B/B-INLINE-014.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-INLINE-014.json",
+      "version": 1
+    },
+    {
+      "id": "B-REGALLOC-015",
+      "file": "data/questions/B/B-REGALLOC-015.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-REGALLOC-015.json",
+      "version": 1
+    },
+    {
+      "id": "B-INSTSEL-016",
+      "file": "data/questions/B/B-INSTSEL-016.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-INSTSEL-016.json",
+      "version": 1
+    },
+    {
+      "id": "B-PATTERN-017",
+      "file": "data/questions/B/B-PATTERN-017.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-PATTERN-017.json",
+      "version": 1
+    },
+    {
+      "id": "B-PARTIAL-018",
+      "file": "data/questions/B/B-PARTIAL-018.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-PARTIAL-018.json",
+      "version": 1
+    },
+    {
+      "id": "B-JITAOT-019",
+      "file": "data/questions/B/B-JITAOT-019.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-JITAOT-019.json",
+      "version": 1
+    },
+    {
+      "id": "B-SOUND-020",
+      "file": "data/questions/B/B-SOUND-020.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-SOUND-020.json",
+      "version": 1
+    },
+    {
+      "id": "B-SEMPRES-021",
+      "file": "data/questions/B/B-SEMPRES-021.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-SEMPRES-021.json",
+      "version": 1
+    },
+    {
+      "id": "B-DATAFLOW-022",
+      "file": "data/questions/B/B-DATAFLOW-022.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-DATAFLOW-022.json",
+      "version": 1
+    },
+    {
+      "id": "B-LOOPINV-023",
+      "file": "data/questions/B/B-LOOPINV-023.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-LOOPINV-023.json",
+      "version": 1
+    },
+    {
+      "id": "B-SSAFORM-024",
+      "file": "data/questions/B/B-SSAFORM-024.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-SSAFORM-024.json",
+      "version": 1
+    },
+    {
+      "id": "B-DOMTREE-025",
+      "file": "data/questions/B/B-DOMTREE-025.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/B/B-DOMTREE-025.json",
+      "version": 1
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "questionId": "B-INSTSEL-016",
+  "learningObjective": "Explain instruction selection as pattern-tiling of an IR tree against target-instruction templates.",
+  "canonicalClaims": [
+    {
+      "claim": "Instruction selection tiles an IR (tree or DAG) with target-instruction patterns, each carrying a cost; dynamic-programming or greedy algorithms find a minimum-cost cover, and multi-operation instructions like LEA or FMA can win by covering larger tiles.",
+      "conditions": [
+        "Target ISA is expressible as a set of pattern rules with costs.",
+        "IR is in a form suitable for tiling (DAG or tree)."
+      ],
+      "nonImplications": [
+        "Does not imply DP tiling produces globally optimal machine code; interactions with scheduling and register allocation may impact final performance.",
+        "Does not imply pattern selection is the only approach; global instruction selection (GlobalISel) offers alternatives."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Instruction selection chapter" },
+        { "ref": "BOOK:appel", "locator": "Instruction selection chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Instruction selection is a synonym for register allocation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Instruction selection chooses target opcodes; register allocation assigns storage. They are distinct backend passes.",
+      "sourceOrEvidence": "EAC3 backend chapters"
+    },
+    {
+      "claim": "Instruction selection performs instruction scheduling.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Scheduling reorders instructions for pipeline efficiency; instruction selection chooses which instructions to emit.",
+      "sourceOrEvidence": "Appel backend chapters"
+    },
+    {
+      "claim": "Multi-operation instructions like FMA always beat two separate instructions.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Precision semantics differ (FMA has one rounding vs two); some targets or code paths may prefer separate ops for numerical reasons or throughput reasons.",
+      "sourceOrEvidence": "IEEE 754 FMA spec; LLVM backend documentation"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM SelectionDAG is a canonical pattern-based instruction selector.",
+    "LLVM GlobalISel provides an alternative pipeline (IRTranslator, Legalizer, RegBankSelect, InstructionSelect).",
+    "TableGen (.td files) describe target instruction patterns and costs."
+  ],
+  "performanceScenarios": [
+    "x86 LEA can compute base + index*scale + disp in one instruction; targeting it well requires selectors to recognize the pattern in the IR."
+  ],
+  "versionSensitivity": "stable_principle"
+}

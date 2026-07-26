@@ -1,0 +1,56 @@
+{
+  "questionId": "C-BUFFER-012",
+  "learningObjective": "Contrast tensor-typed IR (value semantics) with buffer-/memref-typed IR (reference semantics) and explain what bufferization does.",
+  "canonicalClaims": [
+    {
+      "claim": "In MLIR, tensor-typed IR has value semantics — each op produces a fresh, immutable SSA value — while memref-typed IR has reference semantics — ops write into named buffers. Bufferization lowers tensor form to memref form, assigning buffers and inserting allocations/copies to preserve the tensor-level dataflow.",
+      "conditions": [
+        "Standard MLIR type system (tensor + memref dialects).",
+        "Bufferization is configured to preserve semantics (with copies when required)."
+      ],
+      "nonImplications": [
+        "Does not imply bufferization always eliminates copies; unavoidable copies are inserted where alias-safety cannot be proven.",
+        "Does not imply memref form is always closer to codegen; some pipelines lower tensor form directly."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Tensor / MemRef / bufferization" },
+        { "ref": "PAPER:mlir", "locator": "MLIR type system" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Tensor-typed IR has reference semantics; memref has value semantics.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The relationship is reversed; tensor SSA values are immutable.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Tensor and memref forms are textually distinct but semantically identical.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The data model differs: value vs. reference semantics affect what optimizations are safe.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Bufferization only removes duplicated tensor ops (i.e., a form of CSE).",
+      "errorType": "definition_confusion",
+      "whyWrong": "Bufferization assigns buffers and manages allocations/copies; CSE is a separate pass.",
+      "sourceOrEvidence": "MLIR bufferization docs"
+    },
+    {
+      "claim": "Bufferization chooses between GPU and CPU codegen based on the tensor form.",
+      "errorType": "scope_error",
+      "whyWrong": "Device selection is a separate concern (target dialects, launch, backends); bufferization is target-independent.",
+      "sourceOrEvidence": "MLIR docs"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR tensor SSA values are immutable; each producing op yields a new tensor",
+    "MLIR memref values reference underlying buffers; multiple ops can update the same memref",
+    "Bufferization assigns buffers and may insert copies when the tensor-level dataflow requires it"
+  ],
+  "performanceScenarios": [
+    "Well-implemented bufferization reduces allocations and copies substantially; when it fails, generated code carries extra memory traffic."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,91 @@
+{
+  "id": "C-TE-022",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Tensor Expression as a compute description",
+  "learningObjective": "Describe what a Tensor Expression (in the Halide/TVM sense) is and how it differs from an imperative loop nest.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM / Halide",
+    "stability": "stable_principle"
+  },
+  "stem": "In Halide/TVM, a Tensor Expression describes computation such as `C[i, j] = tvm.sum(A[i, k] * B[k, j], axis=k)`. Which statement most accurately captures what a Tensor Expression is?",
+  "options": [
+    {
+      "id": "A",
+      "text": "A Tensor Expression is an imperative, side-effecting loop nest embedded inside a Python function; the schedule is a subsequent pass that adds parallelism annotations to the loops."
+    },
+    {
+      "id": "B",
+      "text": "A Tensor Expression is a placeholder for an ONNX op that has not been implemented yet; runtime execution falls back to eager Python for these ops. Under this framing, a Tensor Expression is written as an imperative loop nest embedded inside a Python function; the schedule is a subsequent pass that only adds parallelism and vectorization annotations on top of the already-imperative iteration."
+    },
+    {
+      "id": "C",
+      "text": "A Tensor Expression is a declarative, functional description of a tensor's output values in terms of its coordinates and reduction axes; the schedule is what turns that declaration into concrete iteration order, tile sizes, memory placement, and parallelism. In this account, a Tensor Expression is a placeholder object for an ONNX operator that has not yet been implemented in the target backend; runtime execution falls back to eager Python evaluation for any TE encountered during graph execution."
+    },
+    {
+      "id": "D",
+      "text": "A Tensor Expression is a target-specific low-level abstraction that names PTX or LLVM instructions; it is the compiler's way of hand-coding kernels in assembly language. Under this reading, a Tensor Expression is a target-specific low-level abstraction that names PTX or LLVM instructions inline; it is essentially the compiler's convention for hand-coding kernels in assembly-like form within a higher-level pipeline."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "A Tensor Expression is a declarative description of the output of a computation as a function of its coordinates and any reduction axes. It says what to compute, not how. A schedule attached later chooses tile sizes, iteration orders, memory placement (compute_at, cache_read), parallelism, and vectorization. This decoupling is the core Halide/TVM design that enables systematic exploration of the how-space (Ansor, MetaSchedule) without changing the semantics.",
+  "optionExplanations": {
+    "C": "Correct: matches Halide/TVM's definition.",
+    "A": "Wrong: reverses the declarative/imperative characterization.",
+    "B": "Wrong: TEs are compute descriptions, not fallbacks.",
+    "D": "Wrong: TEs are hardware-independent; assembly-level abstractions are downstream."
+  },
+  "assumptions": [
+    "The framework separates compute from schedule (Halide / TVM design)."
+  ],
+  "nonImplications": [
+    "Does not imply every framework uses TEs; Inductor and JAX use different compute abstractions.",
+    "Does not imply a TE alone gives good performance; the schedule is what determines it."
+  ],
+  "misconceptionTags": [
+    "te_is_imperative",
+    "te_is_target_specific"
+  ],
+  "distractorRationales": {
+    "A": "Reverses the paradigm.",
+    "B": "Wrong role.",
+    "D": "Wrong abstraction level."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:halide",
+      "locator": "Compute expressions",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "Compute description via TE",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-TE-022.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

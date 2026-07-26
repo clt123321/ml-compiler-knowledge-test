@@ -1,0 +1,56 @@
+{
+  "questionId": "H-CALIB-017",
+  "learningObjective": "Compare MinMax, Percentile, and KL-divergence calibration for PTQ activation scales.",
+  "canonicalClaims": [
+    {
+      "claim": "MinMax calibration sets the quantization threshold to the observed absmax; it is outlier-sensitive. Percentile calibration clips at a high percentile (e.g., 99.9%) to reduce outlier influence. KL calibration searches for the threshold minimizing KL divergence between FP and quantized distributions (TensorRT default).",
+      "conditions": [
+        "Calibration set is representative of inference-time activations.",
+        "Quantization scheme is per-tensor symmetric (typical case)."
+      ],
+      "nonImplications": [
+        "Does not imply KL always outperforms MinMax on all workloads.",
+        "Does not imply percentile has a fixed threshold; 99%, 99.9%, 99.99% are tunable."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "TensorRT INT8 entropy calibrator" },
+        { "ref": "BOOK:sze-eff", "locator": "Calibration methods" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "MinMax is always the most accurate calibration because it never clips any activation.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Not clipping ≠ most accurate; outlier-dominated ranges waste INT8 levels and lose resolution on the bulk distribution.",
+      "sourceOrEvidence": "TensorRT calibration guide"
+    },
+    {
+      "claim": "KL-divergence calibration only works for continuous distributions and cannot be applied to INT8.",
+      "errorType": "definition_confusion",
+      "whyWrong": "KL calibration operates on histograms mapped to discrete INT8 bins; this is precisely how TensorRT implements it.",
+      "sourceOrEvidence": "TensorRT entropy calibrator implementation"
+    },
+    {
+      "claim": "Percentile calibration always uses the 99% threshold across frameworks.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The percentile is a tunable parameter; 99%, 99.9%, 99.99% are all common depending on outlier prevalence.",
+      "sourceOrEvidence": "PyTorch / TensorRT calibration configs"
+    },
+    {
+      "claim": "Calibration methods only affect activation scales, not weight scales.",
+      "errorType": "scope_error",
+      "whyWrong": "The same calibration principles apply to weight scaling; in practice weights use per-channel absmax, but the general framework is shared.",
+      "sourceOrEvidence": "Quantization survey"
+    }
+  ],
+  "implementationFacts": [
+    "TensorRT: `IEntropyCalibrator2` is the default INT8 calibrator using a KL-divergence-based algorithm on activation histograms.",
+    "PyTorch: `HistogramObserver` supports MinMax and various percentile / entropy variants."
+  ],
+  "performanceScenarios": [
+    "For LayerNorm activations with heavy tails, percentile-99.9 typically outperforms MinMax by 2-5% in INT8 accuracy.",
+    "For post-softmax activations (bounded [0,1]), MinMax and percentile agree; KL adds no benefit."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,50 @@
+{
+  "questionId": "B-REGALLOC-015",
+  "learningObjective": "Explain the graph-coloring formulation of register allocation, including the meaning of interference and spilling.",
+  "canonicalClaims": [
+    {
+      "claim": "Chaitin/Briggs-style register allocation models virtual registers (live ranges) as graph nodes, adds an edge between two live ranges when they are simultaneously live (interfere), and colors the graph with K colors corresponding to K physical registers; when a K-coloring fails, one or more live ranges are spilled to memory.",
+      "conditions": [
+        "Target has K physical registers of the relevant class.",
+        "Live ranges are computed via liveness analysis; interference is derived from concurrent liveness."
+      ],
+      "nonImplications": [
+        "Does not imply graph coloring is the only algorithm; linear-scan (LLVM), PBQP, and SSA-based allocators are alternatives.",
+        "Does not imply spilling causes uniform slowdown; live-range splitting can localize memory access."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Register allocation chapter" },
+        { "ref": "BOOK:appel", "locator": "Register allocation chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Graph coloring register allocation operates on basic blocks, not live ranges.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Nodes are live ranges (virtual registers); basic blocks are units of the CFG, not the interference graph.",
+      "sourceOrEvidence": "EAC3 register allocation chapter"
+    },
+    {
+      "claim": "SSA phi nodes are the units colored by the register allocator.",
+      "errorType": "scope_error",
+      "whyWrong": "SSA is typically destructed to explicit copies before allocation; the allocator operates on live ranges.",
+      "sourceOrEvidence": "Appel register allocation chapter"
+    },
+    {
+      "claim": "Register allocation and instruction scheduling are the same problem.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Register allocation assigns storage; scheduling reorders instructions to hide latency and fill functional units. They interact but are distinct passes.",
+      "sourceOrEvidence": "EAC3 backend chapters"
+    }
+  ],
+  "implementationFacts": [
+    "Chaitin: simplify (remove degree < K), then color; if a degree ≥ K node remains, spill.",
+    "Briggs: optimistic coloring; try to color after simplifying even high-degree nodes.",
+    "LLVM's default allocator is greedy linear-scan-derived, not pure graph coloring."
+  ],
+  "performanceScenarios": [
+    "High register-pressure kernels (large fused kernels, unrolled loops) exercise the allocator heavily; excessive spilling manifests as many loads/stores in the emitted code."
+  ],
+  "versionSensitivity": "stable_principle"
+}

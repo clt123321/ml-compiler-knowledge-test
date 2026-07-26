@@ -1,0 +1,68 @@
+{
+  "id": "A-INTENSE-019",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Batch effect on arithmetic intensity",
+  "learningObjective": "Quantify how batch size increases arithmetic intensity from GEMV to GEMM regime for weight-shared linear layers.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "generic modern GPU",
+    "device": "GPU",
+    "requiredFeatures": ["HBM"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [["B", 4096], [4096, 4096], ["B", 4096]],
+    "dtypes": ["float16", "float16", "float16"]
+  },
+  "stem": "A transformer linear layer Y = X · W with W ∈ ℝ^{4096×4096} FP16 has an effective batch dimension B (e.g., #tokens in a step). Weight W is streamed once from HBM per launch; X and Y are proportional to B. Ignoring caching outside of W's single-pass streaming, how does arithmetic intensity (FLOP / bytes) scale with B?",
+  "options": [
+    { "id": "A", "text": "AI is approximately linear in B: at B=1 (decode step) AI ≈ 1 FLOP/byte (GEMV regime); at B ≈ 128 (prefill), AI is roughly 100+ FLOP/byte and typically enters compute-bound territory on FP16 Tensor-Core GPUs." },
+    { "id": "B", "text": "AI is inversely proportional to B because larger batches move more X/Y data through HBM, diluting the FLOP density." },
+    { "id": "C", "text": "AI is independent of B because the number of FLOPs and bytes both grow linearly with B, so the ratio is invariant." },
+    { "id": "D", "text": "AI grows quadratically with B because each token performs B multiplications with each weight." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "FLOPs = 2·B·K·N with K = N = 4096. Bytes moved = W (K·N·2, one time) + X (B·K·2) + Y (B·N·2) = 2·K·N + 2·B·(K+N)·2/2 bytes for FP16. Simplifying: Bytes ≈ 2·K·N + 4·B·K (for K=N). AI = FLOPs / Bytes = (2·B·K·N) / (2·K·N + 4·B·K). For small B, the K·N (weight) term dominates → AI ≈ B (linear in B). At B ≈ 128 and K = N = 4096, AI ≈ (2·128·4096·4096) / (2·4096·4096 + 4·128·4096) ≈ 100+ FLOP/byte, entering compute-bound regime on FP16 Tensor-Core GPUs. Option A captures this.",
+  "optionExplanations": {
+    "A": "Correct: AI scales approximately linearly with B while weight streaming dominates the bytes moved; B~128 typically crosses the ridge on FP16 Tensor-Core GPUs.",
+    "B": "Wrong: AI increases with B, not decreases; larger B amortizes the weight-load bytes over more FLOPs.",
+    "C": "Wrong: FLOPs scale with B but bytes are dominated by W (constant in B) for small B, so AI grows with B.",
+    "D": "Wrong: FLOPs scale linearly in B (not quadratically); AI ~ B for the small-B, weight-dominated regime, saturating for large B."
+  },
+  "assumptions": [
+    "Weight is streamed once from HBM per kernel launch (no persistence).",
+    "AI is measured against HBM bytes moved, not L2/SMEM.",
+    "K = N = 4096 FP16."
+  ],
+  "nonImplications": [
+    "Does not imply AI grows without bound; for B ≫ (K·N)/(2·K) = N/2, the activation term dominates and AI saturates.",
+    "Does not imply crossing the ridge point makes any GEMM achieve peak; achieved throughput depends on kernel implementation."
+  ],
+  "misconceptionTags": ["batch_ai_direction", "gemv_gemm_transition"],
+  "distractorRationales": {
+    "B": "Reverses the direction of AI with respect to B.",
+    "C": "Ignores that the weight-load bytes are B-independent while FLOPs are B-linear.",
+    "D": "Wrong FLOP scaling in B."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:pmpp4", "locator": "GEMV vs GEMM regime analysis", "supports": ["A"] },
+    { "ref": "BOOK:sze-eff", "locator": "DNN dataflow, batching effect on data movement", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "generic FP16 linear layer, weight streamed once, batch B",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/A/A-INTENSE-019.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

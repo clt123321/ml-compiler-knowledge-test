@@ -1,0 +1,63 @@
+{
+  "id": "A-CACHE-010",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Cache line utilization / data locality",
+  "learningObjective": "Compute the effective cache-line utilization of a strided CPU access pattern and connect it to the arithmetic intensity seen by the memory system.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "Intel",
+    "architecture": "modern x86-64 with 64 B cache lines",
+    "device": "CPU",
+    "requiredFeatures": ["64 B cache lines"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A CPU loop reads a[i * S] for i = 0 .. N−1 where a is a contiguous FP32 array and S = 16 (stride 16 elements = 64 B). Cache lines are 64 B. Assuming N is large so warm-up effects are negligible and no prefetch reuse across iterations, what fraction of each transferred cache line is useful to the loop?",
+  "options": [
+    { "id": "A", "text": "1/16 (~6.25%): each 64 B cache line delivers only the 4 B accessed element; the remaining 60 B are transferred but unused." },
+    { "id": "B", "text": "1: hardware prefetchers combine adjacent strided loads into a single wide access, so effective utilization approaches 100% once the prefetcher locks on." },
+    { "id": "C", "text": "1/4: 4 B out of 16 B per element, computed against the SIMD lane width rather than the cache line width." },
+    { "id": "D", "text": "1/2: modern out-of-order cores double the effective utilization by reading two elements per cache line through speculative execution." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Stride 16 × 4 B = 64 B means each iteration accesses one FP32 element that lives in a different 64 B cache line. Each line delivers 64 B; only 4 B are used. Utilization = 4 / 64 = 1/16 ≈ 6.25%. Hardware prefetchers may still fetch the correct next line, but they do not reduce per-line waste; speculative execution and SIMD width also do not change bytes moved per line.",
+  "optionExplanations": {
+    "A": "Correct: only 4 B out of every 64 B cache line are consumed.",
+    "B": "Wrong: prefetching improves latency hiding, not per-line utilization; wasted bytes still traverse the memory system.",
+    "C": "Wrong: SIMD lane width does not divide cache line bytes into 'useful vs wasted'; the cache line is the transfer granularity.",
+    "D": "Wrong: out-of-order execution reorders memory ops but does not deliver more of a cache line as useful."
+  },
+  "assumptions": [
+    "Each accessed element lies in a distinct 64 B cache line (stride 16 × 4 B = 64 B).",
+    "No temporal reuse within the loop; each iteration touches a fresh line.",
+    "Cache pressure is high enough that prefetched but unused bytes cannot be later re-used."
+  ],
+  "nonImplications": [
+    "Does not imply reordering the loop cannot help; a stride-1 access pattern would achieve 100% utilization.",
+    "Does not imply hardware prefetchers are useless; they still reduce miss latency even when per-line waste is high."
+  ],
+  "misconceptionTags": ["prefetcher_saves_line", "simd_vs_cacheline"],
+  "distractorRationales": {
+    "B": "Confuses latency hiding with bandwidth utilization.",
+    "C": "Applies SIMD arithmetic to a cache-line question.",
+    "D": "Misuses out-of-order semantics."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:hp6", "locator": "Memory hierarchy chapter; cache-line utilization and spatial locality", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "generic x86-64 CPU, 64 B cache lines, stride-16 FP32 access",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-CACHE-010.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

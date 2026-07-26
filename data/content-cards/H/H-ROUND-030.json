@@ -1,0 +1,56 @@
+{
+  "questionId": "H-ROUND-030",
+  "learningObjective": "Distinguish round-half-to-even (RNE) from stochastic rounding and identify when each is used.",
+  "canonicalClaims": [
+    {
+      "claim": "RNE (round-half-to-even) is the deterministic IEEE 754 default: round to nearest with half-way ties broken toward even. Stochastic rounding is probabilistic: round to either neighbor with probability proportional to distance, producing an unbiased estimator suitable for low-precision training.",
+      "conditions": [
+        "'Nearest' is in the target representation.",
+        "Stochastic rounding samples a fresh random draw per value."
+      ],
+      "nonImplications": [
+        "Does not imply stochastic rounding is always better — deterministic RNE is preferred for inference and correctness testing.",
+        "Does not imply hardware supports stochastic rounding uniformly — it is opt-in on some accelerators."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Rounding modes for quantization" },
+        { "ref": "BOOK:pmpp4", "locator": "IEEE 754 rounding modes" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "RNE and stochastic rounding produce the same output values; only the process differs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Stochastic rounding produces different values probabilistically; RNE is deterministic.",
+      "sourceOrEvidence": "Definition of stochastic rounding"
+    },
+    {
+      "claim": "Stochastic rounding is illegal because it produces non-deterministic outputs.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Stochastic rounding is intentionally non-deterministic per-value; production accelerators (e.g., some training chips) support it.",
+      "sourceOrEvidence": "Habana Gaudi / IBM training chip specs"
+    },
+    {
+      "claim": "RNE always rounds down (floor); stochastic rounding always rounds up.",
+      "errorType": "definition_confusion",
+      "whyWrong": "RNE rounds to the nearest neighbor; stochastic rounding samples between two neighbors.",
+      "sourceOrEvidence": "IEEE 754"
+    },
+    {
+      "claim": "Stochastic rounding is a biased estimator that shifts values toward zero.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Stochastic rounding is unbiased in expectation; that is precisely why it is useful for low-precision training.",
+      "sourceOrEvidence": "Stochastic rounding literature"
+    }
+  ],
+  "implementationFacts": [
+    "IEEE 754 default is RNE (round to nearest, ties to even).",
+    "Stochastic rounding: Pr(round up) = fractional part; Pr(round down) = 1 - fractional part.",
+    "Used in low-precision training on some accelerators to preserve tiny gradient updates."
+  ],
+  "performanceScenarios": [
+    "BF16 gradient accumulation with stochastic rounding can preserve small updates that RNE would systematically round away, improving convergence."
+  ],
+  "versionSensitivity": "stable_principle"
+}

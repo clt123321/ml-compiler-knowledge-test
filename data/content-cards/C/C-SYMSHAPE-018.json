@@ -1,0 +1,55 @@
+{
+  "questionId": "C-SYMSHAPE-018",
+  "learningObjective": "Distinguish 'symbolic shape' (a compile-time symbolic representation of an unknown extent) from 'dynamic shape' (a runtime-unknown extent) and identify their design implications.",
+  "canonicalClaims": [
+    {
+      "claim": "'Dynamic shape' is the property that a dim's extent is not known statically; 'symbolic shape' is a representation technique that uses named symbols (with optional constraints such as positivity, divisibility, or inter-dim relations) at compile time to reason about that unknown dim.",
+      "conditions": [
+        "The compiler has some notion of compile-time symbols for dims."
+      ],
+      "nonImplications": [
+        "Does not imply symbolic-shape support automatically covers all possible dynamic inputs; symbols may carry constraints.",
+        "Does not imply symbolic shapes are free at compile time; symbol propagation and constraint solving have their own cost."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "Symbolic shape variables in Relax" },
+        { "ref": "PAPER:pytorch2", "locator": "SymInt / symbolic shapes" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Symbolic shape and dynamic shape are synonyms.",
+      "errorType": "definition_confusion",
+      "whyWrong": "One is a property (dynamic), the other a representation technique (symbolic).",
+      "sourceOrEvidence": "Relax / PyTorch docs"
+    },
+    {
+      "claim": "Symbolic shape means the tensor's underlying memory is symbolic.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Memory allocation is a separate concern; symbolic shape is about compile-time reasoning over dim symbols.",
+      "sourceOrEvidence": "TVM / MLIR docs"
+    },
+    {
+      "claim": "A compiler always uses either symbolic or dynamic shape, never both together.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Symbolic shape is the standard way to model dynamic shape in compilers such as Relax and PyTorch's Dynamo.",
+      "sourceOrEvidence": "Relax / PyTorch docs"
+    },
+    {
+      "claim": "Symbolic shape refers to dtype variation across runs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Dtype is orthogonal to shape.",
+      "sourceOrEvidence": "General framework docs"
+    }
+  ],
+  "implementationFacts": [
+    "TVM Relax: symbolic dim variables with constraints",
+    "PyTorch: SymInt / SymFloat used by Dynamo and AOTAutograd",
+    "MLIR: shape dialect / dynamic dims via `?` in tensor/memref types"
+  ],
+  "performanceScenarios": [
+    "Symbolic-shape compilation enables one compiled artifact to serve many input shapes, reducing recompilation cost at the price of some codegen specialization."
+  ],
+  "versionSensitivity": "stable_principle"
+}

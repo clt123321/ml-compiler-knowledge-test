@@ -1,0 +1,71 @@
+{
+  "id": "F-FLASHATTN-023",
+  "type": "multiple",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / FlashAttention — tiling and IO-awareness",
+  "learningObjective": "Understand FlashAttention's core techniques (tiling, online softmax, IO-aware fusion) and what they achieve.",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (A100) tested in the paper; later versions target Hopper",
+    "device": "GPU",
+    "requiredFeatures": ["Sufficient SMEM for Q/K/V tiles"]
+  },
+  "softwareContext": {
+    "framework": "Triton / CUDA",
+    "frameworkVersionScope": "FlashAttention v1/v2/v3 as noted",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [["B", "H", "S", "D"], ["B", "H", "S", "D"], ["B", "H", "S", "D"]],
+    "dtypes": ["float16", "float16", "float16"],
+    "layouts": ["contiguous", "contiguous", "contiguous"]
+  },
+  "stem": "The Triton FlashAttention-forward inner loop iterates over K/V tiles for a fixed Q tile, using an online-softmax running (m, l, acc) state. Which statements about the algorithm are correct? (Select all that apply.)",
+  "codeSnippet": "# Pseudocode outline for one Q-tile Q_i (fp16, shape [BM, D]):\n#   m_i = -inf; l_i = 0; acc = zeros((BM, D), fp32)\n#   for j in range(0, S, BN):\n#       Kj = load_kv_tile(K, j)          # [BN, D]\n#       Vj = load_kv_tile(V, j)          # [BN, D]\n#       S_ij = tl.dot(Q_i, Kj.T) * scale # [BM, BN], FP32 accum\n#       m_new = max(m_i, tl.max(S_ij, axis=1))\n#       P_ij = tl.exp(S_ij - m_new[:, None])            # rescaled\n#       l_new = l_i * exp(m_i - m_new) + tl.sum(P_ij, axis=1)\n#       acc = acc * exp(m_i - m_new)[:, None] + tl.dot(P_ij.to(fp16), Vj)\n#       m_i, l_i = m_new, l_new\n#   O_i = acc / l_i[:, None]",
+  "options": [
+    { "id": "A", "text": "By processing K/V in tiles and rescaling the running `(m, l, acc)` triple via the online-softmax recurrence, FlashAttention avoids ever materializing the [S, S] score matrix in HBM, reducing HBM traffic from O(S^2) to O(S)." },
+    { "id": "B", "text": "The rescale factor `exp(m_i - m_new)` on `acc` is required because `acc` was previously anchored at `m_i`; the update aligns it to the new anchor `m_new` before adding the new tile's contribution, preserving exact algebra." },
+    { "id": "C", "text": "FlashAttention approximates the attention output; the paper reports lower accuracy than standard attention on long-context tasks, so it should be avoided when numerical fidelity matters." },
+    { "id": "D", "text": "FlashAttention v1's speedup over naive attention comes entirely from replacing the softmax with a cheaper approximation (piecewise-linear exp), not from IO-awareness or tiling." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "A: Core idea — tile Q, tile K/V, use online-softmax recurrence, so intermediates fit in SRAM (SMEM/register); no O(S^2) HBM write/read for scores. B: The `acc` rescale is exact algebra: acc after step j is anchored at m_j; on step j+1 the anchor becomes m_{j+1}, so old contributions must be scaled by exp(m_j - m_{j+1}). C is wrong: FlashAttention is bitwise-different (order-of-summation) but not an approximation; it is numerically comparable to naive attention. D is wrong: the speedup is from IO-awareness (fewer HBM r/w), not from replacing exp.",
+  "optionExplanations": {
+    "A": "Correct: tiled + online softmax + fused → O(S) HBM traffic.",
+    "B": "Correct: `exp(m_i - m_new)` rescale is the exact-algebra alignment.",
+    "C": "Wrong: FlashAttention is exact, not approximate.",
+    "D": "Wrong: no cheap-exp approximation is involved."
+  },
+  "assumptions": [
+    "FlashAttention-forward as documented in the original paper (v1).",
+    "SMEM sufficient for tiled Q/K/V blocks."
+  ],
+  "nonImplications": [
+    "Does not imply FlashAttention wins for every shape (very small S may not benefit).",
+    "Does not imply v1/v2/v3 have identical implementations; scheduling and Hopper-specific optimizations differ."
+  ],
+  "misconceptionTags": ["flashattn_approximate_myth", "flashattn_cheap_exp_myth"],
+  "distractorRationales": {
+    "C": "Confuses IO-aware exact algorithm with approximation.",
+    "D": "Fabricates a cheap-exp story for the speedup."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:flashattn", "locator": "FlashAttention Algorithm 1, Section 3 — tiling and online softmax", "supports": ["A", "B"] },
+    { "ref": "DOC:triton", "locator": "FlashAttention Triton tutorial", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "HBM traffic reduction from O(S^2) to O(S)",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-FLASHATTN-023.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

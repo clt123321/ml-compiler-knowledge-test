@@ -1,0 +1,56 @@
+{
+  "questionId": "D-SYMINT-008",
+  "learningObjective": "Explain what a SymInt is in PyTorch 2 and how it participates in the traced graph.",
+  "canonicalClaims": [
+    {
+      "claim": "A SymInt is a compile-time symbolic integer used by PyTorch 2's tracer (Dynamo/AOTAutograd) to represent dim values or arithmetic on them when the value is unknown at trace time; the graph is parameterized in these symbols and they are resolved to concrete integers at runtime.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "Symbolic-shape tracing is enabled (mark_dynamic, dynamic=True, or automatic promotion)."
+      ],
+      "nonImplications": [
+        "Does not imply every op supports symbolic shapes cleanly; some fail to trace and fall back.",
+        "Does not imply a symbolic-shape kernel matches a specialized kernel in performance."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:pytorch2", "locator": "SymInt / SymFloat" },
+        { "ref": "DOC:torch-dynamo", "locator": "Symbolic-shape tracing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A SymInt is a GPU tensor holding an integer value.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SymInts live in the tracing/compilation stack, not as device tensors.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "A SymInt is the average of previously seen dim values.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SymInts are symbolic; they do not encode statistical estimates.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "SymInt forces Triton kernels to be integer-only.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SymInts are unrelated to floating-point support in generated kernels.",
+      "sourceOrEvidence": "TorchInductor docs"
+    },
+    {
+      "claim": "SymInt eliminates all recompiles.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Other guards (stride, dtype, unmarked dims) can still trigger recompiles.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    }
+  ],
+  "implementationFacts": [
+    "Symbols named `s0`, `s1`, ... in the traced graph",
+    "Arithmetic on SymInts is captured symbolically (e.g., `s0 * 4`)",
+    "Guards may constrain SymInts (e.g., divisibility)"
+  ],
+  "performanceScenarios": [
+    "SymInt-parameterized graphs reduce recompilation cost; extreme constraints or complex control flow may still specialize."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

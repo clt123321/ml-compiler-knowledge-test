@@ -1,0 +1,55 @@
+{
+  "questionId": "H-SCALE-009",
+  "learningObjective": "Precisely define the scale and zero-point of an affine quantizer and the dequantization formula.",
+  "canonicalClaims": [
+    {
+      "claim": "Affine quantization maps real x to integer q via q = round(x / s) + z, with dequantization x_hat = (q - z) * s. Scale s > 0 is the step size and zero-point z is the integer representing real zero.",
+      "conditions": [
+        "Standard ONNX / PyTorch / TensorRT affine convention.",
+        "Rounding is round-half-to-even (RNE) by default."
+      ],
+      "nonImplications": [
+        "Does not imply symmetric quantization (z=0) is always preferred.",
+        "Does not include the clamp-to-integer-range step, which is separate."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "QuantizeLinear / DequantizeLinear" },
+        { "ref": "BOOK:sze-eff", "locator": "Affine quantization definitions" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Quantization uses q = round(x * s) + z (multiplication by scale).",
+      "errorType": "definition_confusion",
+      "whyWrong": "Larger s means larger step size, so we divide x by s to convert to integer steps.",
+      "sourceOrEvidence": "ONNX QuantizeLinear spec"
+    },
+    {
+      "claim": "Zero-point z is a real-valued offset applied after scaling.",
+      "errorType": "definition_confusion",
+      "whyWrong": "z is an integer (same dtype as q); it identifies which integer represents real zero.",
+      "sourceOrEvidence": "PyTorch quantization spec"
+    },
+    {
+      "claim": "Symmetric quantization is just asymmetric quantization with z rounded to nearest integer.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Symmetric quantization enforces z = 0 by construction; it is not an approximation of asymmetric.",
+      "sourceOrEvidence": "TensorRT INT8 primer"
+    },
+    {
+      "claim": "The dequantization formula is x_hat = q * s (no zero-point subtraction) even for asymmetric quantization.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Asymmetric quantization requires subtracting z before scaling; otherwise the zero of the integer range is not the zero of the real range.",
+      "sourceOrEvidence": "PyTorch dequantize function"
+    }
+  ],
+  "implementationFacts": [
+    "In symmetric quantization, z = 0 and the formula simplifies to q = round(x / s), x_hat = q * s.",
+    "In INT8 asymmetric per-tensor, z lies in [0, 255] (unsigned) or [-128, 127] (signed)."
+  ],
+  "performanceScenarios": [
+    "Asymmetric quantization allows post-ReLU activations (natural zero-point at 0) to map efficiently."
+  ],
+  "versionSensitivity": "stable_principle"
+}

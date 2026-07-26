@@ -1,0 +1,48 @@
+{
+  "questionId": "A-CACHE-010",
+  "learningObjective": "Compute the effective cache-line utilization of a strided CPU access pattern and connect it to the arithmetic intensity seen by the memory system.",
+  "canonicalClaims": [
+    {
+      "claim": "Effective cache-line utilization equals useful bytes per line divided by cache-line size; hardware prefetchers do not reduce per-line waste, only latency to fetch the next line.",
+      "conditions": [
+        "Each access lands in a distinct cache line (stride ≥ line size).",
+        "No temporal reuse before eviction."
+      ],
+      "nonImplications": [
+        "Does not imply the workload cannot be optimized; layout or tiling changes can restore stride-1 patterns.",
+        "Does not imply the CPU stalls; latency hiding can still be effective at high per-line waste."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Memory hierarchy chapter, spatial locality" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Hardware prefetching lifts effective per-line utilization to 100%.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Prefetching hides latency but does not change the number of bytes actually consumed from each line; wasted bytes are still transferred over the memory bus.",
+      "sourceOrEvidence": "HP6 memory hierarchy chapter"
+    },
+    {
+      "claim": "Utilization is set by the SIMD lane width relative to the element width.",
+      "errorType": "scope_error",
+      "whyWrong": "SIMD width is a compute-side property; cache-line utilization is a memory-side property (bytes fetched vs bytes used).",
+      "sourceOrEvidence": "HP6 vectorization vs memory chapters"
+    },
+    {
+      "claim": "Out-of-order execution improves cache-line utilization by issuing multiple loads per line.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "OoO reorders independent operations to hide latency, but doesn't retroactively make more of a line 'useful' if the access pattern doesn't touch those bytes.",
+      "sourceOrEvidence": "HP6 ILP chapter"
+    }
+  ],
+  "implementationFacts": [
+    "Cache line 64 B; FP32 element 4 B; stride 16 elements = 64 B = exactly one line per element.",
+    "Utilization = 4 / 64 = 1/16."
+  ],
+  "performanceScenarios": [
+    "Row-major traversal of a column-major matrix produces stride-N access; layout transformations (transpose or blocking) restore utilization."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "D-MUT-023",
+  "learningObjective": "Reason about how torch.compile handles in-place mutation of an object captured from the enclosing Python scope (a non-input tensor).",
+  "canonicalClaims": [
+    {
+      "claim": "TorchDynamo treats mutation of a captured (non-input) tensor as an external side effect: it either lifts the referenced tensor into the compiled region's inputs (with a runtime write-back at the boundary) or graph-breaks around the mutation, depending on what can be safely traced.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The referenced tensor is reachable through Python semantics that Dynamo can inspect."
+      ],
+      "nonImplications": [
+        "Does not imply every capture-mutation compiles cleanly; complex control flow can graph-break.",
+        "Does not imply the mutation is free; boundary write-backs add cost."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-dynamo", "locator": "Captured tensors and side effects" },
+        { "ref": "PAPER:pytorch2", "locator": "Side-effect handling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Capture-mutation compiles with zero overhead.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Boundary write-backs or graph breaks impose real overhead.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    },
+    {
+      "claim": "The mutation is silently dropped.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "TorchDynamo preserves externally-visible mutation semantics.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    },
+    {
+      "claim": "Any tensor not in the argument list cannot be mutated inside a compiled region.",
+      "errorType": "scope_error",
+      "whyWrong": "Captured tensors can be handled via lifting; not universally forbidden.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    },
+    {
+      "claim": "TorchDynamo rewrites the outer Python list on return via a dedicated hook.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The mechanism is write-back to the identified tensor object, not list-level rewriting.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    }
+  ],
+  "implementationFacts": [
+    "Lifted tensors show as extra inputs to the compiled region",
+    "Runtime wrapper writes back mutated tensors after the compiled call",
+    "Graph breaks may appear if the captured object cannot be safely lifted"
+  ],
+  "performanceScenarios": [
+    "Excessive capture-mutation across tight loops can cause repeated write-backs; refactoring to explicit inputs is a common tuning step."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

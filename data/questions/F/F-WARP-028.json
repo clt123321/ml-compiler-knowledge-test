@@ -1,0 +1,94 @@
+{
+  "id": "F-WARP-028",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Warp size, warp scheduling, and SIMT execution",
+  "learningObjective": "Reason about warp granularity: how threads are grouped into warps and how a warp is scheduled as a single instruction issue unit.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any current NVIDIA architecture",
+    "device": "GPU",
+    "requiredFeatures": [
+      "warpSize=32; warp scheduler per SM"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about NVIDIA warp execution is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Warps are software-only abstractions imposed by nvcc for readability; the underlying hardware schedules individual threads independently, and warp-level primitives (shuffles, votes) are software emulations."
+    },
+    {
+      "id": "B",
+      "text": "Warp size is architecture-dependent and has ranged from 16 to 128 across NVIDIA generations; portable kernels should query `blockDim.x % warpSize == 0` at runtime and adapt block dimensions accordingly."
+    },
+    {
+      "id": "C",
+      "text": "A warp is a group of 32 threads (`warpSize == 32`) that the SM schedules as a single instruction issue unit; all 32 lanes execute the same instruction on their respective data (SIMT), with per-lane predication used when a branch would otherwise diverge."
+    },
+    {
+      "id": "D",
+      "text": "Threads in a warp are scheduled in a round-robin order at instruction granularity; even for non-divergent code, each thread of the warp takes 32 cycles to complete one instruction."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "A warp is 32 threads on all current NVIDIA architectures; the SM's warp scheduler issues one instruction per warp per cycle (per scheduler; modern SMs have multiple schedulers). SIMT means every lane executes the same instruction; when a branch would diverge, lanes are predicated off, resulting in serialization of the divergent paths. The 32-thread size is a fixed hardware property (`warpSize == 32`). Warp-level primitives (`__shfl_*_sync`, `__any_sync`, etc.) map to actual hardware operations. Choice B is fabricated; warp size has been 32 for the entirety of NVIDIA's CUDA lineup.",
+  "optionExplanations": {
+    "C": "Correct: warp = 32 threads; SIMT + predication for divergence.",
+    "B": "Wrong: warpSize has been 32 on all NVIDIA CUDA GPUs.",
+    "A": "Wrong: warps are a hardware concept; primitives use real HW ops.",
+    "D": "Wrong: SIMT executes 32 lanes in parallel; not round-robin."
+  },
+  "assumptions": [
+    "NVIDIA CUDA GPUs (as opposed to hypothetical wave-64 architectures like AMD)."
+  ],
+  "nonImplications": [
+    "Does not imply divergent code is always slow; divergence within a warp is where it hurts.",
+    "Does not imply lane scheduling is fully SIMT on Volta+; Independent Thread Scheduling allows lanes to make forward progress independently in specific cases."
+  ],
+  "misconceptionTags": [
+    "warp_size_variable_myth",
+    "warps_software_only_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates variable warp size on NVIDIA.",
+    "A": "Denies hardware reality of warps.",
+    "D": "Confuses SIMT parallel issue with serial round-robin."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Execution Model — warps, SIMT, scheduler",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Warp scheduling chapter",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-WARP-028.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

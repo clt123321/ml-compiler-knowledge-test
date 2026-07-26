@@ -1,0 +1,63 @@
+{
+  "id": "H-FAKE-016",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "Fake quantization forward",
+  "learningObjective": "Identify a correct fake-quantization forward implementation (quantize → clamp → dequantize) used during QAT.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "stability": "stable_principle"
+  },
+  "codeSnippet": "def fake_quantize_symmetric(x: torch.Tensor,\n                            scale: float,\n                            qmin: int = -127,\n                            qmax: int = 127) -> torch.Tensor:\n    # Forward: simulate INT8 quantization but keep FP values so autograd flows.\n    q = torch.round(x / scale)\n    q = torch.clamp(q, qmin, qmax)\n    x_hat = q * scale                # dequantize back to FP\n    return x_hat",
+  "stem": "The function above is intended as a symmetric fake-quantization forward for QAT (values quantized to the INT8 grid, then dequantized to FP, so that downstream layers see the quantization noise while gradients can still flow). Is the implementation correct and, if so, what is the standard trick required to make its gradient useful during training?",
+  "options": [
+    { "id": "A", "text": "The forward is correct. The gradient of `round` and `clamp` is zero almost everywhere, so during backward the standard trick is the 'straight-through estimator' (STE): treat `d(round(x))/dx ≈ 1` (with the clamp mask applied), so gradients pass through as if the fake-quant were identity on the interior of the clamp." },
+    { "id": "B", "text": "The forward is correct and no special backward trick is needed; PyTorch's autograd computes the mathematically-correct gradient of `round` (zero) and training proceeds normally." },
+    { "id": "C", "text": "The forward is wrong: multiplying by `scale` after rounding produces the original `x`, so no quantization noise is introduced. The correct forward must add explicit noise." },
+    { "id": "D", "text": "The forward is wrong because `torch.round` uses banker's rounding, which is incompatible with quantized inference kernels that use round-half-away-from-zero." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "The forward is the canonical fake-quant: quantize (round), clamp to the INT range, then dequantize by multiplying by scale. `x_hat` differs from `x` by the quantization error (up to 0.5 * scale in magnitude plus any clamp truncation). For backward, the gradient of `round` is zero almost everywhere, so a naive autograd would produce zero gradients and training would stall. The straight-through estimator (STE) treats the identity as the derivative on the interior of the clamp region (and zero outside). This is standard in QAT frameworks. Option B is false: naive gradient of round would break training. Option C is false: `q * scale != x` in general because `q` is rounded. Option D describes rounding-convention mismatches (a real concern) but the mismatch is minor and does not make the forward 'wrong'; RNE is the IEEE default and used by most inference kernels.",
+  "optionExplanations": {
+    "A": "Correct: identifies fake-quant + STE.",
+    "B": "Wrong: without STE, gradient is zero.",
+    "C": "Wrong: round destroys precision; q*scale ≠ x.",
+    "D": "Wrong: RNE / round-half-even is standard and matches inference kernels."
+  },
+  "assumptions": [
+    "Symmetric quantization (z=0); scale > 0.",
+    "The training-time framework registers a custom backward or uses `torch.ops.aten.fake_quantize_per_tensor_affine`."
+  ],
+  "nonImplications": [
+    "Does not imply the STE is unbiased; it is an approximation that can affect convergence.",
+    "Does not imply any specific `qmin`, `qmax` values; symmetric convention uses [-127, 127] but asymmetric uses [0, 255] etc."
+  ],
+  "misconceptionTags": ["fake_quant_zero_gradient", "ste_not_needed"],
+  "distractorRationales": {
+    "B": "Ignores zero-gradient trap.",
+    "C": "Denies that round loses precision.",
+    "D": "Elevates a minor rounding-convention issue to a correctness failure."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:sze-eff", "locator": "QAT fake quantization and straight-through estimator", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-FAKE-016.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

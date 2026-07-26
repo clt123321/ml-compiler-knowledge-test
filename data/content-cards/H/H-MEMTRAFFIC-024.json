@@ -1,0 +1,56 @@
+{
+  "questionId": "H-MEMTRAFFIC-024",
+  "learningObjective": "Compute the approximate weight-loading bandwidth saving of W4A16 vs FP16 for LLM decode.",
+  "canonicalClaims": [
+    {
+      "claim": "For batch-1 LLM decode (bandwidth-bound on weight loads), W4A16 with group_size=128 reduces weight-load traffic by roughly 4× compared to FP16 (INT4 = 0.5 B/param + FP16 scales at 1/32 overhead ≈ ~0.55 B/param effective).",
+      "conditions": [
+        "Decode is bandwidth-bound (small batch, single request).",
+        "The W4A16 kernel achieves close to peak effective bandwidth."
+      ],
+      "nonImplications": [
+        "Does not imply the observed wall-clock speedup is exactly 4× — dequant, scale broadcast, and kernel overhead reduce it to 2.5-3× in practice.",
+        "Does not imply the same argument holds for prefill / large-batch cases, which are compute-bound."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:awq", "locator": "W4A16 memory traffic analysis" },
+        { "ref": "BOOK:sze-eff", "locator": "Bandwidth-vs-compute for quantized inference" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "INT4 weights are stored in FP16-sized buffers, so memory traffic is unchanged.",
+      "errorType": "definition_confusion",
+      "whyWrong": "INT4 weights are packed (two per byte); memory footprint and traffic are ~1/4 of FP16.",
+      "sourceOrEvidence": "Marlin / ExLlama kernel implementations"
+    },
+    {
+      "claim": "Per-group scales at group_size 128 double the metadata size, offsetting the bandwidth savings.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Scales at group_size 128 add one FP16 per 128 INT4 weights = 2 bytes / 64 bytes ≈ 3% overhead, not 100%.",
+      "sourceOrEvidence": "AWQ / GPTQ metadata layouts"
+    },
+    {
+      "claim": "W4A16 delivers 8× decode speedup vs FP16 because INT4 saves 4× bytes and per-channel scaling adds another 2×.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Per-channel scaling saves no additional bandwidth; the speedup is bounded by 4× (memory-traffic ratio) minus dequant overhead.",
+      "sourceOrEvidence": "AWQ benchmarks"
+    },
+    {
+      "claim": "W4A16 speedup applies equally to prefill and decode.",
+      "errorType": "scope_error",
+      "whyWrong": "Prefill is compute-bound (long sequence, large activation batch), so weight bandwidth is not the bottleneck; W4A16's gain shrinks or vanishes there.",
+      "sourceOrEvidence": "vLLM decode vs prefill profiles"
+    }
+  ],
+  "implementationFacts": [
+    "Marlin and ExLlama INT4 kernels dequant-in-register and use FP16 Tensor Cores.",
+    "Group size 128 is standard for AWQ / GPTQ; other options include 32, 64."
+  ],
+  "performanceScenarios": [
+    "LLaMA-7B decode on A100 batch=1: FP16 ~35 tokens/s, W4A16 ~90 tokens/s (~2.5× effective speedup).",
+    "LLaMA-7B prefill 2k tokens on A100: W4A16 gain shrinks to <1.3× because compute dominates."
+  ],
+  "versionSensitivity": "stable_principle"
+}

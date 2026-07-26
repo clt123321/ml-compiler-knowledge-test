@@ -1,0 +1,110 @@
+{
+  "id": "F-TLPGM-006",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Triton / program_id and 2D launch grid",
+  "learningObjective": "Reason about how a 2D Triton launch grid maps to `tl.program_id(axis=0)` and `axis=1` and how to compute per-program tile bases.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80) or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "Triton runtime with PTX backend"
+    ]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "N"
+      ],
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major"
+    ]
+  },
+  "stem": "The 2D Triton kernel below copies a row-major FP32 tensor of shape [M, N] with M=2048, N=1024. Launch: `grid = (triton.cdiv(M, BM), triton.cdiv(N, BN))`, `BM=32`, `BN=128`. Which statement about program (pid_m=17, pid_n=3) is correct?",
+  "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef copy2d(in_ptr, out_ptr, M, N,\n           stride_m, stride_n,\n           BM: tl.constexpr, BN: tl.constexpr):\n    pid_m = tl.program_id(axis=0)\n    pid_n = tl.program_id(axis=1)\n    offs_m = pid_m * BM + tl.arange(0, BM)\n    offs_n = pid_n * BN + tl.arange(0, BN)\n    mask_m = offs_m < M\n    mask_n = offs_n < N\n    # Row-major addressing: element (i,j) at stride_m*i + stride_n*j\n    ptrs_in  = in_ptr  + offs_m[:, None] * stride_m + offs_n[None, :] * stride_n\n    ptrs_out = out_ptr + offs_m[:, None] * stride_m + offs_n[None, :] * stride_n\n    mask = mask_m[:, None] & mask_n[None, :]\n    x = tl.load(ptrs_in, mask=mask, other=0.0)\n    tl.store(ptrs_out, x, mask=mask)\n\n# Launch: grid = (cdiv(M, BM), cdiv(N, BN)), BM=32, BN=128\n# M=2048, N=1024, row-major FP32, stride_m=N=1024, stride_n=1",
+  "options": [
+    {
+      "id": "A",
+      "text": "Because `stride_n=1`, the pointer expression `offs_n[None, :] * stride_n` degenerates to a scalar; only column 0 is copied for each row in program (17, 3)."
+    },
+    {
+      "id": "B",
+      "text": "Program (17, 3) copies rows 17..48 and columns 3..130 because `pid_m * BM + arange(0, BM)` is interpreted as `(pid_m + arange)` due to Python operator precedence in the Triton JIT frontend."
+    },
+    {
+      "id": "C",
+      "text": "Program (17, 3) copies the tile rows `[17*32 .. 17*32+31]` and columns `[3*128 .. 3*128+127]`, i.e., rows 544..575 and columns 384..511; all lanes are in-bounds (since M=2048>575 and N=1024>511), so the mask is uniformly True and no lanes are skipped."
+    },
+    {
+      "id": "D",
+      "text": "The `mask_m[:, None] & mask_n[None, :]` combination produces a 1D mask of length `BM+BN`; Triton then broadcasts it back to 2D during `tl.load`, which is why passing a 2D mask is redundant."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Standard 2D tiling in Triton: `pid_m = program_id(0)` and `pid_n = program_id(1)` return the coordinates of the program in the 2D launch grid. Per-program offsets are `pid * BLOCK + arange(0, BLOCK)`. For (17, 3) with BM=32, BN=128: row offsets are 544..575, column offsets are 384..511. With M=2048, N=1024 the tile is fully in-bounds. Row-major stride: `stride_m = N = 1024`, `stride_n = 1`; the pointer expression uses broadcasting on `[:, None]` / `[None, :]` to form a 2D `[BM, BN]` address grid. Options B/C/D fabricate incorrect behaviors.",
+  "optionExplanations": {
+    "C": "Correct: standard 2D tile addressing with correct in-bounds computation.",
+    "B": "Wrong: `pid_m * BM + tl.arange(0, BM)` is standard elementwise arithmetic; there is no Python precedence issue.",
+    "A": "Wrong: `stride_n=1` does not collapse the column dimension; the arange still spans BN.",
+    "D": "Wrong: `mask_m[:, None] & mask_n[None, :]` produces a 2D `[BM, BN]` mask via broadcasting."
+  },
+  "assumptions": [
+    "Row-major FP32 layout with `stride_m = N`, `stride_n = 1`.",
+    "Triton indexing broadcast semantics as documented in the language reference."
+  ],
+  "nonImplications": [
+    "Does not imply BM=32, BN=128 is optimal for A100; it is chosen for clarity.",
+    "Does not imply that a 2D grid is required for copy kernels; a 1D flattened variant would also work."
+  ],
+  "misconceptionTags": [
+    "broadcast_mask_confusion",
+    "stride1_collapse_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates a Python-precedence issue.",
+    "A": "Confuses stride value with dimension collapse.",
+    "D": "Wrong claim about mask shape."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:triton",
+      "locator": "Triton language: program_id, tl.arange, broadcasting semantics",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-TLPGM-006.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

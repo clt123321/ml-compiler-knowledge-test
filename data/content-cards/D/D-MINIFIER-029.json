@@ -1,0 +1,56 @@
+{
+  "questionId": "D-MINIFIER-029",
+  "learningObjective": "Explain the purpose of TorchDynamo's minifier / repro tool.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchDynamo's minifier isolates compiler-side failures by iteratively deleting nodes from the failing FX graph while re-checking the failure, converging on a minimal graph; it emits a runnable script (with the minimal graph and required inputs) as the reproducer.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The failure is deterministic and reproducible from the traced graph."
+      ],
+      "nonImplications": [
+        "Does not imply every bug is amenable to minification (nondeterministic or environment bugs may not shrink well).",
+        "Does not imply the minified script is free of user data — users should review before sharing."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Minifier / repro tool" },
+        { "ref": "DOC:torch-dynamo", "locator": "Minifier overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The minifier is seed-based retry.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It shrinks the failing graph deterministically.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "The minifier is a static analyzer that reads Python source.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It works on the traced FX graph.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "The minifier is a logging-only mode with no code output.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It emits a runnable reproducer script.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "The minifier fixes bugs automatically.",
+      "errorType": "scope_error",
+      "whyWrong": "It only isolates a minimal case; fixing is a separate step.",
+      "sourceOrEvidence": "torch.compile docs"
+    }
+  ],
+  "implementationFacts": [
+    "Env vars like `TORCHDYNAMO_REPRO_AFTER` and related controls activate the minifier",
+    "Minified repro is written to a script in the working directory",
+    "Reproducers are the recommended way to file torch.compile bugs"
+  ],
+  "performanceScenarios": [
+    "Minified reproducers dramatically shorten upstream triage cycles for compiler bugs."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

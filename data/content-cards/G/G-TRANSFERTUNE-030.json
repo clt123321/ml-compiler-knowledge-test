@@ -1,0 +1,56 @@
+{
+  "questionId": "G-TRANSFERTUNE-030",
+  "learningObjective": "Identify preconditions under which a learned cost model or tuned schedule from one workload transfers to a new workload.",
+  "canonicalClaims": [
+    {
+      "claim": "A learned cost model transfers effectively across workloads that share operator class, dtype, and hardware; transfer degrades when any of those axes changes substantially because the model's feature distribution shifts outside its training support.",
+      "conditions": [
+        "The cost model's features encode op class, dtype, and shape but do not symbolically model hardware.",
+        "The source and target workloads share the invariant axes."
+      ],
+      "nonImplications": [
+        "Does not imply transfer is impossible cross-hardware; multi-hardware training can enable it.",
+        "Does not imply transfer replaces from-scratch tuning — it accelerates it within scope."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "Transfer-tuning experiments" },
+        { "ref": "DOC:tvm-relax", "locator": "MetaSchedule cost model reuse" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Transfer tuning works for any pair of workloads on any hardware given enough training data.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Feature-distribution mismatch across hardware or op classes limits transfer even with abundant data.",
+      "sourceOrEvidence": "Ansor transfer results"
+    },
+    {
+      "claim": "Transfer requires exact shape identity; even minor differences invalidate the cost model.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The cost model learns from features that generalize within op class; exact shape identity is not required.",
+      "sourceOrEvidence": "Ansor / MetaSchedule design"
+    },
+    {
+      "claim": "GPU hardware features are captured symbolically in the cost model, so transfer across GPUs is free.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The cost model is trained on measured data from a specific GPU; hardware information is implicitly baked in.",
+      "sourceOrEvidence": "MetaSchedule implementation"
+    },
+    {
+      "claim": "Failed transfer on H100 must be due to a driver bug.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The failure is expected and follows from the training distribution — no driver bug is implied.",
+      "sourceOrEvidence": "MetaSchedule per-hardware retraining guidance"
+    }
+  ],
+  "implementationFacts": [
+    "MetaSchedule cost models are typically retrained per hardware architecture.",
+    "Ansor's XGBoost model uses ~200 features per schedule, most tied to shape and structure."
+  ],
+  "performanceScenarios": [
+    "Warm-starting a MetaSchedule search on a new GEMM shape with a cost model trained on similar shapes cuts trial count by 3-5×.",
+    "Attempting to reuse a Conv cost model for a Transformer attention kernel provides no benefit."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

@@ -1,0 +1,49 @@
+{
+  "questionId": "F-BARRIER-033",
+  "learningObjective": "Distinguish __syncthreads (block-wide) from __syncwarp (warp-scope) and the ITS-related need for explicit warp sync.",
+  "canonicalClaims": [
+    {
+      "claim": "`__syncthreads()` is a block-wide barrier with a memory fence; `__syncwarp(mask)` synchronizes specified lanes within a warp. Volta+ Independent Thread Scheduling requires explicit `_sync` variants of warp intrinsics and often `__syncwarp()` between them for convergence guarantees.",
+      "conditions": ["Volta+ target; CUDA 11+."],
+      "nonImplications": [
+        "Does not imply all shuffle uses need extra syncs.",
+        "Does not imply __syncthreads provides inter-block sync."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Synchronization Functions" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "__syncthreads and __syncwarp are the same primitive.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Different scopes (block vs warp).",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "__syncthreads synchronizes only the calling warp.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is block-scope.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Independent Thread Scheduling eliminates the need for warp sync.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ITS makes explicit sync more important, not less.",
+      "sourceOrEvidence": "Volta whitepaper"
+    },
+    {
+      "claim": "__syncthreads provides inter-block synchronization.",
+      "errorType": "scope_error",
+      "whyWrong": "It is per-block only; grid-wide sync needs cooperative groups.",
+      "sourceOrEvidence": "CUDA guide"
+    }
+  ],
+  "implementationFacts": [
+    "Cooperative Groups API: `cg::grid_group`, `cg::coalesced_group`, `cg::this_thread_block`.",
+    "__syncthreads includes an implicit __threadfence_block."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

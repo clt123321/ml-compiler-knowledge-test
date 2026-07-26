@@ -1,0 +1,84 @@
+{
+  "id": "E-STHLOPORT-024",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "StableHLO / Framework-compiler portability design intent",
+  "learningObjective": "Explain why the community invests in a stable, versioned operator set at the framework-compiler boundary.",
+  "archetype": "paper_design_intent",
+  "difficulty": 3,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "StableHLO / OpenXLA",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement best captures the design rationale for putting a stable, versioned operator set (StableHLO) at the framework-compiler boundary?",
+  "options": [
+    {
+      "id": "A",
+      "text": "It replaces the need for framework-specific tracing tools; any framework that emits StableHLO no longer needs its own graph capture mechanism (TorchDynamo, JAX's tracer, TF's tf.function)."
+    },
+    {
+      "id": "B",
+      "text": "It forces every framework to adopt identical implementation details, so any two frameworks that consume StableHLO produce bit-identical outputs on all hardware, eliminating framework-level differences in numerical results."
+    },
+    {
+      "id": "C",
+      "text": "It decouples the release cycles of frameworks (PyTorch, JAX, TensorFlow) and compilers (XLA, IREE, ...): each side can evolve independently as long as they respect the StableHLO version compatibility contract, avoiding an O(frameworks × compilers) integration matrix and enabling shared optimization work."
+    },
+    {
+      "id": "D",
+      "text": "It exists primarily to give the compiler backend access to Python source code so that Python-native optimizations (e.g., decorator rewriting) can be applied at the compiler level."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "The core design motivation for StableHLO (and similar interchange IRs) is to decouple the release cadence of ML frameworks from that of compiler backends. Without a stable contract, each new framework release risks breaking downstream compilers and vice versa — leading to a combinatorial integration burden (O(frameworks × compilers)). A versioned operator set with compatibility guarantees lets each side ship independently and share common optimization/backend infrastructure.",
+  "optionExplanations": {
+    "C": "Correct: portability contract that reduces combinatorial integration cost.",
+    "B": "Wrong: StableHLO does not mandate bit-identical numerics across frameworks/backends.",
+    "A": "Wrong: frameworks still need their own capture tools; StableHLO is only the target IR.",
+    "D": "Wrong: StableHLO is not tied to Python source access."
+  },
+  "assumptions": [
+    "OpenXLA StableHLO design motivations as documented."
+  ],
+  "nonImplications": [
+    "Does not imply StableHLO removes the need for framework-specific optimizations.",
+    "Does not imply full portability of performance — hardware/backend differences still matter."
+  ],
+  "misconceptionTags": [
+    "ir_removes_capture_myth",
+    "ir_forces_bitidentity_myth"
+  ],
+  "distractorRationales": {
+    "B": "Confuses semantic portability with bit-identical numerics.",
+    "A": "Confuses interchange IR with tracing tools.",
+    "D": "Wrong claim about Python source dependency."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "StableHLO project rationale and compatibility spec",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-STHLOPORT-024.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

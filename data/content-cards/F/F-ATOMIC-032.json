@@ -1,0 +1,49 @@
+{
+  "questionId": "F-ATOMIC-032",
+  "learningObjective": "Reason about atomic contention: single-address hot-spot serialization vs block-local reduction + one atomic per block.",
+  "canonicalClaims": [
+    {
+      "claim": "Global atomics on a single hot address serialize at the atomic unit; canonical reductions perform block-local tree/warp reductions first and then issue at most one atomic per block, reducing contention by blockDim.",
+      "conditions": ["Large N where contention dominates."],
+      "nonImplications": [
+        "Does not imply atomics should never be used.",
+        "Does not imply SMEM tree reductions beat warp-shuffle reductions in the last stages."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Atomic Functions" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`atomicAdd` requires capturing the return value to commit the add.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The add is always committed; return is the old value, optional to use.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Hardware atomic units have infinite bandwidth for FP32 atomicAdd on Ampere.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Contention on a single address serializes.",
+      "sourceOrEvidence": "GPU architecture"
+    },
+    {
+      "claim": "SMEM tree reductions require `__syncwarp()` inside the loop beyond `__syncthreads()`.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`__syncthreads()` at block level is sufficient for this SMEM pattern.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Contention is invisible at low N; atomicAdd cost is O(1) regardless.",
+      "errorType": "wrong_condition",
+      "whyWrong": "At small N contention is low; scaling to large N reveals serialization.",
+      "sourceOrEvidence": "CUDA best practices"
+    }
+  ],
+  "implementationFacts": [
+    "Hardware FP32 atomicAdd introduced with Pascal; FP64 later.",
+    "Best-practice reductions: warp-shuffle → SMEM → single atomic per block."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

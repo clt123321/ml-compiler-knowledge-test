@@ -1,0 +1,50 @@
+{
+  "questionId": "B-CPROP-010",
+  "learningObjective": "Explain how SCCP achieves greater precision than plain constant propagation by combining constant propagation with reachability analysis.",
+  "canonicalClaims": [
+    {
+      "claim": "Sparse Conditional Constant Propagation (SCCP) maintains two lattices — variable values and edge reachability — and propagates constants only along edges proven reachable, yielding higher precision than plain constant propagation on branchy code.",
+      "conditions": [
+        "IR in SSA form.",
+        "Standard SCCP algorithm (Wegman & Zadeck)."
+      ],
+      "nonImplications": [
+        "Does not imply SCCP always outperforms plain propagation; when no conditions are constant, they coincide.",
+        "Does not imply SCCP is unbounded in analysis time; it iterates lattices to fixpoint."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "SCCP chapter" },
+        { "ref": "BOOK:appel", "locator": "SCCP chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Plain constant propagation can skip unreachable branches via heuristics.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Plain constant propagation merges all reaching definitions without proving reachability; it does not use branch conditions.",
+      "sourceOrEvidence": "EAC3 constant propagation chapter"
+    },
+    {
+      "claim": "SCCP differs from plain constant propagation only in loops.",
+      "errorType": "scope_error",
+      "whyWrong": "SCCP's edge-reachability lattice benefits any branchy code where a constant condition prunes an infeasible path.",
+      "sourceOrEvidence": "Appel SCCP chapter"
+    },
+    {
+      "claim": "SCCP defaults to a branch when the condition is not constant.",
+      "errorType": "wrong_condition",
+      "whyWrong": "When the branch condition is non-constant, both successor edges are marked reachable and propagation proceeds as in plain analysis.",
+      "sourceOrEvidence": "Wegman & Zadeck 1991"
+    }
+  ],
+  "implementationFacts": [
+    "SCCP uses two worklists: one for flow edges, one for SSA edges.",
+    "LLVM implements SCCP in llvm/lib/Transforms/Scalar/SCCP.cpp; also IPSCCP for interprocedural.",
+    "Lattice: Undefined ⊥, Constant c, Overdefined ⊤."
+  ],
+  "performanceScenarios": [
+    "SCCP eliminates dead branches based on constant conditions; important for template-heavy or macro-expanded code with lots of compile-time constants."
+  ],
+  "versionSensitivity": "stable_principle"
+}

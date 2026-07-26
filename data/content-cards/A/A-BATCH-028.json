@@ -1,0 +1,51 @@
+{
+  "questionId": "A-BATCH-028",
+  "learningObjective": "Compute the batch size needed to move an LLM decode's linear layer from memory-bound into compute-bound regime on a specific GPU.",
+  "canonicalClaims": [
+    {
+      "claim": "For a weight-shared linear layer (weight streamed once from HBM), arithmetic intensity is approximately equal to the batch dimension B in the small-B, weight-dominated regime; crossing the GPU's ridge point therefore requires B roughly equal to that ridge point in FLOP/byte.",
+      "conditions": [
+        "Activations bytes are small compared to weight bytes (typical for square W with modest B).",
+        "Kernel implementation realizes theoretical AI.",
+        "Ridge point measured for the actual precision path used."
+      ],
+      "nonImplications": [
+        "Does not imply that hitting AI = ridge guarantees achieved peak throughput.",
+        "Does not imply the same B threshold applies across GPUs; H100 has ridge ~2× A100."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Roofline batching analysis" },
+        { "ref": "PAPER:vllm", "locator": "Motivation: memory-bound decode at low batch" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "LLM decode is always compute-bound because Tensor Cores are fast.",
+      "errorType": "kernel_vs_e2e_confusion",
+      "whyWrong": "Decode at B = 1 is a GEMV; HBM bandwidth caps throughput regardless of Tensor Core peak.",
+      "sourceOrEvidence": "vLLM paper motivation"
+    },
+    {
+      "claim": "Required B to reach compute-bound equals the FP16/FP32 Tensor-Core ratio (~16).",
+      "errorType": "definition_confusion",
+      "whyWrong": "The Tensor-Core-vs-CUDA-core density ratio has no direct role in ridge crossing arithmetic.",
+      "sourceOrEvidence": "Roofline definition"
+    },
+    {
+      "claim": "The threshold B for compute-bound is architecture-independent.",
+      "errorType": "hardware_leak",
+      "whyWrong": "The ridge point differs by GPU (A100 ~156, H100 ~295 for FP16), so the required B differs proportionally.",
+      "sourceOrEvidence": "NVIDIA whitepapers"
+    }
+  ],
+  "implementationFacts": [
+    "A100 SXM FP16 ridge ≈ 156 FLOP/byte.",
+    "H100 SXM5 FP16 ridge ≈ 295 FLOP/byte; FP8 ridge ≈ 590 FLOP/byte.",
+    "AI ≈ B in weight-dominated regime, saturating at AI ~ K/2 for very large B."
+  ],
+  "performanceScenarios": [
+    "vLLM and similar serving systems use continuous batching to aggregate concurrent requests, raising effective B and moving decode toward compute-bound behavior."
+  ],
+  "versionSensitivity": "stable_principle"
+}

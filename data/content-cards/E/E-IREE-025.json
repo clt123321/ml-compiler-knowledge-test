@@ -1,0 +1,49 @@
+{
+  "questionId": "E-IREE-025",
+  "learningObjective": "Understand IREE's MLIR-based AOT compiler + runtime with HAL abstraction.",
+  "canonicalClaims": [
+    {
+      "claim": "IREE compiles input MLIR dialects (StableHLO / linalg / tosa) through target-specific pipelines into a serialized VM bytecode module (`.vmfb`) plus device artifacts; the IREE runtime executes it via a HAL supporting CPU, Vulkan, CUDA, Metal, ROCm.",
+      "conditions": ["IREE 2024+ toolchain."],
+      "nonImplications": [
+        "Does not imply IREE always outperforms vendor libraries.",
+        "Does not imply IREE is a single monolithic binary."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:iree", "locator": "IREE architecture" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "IREE is a Python interpreter for StableHLO.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is an AOT compiler + native runtime.",
+      "sourceOrEvidence": "iree.dev"
+    },
+    {
+      "claim": "IREE is a thin wrapper around vendor kernel libraries.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It runs a full MLIR pipeline and generates code (SPIR-V, LLVM, PTX).",
+      "sourceOrEvidence": "iree.dev"
+    },
+    {
+      "claim": "IREE only targets mobile/edge devices.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Server GPUs (A100/H100) via CUDA/HIP backends are also targets.",
+      "sourceOrEvidence": "iree.dev"
+    },
+    {
+      "claim": "IREE requires a JIT compile step at every model invocation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AOT is the primary path; the compiled `.vmfb` is loaded and dispatched.",
+      "sourceOrEvidence": "iree.dev"
+    }
+  ],
+  "implementationFacts": [
+    "Input dialects: StableHLO / TOSA / linalg / Torch-MLIR.",
+    "HAL backends: CPU (LLVM), Vulkan (SPIR-V), CUDA, Metal, ROCm."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

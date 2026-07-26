@@ -1,0 +1,96 @@
+{
+  "id": "F-OCC-030",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Occupancy limiters — registers, SMEM, block size",
+  "learningObjective": "Understand what limits occupancy in practice: registers per thread, shared memory per block, and threads per block.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "65536 32-bit regs/SM, 164 KB SMEM/SM, 2048 threads/SM (A100)"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "On A100 (sm_80: 65536 registers/SM, 164 KB SMEM/SM configurable, max 2048 threads/SM, max 32 blocks/SM), a kernel uses 96 registers per thread, 32 KB SMEM per block, and 256 threads per block. Which statement about the resulting occupancy per SM is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The compiler automatically spills registers to prevent register pressure from limiting occupancy; therefore, the effective occupancy is 100% (8 blocks × 256 threads = 2048)."
+    },
+    {
+      "id": "B",
+      "text": "Occupancy is limited by SMEM: 164 KB / 32 KB = 5 blocks. Registers and thread count are secondary. Actual occupancy is 5 * 256 / 2048 = 62.5%."
+    },
+    {
+      "id": "C",
+      "text": "Registers per SM cap: 65536 / (96 * 256) = 2.66 → 2 blocks. SMEM per SM cap: 164 / 32 = 5.12 → 5 blocks. Thread-count cap: 2048 / 256 = 8 blocks. Block-count cap: 32 blocks. The binding constraint is registers → 2 blocks per SM → 512 active threads → 25% occupancy (relative to 2048 threads/SM peak)."
+    },
+    {
+      "id": "D",
+      "text": "Occupancy is determined solely by block size: `2048 / 256 = 8` blocks per SM = 100% occupancy; registers and SMEM only affect performance within a block, not occupancy."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Occupancy = min(all resource limits). A100: (i) Registers/SM = 65536; per-block regs = 96 * 256 = 24576; SMs can hold floor(65536/24576) = 2 blocks. (ii) SMEM per SM ≤ 164 KB; per-block SMEM 32 KB → floor(164/32) = 5 blocks. (iii) Thread count: floor(2048/256) = 8. (iv) Block count: 32. The minimum is 2 (register-bound), so 2 blocks × 256 = 512 active threads → 25% relative occupancy. Register spill (choice C) is a real behavior, but nvcc does not silently do it just to boost occupancy — the user controls via `-maxrregcount` or `__launch_bounds__`; and spill increases traffic, hurting performance.",
+  "optionExplanations": {
+    "C": "Correct: register-bound at 2 blocks/SM, 25% occupancy.",
+    "B": "Wrong: registers bind before SMEM in this case.",
+    "A": "Wrong: nvcc does not auto-spill for occupancy; user must opt in.",
+    "D": "Wrong: block size is only one of several occupancy limiters."
+  },
+  "assumptions": [
+    "A100 (sm_80) hardware limits: 65536 regs/SM, 164 KB SMEM/SM (max carveout), 2048 threads/SM, 32 blocks/SM.",
+    "One kernel resident type; no concurrent kernels."
+  ],
+  "nonImplications": [
+    "Does not imply low occupancy always means low performance; latency-hiding is one goal but not the only.",
+    "Does not imply raising occupancy always helps; higher occupancy can hurt when it forces smaller tiles."
+  ],
+  "misconceptionTags": [
+    "occupancy_smem_only_myth",
+    "auto_register_spill_myth"
+  ],
+  "distractorRationales": {
+    "B": "Ignores register cap.",
+    "A": "Fabricates automatic register spilling.",
+    "D": "Ignores register/SMEM limits."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Compute Capability 8.0 resource table; Occupancy Calculator",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Occupancy chapter",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "A100 occupancy calculation with given register/SMEM/thread limits",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-OCC-030.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

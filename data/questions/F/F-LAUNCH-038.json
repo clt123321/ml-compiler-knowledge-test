@@ -1,0 +1,62 @@
+{
+  "id": "F-LAUNCH-038",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Launch configuration limits",
+  "learningObjective": "Reason about the fixed hardware limits on grid and block dimensions and identify which configurations are legal.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100) and generally similar to modern architectures",
+    "device": "GPU",
+    "requiredFeatures": ["1024 threads/block max; 65535 grid.y/z max; 2^31 - 1 grid.x max on sm_60+"]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "For a compute-capability 8.0 (A100) GPU, which of the following kernel launch configurations is legal?",
+  "options": [
+    { "id": "A", "text": "`gridDim = (65535, 65535, 65535)`, `blockDim = (32, 32, 1)`. `blockDim.x * blockDim.y * blockDim.z = 1024 ≤ 1024` and all grid dims are within the 65535 (y/z) / 2^31-1 (x) hardware maximum on sm_80; this is a legal launch." },
+    { "id": "B", "text": "`gridDim = (1, 1, 1)`, `blockDim = (2048, 1, 1)`. This is legal because a single block can span up to 4096 threads on sm_80 as long as no shared memory is used." },
+    { "id": "C", "text": "`gridDim = (1000, 1, 1)`, `blockDim = (33, 32, 1)`. Even though `33 * 32 = 1056 > 1024`, the CUDA runtime silently truncates block dimensions to the nearest multiple of 32, so the launch succeeds with `blockDim.x = 32`." },
+    { "id": "D", "text": "Grid dimensions on Ampere are hard-capped at 65535 across x, y, z; any request larger than 65535 in any dimension is rejected. This is why one-dimensional grids are always the safest choice." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "On compute capability 8.0 (A100): max threads per block = 1024; max blockDim = (1024, 1024, 64); max gridDim.x = 2^31 - 1 (~2.1B); max gridDim.y = max gridDim.z = 65535. A: `32*32*1 = 1024` (at the limit) and grid dims fit. Legal. B: `2048 > 1024`, exceeds threads-per-block cap; illegal. C: nvcc/runtime does not silently truncate; the launch returns an error at `cudaGetLastError`. D: gridDim.x is not capped at 65535 on sm_60+; it is capped at 2^31 - 1.",
+  "optionExplanations": {
+    "A": "Correct: at the block-threads limit and within grid dim limits.",
+    "B": "Wrong: 2048 exceeds 1024 threads-per-block cap.",
+    "C": "Wrong: no silent truncation; launch fails.",
+    "D": "Wrong: gridDim.x cap is 2^31-1 on sm_60+."
+  },
+  "assumptions": [
+    "sm_80 (A100) launch limits as documented in CUDA guide."
+  ],
+  "nonImplications": [
+    "Does not imply the maximum legal launch is efficient; huge grids may hit resource contention.",
+    "Does not imply block dim limits are architecture-uniform; some architectures have lower caps."
+  ],
+  "misconceptionTags": ["threads_per_block_myth", "grid_size_65535_cap_myth"],
+  "distractorRationales": {
+    "B": "Wrong threads-per-block claim.",
+    "C": "Fabricates silent truncation.",
+    "D": "Wrong grid dim cap."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Compute Capability 8.0 launch limits table", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-LAUNCH-038.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

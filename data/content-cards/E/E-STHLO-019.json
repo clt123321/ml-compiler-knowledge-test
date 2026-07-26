@@ -1,0 +1,49 @@
+{
+  "questionId": "E-STHLO-019",
+  "learningObjective": "Explain StableHLO's role as a portable operator set between frameworks and compilers.",
+  "canonicalClaims": [
+    {
+      "claim": "StableHLO is a versioned MLIR dialect with a formal specification that serves as a portability contract between ML framework frontends and compiler backends, with forward/backward compatibility guarantees to decouple framework and compiler release cycles.",
+      "conditions": ["OpenXLA StableHLO project as documented."],
+      "nonImplications": [
+        "Does not imply StableHLO covers every op.",
+        "Does not imply consumers can skip a lowering step."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "StableHLO spec, compatibility" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "StableHLO is a runtime that executes models directly.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a spec/IR consumed by downstream compilers.",
+      "sourceOrEvidence": "OpenXLA StableHLO doc"
+    },
+    {
+      "claim": "StableHLO is a Python DSL, not an IR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is an MLIR dialect and a serializable IR.",
+      "sourceOrEvidence": "OpenXLA StableHLO doc"
+    },
+    {
+      "claim": "StableHLO is a subset of TensorFlow SavedModel.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Different scopes: SavedModel is a training/serving container; StableHLO is an operator IR.",
+      "sourceOrEvidence": "OpenXLA docs"
+    },
+    {
+      "claim": "StableHLO guarantees exact numerical equality across compilers.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The spec covers semantics with tolerance; different backends may produce numerically different results within spec-allowed bounds.",
+      "sourceOrEvidence": "StableHLO spec"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR dialect: `stablehlo.*`.",
+    "Versioning: major/minor with documented compatibility windows."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

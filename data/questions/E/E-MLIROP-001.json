@@ -1,0 +1,62 @@
+{
+  "id": "E-MLIROP-001",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "MLIR / Operation / Region / Block / Value / Type / Attribute",
+  "learningObjective": "Distinguish the roles of Operation, Region, Block, Value, Type, and Attribute in the MLIR structural model, and identify which entity carries compile-time constants vs. SSA runtime values.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "In MLIR's structural model, which statement about Operation, Region, Block, Value, Type, and Attribute is correct?",
+  "options": [
+    { "id": "A", "text": "An Operation may contain zero or more Regions; each Region contains one or more Blocks in a CFG; SSA Values flow between Operations at runtime, while Attributes carry compile-time constant metadata attached to an Operation." },
+    { "id": "B", "text": "Attributes are runtime SSA values attached to an Operation via a special dataflow edge; they can be mutated during execution and are the primary way MLIR represents dynamic scalars inside a Region." },
+    { "id": "C", "text": "A Block is the top-level unit of MLIR IR; each Block owns exactly one Region, and Operations exist inside a Region only as an implementation-level detail invisible to Pass writers." },
+    { "id": "D", "text": "In MLIR every Value must have both a Type and an Attribute; without the paired Attribute the Type is undefined, which is why `arith.constant` is modelled as a pair `(Type, Attribute)` on a Value edge rather than on the Operation." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "MLIR's core structural model: an Operation may hold zero or more Regions; each Region is a list of Blocks (SSACFG or Graph region); Blocks contain Operations; SSA Values are produced by Operations and consumed by others at runtime; Attributes are compile-time constant data attached to Operations (e.g., integer literals, symbol names, dictionaries). Attributes are not SSA values and cannot flow at runtime. This layering (Op > Region > Block > Op ...) is central to MLIR's design.",
+  "optionExplanations": {
+    "A": "Correct: matches the MLIR LangRef definition of the nested Op/Region/Block containment and the SSA Value vs. Attribute distinction.",
+    "B": "Wrong: Attributes are compile-time constant metadata; they are not SSA values and are not mutated at runtime.",
+    "C": "Wrong: Operations are the top-level unit; a ModuleOp itself is an Op with a Region. Blocks live inside Regions, not the other way around.",
+    "D": "Wrong: Values have Types; Attributes are attached to Operations. `arith.constant` carries a `value` Attribute on the Op and produces a Value of the given Type; there is no per-Value Attribute pair."
+  },
+  "assumptions": [
+    "MLIR core dialect structure as defined in the MLIR LangRef."
+  ],
+  "nonImplications": [
+    "Does not imply that every Op must have Regions; leaf Ops (e.g., `arith.addi`) have zero Regions.",
+    "Does not imply that Regions are always SSA-CFG regions; MLIR also supports Graph regions."
+  ],
+  "misconceptionTags": ["attribute_as_value_confusion", "block_as_top_level"],
+  "distractorRationales": {
+    "B": "Confuses Attribute (compile-time metadata) with Value (SSA runtime dataflow).",
+    "C": "Inverts the containment hierarchy; the top-level is an Op (ModuleOp).",
+    "D": "Wrong claim that every Value carries an Attribute."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:mlir-langref", "locator": "Structure of MLIR — Operations, Regions, Blocks, Values, Types, Attributes", "supports": ["A"] },
+    { "ref": "PAPER:mlir", "locator": "MLIR CGO 2021 — core IR model", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-MLIROP-001.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

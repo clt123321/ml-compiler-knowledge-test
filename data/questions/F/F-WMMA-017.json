@@ -1,0 +1,89 @@
+{
+  "id": "F-WMMA-017",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / WMMA C++ API vs mma.sync PTX",
+  "learningObjective": "Distinguish the CUDA C++ WMMA API from raw mma.sync PTX and understand which layer each occupies.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Volta (sm_70) and later",
+    "device": "GPU",
+    "requiredFeatures": [
+      "nvcuda::wmma; PTX mma.sync"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "compilerVersionScope": "CUDA 11+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about `nvcuda::wmma` (CUDA C++ API) vs raw `mma.sync` (PTX) is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "`wmma` is Volta-only; on Ampere+ users must switch to a completely different API called `cuda::mma`, which is unrelated to `nvcuda::wmma`."
+    },
+    {
+      "id": "B",
+      "text": "`wmma` and `mma.sync` are mutually exclusive: a kernel using `wmma` cannot invoke `mma.sync`, and vice versa; the compiler will reject any mixture."
+    },
+    {
+      "id": "C",
+      "text": "`nvcuda::wmma` is a higher-level C++ template API (fragment types, load/store/mma functions) that abstracts the fragment layout and typically compiles down to sequences of `mma.sync` and `ldmatrix` PTX; using raw `mma.sync` gives finer control over shape, layout, and fragment reuse, and is the path used by high-performance libraries like CUTLASS."
+    },
+    {
+      "id": "D",
+      "text": "`mma.sync` PTX exists only for debugging; production kernels are required to use `wmma` because PTX is not guaranteed to be stable across CUDA versions."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "`nvcuda::wmma` (in `<mma.h>`) is a C++ template API providing `fragment<>` types, `load_matrix_sync`, `store_matrix_sync`, `mma_sync` free functions, and shape templates. It is a high-level abstraction that the compiler lowers to `mma.sync` + `ldmatrix` PTX. Raw `mma.sync` (via inline PTX or PTX intrinsics) gives more control — used by CUTLASS and other libraries for shape/layout combinations not directly exposed by wmma. Both are supported across Volta+; they can be mixed. PTX is a stable virtual ISA.",
+  "optionExplanations": {
+    "C": "Correct: two layers of the same abstraction; wmma → mma.sync at lowering.",
+    "B": "Wrong: mixing is allowed.",
+    "A": "Wrong: wmma continues to work on Ampere and later; it lowers to newer mma shapes.",
+    "D": "Wrong: PTX is a stable abstraction; production libraries use it heavily."
+  },
+  "assumptions": [
+    "CUDA 11+ toolchain."
+  ],
+  "nonImplications": [
+    "Does not imply wmma exposes every mma shape; some shapes are only accessible via raw PTX.",
+    "Does not imply raw PTX is always faster; the compiler often generates equivalent code from wmma."
+  ],
+  "misconceptionTags": [
+    "wmma_mma_exclusive_myth",
+    "wmma_volta_only_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates mutual exclusivity.",
+    "A": "Wrong claim about API discontinuation.",
+    "D": "Wrong claim about PTX instability."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Warp Matrix Functions (wmma) and PTX mma.sync",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-WMMA-017.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

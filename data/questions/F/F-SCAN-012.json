@@ -1,0 +1,110 @@
+{
+  "id": "F-SCAN-012",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Prefix scan (Hillis-Steele vs Blelloch)",
+  "learningObjective": "Distinguish work-inefficient (Hillis-Steele) from work-efficient (Blelloch) parallel prefix-scan algorithms.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "sm_70+",
+    "device": "GPU",
+    "requiredFeatures": [
+      "shared memory"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "int32"
+    ],
+    "layouts": [
+      "contiguous"
+    ]
+  },
+  "stem": "Consider the two parallel inclusive-scan patterns below over a warp/block of N=32 threads. Which statement about the two algorithms is correct?",
+  "codeSnippet": "// Hillis-Steele (inclusive scan, log N steps, N*log N work)\n// for offset = 1, 2, 4, 8, 16:\n//     __syncthreads();\n//     if (tid >= offset)  temp = data[tid] + data[tid - offset];\n//     __syncthreads();\n//     if (tid >= offset)  data[tid] = temp;\n\n// Blelloch (up-sweep + down-sweep, 2 log N steps, ~2N work)\n// up-sweep:\n//   for stride = 1, 2, 4, 8:\n//     if ((tid+1) % (2*stride) == 0) data[tid] += data[tid - stride];\n// down-sweep:\n//   data[N-1] = 0  (for exclusive scan)\n//   for stride = 8, 4, 2, 1: reverse pattern with swap",
+  "options": [
+    {
+      "id": "A",
+      "text": "Blelloch has depth O(N/2) and work O(N); it is faster than Hillis-Steele on serial architectures but not on GPUs, where Hillis-Steele's O(N log N) work is preferred."
+    },
+    {
+      "id": "B",
+      "text": "Both algorithms have identical work and depth; the choice between them is purely stylistic and yields identical performance on all NVIDIA architectures."
+    },
+    {
+      "id": "C",
+      "text": "Hillis-Steele produces the correct output only when the reduction operator is commutative; Blelloch works for any operator. This is why Hillis-Steele is deprecated for FP addition (non-associative)."
+    },
+    {
+      "id": "D",
+      "text": "Hillis-Steele has depth O(log N) but does O(N log N) work; Blelloch has depth O(log N) and does O(N) work. Blelloch is 'work-efficient': asymptotically fewer operations, but its access pattern is more complex and often needs bank-conflict-avoiding padding on shared memory."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Hillis-Steele scan: at each of log N steps, thread `t` adds the value from `t - offset` — total work per element is O(log N), so total work is O(N log N). Blelloch (balanced tree) scan: up-sweep builds partial sums, down-sweep propagates prefixes; both phases have log N depth, but each thread participates in only a fraction of the tree — total work is O(N). On GPUs, Blelloch is 'work-efficient' (fewer ops), but its non-uniform access pattern requires care with shared-memory bank conflicts (padding trick). Hillis-Steele is simpler and can win in practice on small N due to its uniform access pattern.",
+  "optionExplanations": {
+    "D": "Correct: work vs depth trade-off; Blelloch is work-efficient but pattern-heavier.",
+    "B": "Wrong: work costs differ (O(N log N) vs O(N)).",
+    "C": "Wrong: both require associativity; commutativity is not the differentiator.",
+    "A": "Wrong: Blelloch depth is O(log N), not O(N)."
+  },
+  "assumptions": [
+    "Both algorithms use shared memory with `__syncthreads()`.",
+    "N is a power of two."
+  ],
+  "nonImplications": [
+    "Does not imply Blelloch is always faster on real GPU workloads.",
+    "Does not imply Hillis-Steele is incorrect for FP; it is correct but non-associative reductions have order-dependent results either way."
+  ],
+  "misconceptionTags": [
+    "scan_work_depth_confusion",
+    "commutative_vs_associative"
+  ],
+  "distractorRationales": {
+    "B": "Ignores different work complexities.",
+    "C": "Confuses commutativity with associativity.",
+    "A": "Wrong Blelloch depth."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Scan/Prefix-sum chapter — Hillis-Steele vs Blelloch",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Parallel prefix sum background",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Asymptotic work/depth of parallel scan algorithms",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-SCAN-012.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

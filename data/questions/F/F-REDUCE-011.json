@@ -1,0 +1,72 @@
+{
+  "id": "F-REDUCE-011",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Warp-level reduction using shuffle intrinsics",
+  "learningObjective": "Reason about a canonical CUDA warp-level reduction using __shfl_down_sync and identify why the shuffle-tree pattern is required.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Volta (sm_70) or newer with independent thread scheduling",
+    "device": "GPU",
+    "requiredFeatures": ["__shfl_down_sync intrinsic; warpSize=32"]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "compilerVersionScope": "CUDA 11+ (any modern nvcc)",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [["N"]],
+    "dtypes": ["float32"],
+    "layouts": ["contiguous"]
+  },
+  "stem": "Consider the following CUDA warp-reduction snippet inside a kernel where every thread of a warp holds a partial value in `val`. Which statement is correct?",
+  "codeSnippet": "// sm_70+; warpSize == 32\n__device__ __forceinline__ float warp_reduce_sum(float val) {\n    unsigned mask = 0xffffffff;         // all 32 lanes active\n    for (int offset = 16; offset > 0; offset >>= 1) {\n        val += __shfl_down_sync(mask, val, offset);\n    }\n    return val;                          // lane 0 holds the warp-wide sum\n}",
+  "options": [
+    { "id": "A", "text": "After the loop, lane 0 holds the sum of all 32 lanes' initial values via a log2(32)=5-step shuffle tree; other lanes hold partial sums that may not equal the total, so consumers must read the result only from lane 0 (or broadcast via `__shfl_sync`)." },
+    { "id": "B", "text": "After the loop, every lane holds the full warp sum because `__shfl_down_sync` broadcasts the result to all lanes at each step." },
+    { "id": "C", "text": "The reduction is incorrect on Volta+ because Independent Thread Scheduling makes lanes potentially diverge; the correct pattern must use `__syncwarp()` between every shuffle to guarantee lane convergence." },
+    { "id": "D", "text": "`__shfl_down_sync(mask, val, offset)` is a memory operation that reads from shared memory addressed by `offset`; using it for reductions is inefficient compared to atomic operations in shared memory." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "This is the canonical warp-shuffle reduction. `__shfl_down_sync(mask, val, offset)` reads `val` from the lane `laneid + offset` (returning unspecified value if that lane is inactive under `mask`). With the tree pattern `offset=16,8,4,2,1`, lane 0 accumulates the sum of all 32 lanes in 5 steps. Other lanes end with partial sums whose exact value depends on their position — only lane 0 is guaranteed to hold the total. Shuffles are register-to-register within the warp (no SMEM), and `__shfl_*_sync` variants perform the required convergence (`_sync` is precisely why the loop is safe on Volta+ ITS).",
+  "optionExplanations": {
+    "A": "Correct: canonical warp reduction; result at lane 0 only.",
+    "B": "Wrong: `__shfl_down` produces a partial sum on non-zero lanes.",
+    "C": "Wrong: `_sync` variants handle convergence; no extra `__syncwarp()` is needed inside this loop.",
+    "D": "Wrong: shuffles are register-level, not memory operations."
+  },
+  "assumptions": [
+    "warpSize=32 on NVIDIA architectures.",
+    "All 32 lanes are active (mask=0xffffffff)."
+  ],
+  "nonImplications": [
+    "Does not imply the same code is correct on architectures with different warp sizes.",
+    "Does not imply shuffle-only reductions are always fastest; block-level reductions often need SMEM staging beyond one warp."
+  ],
+  "misconceptionTags": ["shfl_broadcast_myth", "shfl_as_memory_op_myth"],
+  "distractorRationales": {
+    "B": "Confuses `shfl_down` with an all-lane broadcast.",
+    "C": "Overstates the need for extra syncs when `_sync` variants are used.",
+    "D": "Confuses register-shuffle with memory access."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Warp shuffle functions __shfl_down_sync semantics", "supports": ["A"] },
+    { "ref": "BOOK:pmpp4", "locator": "Reduction chapter — warp-level shuffle reductions", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-REDUCE-011.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,54 @@
+{
+  "questionId": "H-QAT-033",
+  "learningObjective": "Explain the role of the straight-through estimator (STE) in QAT and its limitations.",
+  "canonicalClaims": [
+    {
+      "claim": "STE approximates the gradient of `round` inside the clamp region as identity, letting gradients flow through fake-quant ops during QAT; it works well for INT8 but its approximation noise grows at very low bit widths, motivating alternatives like PACT and LSQ.",
+      "conditions": [
+        "The forward pass uses fake-quant ops (quant → clamp → dequant).",
+        "Bit width is not extremely small (INT8 or higher works well)."
+      ],
+      "nonImplications": [
+        "Does not imply STE closes the QAT-to-FP-training accuracy gap in general.",
+        "Does not imply LSQ / PACT dominate STE at every bit width — for INT8 they are often on par."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "QAT and STE" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The derivative of `round` equals 1 inside the clamp region; STE is exact, not approximate.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The true derivative of `round` is zero almost everywhere; STE substitutes 1 as a surrogate, not as an identity.",
+      "sourceOrEvidence": "Bengio et al. STE literature"
+    },
+    {
+      "claim": "STE is applied during inference to accelerate quantized kernels.",
+      "errorType": "scope_error",
+      "whyWrong": "STE is a training-time surrogate; inference kernels perform actual quantization, not fake-quant.",
+      "sourceOrEvidence": "PyTorch quantization workflow"
+    },
+    {
+      "claim": "If a training input lands exactly on a quantization boundary, STE produces undefined gradients and training must abort.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Boundary values are rounded like any other; STE simply propagates the identity gradient inside the clamp region.",
+      "sourceOrEvidence": "Fake-quant forward implementation"
+    },
+    {
+      "claim": "STE cannot support INT4 QAT because the approximation error becomes unbounded.",
+      "errorType": "overgeneralization",
+      "whyWrong": "STE works at INT4 with degraded but usable performance; alternatives like LSQ / PACT close the remaining gap.",
+      "sourceOrEvidence": "PACT / LSQ papers"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch's `FakeQuantize` module uses STE via custom autograd Function.",
+    "LSQ (Learned Step Size Quantization) learns the step size as a trainable parameter."
+  ],
+  "performanceScenarios": [
+    "ResNet-50 INT8 QAT with STE typically loses <0.5% top-1 vs FP32; INT4 QAT with STE loses several % without LSQ/PACT augmentation."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "G-FUSION-003",
+  "type": "multiple",
+  "module": "graph_opt_schedule",
+  "subtopic": "Operator fusion / Fusion boundary",
+  "learningObjective": "Enumerate boundary conditions that block or complicate operator fusion in a deep-learning compiler.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following are legitimate fusion-boundary conditions that a deep-learning compiler must respect? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "The producer and consumer are placed on different devices (e.g., CPU producer, GPU consumer); crossing the device boundary requires an explicit copy op and cannot be absorbed into a single kernel." },
+    { "id": "B", "text": "The producer performs an in-place mutation of a tensor that is aliased by another live consumer; fusing across such a mutation would violate the observed side-effect ordering." },
+    { "id": "C", "text": "The producer and consumer have iteration spaces of very different rank/extent (e.g., a 4D pointwise op followed by a scalar reduction to a 0-D tensor); the compiler must decide whether a common loop nest is expressible." },
+    { "id": "D", "text": "The producer's output tensor is explicitly marked as a graph output that the caller reads; fusing away its materialization would violate the API contract." },
+    { "id": "E", "text": "The producer and consumer both use FP32 accumulation; fusing FP32 ops is forbidden because register pressure always grows unboundedly." },
+    { "id": "F", "text": "The producer is a pointwise op and the consumer is a pointwise op with the same shape; sharing an iteration space and being pure, they must not be fused because pointwise-pointwise fusion is disallowed." }
+  ],
+  "correctAnswers": ["A", "B", "D"],
+  "explanation": "A, B, D are canonical fusion boundaries. Device boundaries require a data-transfer op and cannot be absorbed into one kernel. In-place mutation with aliased live consumers must preserve the mutation ordering; fusing across it can reorder reads and writes. Explicit graph outputs are contractually observable and cannot be optimized away. C is not a hard boundary — different iteration extents (e.g., pointwise → reduction) are routinely fused when the compiler can express a common nest; it may complicate scheduling but is not a boundary in itself. E is incorrect because FP32 accumulation says nothing about legality; register pressure is a heuristic concern, not a legality one. F is the opposite of the truth: pointwise-pointwise fusion is the most common fusion pattern.",
+  "optionExplanations": {
+    "A": "Correct: device boundaries require explicit transfer ops.",
+    "B": "Correct: aliased in-place writes constrain reordering.",
+    "C": "Wrong: differing extents complicate scheduling but do not form a hard boundary; pointwise→reduction is a common fused pattern.",
+    "D": "Correct: explicit outputs are observable and cannot be fused away.",
+    "E": "Wrong: FP32 usage is not a legality condition; register pressure is a heuristic.",
+    "F": "Wrong: pointwise-pointwise fusion is the canonical vertical/horizontal fusion pattern."
+  },
+  "assumptions": [
+    "The IR distinguishes device placement, mutation/aliasing, and graph outputs."
+  ],
+  "nonImplications": [
+    "Does not imply that heuristics such as register-pressure limits are illegitimate; they exist but are performance concerns, not legality boundaries."
+  ],
+  "misconceptionTags": ["fusion_boundary_confusion", "pointwise_pointwise_forbidden"],
+  "distractorRationales": {
+    "C": "Confuses scheduling difficulty with a hard legality boundary.",
+    "E": "Confuses register-pressure heuristics with legality.",
+    "F": "Reverses reality — pointwise-pointwise is the most common fusion."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:tvm", "locator": "Section 3: fusion pattern rules and opacity", "supports": ["A", "B", "D"] },
+    { "ref": "DOC:torch-inductor", "locator": "Scheduler / mutation and aliasing constraints", "supports": ["A", "B", "D"] },
+    { "ref": "DOC:tvm-relax", "locator": "Relax fuse-ops pass; device and output constraints", "supports": ["A", "B", "D"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/G/G-FUSION-003.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

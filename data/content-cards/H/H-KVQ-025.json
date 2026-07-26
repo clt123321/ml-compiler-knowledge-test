@@ -1,0 +1,56 @@
+{
+  "questionId": "H-KVQ-025",
+  "learningObjective": "Precisely define the goal of KV cache quantization in LLM serving.",
+  "canonicalClaims": [
+    {
+      "claim": "KV cache quantization targets the per-request Key/Value tensors accumulated across decode steps, reducing GPU memory footprint (enabling longer contexts / larger batches) and, when the attention kernel supports it, reducing attention memory bandwidth.",
+      "conditions": [
+        "The attention implementation supports reading quantized KVs.",
+        "The workload is memory-limited at the KV cache axis (typical for long context or high concurrency)."
+      ],
+      "nonImplications": [
+        "Does not imply zero accuracy cost.",
+        "Does not target model weights or input embeddings."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "KV cache quantization overview" },
+        { "ref": "BOOK:sze-eff", "locator": "KV cache memory analysis" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "KV cache quantization reduces attention compute by using INT8 Tensor Cores.",
+      "errorType": "scope_error",
+      "whyWrong": "KV compute (K^T Q, softmax, PV) is a small fraction of attention FLOPs; the target is memory footprint and bandwidth.",
+      "sourceOrEvidence": "FlashAttention / vLLM profiling"
+    },
+    {
+      "claim": "KV cache quantization is another name for model weight quantization applied to the attention projection layers.",
+      "errorType": "definition_confusion",
+      "whyWrong": "KV cache is per-request runtime data; model weight quantization is offline.",
+      "sourceOrEvidence": "vLLM architecture docs"
+    },
+    {
+      "claim": "KV cache quantization compresses input token embeddings before they enter the transformer.",
+      "errorType": "scope_error",
+      "whyWrong": "Input embeddings are separate; KV cache is generated during decoding by K/V projections.",
+      "sourceOrEvidence": "Transformer architecture docs"
+    },
+    {
+      "claim": "KV cache quantization has no memory-footprint benefit at batch=1; only at batch>1.",
+      "errorType": "wrong_condition",
+      "whyWrong": "At batch=1 with long context (e.g., 32K), KV cache can occupy the majority of GPU memory; quantization is beneficial even at batch=1.",
+      "sourceOrEvidence": "vLLM long-context tuning"
+    }
+  ],
+  "implementationFacts": [
+    "TensorRT-LLM supports FP8 and INT8 KV cache quantization.",
+    "vLLM added INT8 / FP8 KV cache options over 2024.",
+    "PagedAttention already reduces KV memory fragmentation; quantization is orthogonal and complementary."
+  ],
+  "performanceScenarios": [
+    "LLaMA-70B at 32K context: FP16 KV cache per request ~40 GB; INT8 halves this."
+  ],
+  "versionSensitivity": "stable_principle"
+}

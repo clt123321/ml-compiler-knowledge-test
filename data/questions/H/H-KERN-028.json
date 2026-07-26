@@ -1,0 +1,66 @@
+{
+  "id": "H-KERN-028",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "Kernel availability / INT4 across GPU generations",
+  "learningObjective": "Identify which GPU generations support which quantized Tensor Core precisions and what falls back to software-emulated kernels.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Turing / Ampere / Hopper Tensor Cores",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "CUDA / cuBLAS / CUTLASS",
+    "frameworkVersionScope": "CUDA 12.x",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "For quantized inference kernels, which of the following are TRUE about hardware / kernel availability across NVIDIA GPU generations? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "INT8 Tensor Cores are supported on Turing (sm_75), Ampere (sm_80/86), Ada (sm_89), and Hopper (sm_90); INT8 GEMM is broadly available via cuBLAS / CUTLASS on all these." },
+    { "id": "B", "text": "FP8 Tensor Cores debuted on Hopper (sm_90) and Ada (sm_89); Ampere (sm_80) does NOT support FP8 Tensor Cores, and W8A8-FP8 kernels on Ampere fall back to FP16 or software emulation." },
+    { "id": "C", "text": "For W4A16 kernels, the INT4 weights are typically dequantized to FP16/BF16 in registers and consumed by FP16/BF16 Tensor Cores; this means W4A16 works on any GPU with FP16/BF16 Tensor Cores (Ampere+), regardless of whether that GPU has 'INT4 Tensor Core' hardware." },
+    { "id": "D", "text": "Because INT4 was deprecated in Hopper's Tensor Cores, W4A16 kernels are slower on H100 than on A100." },
+    { "id": "E", "text": "Any quantized precision that lacks a native Tensor Core kernel can still deliver speedup as long as the compiler can generate a software-emulated INT/FP kernel on CUDA cores." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A: INT8 Tensor Cores exist from Turing onward; supported by cuBLAS Lt and CUTLASS. B: FP8 debuted on Hopper (and Ada with the sm_89 subset); Ampere lacks FP8 Tensor Cores, so FP8-labeled kernels there are fallbacks. C: W4A16 kernels dequant INT4→FP16 in registers and use FP16 TCs; INT4 Tensor Core hardware is not required. D is misleading: while the H100 architecture does deprioritize dedicated INT4 Tensor Core paths that existed on Turing/Ampere, W4A16 kernels do not rely on INT4 TC and remain fast on H100 (through FP16/FP8 Tensor Cores). E is false: CUDA-core INT/FP emulation is often SLOWER than the FP16 baseline it tries to beat; 'as long as a kernel exists' is not the same as 'delivers speedup'.",
+  "optionExplanations": {
+    "A": "Correct: INT8 TC availability across generations.",
+    "B": "Correct: FP8 TC generational availability.",
+    "C": "Correct: W4A16 uses FP16 TCs via dequant-in-register.",
+    "D": "Wrong: W4A16 does not rely on INT4 TC.",
+    "E": "Wrong: fallback kernels are often slower, not faster."
+  },
+  "assumptions": [
+    "Standard NVIDIA GPU generation naming (Turing sm_75, Ampere sm_80/86, Ada sm_89, Hopper sm_90)."
+  ],
+  "nonImplications": [
+    "Does not imply INT8 has the same peak throughput on every generation — Hopper INT8 is faster per SM than Turing INT8.",
+    "Does not imply all frameworks expose all precisions — some may require build flags or specific runtime versions."
+  ],
+  "misconceptionTags": ["fp8_on_ampere", "w4a16_needs_int4_tc"],
+  "distractorRationales": {
+    "D": "Ties W4A16 speed to nonexistent INT4 TC dependence.",
+    "E": "Confuses kernel existence with speedup."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Tensor Core precision support by compute capability", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:pmpp4", "locator": "Tensor Core generational overview", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Tensor Core precision availability across NVIDIA GPU generations",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/H/H-KERN-028.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

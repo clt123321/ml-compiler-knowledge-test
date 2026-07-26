@@ -1,0 +1,61 @@
+{
+  "id": "E-ONNXSHP-028",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "ONNX / Shape inference — dynamic vs static shapes",
+  "learningObjective": "Understand ONNX shape inference and how dynamic dimensions are represented in a model.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "ONNX",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about ONNX shape inference and dynamic dimensions is correct?",
+  "options": [
+    { "id": "A", "text": "ONNX supports symbolic (named) dynamic dimensions on tensor shapes; `onnx.shape_inference` propagates concrete or symbolic shape/dtype information through the graph where op rules allow it, and unresolved dimensions remain symbolic — consumers use this info for planning but do not require full staticity." },
+    { "id": "B", "text": "ONNX shape inference always produces fully static shapes; any op that cannot be statically resolved is deleted from the graph before serialization." },
+    { "id": "C", "text": "ONNX has no shape inference mechanism; every runtime must implement its own inference from scratch, and the model file never contains any type/shape annotations." },
+    { "id": "D", "text": "ONNX represents dynamic dimensions by encoding a runtime `Tensor<int64>` shape argument as an implicit first input to every op, replacing the static shape annotation." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "ONNX supports symbolic dynamic dimensions (named as strings in the `TensorShapeProto`) alongside concrete integers. Shape inference (`onnx.shape_inference`) walks the graph applying op-specific inference rules, propagating shapes and dtypes to intermediate values where possible; unresolved dimensions remain symbolic (or unknown). Consumers use this info for buffer planning, kernel selection, or converting to a downstream compiler that specializes further.",
+  "optionExplanations": {
+    "A": "Correct: named dynamic dims + partial shape inference is the standard ONNX approach.",
+    "B": "Wrong: ONNX does not require full staticity.",
+    "C": "Wrong: ONNX has a documented shape-inference API and per-op rules.",
+    "D": "Wrong: shape is a metadata annotation on values, not an input-tensor mechanism."
+  },
+  "assumptions": [
+    "ONNX shape inference API and TensorShapeProto as documented."
+  ],
+  "nonImplications": [
+    "Does not imply shape inference solves every case; some ops require constant folding to resolve shapes.",
+    "Does not imply symbolic dims are equivalent to concrete dims for all downstream tools."
+  ],
+  "misconceptionTags": ["onnx_static_only_myth", "onnx_no_shape_infer_myth"],
+  "distractorRationales": {
+    "B": "Wrong claim of fully static requirement.",
+    "C": "Wrong claim of no shape-inference API.",
+    "D": "Fabricates a hidden shape-input mechanism."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:onnx", "locator": "Shape inference API; TensorShapeProto symbolic dimensions", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-ONNXSHP-028.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,61 @@
+{
+  "id": "H-SATURATE-031",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "Saturation vs wrap-around",
+  "learningObjective": "Explain the difference between saturation and wrap-around handling of out-of-range values in integer quantization.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "During INT8 quantization, a value exceeds the representable range (e.g., quantize(x/s) = 200 > 127). Which is the correct comparison of saturation vs. wrap-around handling?",
+  "options": [
+    { "id": "A", "text": "Saturation clamps the out-of-range value to the boundary (200 → 127); this loses information about the extreme but preserves ordinal relationships and is the mathematically-desired behavior for neural-network quantization. Wrap-around uses modular arithmetic (200 → 200-256 = -56); it turns a large positive into a moderately-negative value, which is catastrophic for signal-carrying activations." },
+    { "id": "B", "text": "Saturation and wrap-around are equivalent modulo a sign flip; both preserve the underlying signal." },
+    { "id": "C", "text": "Wrap-around is the mathematically-desired behavior because it preserves the exact bit-count of the value." },
+    { "id": "D", "text": "Saturation is only used for weights; activations always use wrap-around because it is what CUDA integer instructions default to." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Saturation clamps out-of-range results to the nearest representable extreme, preserving monotonicity of the mapping and avoiding catastrophic sign flips. Wrap-around (two's-complement modular arithmetic) is the default behavior of raw integer arithmetic on most hardware; if applied naively during quantization, it produces values that are semantically nonsensical (a large positive becomes a large negative). Quantization frameworks (TensorRT, PyTorch, ONNX Q/DQ, cuDNN) all use saturation. Options B, C, D are unrelated or wrong.",
+  "optionExplanations": {
+    "A": "Correct: saturation preserves ordinal semantics; wrap-around is catastrophic.",
+    "B": "Wrong: they are qualitatively different.",
+    "C": "Wrong: bit-count preservation is irrelevant to signal preservation.",
+    "D": "Wrong: saturation is used for both weights and activations."
+  },
+  "assumptions": [
+    "Standard integer quantization for DNN inference; not a bit-level cryptographic use case."
+  ],
+  "nonImplications": [
+    "Does not imply saturation is free — repeated saturation on many activations indicates a scale choice problem.",
+    "Does not imply wrap-around is never used — some cryptographic or checksum contexts require it."
+  ],
+  "misconceptionTags": ["saturation_vs_wrap"],
+  "distractorRationales": {
+    "B": "Denies real semantic difference.",
+    "C": "Irrelevant criterion.",
+    "D": "Fabricates a weight/activation asymmetry."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "TensorRT INT8 saturation semantics", "supports": ["A"] },
+    { "ref": "BOOK:sze-eff", "locator": "Saturation in DNN quantization", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-SATURATE-031.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

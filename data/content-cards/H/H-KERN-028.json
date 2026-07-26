@@ -1,0 +1,56 @@
+{
+  "questionId": "H-KERN-028",
+  "learningObjective": "Identify which GPU generations support which quantized Tensor Core precisions and what falls back to software-emulated kernels.",
+  "canonicalClaims": [
+    {
+      "claim": "NVIDIA Tensor Core precision support by generation: INT8 on Turing+; FP16/BF16 on Turing+ (BF16 on Ampere+); FP8 on Ada (sm_89) and Hopper (sm_90). W4A16 kernels operate on Ampere+ by dequantizing INT4 weights to FP16/BF16 in registers and using the corresponding Tensor Core; no dedicated INT4 Tensor Core is required.",
+      "conditions": [
+        "Standard NVIDIA generational naming.",
+        "The framework has appropriate kernel implementations for the target precision."
+      ],
+      "nonImplications": [
+        "Does not imply generational peak-TOPS is uniform.",
+        "Does not imply software-emulated fallback kernels deliver speedup."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Tensor Core precision by CC" },
+        { "ref": "BOOK:pmpp4", "locator": "Tensor Core generational overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP8 Tensor Cores are supported on Ampere via driver update.",
+      "errorType": "hardware_leak",
+      "whyWrong": "FP8 Tensor Cores are new hardware; a driver cannot add them to Ampere.",
+      "sourceOrEvidence": "NVIDIA Hopper whitepaper"
+    },
+    {
+      "claim": "W4A16 requires INT4 Tensor Core hardware.",
+      "errorType": "hardware_leak",
+      "whyWrong": "W4A16 kernels dequant INT4 to FP16/BF16 in registers and use FP16/BF16 Tensor Cores.",
+      "sourceOrEvidence": "Marlin / ExLlama / gptq_gemm implementations"
+    },
+    {
+      "claim": "Any kernel implementation for a target precision guarantees speedup over FP16.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Software-emulated fallback kernels on CUDA cores are often slower than FP16 Tensor Core kernels.",
+      "sourceOrEvidence": "CUDA kernel performance analysis"
+    },
+    {
+      "claim": "H100 W4A16 is slower than A100 W4A16 because Hopper deprecated INT4 Tensor Cores.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "W4A16 kernels do not use INT4 TCs; H100 W4A16 is typically faster due to higher FP16 TC throughput and bandwidth.",
+      "sourceOrEvidence": "H100 vs A100 W4A16 benchmarks"
+    }
+  ],
+  "implementationFacts": [
+    "cuBLAS Lt exposes INT8 GEMM via CUBLAS_COMPUTE_32I.",
+    "CUTLASS provides templated kernels for INT8, FP8, BF16, FP16, TF32.",
+    "Marlin and ExLlama INT4 kernels are custom W4A16 kernels not shipped with cuBLAS."
+  ],
+  "performanceScenarios": [
+    "FP8 W8A8 on H100 achieves ~2× BF16 throughput; on A100 the same precision falls back to slower FP16 emulation."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

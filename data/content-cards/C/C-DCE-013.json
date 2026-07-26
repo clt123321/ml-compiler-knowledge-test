@@ -1,0 +1,56 @@
+{
+  "questionId": "C-DCE-013",
+  "learningObjective": "Explain why dead code elimination (DCE) in a tensor IR must respect ops that have side effects, and how the IR encodes this.",
+  "canonicalClaims": [
+    {
+      "claim": "DCE may remove operations whose SSA results are dead only when the operations have no observable side effects; writes to externally-visible memrefs (function arguments, escaping buffers) count as side effects and prevent elimination.",
+      "conditions": [
+        "The IR distinguishes pure vs. side-effecting ops (e.g., MLIR's MemoryEffects interface).",
+        "Escape analysis (or the argument reachability) is available for the memory involved."
+      ],
+      "nonImplications": [
+        "Does not imply DCE cannot remove any memref write; writes to fully-local, non-escaping buffers can be removed.",
+        "Does not imply DCE removes duplication (that is CSE)."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "DCE with side effects" },
+        { "ref": "DOC:mlir-langref", "locator": "MemoryEffects / op purity" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "DCE removes any op whose result is unused, regardless of side effects.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Side effects on external memory or IO are observable even when the op's result is unused.",
+      "sourceOrEvidence": "Engineering a Compiler"
+    },
+    {
+      "claim": "Memref stores are always considered dead unless there is an explicit `sync` op.",
+      "errorType": "definition_confusion",
+      "whyWrong": "IRs classify stores as side effects on the store's memory; no explicit sync is required for the store itself to matter.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Pass-by-memref semantics allow the callee to elide writes it doesn't itself read.",
+      "errorType": "scope_error",
+      "whyWrong": "The caller relies on the callee's writes; eliding them changes program semantics.",
+      "sourceOrEvidence": "MLIR / C-style pass-by-reference semantics"
+    },
+    {
+      "claim": "DCE and CSE are the same optimization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "DCE removes dead operations; CSE deduplicates equivalent computations.",
+      "sourceOrEvidence": "Engineering a Compiler"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR uses the MemoryEffects interface to declare whether an op reads/writes memory",
+    "Local, non-escaping buffers can be optimized away when analysis proves no external observer",
+    "DCE typically runs multiple times together with CSE, canonicalization, and simplifications"
+  ],
+  "performanceScenarios": [
+    "Excessive conservatism in DCE keeps dead code; unsound aggressive DCE breaks correctness — both are common bugs in early-stage pipelines."
+  ],
+  "versionSensitivity": "stable_principle"
+}

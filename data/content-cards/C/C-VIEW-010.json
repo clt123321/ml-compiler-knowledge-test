@@ -1,0 +1,56 @@
+{
+  "questionId": "C-VIEW-010",
+  "learningObjective": "Determine when a reshape/transpose can be a pure view over the same physical storage and when materialization (a copy) is required.",
+  "canonicalClaims": [
+    {
+      "claim": "A tensor operation is a pure view iff the requested (shape, stride) pair addresses the same physical buffer as the source without re-ordering elements; otherwise the operation requires materialization (a copy).",
+      "conditions": [
+        "The source tensor's storage layout is known and stable.",
+        "The framework's view semantics require a single (shape, stride) pair per view."
+      ],
+      "nonImplications": [
+        "Does not imply that a view is always faster to consume; downstream ops may prefer materialized (contiguous) tensors for cache/coalescing.",
+        "Does not imply that PyTorch's `.reshape` never copies; it copies precisely when a view is not expressible."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Array indexing and storage layout" },
+        { "ref": "DOC:mlir-langref", "locator": "MemRef strided-layout semantics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PyTorch `.reshape` on a contiguous tensor never copies.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Reshapes that require a new element ordering (like reshape(4,6) on contiguous [2,3,4]) copy.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "Transpose always requires a copy.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Transpose is expressible as a permutation of the stride tuple over the same storage — the canonical example of a view.",
+      "sourceOrEvidence": "PyTorch docs; strided-layout semantics"
+    },
+    {
+      "claim": "Any change to shape metadata forces materialization.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Many shape changes are pure metadata operations when compatible with the underlying strides.",
+      "sourceOrEvidence": "PyTorch storage-view semantics"
+    },
+    {
+      "claim": "Views and materializations are interchangeable from a downstream kernel's perspective.",
+      "errorType": "performance_confusion",
+      "whyWrong": "A non-contiguous view can hurt vectorization / coalescing; materialization may improve downstream throughput at the cost of copy bandwidth.",
+      "sourceOrEvidence": "PyTorch performance guides"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch `.view` requires contiguity; `.reshape` returns a view when possible, copy otherwise",
+    "Transpose is a metadata-only operation on strides",
+    "MLIR memref supports strided layouts with an offset + strides"
+  ],
+  "performanceScenarios": [
+    "Determining view vs. copy is a routine question for compiler-level buffer planning and for user-level performance tuning."
+  ],
+  "versionSensitivity": "stable_principle"
+}

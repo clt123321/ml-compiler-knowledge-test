@@ -1,0 +1,57 @@
+{
+  "questionId": "G-KERNSEL-019",
+  "learningObjective": "Precisely define compile-time kernel selection and identify its inputs.",
+  "canonicalClaims": [
+    {
+      "claim": "Kernel selection maps each op-instance (with its concrete shape, dtype, layout, and target attributes) to a specific implementation candidate — library call, generated kernel, or fused template — using a cost model or measurement-based ranking.",
+      "conditions": [
+        "The op-instance has concrete attributes at compile time (or a bounded dynamic-shape range).",
+        "A catalog of candidate implementations exists for the op-type."
+      ],
+      "nonImplications": [
+        "Does not imply optimality of the selection; the cost model may be approximate.",
+        "Does not imply the selection is fixed at load time — some systems re-select at runtime for extreme shape variance."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "MetaSchedule selection and dispatch" },
+        { "ref": "DOC:torch-inductor", "locator": "Kernel selection heuristics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Kernel selection is a runtime dispatch step that happens at every kernel launch.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Selection is typically a compile-time step; runtime dispatch is a distinct concept (e.g., algorithm autoselector for a specific batch).",
+      "sourceOrEvidence": "cuDNN autotuning modes"
+    },
+    {
+      "claim": "Kernel selection is the choice of which shared library to link at build time.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Link-time library resolution is a build concern, unrelated to per-op kernel selection.",
+      "sourceOrEvidence": "Build system documentation"
+    },
+    {
+      "claim": "Kernel selection is another name for structured pruning of the model's weights.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Pruning modifies the model; kernel selection maps op-instances to implementations without changing weights.",
+      "sourceOrEvidence": "DL compiler literature"
+    },
+    {
+      "claim": "For a given op type and shape, there is always one uniquely best kernel; kernel selection is deterministic.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Multiple candidates often exist with comparable performance; measurement noise and cost-model approximation lead to non-deterministic winners across runs.",
+      "sourceOrEvidence": "Ansor / MetaSchedule tuning logs"
+    }
+  ],
+  "implementationFacts": [
+    "cuBLAS Lt provides a heuristic-based algorithm selector for GEMMs.",
+    "TorchInductor evaluates ATen, mm-out (cuBLAS), and Triton candidates at compile time.",
+    "TVM Relax dispatches to library-external or generated kernels through the `dispatch` pass."
+  ],
+  "performanceScenarios": [
+    "For M=K=N=4096 FP16 GEMM on A100, kernel selection typically picks a cuBLAS Tensor Core algorithm.",
+    "For small batched GEMV, generated Triton kernels can beat library defaults."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,49 @@
+{
+  "questionId": "E-TVMRLX-011",
+  "learningObjective": "Understand what Relax adds relative to Relay and why the TVM community introduced a new graph-level IR.",
+  "canonicalClaims": [
+    {
+      "claim": "Relax was introduced in TVM Unity to make symbolic/dynamic shape a first-class citizen, to unify graph-level and tensor-level IR via direct calls into PrimFunc (TensorIR), and to enable Python-native metaprogramming through TVMScript.",
+      "conditions": ["TVM Unity / Relax as documented in the project docs."],
+      "nonImplications": [
+        "Does not imply Relax replaces TensorIR; both coexist.",
+        "Does not imply Relay is uniformly deprecated across all TVM deployments."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "Relax overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Relax replaces TensorIR; PrimFunc is legacy.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both live in the same IRModule; Relax calls TensorIR PrimFuncs for tensor-level compute.",
+      "sourceOrEvidence": "TVM docs"
+    },
+    {
+      "claim": "Relax's primary purpose is automatic differentiation.",
+      "errorType": "scope_error",
+      "whyWrong": "AD is not the driving motivation; shape/dataflow/staged transformation are.",
+      "sourceOrEvidence": "TVM Unity design"
+    },
+    {
+      "claim": "Relax removes module and function abstractions.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Relax uses IRModule with functions, calls, and dataflow blocks.",
+      "sourceOrEvidence": "TVM docs"
+    },
+    {
+      "claim": "Symbolic shape in Relax is only annotation; it does not participate in verification.",
+      "errorType": "scope_error",
+      "whyWrong": "Shape variables and constraints are part of Relax's structural type system.",
+      "sourceOrEvidence": "TVM docs"
+    }
+  ],
+  "implementationFacts": [
+    "Relax dataflow blocks vs. imperative blocks separate pure regions from side-effecting ones.",
+    "TVMScript is the Python surface for both Relax and TensorIR."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

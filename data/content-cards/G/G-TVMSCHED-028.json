@@ -1,0 +1,54 @@
+{
+  "questionId": "G-TVMSCHED-028",
+  "learningObjective": "Identify the legality preconditions of common TensorIR / TVM schedule primitives.",
+  "canonicalClaims": [
+    {
+      "claim": "TVM TensorIR schedule primitives fall into semantics-preserving reindexings (split, fuse) and dependence-conditioned primitives (reorder, vectorize, parallel, bind); the latter require the scheduler to verify that no dependence is violated.",
+      "conditions": [
+        "The TensorIR block metadata correctly captures reads and writes.",
+        "The scheduler checks and rejects violating primitives at application time."
+      ],
+      "nonImplications": [
+        "Does not imply that safe primitives always compose to a correct schedule — downstream primitives still have their own preconditions.",
+        "Does not imply MetaSchedule never proposes illegal internal candidates — it may, but the primitives reject them."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "TensorIR schedule primitive reference" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`parallel` is a semantic no-op: it only affects performance, not correctness.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "`parallel` transforms a serial loop into concurrent iterations; if iterations write shared state, races arise.",
+      "sourceOrEvidence": "TensorIR schedule reference"
+    },
+    {
+      "claim": "`bind` to `blockIdx.x` or `threadIdx.x` never requires dependence checks because it is 'just a labeling'.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "`bind` distributes iterations across independent threads/blocks; iterations must be independent w.r.t. that axis.",
+      "sourceOrEvidence": "TensorIR bind primitive doc"
+    },
+    {
+      "claim": "`split` reorders dependences and may require legality checks.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`split` is a pure reindexing (io * 32 + ii); dependences are preserved by construction.",
+      "sourceOrEvidence": "TensorIR primitive reference"
+    },
+    {
+      "claim": "`vectorize` requires only that the loop trip count is a multiple of the target vector width.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Independence of the iterations is required; a data-parallel body without cross-iteration writes is the essential precondition.",
+      "sourceOrEvidence": "Halide / TVM vectorize legality"
+    }
+  ],
+  "implementationFacts": [
+    "TensorIR block signatures (`BlockRV`) carry read/write regions used by the scheduler for legality checks.",
+    "MetaSchedule's mutators may propose primitives; illegal ones are rejected during application."
+  ],
+  "performanceScenarios": [
+    "Split + reorder + vectorize + bind is the standard sequence for lowering a GEMM tile to CUDA in MetaSchedule."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

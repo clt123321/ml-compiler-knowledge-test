@@ -1,0 +1,49 @@
+{
+  "questionId": "F-OTHER-009",
+  "learningObjective": "Reason about tl.load `other` argument as the reduction identity for masked tail lanes.",
+  "canonicalClaims": [
+    {
+      "claim": "For a Triton reduction over a masked tile, the `other` value passed to `tl.load` must be the identity of the reduction operator so masked-off lanes do not perturb the result: 0 for sum, 1 for product, -inf for max, +inf for min.",
+      "conditions": ["IEEE-754 floats with ±inf support."],
+      "nonImplications": [
+        "Does not imply the same `other` is safe for every downstream op.",
+        "Does not imply `other` is required when there is no mask."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "tl.load other; tl.max/tl.min/tl.sum semantics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`other=0.0` is a universally safe default.",
+      "errorType": "overgeneralization",
+      "whyWrong": "It biases max reductions when the true maximum is negative.",
+      "sourceOrEvidence": "Triton docs / IEEE-754 arithmetic"
+    },
+    {
+      "claim": "`other=+inf` is the identity for max.",
+      "errorType": "definition_confusion",
+      "whyWrong": "+inf dominates any real value in max; it is the identity for min, not max.",
+      "sourceOrEvidence": "Elementary max/min identities"
+    },
+    {
+      "claim": "Filling tail lanes with `x_ptr[0]` is safe.",
+      "errorType": "wrong_condition",
+      "whyWrong": "`x_ptr[0]` can be larger than the tail's true max and bias the reduction.",
+      "sourceOrEvidence": "Reduction correctness"
+    },
+    {
+      "claim": "The Triton compiler auto-selects the correct `other` for the downstream reduction.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is the user's responsibility to choose the right identity.",
+      "sourceOrEvidence": "Triton docs"
+    }
+  ],
+  "implementationFacts": [
+    "sum identity: 0; product identity: 1; max identity: -inf; min identity: +inf.",
+    "`tl.atomic_max` requires `out` initialized to -inf for a max reduction."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

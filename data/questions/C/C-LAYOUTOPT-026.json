@@ -1,0 +1,93 @@
+{
+  "id": "C-LAYOUTOPT-026",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Layout selection / transformation cost",
+  "learningObjective": "Reason about when inserting a layout-transform op in a graph is profitable and when it is not.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere-or-newer",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic tensor compiler",
+    "stability": "stable_principle"
+  },
+  "stem": "A graph-level pass considers inserting an NCHW->NHWC (channels-last) layout conversion before a convolution because the target GPU's convolution kernel is more efficient in channels-last. Which statement most correctly frames the decision?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Always insert the conversion; the channels-last layout is universally faster, and layout transforms are metadata-only (view operations) so they are free at runtime."
+    },
+    {
+      "id": "B",
+      "text": "Never insert the conversion; layout transformations are always a physical copy and always cost more than any kernel-level speedup they enable. In this reading, channels-last kernels always outperform NCHW on every generation of GPU, and layout conversions between logically-equivalent representations only rewrite the tensor's stride tuple without touching any bytes in memory."
+    },
+    {
+      "id": "C",
+      "text": "Insert the conversion iff the convolution's expected time savings from the more efficient layout exceed the cost of the transform plus any downstream transforms needed to restore the original layout for consumers that require it. Under this framing, layout transformations always require a full elementwise copy through global memory and always cost more per element than any convolution kernel time they enable saving, so a fusion of layout change and conv is impossible."
+    },
+    {
+      "id": "D",
+      "text": "Insert the conversion only if the source-to-target layout change is a pure view (stride swap); if a copy is required, the pass must abort and choose a different optimization. In this account, layout planning must abort whenever a conversion is not expressible as a view, because introducing an explicit copy op into the graph invalidates downstream layout-aware kernel selection and forces a fallback to a generic kernel."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Layout selection is a cost-benefit calculation. NHWC (channels-last) can enable faster cuDNN conv kernels on modern NVIDIA GPUs, but going from NCHW to NHWC on an existing NCHW buffer requires a physical copy (not a pure view). The pass should insert the transform iff (kernel time saved) > (transform cost + downstream restoration costs, if any). Statements that treat the choice as unconditional (always/never) or that pretend the transform is always a view are wrong.",
+  "optionExplanations": {
+    "C": "Correct: cost-benefit framing consistent with layout-planning passes.",
+    "A": "Wrong: NCHW->NHWC on a contiguous NCHW buffer requires a copy; layout is not universally faster.",
+    "B": "Wrong: layout transforms often pay for themselves through kernel gains.",
+    "D": "Wrong: NCHW <-> NHWC is a copy, not a view; the pass may still be profitable and should not abort."
+  },
+  "assumptions": [
+    "The target GPU has a channels-last-preferred conv kernel available.",
+    "The consumer of the conv output may or may not require the original layout."
+  ],
+  "nonImplications": [
+    "Does not imply layout can always be freely chosen; some downstream ops or serialization boundaries constrain it.",
+    "Does not imply the decision generalizes across hardware; older GPUs may prefer NCHW."
+  ],
+  "misconceptionTags": [
+    "layout_transform_is_view",
+    "channels_last_always_faster"
+  ],
+  "distractorRationales": {
+    "A": "Ignores transform cost; wrong claim that it is a view.",
+    "B": "Blanket denial ignores real speedups.",
+    "D": "Wrong stopping rule."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Layout transforms in tensor / memref dialects",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Layout selection considerations",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GPU convolution kernel preference for channels-last on modern NVIDIA GPUs",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/C/C-LAYOUTOPT-026.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "H-TRTLLM-034",
+  "learningObjective": "Reason about the trade-off between W4A16 group size, quantization accuracy, and metadata bandwidth.",
+  "canonicalClaims": [
+    {
+      "claim": "In W4A16 quantization with FP16 scales, smaller group sizes give one scale per fewer weights → tighter distribution fit and higher accuracy, but proportionally more metadata; group_size 128 is a common default balancing accuracy and ~3% metadata overhead.",
+      "conditions": [
+        "FP16 scale factors (2 bytes each).",
+        "Symmetric per-group quantization."
+      ],
+      "nonImplications": [
+        "Does not imply group=32 is always best; kernel-side handling of many scales can add latency.",
+        "Does not imply the trade-off is identical across all models."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:awq", "locator": "Group size ablations" },
+        { "ref": "PAPER:gptq", "locator": "Group size discussion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Group size has no meaningful effect on accuracy; observed perplexity differences are noise.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Group size directly controls scale-factor granularity and has a systematic, well-documented effect on quantization accuracy.",
+      "sourceOrEvidence": "AWQ / GPTQ ablation tables"
+    },
+    {
+      "claim": "Smaller groups are always better because more scales mean more information.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Metadata overhead grows inversely with group size; at group=1 (per-weight) the metadata equals the weight size, defeating quantization.",
+      "sourceOrEvidence": "Simple bit accounting"
+    },
+    {
+      "claim": "Metadata cost is negligible and never affects wall-clock decode.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For very small groups, metadata bandwidth is meaningful; the kernel must load both weights and scales.",
+      "sourceOrEvidence": "Marlin / ExLlama kernel bandwidth accounting"
+    },
+    {
+      "claim": "Group size only affects offline quantization time; runtime is unaffected.",
+      "errorType": "scope_error",
+      "whyWrong": "Runtime kernels must load and broadcast scale metadata; smaller groups mean more scale loads per weight.",
+      "sourceOrEvidence": "W4A16 kernel implementations"
+    }
+  ],
+  "implementationFacts": [
+    "AWQ default group size: 128.",
+    "GPTQ commonly uses 128 or 32.",
+    "Marlin kernel supports group_size 128 with efficient scale broadcast."
+  ],
+  "performanceScenarios": [
+    "For LLaMA-7B, group=128 with AWQ recovers within 0.2 perplexity of FP16; group=32 recovers within 0.1 but with higher metadata cost."
+  ],
+  "versionSensitivity": "stable_principle"
+}

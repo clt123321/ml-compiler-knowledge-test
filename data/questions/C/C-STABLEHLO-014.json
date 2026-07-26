@@ -1,0 +1,95 @@
+{
+  "id": "C-STABLEHLO-014",
+  "type": "multiple",
+  "module": "graph_tensor_ir",
+  "subtopic": "StableHLO / dynamic shape / bounds",
+  "learningObjective": "Understand how StableHLO represents dynamic shapes and identify true statements about StableHLO's design intent regarding portability and shape.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "StableHLO",
+    "frameworkVersionScope": "StableHLO current spec (~2024-2026)",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Consider StableHLO as a portable, framework-independent operator set. Which of the following statements about StableHLO's design regarding shapes and portability are correct? (Select all that apply.)",
+  "irSnippet": "// Static shape\n%y = stablehlo.add %x, %x : tensor<4x8xf32>\n\n// Dynamic shape (bounded) — bounds encoded on the type\n%z = stablehlo.dynamic_broadcast_in_dim %s,\n         dims = [0, 1] :\n         (tensor<f32>) -> tensor<?x?xf32, #stablehlo.bounds<[128, 128]>>\n\n// Portability contract: same op set consumed by multiple compilers/hardware\n// (XLA-CPU, XLA-GPU, XLA-TPU, PJRT plugins, IREE, ...)",
+  "options": [
+    {
+      "id": "A",
+      "text": "StableHLO is intended as a portable operator set that decouples ML frameworks from any single compiler backend; multiple backends (XLA, IREE, etc.) can consume the same StableHLO program."
+    },
+    {
+      "id": "B",
+      "text": "StableHLO forbids any dynamic-shape tensor: all shapes must be statically known at graph-construction time, so any framework that emits StableHLO must specialize the graph for every observed input shape."
+    },
+    {
+      "id": "C",
+      "text": "StableHLO supports both fully static and dynamically-shaped tensors; dynamic dims are represented with `?` on the tensor type, optionally with per-dim bounds attributes."
+    },
+    {
+      "id": "D",
+      "text": "StableHLO includes device-placement and stream-scheduling attributes as first-class parts of every op, so it is a single-source-of-truth for runtime execution details."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C"
+  ],
+  "explanation": "StableHLO is a stability-tracked op set designed as a portable interchange format between ML frameworks and compilers (successor to HLO for that role). It supports both static and dynamic shapes, with dynamic dims written as `?` and optional bounds. It does not embed device placement or stream scheduling — those are the domain of runtimes and higher-level pipelines, not the op set itself.",
+  "optionExplanations": {
+    "A": "Correct: portability is StableHLO's stated design goal.",
+    "C": "Correct: StableHLO's shape system covers both static and dynamic dims (with bounds).",
+    "B": "Wrong: dynamic shapes are supported.",
+    "D": "Wrong: device placement / streams are runtime concerns; StableHLO is a math-level op set."
+  },
+  "assumptions": [
+    "Reference is to StableHLO's specification as of 2024-2026; details evolve but the design intent is stable."
+  ],
+  "nonImplications": [
+    "Does not imply every StableHLO op has a specific implementation on every backend; portability is at the spec level.",
+    "Does not imply StableHLO is a runtime; it is an IR/interchange format consumed by compilers."
+  ],
+  "misconceptionTags": [
+    "stablehlo_forbids_dynamic_shape",
+    "stablehlo_is_a_runtime"
+  ],
+  "distractorRationales": {
+    "B": "Wrong claim about dynamic shape support.",
+    "D": "Confuses IR spec with runtime concerns."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "StableHLO specification: portability and shape system",
+      "supports": [
+        "A",
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "IR portability rationale relevant to StableHLO",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-STABLEHLO-014.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

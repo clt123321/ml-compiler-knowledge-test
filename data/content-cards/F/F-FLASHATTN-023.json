@@ -1,0 +1,54 @@
+{
+  "questionId": "F-FLASHATTN-023",
+  "learningObjective": "Understand FlashAttention's tiling + online softmax + IO-aware fusion; distinguish exact algorithm from approximation.",
+  "canonicalClaims": [
+    {
+      "claim": "FlashAttention tiles Q, K, V and processes K/V tiles for a fixed Q tile while maintaining a running (m, l, acc) via the online-softmax recurrence. This eliminates materialization of the O(S^2) score matrix in HBM and reduces HBM traffic to O(S) for long sequences, while remaining an exact algorithm (bit-different from naive due to summation order only).",
+      "conditions": [
+        "SMEM large enough for tiled Q/K/V blocks.",
+        "Standard forward pass (backward has its own recurrence)."
+      ],
+      "nonImplications": [
+        "Does not imply speedup for very small S.",
+        "Does not imply v1, v2, v3 are identical implementations."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "FlashAttention Algorithm 1" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FlashAttention is an approximation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is exact algebra; differs from naive only by summation order (rounding).",
+      "sourceOrEvidence": "FlashAttention paper"
+    },
+    {
+      "claim": "FlashAttention replaces exp with a cheaper approximation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It uses standard exp; the speedup comes from IO-awareness and tiling.",
+      "sourceOrEvidence": "FlashAttention paper"
+    },
+    {
+      "claim": "The `acc` rescale is optional if we accept minor precision loss.",
+      "errorType": "wrong_condition",
+      "whyWrong": "It is required for correctness — without it, `acc` mixes different anchors and gives wrong results.",
+      "sourceOrEvidence": "FlashAttention paper"
+    },
+    {
+      "claim": "FlashAttention has the same HBM traffic as naive attention.",
+      "errorType": "performance_confusion",
+      "whyWrong": "HBM traffic drops from O(S^2) to O(S) per (batch, head) — the central contribution.",
+      "sourceOrEvidence": "FlashAttention paper Sect. 3"
+    }
+  ],
+  "implementationFacts": [
+    "V2 improves work partitioning and eliminates non-matmul stalls.",
+    "V3 targets Hopper with warp-specialization and TMA."
+  ],
+  "performanceScenarios": [
+    "FlashAttention's kernel-level speedups over naive on long-context depend on hardware (A100/H100), shape, and precision; paper-reported numbers are Kernel-level, not always end-to-end 1:1."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

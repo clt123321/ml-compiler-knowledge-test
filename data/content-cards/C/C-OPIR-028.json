@@ -1,0 +1,57 @@
+{
+  "questionId": "C-OPIR-028",
+  "learningObjective": "Identify examples of operator-level IRs used in production and the features that characterize them.",
+  "canonicalClaims": [
+    {
+      "claim": "Operator-level (graph-level) IRs represent computations as coarse-grained ops on typed values with shape/dtype annotations; examples include XLA HLO / StableHLO, ONNX, TVM Relax, and PyTorch FX. Graph-level passes commonly include shape inference, constant folding, algebraic simplification, layout choice, and operator fusion.",
+      "conditions": [
+        "The IR treats ops as atomic units without exposing loop iteration variables."
+      ],
+      "nonImplications": [
+        "Does not imply operator-level IRs are strictly weaker than loop-level IRs; they compose across layers.",
+        "Does not imply the same set of graph-level passes runs in every framework."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "Relax graph IR" },
+        { "ref": "PAPER:mlir", "locator": "MLIR dialect layers" },
+        { "ref": "DOC:stablehlo", "locator": "StableHLO ops" },
+        { "ref": "DOC:torch-dynamo", "locator": "FX Graph" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Operator-level IRs expose loop iteration variables.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Exposing iteration is the defining feature of loop-level (or tensor-expression) IRs.",
+      "sourceOrEvidence": "MLIR / TVM docs"
+    },
+    {
+      "claim": "Operator-level IRs cannot perform any optimization; only loop-level IRs can.",
+      "errorType": "scope_error",
+      "whyWrong": "Fusion, constant folding, and shape/layout optimization are canonical operator-level passes.",
+      "sourceOrEvidence": "XLA / TVM / Inductor design"
+    },
+    {
+      "claim": "ONNX is a loop-level IR because ONNX ops call vendor kernels.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ONNX is an operator-level interchange IR; runtime kernel invocation is a downstream concern.",
+      "sourceOrEvidence": "ONNX spec"
+    },
+    {
+      "claim": "FX Graph is a low-level assembly IR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FX Graph is an operator-level graph representation of Python-traced ATen ops.",
+      "sourceOrEvidence": "PyTorch FX docs"
+    }
+  ],
+  "implementationFacts": [
+    "HLO / StableHLO: static / dynamic tensor types with per-op shape",
+    "ONNX: framework-independent operator set",
+    "Relax and FX: dynamic Python-side operator graphs"
+  ],
+  "performanceScenarios": [
+    "Graph-level operator IRs are the natural place for cross-op decisions (fusion, layout) before lowering."
+  ],
+  "versionSensitivity": "stable_principle"
+}

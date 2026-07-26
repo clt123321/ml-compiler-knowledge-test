@@ -1,0 +1,63 @@
+{
+  "id": "F-STREAM-026",
+  "type": "multiple",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Stream, Event, and asynchronous ordering",
+  "learningObjective": "Understand CUDA stream ordering semantics and how events synchronize across streams.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Kepler or newer",
+    "device": "GPU",
+    "requiredFeatures": ["multi-stream engine"]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about CUDA streams and events are correct? (Select all that apply.)",
+  "codeSnippet": "cudaStream_t s1, s2;\ncudaStreamCreate(&s1); cudaStreamCreate(&s2);\ncudaEvent_t e;\ncudaEventCreate(&e);\n\n// (1) Kernels launched on the same stream run in issued order:\nkA<<<..., s1>>>(...);\nkB<<<..., s1>>>(...);   // B waits for A on same stream\n\n// (2) Cross-stream sync via events:\nkC<<<..., s1>>>(...);\ncudaEventRecord(e, s1);           // event fires when C completes on s1\ncudaStreamWaitEvent(s2, e, 0);    // s2 stalls until e fires\nkD<<<..., s2>>>(...);             // D on s2, ordered after C on s1\n\n// (3) Default stream (0) behavior depends on --default-stream compile flag",
+  "options": [
+    { "id": "A", "text": "Kernels launched on the same non-default stream execute in program order; kernels on different streams may execute concurrently subject to resource availability." },
+    { "id": "B", "text": "`cudaEventRecord(e, s1)` followed by `cudaStreamWaitEvent(s2, e, 0)` makes any subsequent work on `s2` wait until the event fires (i.e., until all work enqueued on `s1` before the record has completed), enabling cross-stream dependencies without blocking the host thread." },
+    { "id": "C", "text": "All non-default streams block each other by default; concurrent execution across streams requires an explicit `cudaSetStreamPriority(concurrent=true)` call before use." },
+    { "id": "D", "text": "`cudaEventRecord` is a synchronous host operation that returns only after the event has been observed by the device; it blocks the calling CPU thread." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "A: Within one stream, work is serialized in issue order; different streams can overlap (subject to compute/copy engine availability). B: Events provide a cross-stream synchronization primitive: record an event on stream A, tell stream B to wait, and B's subsequent work is ordered after A's pre-record work. Neither operation blocks the host. C is wrong: non-default streams are concurrent by default; no priority flag is required. D is wrong: `cudaEventRecord` is asynchronous — it enqueues the record; use `cudaEventSynchronize` if you want the host to wait.",
+  "optionExplanations": {
+    "A": "Correct: intra-stream ordered, inter-stream may overlap.",
+    "B": "Correct: canonical event-based cross-stream sync.",
+    "C": "Wrong: streams are concurrent by default.",
+    "D": "Wrong: `cudaEventRecord` is asynchronous."
+  },
+  "assumptions": [
+    "Standard CUDA runtime semantics as documented.",
+    "Default stream = 0 behavior is per-thread or legacy depending on compile flag; question focuses on non-default streams."
+  ],
+  "nonImplications": [
+    "Does not imply that any two streams always overlap; hardware resources (copy engines, SM count) still constrain concurrency.",
+    "Does not imply `cudaStreamWaitEvent` blocks the host."
+  ],
+  "misconceptionTags": ["stream_serial_by_default_myth", "event_record_synchronous_myth"],
+  "distractorRationales": {
+    "C": "Wrong claim about default stream blocking.",
+    "D": "Confuses record with synchronize."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Streams and Events — asynchronous ordering", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-STREAM-026.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

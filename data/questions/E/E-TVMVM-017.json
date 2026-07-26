@@ -1,0 +1,63 @@
+{
+  "id": "E-TVMVM-017",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "TVM / Relax VM runtime — dynamic execution model",
+  "learningObjective": "Understand the role of the Relax VM in executing compiled TVM programs and its position relative to static compilation.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM Relax VM",
+    "frameworkVersionScope": "TVM Unity",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement about the Relax VM in TVM is correct?",
+  "options": [
+    { "id": "A", "text": "The Relax VM is a bytecode-based runtime that executes a compiled Relax program: it dispatches PrimFunc calls, external-library calls, and control flow, and it handles dynamic-shape allocation and object lifetime — enabling static compilation of graph structure with runtime resolution of dynamic dimensions." },
+    { "id": "B", "text": "The Relax VM is a Python interpreter that parses and executes Relax IR line-by-line at runtime; it does not require any AOT compilation of PrimFuncs, and switching to a different target only requires changing an environment variable." },
+    { "id": "C", "text": "The Relax VM eliminates the need for a compiler: it JIT-compiles TensorIR at every function call, so the entire tuning + scheduling pipeline runs at inference time." },
+    { "id": "D", "text": "The Relax VM only supports CPU targets; GPU execution in TVM is handled by a separate compile-time-only pipeline that emits standalone `.so` files without any VM involvement." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "The Relax VM is a lightweight bytecode-based runtime for TVM Unity that dispatches operator calls (both PrimFunc and external-lib), handles dynamic-shape memory allocation, supports control flow, and manages object lifetime. Static compilation happens ahead of time for PrimFunc; the VM ties it all together at runtime. This separation is what allows compile-time optimization while preserving dynamic-shape flexibility.",
+  "optionExplanations": {
+    "A": "Correct: bytecode VM dispatching precompiled PrimFunc + externals + control flow + dynamic allocation.",
+    "B": "Wrong: Relax VM is not a Python interpreter of IR.",
+    "C": "Wrong: it does not JIT the tuning pipeline; PrimFuncs are precompiled.",
+    "D": "Wrong: the VM works for GPU targets as well."
+  },
+  "assumptions": [
+    "Relax VM design as documented in TVM Unity."
+  ],
+  "nonImplications": [
+    "Does not imply the VM has zero overhead; bytecode dispatch has a cost that AOTInductor-style packaging can avoid.",
+    "Does not imply the VM is required for every deployment; some flows bake to a lower-level runtime."
+  ],
+  "misconceptionTags": ["vm_is_python_interpreter_myth", "vm_jits_tuning_myth"],
+  "distractorRationales": {
+    "B": "Confuses Relax VM with a Python interpreter of IR.",
+    "C": "Overstates VM's runtime responsibility.",
+    "D": "Wrong claim of CPU-only support."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:tvm-relax", "locator": "Relax VM runtime overview", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-TVMVM-017.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

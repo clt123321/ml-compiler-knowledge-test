@@ -1,0 +1,96 @@
+{
+  "id": "D-AUTODYN-009",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Automatic dynamic shape promotion",
+  "learningObjective": "Interpret a recompile log showing automatic dynamic promotion after repeated shape-triggered recompilations.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "A user compiles a function with defaults and calls it with sequence lengths 128, 256, 512, 1024, ...; the recompile log shows several size-specialized recompiles, then a message that a dim was auto-promoted to dynamic and no further recompiles for that dim occur. Which reading is most accurate?",
+  "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    return x @ x.T\n\nfor n in [128, 256, 512, 1024, 2048]:\n    x = torch.randn(n, 64, device=\"cuda\")\n    f(x)\n\n# TORCH_LOGS=\"recompiles\" (excerpt):\n#   Recompiling ... size 128 ...\n#   Recompiling ... size 256 ...\n#   automatic_dynamic_shapes: dim 0 of L['x'] is marked dynamic after 3 distinct sizes\n#   (subsequent calls with new sizes reuse a symbolic-shape compilation)",
+  "profileData": "3 specialized compiles observed for sizes 128, 256, 512; from size 1024 onwards, a symbolic-shape compile is used and no further recompiles are recorded for dim 0.",
+  "options": [
+    {
+      "id": "A",
+      "text": "Automatic dynamic promotion is a Dynamo mechanism: after observing enough distinct sizes for a dim, the dim is marked dynamic and re-traced symbolically, so subsequent new sizes hit the symbolic-shape compilation without further recompiles for that dim."
+    },
+    {
+      "id": "B",
+      "text": "The log is a bug: automatic dynamic promotion does not exist. The user must always call `mark_dynamic` manually to avoid per-size recompiles. In this reading, the log excerpt is a bug caused by a stale build: automatic dynamic-shape promotion does not exist in current stable releases, and users must always call `torch._dynamo.mark_dynamic` manually on each varying dim to avoid per-size recompiles."
+    },
+    {
+      "id": "C",
+      "text": "Automatic promotion re-traces the function only on failure and then falls back to eager mode for that dim; there is no symbolic-shape compilation involved and the second half of the log indicates eager execution. Under this framing, automatic promotion re-traces the function only on failure and then falls back to eager mode for that dim; there is no symbolic-shape compilation involved, and the second half of the log actually indicates eager execution taking over for that input."
+    },
+    {
+      "id": "D",
+      "text": "Automatic promotion turns the shape into a runtime kernel parameter of the initial specialized kernel; the specialized kernel is reused with a shape argument, bypassing recompilation entirely without any symbolic tracing. In this account, automatic promotion turns the dim into a runtime kernel parameter of the initial specialized kernel; the specialized kernel is reused with a runtime shape argument, bypassing recompilation entirely without invoking any symbolic-shape tracing pipeline."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "PyTorch's automatic dynamic-shape behavior tracks how many distinct sizes have been observed per dim; once the threshold is reached, the dim is marked dynamic and the function is re-traced with a SymInt for that dim, yielding a symbolic-shape compilation that serves subsequent sizes. This behavior is enabled by default in current releases. It is not a fallback to eager, not a runtime parameterization of the specialized kernel, and not a bug.",
+  "optionExplanations": {
+    "A": "Correct: describes automatic-dynamic promotion as documented.",
+    "B": "Wrong: the feature exists and is enabled by default.",
+    "C": "Wrong: symbolic tracing is exactly what happens; no eager fallback for the dim.",
+    "D": "Wrong: the promotion causes a re-trace with SymInt, not a runtime parameterization of the old kernel."
+  },
+  "assumptions": [
+    "Default settings (no explicit `dynamic=True/False` override).",
+    "PyTorch 2.3 ~ 2.5 defaults; earlier or later versions may tune thresholds."
+  ],
+  "nonImplications": [
+    "Does not imply the symbolic kernel matches the size-specialized kernel in performance.",
+    "Does not imply that automatic promotion always kicks in; users can force `dynamic=False` to keep specializing."
+  ],
+  "misconceptionTags": [
+    "auto_dynamic_is_eager_fallback",
+    "auto_dynamic_reuses_specialized_kernel"
+  ],
+  "distractorRationales": {
+    "B": "Wrong denial of the feature.",
+    "C": "Wrong mechanism (eager fallback).",
+    "D": "Wrong mechanism (runtime shape argument)."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Dynamic shapes; automatic dynamic behavior",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Recompile-then-promote behavior",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-AUTODYN-009.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

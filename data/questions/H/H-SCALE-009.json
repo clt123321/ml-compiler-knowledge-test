@@ -1,0 +1,61 @@
+{
+  "id": "H-SCALE-009",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "Scale / Zero point / Basic quantization mapping",
+  "learningObjective": "Precisely define the scale and zero-point of an affine quantizer and the dequantization formula.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "For an affine (asymmetric) quantizer with scale `s > 0` and zero-point `z` mapping real value `x` to integer `q`, which pair correctly gives the quantize and dequantize formulas?",
+  "options": [
+    { "id": "A", "text": "quantize: `q = round(x / s) + z`; dequantize: `x_hat = (q - z) * s`." },
+    { "id": "B", "text": "quantize: `q = round(x * s) + z`; dequantize: `x_hat = (q - z) / s`." },
+    { "id": "C", "text": "quantize: `q = round(x / s) - z`; dequantize: `x_hat = (q + z) * s`." },
+    { "id": "D", "text": "quantize: `q = round(x + z) / s`; dequantize: `x_hat = q * s - z`." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "The standard affine quantizer maps `x` to `q = round(x / s) + z` where `s` is the scale (larger real range per integer step) and `z` is the integer value that represents real zero. Dequantization inverts: `x_hat = (q - z) * s`. This is the definition used across TensorRT, PyTorch's `torch.ao.quantization`, ONNX QuantizeLinear / DequantizeLinear, and academic literature. Options B, C, D swap operators (multiplication vs. division), swap sign of z, or reorder operations incorrectly.",
+  "optionExplanations": {
+    "A": "Correct: canonical affine quantizer.",
+    "B": "Wrong: multiplication and division are swapped.",
+    "C": "Wrong: sign of z is reversed.",
+    "D": "Wrong: order of operations violates the affine structure."
+  },
+  "assumptions": [
+    "Standard affine quantization convention used by ONNX / PyTorch / TensorRT."
+  ],
+  "nonImplications": [
+    "Does not imply `z = 0` (symmetric quantization) is always preferred; asymmetric is common for activations.",
+    "Does not imply `q` must always be clamped to the integer range; explicit clamping is a separate step."
+  ],
+  "misconceptionTags": ["scale_zero_point_swap"],
+  "distractorRationales": {
+    "B": "Swaps division and multiplication.",
+    "C": "Sign confusion.",
+    "D": "Operator ordering error."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:onnx", "locator": "QuantizeLinear / DequantizeLinear operator spec", "supports": ["A"] },
+    { "ref": "BOOK:sze-eff", "locator": "Affine quantization definitions", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-SCALE-009.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

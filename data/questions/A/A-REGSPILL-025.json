@@ -1,0 +1,65 @@
+{
+  "id": "A-REGSPILL-025",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Register spill / local memory penalty",
+  "learningObjective": "Diagnose the performance impact of register spilling on GPU kernels and identify why 'local memory' spills traverse HBM.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80)",
+    "device": "GPU",
+    "requiredFeatures": ["per-thread local memory backed by global memory"]
+  },
+  "softwareContext": {
+    "compiler": "nvcc / ptxas",
+    "stability": "stable_principle"
+  },
+  "profileData": "ptxas info: Used 255 registers, 0 bytes cmem[0], 128 bytes stack frame, 128 bytes spill stores, 128 bytes spill loads.",
+  "stem": "You compile a CUDA kernel and ptxas reports `128 bytes spill stores, 128 bytes spill loads`. Which statement about GPU register spills is correct?",
+  "options": [
+    { "id": "A", "text": "Spill loads/stores traverse per-thread 'local memory', which physically resides in HBM (cached in L1/L2). Each spilled access can add hundreds of cycles of latency and adds HBM bandwidth pressure, especially if L1/L2 do not absorb the traffic." },
+    { "id": "B", "text": "Spills go to a dedicated on-chip spill buffer separate from HBM and L1/L2, so spill traffic does not consume DRAM bandwidth." },
+    { "id": "C", "text": "Spills go to shared memory automatically; the ptxas 'spill' counters report shared-memory bytes rather than HBM bytes." },
+    { "id": "D", "text": "Spills are always harmless because L1 hits them; the compiler only spills if it has proven the access will hit cache on the next reload." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "CUDA per-thread 'local memory' is a logical name; physically it lives in HBM (global memory) with L1/L2 caching. Spill stores/loads therefore incur potentially hundreds of cycles of latency and consume HBM bandwidth when L1/L2 do not absorb the traffic. Options B, C, D contradict the CUDA memory model.",
+  "optionExplanations": {
+    "A": "Correct: local memory backs spills; physically resides in HBM with L1/L2 caching.",
+    "B": "Wrong: there is no separate on-chip spill buffer; spills go to logical local memory backed by HBM.",
+    "C": "Wrong: shared memory is programmer-managed and finite per block; the compiler does not implicitly spill registers to shared memory.",
+    "D": "Wrong: the compiler does not have general proof of cache residency; spills are decided by register-pressure heuristics, and their runtime cost varies."
+  },
+  "assumptions": [
+    "ptxas reports spill counters when register pressure exceeds a threshold controlled by --maxrregcount or -Xptxas -O.",
+    "Local memory is caching per NVIDIA's memory model (L1/L2 involvement)."
+  ],
+  "nonImplications": [
+    "Does not imply that every spill costs a full HBM latency; L1/L2 can hit repeatedly-used spill slots.",
+    "Does not imply reducing register count via --maxrregcount always improves performance; forcing spills may be worse than accepting lower occupancy."
+  ],
+  "misconceptionTags": ["local_memory_location", "spill_free_myth"],
+  "distractorRationales": {
+    "B": "Fabricates an on-chip spill buffer.",
+    "C": "Confuses shared memory with logical local memory.",
+    "D": "Overstates compiler's knowledge of cache behavior."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Local memory section; register file and spills", "supports": ["A"] },
+    { "ref": "DOC:cuda-best", "locator": "Register pressure and spill guidance", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "ptxas spill diagnosis on NVIDIA GPUs",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-REGSPILL-025.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,79 @@
+{
+  "questionId": "G-FUSION-003",
+  "learningObjective": "Enumerate boundary conditions that block or complicate operator fusion in a deep-learning compiler.",
+  "canonicalClaims": [
+    {
+      "claim": "Fusion is blocked when producer and consumer are on different devices, because a data-transfer op cannot be absorbed into a single device kernel.",
+      "conditions": [
+        "IR carries explicit device placement attributes.",
+        "The transfer op is not a no-op (e.g., not a UMA / unified-memory identity)."
+      ],
+      "nonImplications": [
+        "Does not imply cross-device pipelines cannot be fused within each device."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "Section 3, fusion boundary" },
+        { "ref": "DOC:torch-inductor", "locator": "Device boundary handling" }
+      ]
+    },
+    {
+      "claim": "Fusion across a mutation that is aliased by a live consumer would reorder observable reads/writes and is thus illegal.",
+      "conditions": [
+        "Alias analysis identifies the shared storage.",
+        "The mutating op has a live down-stream consumer of the pre-mutation value."
+      ],
+      "nonImplications": [
+        "Does not imply all in-place ops block fusion; when no live consumer observes the pre-mutation value, fusion may proceed."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Mutation / functionalization notes" }
+      ]
+    },
+    {
+      "claim": "Explicit graph outputs must be materialized; fusion cannot remove their materialization without changing the observable API contract.",
+      "conditions": [
+        "Output tensor is on the return signature of the compiled graph."
+      ],
+      "nonImplications": [
+        "Does not imply the compiler cannot fuse into a producer of the output; only that the output tensor itself must exist post-fusion."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "Relax fuse-ops pass output preservation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Different iteration-space ranks (e.g., pointwise → reduction) form a hard fusion boundary.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Pointwise→reduction fusion is a standard pattern (e.g., LayerNorm, softmax). Rank differences complicate scheduling but do not block legality.",
+      "sourceOrEvidence": "TVM operator fusion patterns"
+    },
+    {
+      "claim": "FP32 accumulation makes fusion illegal because register pressure always grows unboundedly.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Accumulator dtype is a numerical choice; register pressure is a performance heuristic, not a legality boundary.",
+      "sourceOrEvidence": "TorchInductor fusion heuristics"
+    },
+    {
+      "claim": "Pointwise-pointwise fusion is disallowed because both ops share the same iteration space.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Shared iteration space is exactly what makes pointwise-pointwise fusion the most trivial and common fusion pattern.",
+      "sourceOrEvidence": "TorchInductor, XLA, TVM fusion passes"
+    },
+    {
+      "claim": "Fusion boundaries are purely a performance concern, not a legality concern.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Some boundaries (device placement, aliased mutation, explicit outputs) are legality conditions; others (register pressure) are performance heuristics.",
+      "sourceOrEvidence": "TVM fusion pass docstring"
+    }
+  ],
+  "implementationFacts": [
+    "TVM Relax marks ops with opacity levels (kInjective, kReduction, kOpaque) to drive fusion.",
+    "TorchInductor tracks mutation via functionalization and refuses to fuse across live-aliased writes."
+  ],
+  "performanceScenarios": [
+    "A CPU-loaded tensor followed by a GPU pointwise op requires an H2D copy, forming an unavoidable fusion boundary."
+  ],
+  "versionSensitivity": "stable_principle"
+}

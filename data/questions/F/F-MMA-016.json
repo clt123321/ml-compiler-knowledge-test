@@ -1,0 +1,65 @@
+{
+  "id": "F-MMA-016",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / mma.sync — matrix operand layout and warp-level cooperation",
+  "learningObjective": "Understand the warp-cooperative nature of mma.sync and the register-fragment layout it requires.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80) or newer",
+    "device": "GPU",
+    "requiredFeatures": ["Tensor Cores; mma.sync instruction"]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++ / inline PTX",
+    "compiler": "nvcc",
+    "compilerVersionScope": "CUDA 11+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about a Tensor Core `mma.sync` instruction (e.g., `mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32`) is correct?",
+  "options": [
+    { "id": "A", "text": "`mma.sync` is a warp-cooperative instruction: all 32 threads in a warp jointly execute one MMA, each holding a fragment of the operands and accumulator in registers per a hardware-defined layout; a single thread cannot execute an mma on its own." },
+    { "id": "B", "text": "`mma.sync` is a per-thread instruction: each of 32 lanes independently multiplies its 16×8 block by its 8×16 block, so the warp effectively performs 32 independent MMAs per cycle." },
+    { "id": "C", "text": "`mma.sync` reads its operands directly from global memory and writes accumulators back to global memory; register fragments are only used for the FP32 accumulator." },
+    { "id": "D", "text": "`mma.sync` requires operands to reside in shared memory; the compiler automatically issues `ldmatrix` to fetch them and reissues the mma on every register-file eviction to avoid stalls." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Tensor Core `mma.sync` instructions are warp-cooperative: a single mma reads a fixed-shape matrix (e.g., 16×16 for `m16n8k16`) that is distributed across the warp's 32 lanes' registers per a hardware-mandated fragment layout. Individual lanes hold only pieces of the operands and produce pieces of the accumulator. The operands must be in registers at issue time; loading from SMEM uses `ldmatrix` (a warp-cooperative load that produces the required layout), and from GMEM typically goes via `cp.async` → SMEM → `ldmatrix`.",
+  "optionExplanations": {
+    "A": "Correct: warp-cooperative execution with fragment layout in registers.",
+    "B": "Wrong: it is not 32 independent MMAs; it is one warp-wide MMA.",
+    "C": "Wrong: operands must be in registers, not global memory.",
+    "D": "Wrong: `mma.sync` requires register operands; `ldmatrix` is a separate instruction used by the programmer."
+  },
+  "assumptions": [
+    "Ampere+ mma.sync instruction set as documented in PTX ISA."
+  ],
+  "nonImplications": [
+    "Does not imply that all mma shapes have the same operand layout; different m/n/k tuples use different fragment layouts.",
+    "Does not imply that `ldmatrix` is auto-inserted by the CUDA compiler; libraries like CUTLASS emit it explicitly."
+  ],
+  "misconceptionTags": ["mma_per_thread_myth", "mma_reads_gmem_myth"],
+  "distractorRationales": {
+    "B": "Confuses warp-cooperative with per-thread execution.",
+    "C": "Wrong claim about GMEM operands.",
+    "D": "Confuses `ldmatrix` roles with automatic issuance."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "PTX ISA — mma.sync warp-cooperative semantics", "supports": ["A"] },
+    { "ref": "BOOK:pmpp4", "locator": "Tensor Core chapter", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-MMA-016.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "D-AOTI-020",
+  "learningObjective": "Explain what AOTInductor produces as an artifact and how it is loaded/executed at deployment.",
+  "canonicalClaims": [
+    {
+      "claim": "AOTInductor takes an ExportedProgram, runs the Inductor compilation stack ahead of time, and produces a shared library (.so) containing the compiled kernels plus a small runtime wrapper; the artifact can be loaded and executed from C++ or Python without re-running torch.compile.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "A valid ExportedProgram is provided."
+      ],
+      "nonImplications": [
+        "Does not imply AOTInductor supports every op that torch.compile does.",
+        "Does not imply the .so is architecture-portable; it targets the compile-time hardware/OS."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-aoti", "locator": "AOTInductor overview" },
+        { "ref": "DOC:torch-export", "locator": "Export + AOTInductor deployment" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AOTInductor is a runtime JIT and re-compiles per process.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It compiles ahead of time and produces a reusable native artifact.",
+      "sourceOrEvidence": "AOTInductor docs"
+    },
+    {
+      "claim": "AOTInductor artifacts are Python pickles requiring the full PyTorch install.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are native shared libraries loadable from C++.",
+      "sourceOrEvidence": "AOTInductor docs"
+    },
+    {
+      "claim": "AOTInductor only rewrites the FX graph and returns nothing executable.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It produces executable code.",
+      "sourceOrEvidence": "AOTInductor docs"
+    },
+    {
+      "claim": "AOTInductor artifacts are architecture-portable across CPU/GPU vendors.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The artifact targets the compile-time hardware; deployment must match.",
+      "sourceOrEvidence": "AOTInductor docs"
+    }
+  ],
+  "implementationFacts": [
+    "AOTInductor accepts an ExportedProgram",
+    "Produces a shared library with the compiled kernels and a wrapper for input/output marshaling",
+    "Loadable from C++ or Python; no Python source at runtime is required"
+  ],
+  "performanceScenarios": [
+    "AOTInductor eliminates per-process compile latency for the compiled subgraph, which is a common cold-start bottleneck for torch.compile."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

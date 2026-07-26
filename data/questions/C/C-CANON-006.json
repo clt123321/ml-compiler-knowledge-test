@@ -1,0 +1,92 @@
+{
+  "id": "C-CANON-006",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Canonicalization / arith folding in MLIR",
+  "learningObjective": "Explain what canonicalization does in an IR framework such as MLIR and distinguish it from lowering and legalization.",
+  "archetype": "ir_transformation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "The MLIR canonicalization pass rewrites the fragment BEFORE into the fragment AFTER. Which statement best characterizes what canonicalization is doing here?",
+  "irSnippet": "// BEFORE\n%c0 = arith.constant 0 : i32\n%c1 = arith.constant 1 : i32\n%a  = arith.addi %x, %c0 : i32   // x + 0\n%b  = arith.muli %a, %c1 : i32   // (x+0) * 1\n%c  = arith.addi %b, %b : i32    // 2*b\nreturn %c : i32\n\n// AFTER (canonicalized)\n%two = arith.constant 2 : i32\n%c   = arith.muli %x, %two : i32  // 2*x\nreturn %c : i32",
+  "options": [
+    {
+      "id": "A",
+      "text": "Canonicalization performs algebraic simplifications and constant folding within a dialect to bring semantically equivalent IR into a preferred normal form; it operates within a dialect and does not change the operations' dialects."
+    },
+    {
+      "id": "B",
+      "text": "Canonicalization is a synonym for lowering; the transformation shown is a lowering step from arith to a lower-level dialect such as LLVM, motivated by making the IR closer to backend instructions. In this reading, the pass renames operations from `arith` to a lower-level LLVM dialect at the boundary and is invoked as part of the standard lowering pipeline after all optimization passes have converged."
+    },
+    {
+      "id": "C",
+      "text": "Canonicalization is MLIR's dialect-conversion mechanism; it uses a Conversion Target and Type Converter to legalize illegal operations by replacing them with legal ones from a different dialect. Under this description, canonicalization essentially reuses the same machinery as `applyPartialConversion`: it walks the IR, applies the target's legality rules, and calls the type converter's materialization hooks to resolve any inserted casts."
+    },
+    {
+      "id": "D",
+      "text": "Canonicalization performs alias analysis and functionalization of in-place operations; the transformation shown is the SSA rename pass invoked as part of canonicalization. In this account, canonicalization runs SROA / mem2reg-style promotions on the IR by first performing alias analysis over memref reads and writes, then rewriting the affected sequences into single-assignment temporaries."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Canonicalization in MLIR (driven by op-local `getCanonicalizationPatterns` / fold hooks) simplifies IR into a preferred normal form: constant folding, identity elimination (`x+0`, `x*1`), and small algebraic rewrites, all within the same dialect. It is distinct from Lowering (moving to a lower-level dialect) and from Dialect Conversion / Legalization (which uses a ConversionTarget and TypeConverter to move between dialects). Functionalization is a separate concern.",
+  "optionExplanations": {
+    "A": "Correct: describes canonicalization's role (fold + identity + normal form) and its scope (within-dialect).",
+    "B": "Wrong: lowering moves to a lower-level dialect. Canonicalization stays in-dialect.",
+    "C": "Wrong: describes dialect conversion / legalization, which is a separate mechanism.",
+    "D": "Wrong: functionalization is unrelated to arith canonicalization."
+  },
+  "assumptions": [
+    "MLIR uses op-registered canonicalization patterns and folders."
+  ],
+  "nonImplications": [
+    "Does not imply canonicalization always improves runtime; it targets IR quality, not necessarily peak performance.",
+    "Does not imply canonicalization removes all redundancy; CSE and DCE are separate passes."
+  ],
+  "misconceptionTags": [
+    "canonicalization_confused_with_lowering",
+    "canonicalization_confused_with_dialect_conversion"
+  ],
+  "distractorRationales": {
+    "B": "Confuses in-dialect canonicalization with cross-dialect lowering.",
+    "C": "Confuses canonicalization with dialect conversion.",
+    "D": "Wrong pass identity."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Canonicalization; op fold hooks",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "MLIR CGO paper: canonicalization vs. lowering vs. dialect conversion",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-CANON-006.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

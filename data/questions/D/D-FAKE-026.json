@@ -1,0 +1,93 @@
+{
+  "id": "D-FAKE-026",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "FakeTensor semantics",
+  "learningObjective": "Define what a FakeTensor is in PyTorch 2 and describe its role during tracing.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement most precisely defines a FakeTensor and its role in PyTorch 2?",
+  "options": [
+    {
+      "id": "A",
+      "text": "A FakeTensor is a tensor whose data buffer is entirely on GPU and whose values are randomized at construction; the tracer uses them to sanity-check kernel outputs during tracing. In this account, a FakeTensor is a tensor whose data buffer is entirely allocated on GPU and whose values are randomized at construction; the tracer uses these random values to sanity-check kernel outputs during tracing and compares them against a reference."
+    },
+    {
+      "id": "B",
+      "text": "A FakeTensor is a placeholder inserted by torch.jit.script when it cannot infer a Python type; it is a legacy concept and unrelated to torch.compile. Under this framing, a FakeTensor is a placeholder object inserted by torch.jit.script whenever it cannot infer a concrete Python type for a value; it is a legacy TorchScript concept and is unrelated to torch.compile's tracing pipeline in current releases."
+    },
+    {
+      "id": "C",
+      "text": "A FakeTensor is a tensor-like object that carries shape, dtype, device, and stride metadata without a real data buffer; the tracer runs ATen ops symbolically on FakeTensors to propagate metadata through the traced graph without executing real kernels."
+    },
+    {
+      "id": "D",
+      "text": "A FakeTensor is a tensor stored on the CPU that mirrors a GPU tensor for debugging; TorchDynamo compares real and fake tensor outputs after each op to detect numerical drift. Under this reading, a FakeTensor is a tensor stored on the CPU that mirrors a GPU tensor for debugging; TorchDynamo compares the real GPU output against the fake CPU output after each op to detect numerical drift and flag potentially incorrect kernels."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "A FakeTensor is a metadata-only tensor: it carries shape, dtype, device, stride, and other tensor attributes but has no allocated data. During tracing, TorchDynamo / AOTAutograd propagate FakeTensors through ATen ops (using each op's meta impl) to determine output metadata without executing real kernels. This makes tracing cheap and enables symbolic shape reasoning.",
+  "optionExplanations": {
+    "A": "Wrong: FakeTensors have no data.",
+    "C": "Correct.",
+    "B": "Wrong: FakeTensors are central to torch.compile tracing.",
+    "D": "Wrong: FakeTensors are not for numerical comparison."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5."
+  ],
+  "nonImplications": [
+    "Does not imply FakeTensors capture all runtime information; data-dependent behavior cannot be traced on FakeTensors.",
+    "Does not imply FakeTensor propagation is always possible; some ops need real data and cause graph breaks or specialization."
+  ],
+  "misconceptionTags": [
+    "faketensor_has_data",
+    "faketensor_is_torchscript"
+  ],
+  "distractorRationales": {
+    "A": "Wrong data claim.",
+    "B": "Wrong TorchScript association.",
+    "D": "Wrong debug-comparison claim."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "FakeTensor and meta impl",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "FakeTensor propagation in tracing",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-FAKE-026.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

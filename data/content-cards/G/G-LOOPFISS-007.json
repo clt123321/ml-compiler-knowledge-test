@@ -1,0 +1,54 @@
+{
+  "questionId": "G-LOOPFISS-007",
+  "learningObjective": "Identify legitimate motivations for loop fission and cases where fission is counter-productive.",
+  "canonicalClaims": [
+    {
+      "claim": "Loop fission splits one loop body into two loops sharing the same iteration space, motivated by (a) relieving register pressure, (b) exposing vectorization / parallelization on a subset of statements, and (c) allowing different tile sizes or schedules per half.",
+      "conditions": [
+        "The dependence graph after fission remains acyclic (no forward-crossing dependences created).",
+        "The two halves can each be scheduled independently."
+      ],
+      "nonImplications": [
+        "Does not imply any single fission decision is always a wall-clock win.",
+        "Does not imply fission is semantics-fixing; it is semantics-preserving only when legal."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Loop distribution / fission" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Loop fission improves cache behavior whenever the original body reuses intermediate values within an iteration.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "That scenario is the classic case for fusion, not fission; fission would force the intermediate to be materialized across iterations.",
+      "sourceOrEvidence": "Engineering a Compiler, 3rd ed."
+    },
+    {
+      "claim": "Fission can reorder side-effecting operations to fix a buggy program.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fission is semantics-preserving only when the dependence graph permits it; it does not change program meaning.",
+      "sourceOrEvidence": "Compiler textbook loop-transformation chapters"
+    },
+    {
+      "claim": "Fission is always legal because it does not change the iteration space.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Fission is legal only if the dependence graph between the two halves is acyclic; otherwise it violates cross-statement dependences.",
+      "sourceOrEvidence": "Engineering a Compiler, 3rd ed."
+    },
+    {
+      "claim": "Fission is the same as unrolling, since both replicate loop bodies.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Unrolling replicates the body across consecutive iterations; fission splits statements into separate loops across the same iteration space.",
+      "sourceOrEvidence": "Compiler textbook"
+    }
+  ],
+  "implementationFacts": [
+    "Polyhedral compilers (e.g., MLIR affine loop distribution) use fission followed by fusion to reshape loop nests.",
+    "Halide's schedule split_loop / distribute achieves fission on TensorIR-style pipelines."
+  ],
+  "performanceScenarios": [
+    "A 20-statement inner body with many live scalars can be fissioned into two 10-statement bodies to reduce register pressure and enable vectorization."
+  ],
+  "versionSensitivity": "stable_principle"
+}

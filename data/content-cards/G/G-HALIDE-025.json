@@ -1,0 +1,54 @@
+{
+  "questionId": "G-HALIDE-025",
+  "learningObjective": "Explain Halide's separation of algorithm (compute) from schedule and why the design choice matters for performance portability.",
+  "canonicalClaims": [
+    {
+      "claim": "Halide separates the algorithm (pure functional description of what to compute) from the schedule (how to compute — loop order, tiling, storage, parallelism) because a single algorithm admits many valid schedules with vastly different performance across hardware; the separation allows exploration and portability without endangering correctness.",
+      "conditions": [
+        "The algorithm is expressible in Halide's DSL (or an equivalent tensor-expression language).",
+        "The schedule primitives satisfy their legality preconditions."
+      ],
+      "nonImplications": [
+        "Does not imply any schedule is valid; schedule primitives have preconditions.",
+        "Does not imply schedule search is trivial; autoschedulers can spend significant time."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:halide", "locator": "Abstract; Sections 1-2" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The algorithm / schedule split in Halide is primarily for compile-time type checking.",
+      "errorType": "scope_error",
+      "whyWrong": "Type checking is orthogonal; the split is about performance exploration and portability.",
+      "sourceOrEvidence": "Halide paper abstract"
+    },
+    {
+      "claim": "One Halide schedule can be reused across multiple algorithms.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Schedules are indexed by the algorithm's Funcs; they are algorithm-specific.",
+      "sourceOrEvidence": "Halide language reference"
+    },
+    {
+      "claim": "Schedules in Halide are interpreted at runtime while algorithms are compiled.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both are compiled together into the target lowering; there is no runtime schedule interpreter.",
+      "sourceOrEvidence": "Halide compilation model"
+    },
+    {
+      "claim": "The Halide split makes performance tuning irrelevant since any schedule yields the same performance.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The split enables tuning by making it easy — it does not eliminate the tuning problem.",
+      "sourceOrEvidence": "Halide paper motivation"
+    }
+  ],
+  "implementationFacts": [
+    "Halide's schedule primitives include split, tile, reorder, vectorize, unroll, parallel, compute_at, store_at.",
+    "TVM's TE and TensorIR schedules follow the same algorithm-schedule split."
+  ],
+  "performanceScenarios": [
+    "A stencil algorithm gets 3× speedup by switching from row-major to blocked schedule on the same CPU."
+  ],
+  "versionSensitivity": "stable_principle"
+}

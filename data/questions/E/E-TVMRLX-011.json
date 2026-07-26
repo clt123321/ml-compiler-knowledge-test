@@ -1,0 +1,93 @@
+{
+  "id": "E-TVMRLX-011",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "TVM / Relax vs Relay — design motivation",
+  "learningObjective": "Understand what Relax adds relative to Relay and why the TVM community introduced a new graph-level IR.",
+  "archetype": "paper_design_intent",
+  "difficulty": 3,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM",
+    "frameworkVersionScope": "TVM Unity (Relax, ~0.14+)",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement best captures the design motivation behind Relax over the older Relay IR in TVM Unity?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Relax removes the module concept from TVM; unlike Relay's IRModule, Relax programs are flat lists of ops without functions, calls, or nested regions, which simplifies serialization."
+    },
+    {
+      "id": "B",
+      "text": "Relax's main goal is to replace TensorIR entirely by folding all loop-level scheduling into a single graph IR; PrimFunc is retained only for legacy compatibility."
+    },
+    {
+      "id": "C",
+      "text": "Relax exists solely to add automatic differentiation to TVM; it does not change how shapes, calls, or tensor programs are represented compared to Relay."
+    },
+    {
+      "id": "D",
+      "text": "Relax is a graph-level IR designed to (i) natively support symbolic/dynamic shapes as first-class values, (ii) unify graph-level and tensor-level IRs by cross-calling PrimFunc via TensorIR, and (iii) enable Python-native metaprogramming and staged transformation — capabilities that Relay's typed functional core could not cleanly express."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Relax was introduced in the TVM Unity effort to address Relay's limitations for modern DL: static-shape-first typing, poor cross-level integration with TensorIR, and difficulty expressing meta-schedule-driven or Python-native transformations. Relax makes symbolic shape a first-class citizen (shape variables and constraints), supports calling PrimFunc (TensorIR) directly for tensor-level compute, and integrates with Python-native metaprogramming via TVMScript. Relax coexists with TensorIR rather than replacing it; both live inside the same IRModule.",
+  "optionExplanations": {
+    "D": "Correct: matches Relax's documented design goals.",
+    "B": "Wrong: Relax and TensorIR are complementary, not one replacing the other.",
+    "C": "Wrong: AD is not the primary Relax motivation; shape/dataflow are.",
+    "A": "Wrong: Relax still uses IRModule with functions and calls."
+  },
+  "assumptions": [
+    "TVM Unity / Relax reflects the design goals documented on tvm.apache.org."
+  ],
+  "nonImplications": [
+    "Does not imply Relay is deprecated in every TVM deployment; some downstream users still target it.",
+    "Does not imply Relax fully subsumes TensorIR; the two levels remain distinct on purpose."
+  ],
+  "misconceptionTags": [
+    "relax_replaces_tir_myth",
+    "relax_only_autodiff_myth"
+  ],
+  "distractorRationales": {
+    "B": "Confuses graph-level and tensor-level roles.",
+    "C": "Under-represents the shape and dataflow motivation.",
+    "A": "Wrong claim that Relax removes module/function structure."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "Relax and TensorIR overview; Unity vision",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "TVM OSDI 2018 — background on the original TVM stack",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-TVMRLX-011.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

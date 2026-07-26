@@ -1,0 +1,84 @@
+{
+  "id": "E-ONNXOP-027",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "ONNX / Operator Set, Opset versioning",
+  "learningObjective": "Understand ONNX's operator set and opset versioning model.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "ONNX",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about ONNX opsets is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "ONNX opsets are monotonically merged over time: a runtime supporting opset 18 automatically supports the exact semantics of every opset from 1 to 17 without any per-version handling."
+    },
+    {
+      "id": "B",
+      "text": "ONNX opsets are only a display feature; every ONNX runtime implements the union of all opset versions simultaneously, so opset numbers can be ignored."
+    },
+    {
+      "id": "C",
+      "text": "An ONNX model declares a specific opset version (e.g., `opset_import: [domain=\"\", version=17]`); each op's semantics is defined by the version listed in that opset, and consumers must implement the exact opset version to execute the model correctly."
+    },
+    {
+      "id": "D",
+      "text": "The opset version determines only the file-format layout on disk; the operator semantics themselves never change across versions."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "ONNX uses opset versioning to snapshot op semantics: each model declares which opset version(s) it uses (via `opset_import` in the model proto), and consumers must implement that specific opset. Op semantics can change across opset versions (new attributes, new ops, retirement/deprecation of old ops), so runtimes typically implement multiple opsets and dispatch based on the model's declared version. This is what makes ONNX a stable interchange format across framework/runtime versions.",
+  "optionExplanations": {
+    "C": "Correct: opset versioning is the semantic snapshot mechanism.",
+    "B": "Wrong: opsets are semantic, not display-only.",
+    "A": "Wrong: version-specific semantics differ; automatic union is not the model.",
+    "D": "Wrong: op semantics do evolve across opsets."
+  },
+  "assumptions": [
+    "ONNX specification as of 2026; opset versioning is stable across recent revisions."
+  ],
+  "nonImplications": [
+    "Does not imply every runtime must support every opset; converters and shape inference tools bridge gaps.",
+    "Does not imply an opset is a whole-model version; each domain has its own opset."
+  ],
+  "misconceptionTags": [
+    "opset_display_only_myth",
+    "opset_auto_union_myth"
+  ],
+  "distractorRationales": {
+    "B": "Ignores semantic versioning.",
+    "A": "Wrong claim of automatic version union.",
+    "D": "Confuses format layout with op semantics."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:onnx",
+      "locator": "ONNX opset versioning specification",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-ONNXOP-027.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

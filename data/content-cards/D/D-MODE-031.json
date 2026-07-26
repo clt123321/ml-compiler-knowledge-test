@@ -1,0 +1,56 @@
+{
+  "questionId": "D-MODE-031",
+  "learningObjective": "Distinguish the intent of `torch.compile` `mode` presets and identify correct behavior claims.",
+  "canonicalClaims": [
+    {
+      "claim": "`torch.compile`'s `mode` presets tune codegen/runtime knobs: `reduce-overhead` uses CUDA Graph capture to lower per-launch overhead; `max-autotune` enables aggressive kernel-selection/autotuning with a compile-time cost; the default mode is a middle ground. The captured graph structure is largely unchanged across modes.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "CUDA tensors are used for the CUDA-relevant claims."
+      ],
+      "nonImplications": [
+        "Does not imply reduce-overhead is always faster; CUDA Graphs impose their own constraints.",
+        "Does not imply max-autotune is always worth its compile time."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "mode parameter" },
+        { "ref": "DOC:torch-inductor", "locator": "Autotune / CUDA Graphs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Default mode emits pure Python fallback for CUDA tensors.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Default uses Triton codegen for CUDA tensors.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Modes change which ops are captured by Dynamo.",
+      "errorType": "scope_error",
+      "whyWrong": "Modes are codegen/runtime knobs; capture is by Dynamo and shape/guard rules.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "reduce-overhead has no shape constraints.",
+      "errorType": "scope_error",
+      "whyWrong": "CUDA Graph capture requires static shapes and stream-safe patterns.",
+      "sourceOrEvidence": "CUDA Graph docs"
+    },
+    {
+      "claim": "max-autotune reduces compile time.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "It increases compile time by exploring more configs.",
+      "sourceOrEvidence": "Inductor docs"
+    }
+  ],
+  "implementationFacts": [
+    "reduce-overhead relies on CUDA Graph capture where safe",
+    "max-autotune expands Triton config search and enables Cutlass/GEMM template exploration in some releases",
+    "Modes tune knobs; the traced graph is unchanged"
+  ],
+  "performanceScenarios": [
+    "Choosing a mode depends on the workload: many-small-kernel inference benefits from reduce-overhead; long-running training may amortize max-autotune's compile cost."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

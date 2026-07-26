@@ -37,6 +37,216 @@
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/D/D-BREAK-005.json",
       "version": 1
+    },
+    {
+      "id": "D-GUARD-006",
+      "file": "data/questions/D/D-GUARD-006.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-GUARD-006.json",
+      "version": 1
+    },
+    {
+      "id": "D-MARK-007",
+      "file": "data/questions/D/D-MARK-007.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-MARK-007.json",
+      "version": 1
+    },
+    {
+      "id": "D-SYMINT-008",
+      "file": "data/questions/D/D-SYMINT-008.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-SYMINT-008.json",
+      "version": 1
+    },
+    {
+      "id": "D-AUTODYN-009",
+      "file": "data/questions/D/D-AUTODYN-009.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-AUTODYN-009.json",
+      "version": 1
+    },
+    {
+      "id": "D-DYNKW-010",
+      "file": "data/questions/D/D-DYNKW-010.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-DYNKW-010.json",
+      "version": 1
+    },
+    {
+      "id": "D-AOTAG-011",
+      "file": "data/questions/D/D-AOTAG-011.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-AOTAG-011.json",
+      "version": 1
+    },
+    {
+      "id": "D-DECOMP-012",
+      "file": "data/questions/D/D-DECOMP-012.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-DECOMP-012.json",
+      "version": 1
+    },
+    {
+      "id": "D-FUNCT-013",
+      "file": "data/questions/D/D-FUNCT-013.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-FUNCT-013.json",
+      "version": 1
+    },
+    {
+      "id": "D-REDUCE-014",
+      "file": "data/questions/D/D-REDUCE-014.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-REDUCE-014.json",
+      "version": 1
+    },
+    {
+      "id": "D-SCHED-015",
+      "file": "data/questions/D/D-SCHED-015.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-SCHED-015.json",
+      "version": 1
+    },
+    {
+      "id": "D-TRITON-016",
+      "file": "data/questions/D/D-TRITON-016.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-TRITON-016.json",
+      "version": 1
+    },
+    {
+      "id": "D-CPPBACK-017",
+      "file": "data/questions/D/D-CPPBACK-017.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-CPPBACK-017.json",
+      "version": 1
+    },
+    {
+      "id": "D-EXPORT-018",
+      "file": "data/questions/D/D-EXPORT-018.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-EXPORT-018.json",
+      "version": 1
+    },
+    {
+      "id": "D-EXPCONS-019",
+      "file": "data/questions/D/D-EXPCONS-019.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-EXPCONS-019.json",
+      "version": 1
+    },
+    {
+      "id": "D-AOTI-020",
+      "file": "data/questions/D/D-AOTI-020.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-AOTI-020.json",
+      "version": 1
+    },
+    {
+      "id": "D-AOTIRT-021",
+      "file": "data/questions/D/D-AOTIRT-021.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-AOTIRT-021.json",
+      "version": 1
+    },
+    {
+      "id": "D-CUSTOM-022",
+      "file": "data/questions/D/D-CUSTOM-022.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-CUSTOM-022.json",
+      "version": 1
+    },
+    {
+      "id": "D-MUT-023",
+      "file": "data/questions/D/D-MUT-023.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-MUT-023.json",
+      "version": 1
+    },
+    {
+      "id": "D-CACHE-024",
+      "file": "data/questions/D/D-CACHE-024.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-CACHE-024.json",
+      "version": 1
+    },
+    {
+      "id": "D-FALLBACK-025",
+      "file": "data/questions/D/D-FALLBACK-025.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-FALLBACK-025.json",
+      "version": 1
+    },
+    {
+      "id": "D-FAKE-026",
+      "file": "data/questions/D/D-FAKE-026.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-FAKE-026.json",
+      "version": 1
+    },
+    {
+      "id": "D-COND-027",
+      "file": "data/questions/D/D-COND-027.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-COND-027.json",
+      "version": 1
+    },
+    {
+      "id": "D-FULL-028",
+      "file": "data/questions/D/D-FULL-028.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-FULL-028.json",
+      "version": 1
+    },
+    {
+      "id": "D-MINIFIER-029",
+      "file": "data/questions/D/D-MINIFIER-029.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-MINIFIER-029.json",
+      "version": 1
+    },
+    {
+      "id": "D-RECDIAG-030",
+      "file": "data/questions/D/D-RECDIAG-030.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-RECDIAG-030.json",
+      "version": 1
+    },
+    {
+      "id": "D-MODE-031",
+      "file": "data/questions/D/D-MODE-031.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-MODE-031.json",
+      "version": 1
+    },
+    {
+      "id": "D-COMPILET-032",
+      "file": "data/questions/D/D-COMPILET-032.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-COMPILET-032.json",
+      "version": 1
+    },
+    {
+      "id": "D-BWSHAPE-033",
+      "file": "data/questions/D/D-BWSHAPE-033.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-BWSHAPE-033.json",
+      "version": 1
+    },
+    {
+      "id": "D-GUARDEXPR-034",
+      "file": "data/questions/D/D-GUARDEXPR-034.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-GUARDEXPR-034.json",
+      "version": 1
+    },
+    {
+      "id": "D-FX-035",
+      "file": "data/questions/D/D-FX-035.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-FX-035.json",
+      "version": 1
     }
   ]
 }

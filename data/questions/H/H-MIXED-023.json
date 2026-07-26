@@ -1,0 +1,66 @@
+{
+  "id": "H-MIXED-023",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "Mixed precision / Master weights / Accumulation dtype",
+  "learningObjective": "Explain the master-weight pattern in mixed-precision DNN training and the roles of the various dtypes.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper",
+    "device": "GPU",
+    "requiredFeatures": ["FP16/BF16 Tensor Core"]
+  },
+  "softwareContext": {
+    "framework": "PyTorch autocast + GradScaler",
+    "frameworkVersionScope": "PyTorch 2.0 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Standard mixed-precision (FP16 with FP32 master weights) DNN training on GPU has several dtype roles. Which of the following statements are TRUE? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "The forward pass runs matmuls in FP16 on Tensor Cores; the accumulator inside each matmul is FP32; the output is cast to FP16 for the next op." },
+    { "id": "B", "text": "The optimizer maintains a FP32 copy of the weights ('master weights') and applies updates to them; the FP32 weights are then cast to FP16 for the forward pass. This preserves accumulated small-magnitude gradients that would round to zero in FP16." },
+    { "id": "C", "text": "For FP16 training, dynamic loss scaling multiplies the loss by a factor before backward and unscales the gradients before optimizer step; this shifts gradient magnitudes into FP16's representable range and avoids underflow." },
+    { "id": "D", "text": "BF16 training generally does not require loss scaling because BF16's exponent range matches FP32; the master-weight pattern is optional and often omitted." },
+    { "id": "E", "text": "In mixed-precision training, the FP32 master weights double memory footprint of weights compared to pure FP32 training." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A: standard mixed-precision matmul (HMMA with FP32 accumulator, FP16 output). B: the master-weight pattern is the essential trick for FP16 training. C: loss scaling is the standard mitigation for FP16 gradient underflow. D is partially misleading: BF16 typically does not need loss scaling, but the master-weight pattern is still commonly used (or the optimizer state is kept in FP32) to preserve tiny update magnitudes that would round to zero in BF16 — 'often omitted' is not accurate; frameworks like Megatron-LM keep FP32 optimizer state even under BF16. E is false: master weights add ONE FP32 copy in addition to the FP16 copy, so weight memory grows to 2 bytes (FP16) + 4 bytes (FP32) = 6 bytes/param — this is MORE than pure FP32 (4 bytes), not double.",
+  "optionExplanations": {
+    "A": "Correct: matmul dtype roles.",
+    "B": "Correct: master-weight rationale.",
+    "C": "Correct: loss scaling for FP16 underflow.",
+    "D": "Wrong: BF16 master-weight pattern is common, not typically omitted.",
+    "E": "Wrong: master weights add to (not replace) FP16 weights; total > pure FP32."
+  },
+  "assumptions": [
+    "Standard mixed-precision training as implemented in PyTorch autocast + GradScaler or Megatron / DeepSpeed."
+  ],
+  "nonImplications": [
+    "Does not imply optimizer state (moments) are always FP32 — some methods (e.g., 8-bit optimizers, LAMB) use lower precision optimizer state.",
+    "Does not imply BF16 always achieves the same convergence as FP32 — very small learning-rate schedules may require FP32."
+  ],
+  "misconceptionTags": ["bf16_no_master_weights", "master_weights_double_memory"],
+  "distractorRationales": {
+    "D": "Misstates BF16 practice.",
+    "E": "Misunderstands memory arithmetic."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Mixed-precision training guide", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:sze-eff", "locator": "Mixed-precision training", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "PyTorch mixed-precision training dtype roles",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-MIXED-023.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

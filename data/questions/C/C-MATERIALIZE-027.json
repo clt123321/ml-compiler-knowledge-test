@@ -1,0 +1,91 @@
+{
+  "id": "C-MATERIALIZE-027",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Materialization semantics in tensor IR",
+  "learningObjective": "Define 'materialization' in a tensor IR context and distinguish it from view creation.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic tensor compiler",
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following is the most precise definition of 'materialization' in a tensor IR?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Any operation that writes tensor metadata is a materialization; view creation is a materialization because it writes new shape/stride fields. Under this framing, view creation is a form of materialization because updating the shape and stride fields is itself a write to the tensor's metadata storage, so any op that changes shape/stride joins the same category as `.contiguous()`."
+    },
+    {
+      "id": "B",
+      "text": "Materialization is the act of realizing a tensor value into a concrete backing buffer with the requested layout, producing physical elements at physical addresses; it is the counterpart of a view, which only rewrites metadata over existing storage."
+    },
+    {
+      "id": "C",
+      "text": "Materialization is a keyword for constant folding in a graph IR: it evaluates constant subgraphs at compile time and substitutes the resulting tensors into the graph. In this reading, materialization is a synonym for constant folding at the graph IR level; both evaluate parts of the computation at compile time and substitute the resulting tensor into the graph as an inlined literal."
+    },
+    {
+      "id": "D",
+      "text": "Materialization is synonymous with kernel launch; every time a kernel executes, its output is 'materialized' by definition. In this account, every kernel launch by definition materializes its output because the kernel writes bytes into a buffer at physical addresses; therefore avoiding materialization is equivalent to avoiding kernel launches entirely."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Materialization means allocating a backing buffer and writing the tensor's values into it under the requested (shape, stride, dtype, layout). It is the counterpart of a view, which is metadata-only over existing storage. Compilers work hard to avoid materializations when a computation can be re-expressed as views (transpose of a stride, fold of contiguous dims) or when fusion eliminates the need for the intermediate buffer.",
+  "optionExplanations": {
+    "A": "Wrong: writing metadata is a view, not a materialization.",
+    "B": "Correct: standard tensor-compiler terminology.",
+    "C": "Wrong: constant folding is a distinct concept (though it does produce a concrete tensor).",
+    "D": "Wrong: kernel execution and materialization are distinct concepts; a kernel may write into an already-materialized buffer."
+  },
+  "assumptions": [
+    "The IR distinguishes tensor metadata from tensor storage."
+  ],
+  "nonImplications": [
+    "Does not imply materialization is always harmful; some downstream ops require contiguous materialized buffers.",
+    "Does not imply that view creation is always cheap in downstream cache/coalescing terms."
+  ],
+  "misconceptionTags": [
+    "view_confused_with_materialization",
+    "materialization_equals_kernel"
+  ],
+  "distractorRationales": {
+    "A": "Merges view and materialization.",
+    "C": "Wrong association with constant folding.",
+    "D": "Wrong association with kernel launch."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "MemRef materialization vs. tensor view",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "Buffer / storage materialization",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-MATERIALIZE-027.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

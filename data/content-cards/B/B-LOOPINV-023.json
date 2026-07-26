@@ -1,0 +1,48 @@
+{
+  "questionId": "B-LOOPINV-023",
+  "learningObjective": "Determine loop-invariance of an expression when its operands are themselves defined inside the loop via phi.",
+  "canonicalClaims": [
+    {
+      "claim": "An expression is loop-invariant iff every operand is either a constant or itself loop-invariant (defined outside the loop or by another loop-invariant expression). Loop-header phi nodes with values that change across iterations make the phi's result loop-variant.",
+      "conditions": [
+        "SSA form with well-defined loop structure (header, body, preheader).",
+        "Loop-carried state is expressed via phi nodes."
+      ],
+      "nonImplications": [
+        "Does not imply LICM cannot see through phi nodes; the invariance test operates on operand chains.",
+        "Does not imply that a loop-variant expression cannot be optimized; strength reduction and IV simplification may apply."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "LICM invariance test" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "An expression with at least one constant operand is loop-invariant.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Loop-invariance is a conjunction over operands; a single loop-variant operand suffices to make the expression loop-variant.",
+      "sourceOrEvidence": "EAC3 LICM chapter"
+    },
+    {
+      "claim": "LICM cannot process loops containing phi nodes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "LICM routinely processes SSA loops with phi at headers; the invariance test explicitly handles phi operands via the invariance chain.",
+      "sourceOrEvidence": "LLVM LICM implementation"
+    },
+    {
+      "claim": "Purity of the operator implies loop-invariance of the expression.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Purity is necessary for safe hoisting, but invariance also requires operand-side invariance.",
+      "sourceOrEvidence": "EAC3 optimization prerequisites"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM's LICM checks operand-by-operand invariance recursively.",
+    "Loop-header phi results are invariant only if both incoming values are invariant (equivalent to a value defined outside the loop)."
+  ],
+  "performanceScenarios": [
+    "IV strength reduction extracts loop-variant patterns like i*constant into loop-carried recurrences, complementing LICM."
+  ],
+  "versionSensitivity": "stable_principle"
+}

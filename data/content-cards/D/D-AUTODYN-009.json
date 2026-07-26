@@ -1,0 +1,56 @@
+{
+  "questionId": "D-AUTODYN-009",
+  "learningObjective": "Interpret a recompile log showing automatic dynamic promotion after repeated shape-triggered recompilations.",
+  "canonicalClaims": [
+    {
+      "claim": "PyTorch's automatic dynamic-shape behavior tracks distinct observed sizes per dim; after enough distinct sizes, the dim is marked dynamic and the function is re-traced with a SymInt, producing a symbolic-shape compilation that serves subsequent sizes without further recompiles for that dim.",
+      "conditions": [
+        "Default torch.compile settings on PyTorch 2.3 ~ 2.5.",
+        "The traced function can be represented symbolically for that dim."
+      ],
+      "nonImplications": [
+        "Does not imply the symbolic kernel matches specialized kernels in performance.",
+        "Does not imply the threshold is fixed across all releases."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Automatic dynamic shapes" },
+        { "ref": "DOC:torch-dynamo", "locator": "Recompile-then-promote" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Automatic promotion falls back to eager for the dynamic dim.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The behavior is symbolic re-tracing, not eager fallback.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Automatic promotion parameterizes the specialized kernel with a runtime shape argument without re-tracing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It re-traces with SymInts and produces a new symbolic-shape compilation.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Automatic promotion does not exist and users must always call mark_dynamic.",
+      "errorType": "scope_error",
+      "whyWrong": "The feature is enabled by default in current releases.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "The promotion is permanent across process restarts.",
+      "errorType": "scope_error",
+      "whyWrong": "Automatic promotion happens per-process; state is lost on restart unless external compile-cache mechanisms persist it.",
+      "sourceOrEvidence": "torch.compile docs"
+    }
+  ],
+  "implementationFacts": [
+    "The threshold for automatic dynamic can be tuned via config",
+    "Once a dim is dynamic, subsequent recompiles for that dim are avoided (barring extra guards)",
+    "Users can override with `dynamic=True/False`"
+  ],
+  "performanceScenarios": [
+    "Auto-promotion trades some initial specialized compiles for a stable dynamic-shape run afterward."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

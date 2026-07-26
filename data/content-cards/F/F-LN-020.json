@@ -1,0 +1,49 @@
+{
+  "questionId": "F-LN-020",
+  "learningObjective": "Reason about the memory-traffic advantage of a fused single-pass row-parallel LayerNorm.",
+  "canonicalClaims": [
+    {
+      "claim": "A row-parallel fused LayerNorm keeps `x` in registers/SMEM across the mean, variance, and normalize stages so `x` is loaded from HBM only once per row; a multi-pass implementation that re-reads `x` between stages would double HBM traffic for the largest tensor.",
+      "conditions": ["N fits in one program's tile; standard row-parallel design."],
+      "nonImplications": [
+        "Does not imply Welford is unnecessary at very large N or ill-conditioned data.",
+        "Does not imply row-parallel beats sequence-parallel for all shapes."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "LayerNorm tutorial" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Two-pass mean-then-variance is numerically incorrect without Welford.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For typical FP32 shapes it is accurate enough; Welford matters at extreme N or ill-conditioned data.",
+      "sourceOrEvidence": "Numerical analysis references"
+    },
+    {
+      "claim": "`1.0 / tl.sqrt(x)` is bit-identical across NVIDIA archs.",
+      "errorType": "hardware_leak",
+      "whyWrong": "PTX `rsqrt.approx` numerics vary across architectures.",
+      "sourceOrEvidence": "PTX ISA doc"
+    },
+    {
+      "claim": "Triton automatically places small tensors in constant memory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Triton does not manage constant memory placement automatically.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "Fusing LN doubles register pressure for no benefit.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The benefit is reduced HBM traffic; register pressure is the trade-off, not a pure loss.",
+      "sourceOrEvidence": "GPU perf literature"
+    }
+  ],
+  "implementationFacts": [
+    "Row-parallel fused LN: one program per row, BLOCK ≥ N.",
+    "For long rows, use online/sequence-parallel LN to bound register footprint."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

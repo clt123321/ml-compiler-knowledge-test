@@ -1,0 +1,55 @@
+{
+  "questionId": "H-GRAN-012",
+  "learningObjective": "Given a code snippet, identify the correct per-channel dequantization broadcast for a `[out, in]` weight quantized per-output-channel.",
+  "canonicalClaims": [
+    {
+      "claim": "For a `[out, in]` weight quantized per-output-channel, the per-channel scale of shape `[out]` must be reshaped to `[out, 1]` before broadcasting into the `[out, in]` weight; otherwise standard trailing-axis broadcasting either raises a shape mismatch or (when out==in) silently applies one scale per column.",
+      "conditions": [
+        "Symmetric per-output-channel quantization (z=0).",
+        "NumPy / PyTorch trailing-axis broadcasting semantics."
+      ],
+      "nonImplications": [
+        "Does not imply only `unsqueeze(1)` is correct; `[:, None]` or `view(-1, 1)` are equivalent.",
+        "Does not imply broadcasting always raises when shapes disagree — when out == in, silent incorrect broadcast occurs."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Per-channel dequantization semantics" },
+        { "ref": "DOC:torch-inductor", "locator": "PyTorch broadcasting rules" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PyTorch broadcasting aligns tensors from the first (leading) axis.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Broadcasting aligns from the trailing axis, then adds leading 1's for missing dimensions.",
+      "sourceOrEvidence": "PyTorch broadcasting documentation"
+    },
+    {
+      "claim": "Symmetric-quant dequantization must use a dedicated `dequantize` op; a cast + multiply is illegal.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Cast to FP16 + multiply by scale is exactly what symmetric-quant dequant does; specialized ops exist for performance / packing reasons.",
+      "sourceOrEvidence": "PyTorch quantization implementation"
+    },
+    {
+      "claim": "When broadcasting fails, PyTorch always raises a clear error before producing values.",
+      "errorType": "wrong_condition",
+      "whyWrong": "When axis sizes accidentally match, PyTorch silently broadcasts, potentially producing semantically incorrect results.",
+      "sourceOrEvidence": "PyTorch runtime behavior"
+    },
+    {
+      "claim": "Per-output-channel and per-input-channel are the same thing under broadcasting.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They multiply different axes of the weight and correspond to different quantization designs.",
+      "sourceOrEvidence": "TensorRT quantization docs"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch's `torch.dequantize` on a per-channel-quantized tensor handles the broadcast internally.",
+    "For a `[batch, features]` activation, per-channel scale of shape `[features]` broadcasts correctly without reshape."
+  ],
+  "performanceScenarios": [
+    "A common bug is writing `x * scale` when `x` is `[out, in]` and `scale` is `[out]` — silently produces per-column instead of per-row scaling."
+  ],
+  "versionSensitivity": "stable_principle"
+}

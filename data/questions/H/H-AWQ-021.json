@@ -1,0 +1,62 @@
+{
+  "id": "H-AWQ-021",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "AWQ / Design intent",
+  "learningObjective": "Explain AWQ's central technique: identifying salient channels via activation magnitude and applying per-channel scaling to protect them.",
+  "archetype": "paper_design_intent",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "AWQ (Lin et al., MLSys 2024) achieves state-of-the-art W4A16 accuracy on LLMs. Which statements about AWQ's design are TRUE? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "AWQ identifies a small fraction (~1%) of 'salient' channels by activation magnitude on a calibration set, based on the observation that quantizing these channels causes disproportionately large output error." },
+    { "id": "B", "text": "AWQ applies a per-channel scaling `s` (searched, not derived) that shrinks weights of salient channels before quantization and correspondingly scales activations in the preceding op; the scaled salient weights round to more accurate INT4 values." },
+    { "id": "C", "text": "AWQ is weight-only quantization (W4A16): activations stay in FP16 and no activation calibration is needed at inference time; the scaling is fused into the preceding LayerNorm / previous op." },
+    { "id": "D", "text": "AWQ uses a Hessian-based second-order update identical to GPTQ; the two algorithms produce the same INT4 weights." },
+    { "id": "E", "text": "AWQ requires INT4 Tensor Core support on the deployment GPU; without it, no speed-up is possible." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A, B, C match the AWQ paper's central design: identify salient channels by activation magnitude (weight magnitude alone is not the criterion), scale them up before quantization to give them more effective bits, and scale activations of the preceding op inversely for mathematical equivalence. AWQ is W4A16 (weight-only quant) and fuses the diagonal scaling into the preceding op. D is false: GPTQ uses Hessian-based updates; AWQ uses a search-based per-channel scale factor without Hessian inversion. E is false: AWQ deploys via kernels that dequant INT4 to FP16 in registers and use FP16 Tensor Cores; INT4 Tensor Cores are not required.",
+  "optionExplanations": {
+    "A": "Correct: activation-magnitude-based salience.",
+    "B": "Correct: search-based per-channel scaling.",
+    "C": "Correct: W4A16 deployment; scaling fused into preceding op.",
+    "D": "Wrong: AWQ and GPTQ are distinct algorithms.",
+    "E": "Wrong: AWQ uses FP16 Tensor Cores with dequant-in-register."
+  },
+  "assumptions": [
+    "The target layer is a linear layer preceded by an op that can absorb the diagonal scaling (e.g., LayerNorm)."
+  ],
+  "nonImplications": [
+    "Does not imply AWQ dominates GPTQ on every workload; empirical results are close and depend on model and evaluation.",
+    "Does not imply activation calibration is entirely unused — it is used offline to identify salient channels, not at inference."
+  ],
+  "misconceptionTags": ["awq_gptq_same", "awq_int4_tc"],
+  "distractorRationales": {
+    "D": "Conflates AWQ with GPTQ.",
+    "E": "Invents an INT4 Tensor Core requirement."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:awq", "locator": "Sections 3-4: salient-channel identification and per-channel scaling", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "AWQ W4A16 LLM quantization technique",
+    "evidenceType": "paper_result",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-AWQ-021.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

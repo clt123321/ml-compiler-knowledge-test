@@ -1,0 +1,55 @@
+{
+  "questionId": "H-ACCUM-008",
+  "learningObjective": "Explain the swamping / small-magnitude-loss phenomenon in low-precision accumulation and identify the standard mitigations.",
+  "canonicalClaims": [
+    {
+      "claim": "In low-precision (FP16) accumulation, once the running sum grows large, small-magnitude additions round to zero (swamping); block-partial FP32 sums mitigate this by keeping each partial reduction's running total small before promoting to a wider dtype for the final combine.",
+      "conditions": [
+        "N is large enough for the running sum to exceed the mantissa's precision threshold.",
+        "Input distribution includes small-magnitude entries."
+      ],
+      "nonImplications": [
+        "Does not imply block partials achieve bit-exact FP32 reference; they only reduce error.",
+        "Does not imply overflow is the same phenomenon — swamping is a precision issue."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Reduced-precision accumulation" },
+        { "ref": "BOOK:pmpp4", "locator": "Reduction with FP32 partial sums" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP16 addition is associative, so the order of accumulation does not affect the result.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Floating-point addition is non-associative in general and especially so in low precision.",
+      "sourceOrEvidence": "IEEE 754"
+    },
+    {
+      "claim": "Swamping and overflow are the same problem.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Overflow produces INF when magnitudes exceed the range; swamping is loss of precision from mantissa saturation while values still fit.",
+      "sourceOrEvidence": "Higham, Accuracy and Stability of Numerical Algorithms"
+    },
+    {
+      "claim": "Upcasting `x[i]` to float inside a reduction changes the mathematical output and is a bug.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The upcast is precision-preserving; the FP32 partial approaches the true real-arithmetic sum more closely than a pure FP16 reduction.",
+      "sourceOrEvidence": "Numerical analysis literature"
+    },
+    {
+      "claim": "Block partial sums always match a pure FP32 reduction bit-for-bit.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Block partials reduce error dramatically but do not eliminate it; larger blocks accumulate more error internally.",
+      "sourceOrEvidence": "Higham, Accuracy and Stability"
+    }
+  ],
+  "implementationFacts": [
+    "CUDA warp/block reductions typically use FP32 partial sums for FP16 inputs.",
+    "Kahan summation is another mitigation but adds extra ops per element."
+  ],
+  "performanceScenarios": [
+    "Softmax reduction over K=32768 in FP16 exhibits observable swamping; block-partial FP32 reduces error by 1-2 orders of magnitude."
+  ],
+  "versionSensitivity": "stable_principle"
+}

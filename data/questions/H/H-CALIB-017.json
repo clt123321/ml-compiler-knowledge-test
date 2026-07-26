@@ -1,0 +1,63 @@
+{
+  "id": "H-CALIB-017",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "Calibration / MinMax vs Percentile vs KL",
+  "learningObjective": "Compare MinMax, Percentile, and KL-divergence calibration for PTQ activation scales.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "For PTQ activation calibration to INT8, which of the following statements about MinMax, Percentile (e.g., 99.9%), and KL-divergence (entropy) calibration are TRUE? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "MinMax uses the observed absolute maximum activation across the calibration set as the clipping threshold; it is simplest but very sensitive to outliers that inflate the range and waste INT8 levels on rare extremes." },
+    { "id": "B", "text": "Percentile calibration (e.g., 99.9%) discards the top 0.1% of activations, keeping the range tighter and dedicating INT8 levels to the bulk of the distribution at the cost of clipping true outliers." },
+    { "id": "C", "text": "KL-divergence (entropy) calibration searches for a threshold that minimizes the KL divergence between the FP activation distribution and the quantized distribution; TensorRT's default INT8 calibrator uses a variant of this." },
+    { "id": "D", "text": "MinMax is always the most accurate calibration because it never clips any true activation value." },
+    { "id": "E", "text": "KL calibration requires that the scale grid is FP (continuous); it cannot be applied to INT8 quantization because the target grid is discrete." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A, B, C are standard characterizations of the three calibration modes. MinMax's outlier sensitivity is well-documented; percentile trades a bit of clipping for a tighter distribution fit; KL calibration is TensorRT's classical INT8 workflow. D is false: MinMax's no-clip property means outliers dominate the scale and starve the bulk distribution of resolution — 'not clipping' is not the same as 'most accurate'. E is false: KL calibration is defined against a discrete quantization grid; TensorRT's entropy calibrator explicitly operates on histograms mapped to INT8 bins.",
+  "optionExplanations": {
+    "A": "Correct: MinMax definition and outlier sensitivity.",
+    "B": "Correct: percentile definition.",
+    "C": "Correct: KL calibration definition; TensorRT's default.",
+    "D": "Wrong: not clipping ≠ most accurate.",
+    "E": "Wrong: KL calibration operates on discrete grids."
+  },
+  "assumptions": [
+    "Symmetric per-tensor quantization; scale determined by threshold.",
+    "The calibration set is representative of inference-time activations."
+  ],
+  "nonImplications": [
+    "Does not imply KL is universally better than MinMax; for narrow distributions with no outliers, MinMax is fine.",
+    "Does not imply percentile is a fixed threshold; 99%, 99.9%, 99.99% are common tunable choices."
+  ],
+  "misconceptionTags": ["minmax_most_accurate", "kl_continuous_only"],
+  "distractorRationales": {
+    "D": "Reverses accuracy claim.",
+    "E": "Misunderstands KL calibration mechanics."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "TensorRT INT8 entropy calibrator", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:sze-eff", "locator": "Calibration methods for quantization", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-CALIB-017.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

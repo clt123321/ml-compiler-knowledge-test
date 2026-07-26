@@ -1,0 +1,112 @@
+{
+  "id": "C-VIEW-010",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "View vs. materialization / Reshape and transpose",
+  "learningObjective": "Determine when a reshape/transpose can be a pure view over the same physical storage and when materialization (a copy) is required.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch / general tensor IR",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        2,
+        3,
+        4
+      ]
+    ],
+    "dtypes": [
+      "float32"
+    ],
+    "strides": [
+      [
+        12,
+        4,
+        1
+      ]
+    ]
+  },
+  "stem": "A tensor `x` has shape `[2, 3, 4]` and NCHW-style contiguous strides `[12, 4, 1]`. Consider three requested operations against `x`:\n\n(i) `x.transpose(1, 2)` — swap the middle two dims, producing shape `[2, 4, 3]`.\n(ii) `x.reshape(6, 4)` — combine the first two dims.\n(iii) `x.reshape(4, 6)` — combine dims of different fastest-varying orders.\n\nWhich statement correctly classifies each as a view (V) or a materialization (M)?",
+  "irSnippet": "// (i) transpose (1,2)\n%x  : tensor<2x3x4xf32, strides=[12,4,1]>\n%x1 : tensor<2x4x3xf32, strides=[12,1,4]>       // pure view: shape/stride swap\n\n// (ii) reshape(6,4) on the contiguous [2,3,4]\n%x  : tensor<2x3x4xf32, strides=[12,4,1]>\n%x2 : tensor<6x4xf32,   strides=[4,1]>           // pure view: fold outer dims\n\n// (iii) reshape(4,6) on the contiguous [2,3,4]\n// Requires a re-index that a single (shape, stride) pair cannot express; needs copy\n%x3 : tensor<4x6xf32> = materialize(reshape %x to [4,6])",
+  "options": [
+    {
+      "id": "A",
+      "text": "All three are pure views because reshape and transpose only rewrite metadata; PyTorch's `.reshape` method never requires a copy on a contiguous source tensor. In this reading, all three operations above are pure views because reshape and transpose are metadata-only rewrites; PyTorch's `.reshape` method is documented to never require a physical copy on a contiguous source tensor regardless of the target shape."
+    },
+    {
+      "id": "B",
+      "text": "All three are materializations because any change in the tensor's shape metadata forces PyTorch to allocate a new buffer to keep tensor identity stable."
+    },
+    {
+      "id": "C",
+      "text": "(i) Materialization, (ii) Materialization, (iii) View: transposes always require a copy to preserve contiguity guarantees; the 4x6 reshape is a view because the total element count is preserved. Under this framing, all three operations require materialization because any change to a tensor's shape metadata forces PyTorch to allocate a new backing buffer, so that tensor identity relative to caller-held storage remains stable across the transformation."
+    },
+    {
+      "id": "D",
+      "text": "(i) View, (ii) View, (iii) Materialization: transposing swaps stride entries; folding compatible contiguous dims is expressible as a view; but the (4,6) reshape re-orders elements across non-contiguous logical groups and needs a copy. In this account, transposes always require a physical copy to preserve contiguity guarantees relied on by downstream kernels, and the `[4,6]` reshape is legal as a pure view because the total number of elements is preserved through the transformation."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "A pure view rewrites metadata over the same physical buffer, so the requested (shape, stride) pair must be reachable without re-ordering elements in memory. (i) `transpose(1,2)` swaps stride entries; this is exactly a metadata change. (ii) `reshape(6,4)` folds the outer two dims of a contiguous [2,3,4] into a contiguous [6,4]; this is a view. (iii) `reshape(4,6)` requires interleaving the original dims in a way that no single (shape, stride) pair can express over the source layout; the compiler must copy elements into a new buffer.",
+  "optionExplanations": {
+    "A": "Wrong: `.reshape` copies whenever a view is not expressible on the current layout.",
+    "D": "Correct: matches the standard rule that reshape is a view iff the target strides exist over the source storage.",
+    "B": "Wrong: many reshapes are pure metadata changes.",
+    "C": "Wrong: transpose is the canonical example of a pure metadata operation on strides; the (4,6) reshape is the one that requires copy here."
+  },
+  "assumptions": [
+    "The source tensor is exactly contiguous (as its strides show).",
+    "`.reshape` in PyTorch chooses view when possible and copies otherwise."
+  ],
+  "nonImplications": [
+    "Does not imply that a subsequent op like GEMM prefers the view form; downstream kernels may re-materialize for cache locality.",
+    "Does not imply that all transposes are cheap in cache terms; transposed views can degrade coalescing on GPU."
+  ],
+  "misconceptionTags": [
+    "reshape_always_view",
+    "transpose_always_copy"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim that reshape never copies.",
+    "B": "Wrong claim that all metadata changes copy.",
+    "C": "Swaps the actual behavior of transpose and reshape."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Array memory layout / indexing",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "MemRef strided-layout semantics",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-VIEW-010.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,49 @@
+{
+  "questionId": "E-STHLOPORT-024",
+  "learningObjective": "Explain the design rationale for a stable, versioned IR at the framework-compiler boundary.",
+  "canonicalClaims": [
+    {
+      "claim": "StableHLO's design rationale is to decouple ML framework release cycles from compiler release cycles by providing a versioned operator set with forward/backward compatibility guarantees, avoiding an O(frameworks × compilers) integration matrix.",
+      "conditions": ["Both producers and consumers respect the versioning contract."],
+      "nonImplications": [
+        "Does not imply bit-identical numerics across backends.",
+        "Does not imply frameworks stop needing their own capture tools."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "StableHLO project rationale" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "StableHLO guarantees bit-identical numerics across all frameworks and backends.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Spec provides semantics with defined tolerances; different backends may produce slightly different results within those.",
+      "sourceOrEvidence": "StableHLO spec"
+    },
+    {
+      "claim": "Frameworks that emit StableHLO no longer need graph-capture tools.",
+      "errorType": "scope_error",
+      "whyWrong": "Capture (Dynamo/JAX tracer/tf.function) is orthogonal; StableHLO is the target IR.",
+      "sourceOrEvidence": "OpenXLA docs"
+    },
+    {
+      "claim": "StableHLO's purpose is to enable Python-source-level optimizations at the compiler level.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It abstracts away from Python; the IR is a hardware-agnostic operator set.",
+      "sourceOrEvidence": "StableHLO docs"
+    },
+    {
+      "claim": "The stable contract eliminates the need for per-framework testing.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Framework-specific edge cases and lowering paths still require testing.",
+      "sourceOrEvidence": "OpenXLA docs"
+    }
+  ],
+  "implementationFacts": [
+    "Versioning: producer version + minimum compatible consumer version.",
+    "Compatibility windows documented per release."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

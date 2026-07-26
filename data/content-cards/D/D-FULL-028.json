@@ -1,0 +1,56 @@
+{
+  "questionId": "D-FULL-028",
+  "learningObjective": "Predict the behavior of `torch.compile(fullgraph=True)` when the traced code triggers a graph break.",
+  "canonicalClaims": [
+    {
+      "claim": "`torch.compile(fullgraph=True)` requires whole-function capture; any construct that would cause a graph break raises an exception rather than splitting the graph.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "No hooks suppress Dynamo exceptions."
+      ],
+      "nonImplications": [
+        "Does not imply every fullgraph=True model fails; well-authored models compile.",
+        "Does not imply fullgraph=True is a performance flag; it is a correctness/verification flag."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "fullgraph parameter" },
+        { "ref": "DOC:torch-dynamo", "locator": "Graph break handling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "fullgraph=True silently disables graph breaks.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It converts breaks into errors.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "fullgraph=True falls back to eager when a break would occur.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No fallback; the exception is raised.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "fullgraph=True yields the same split-subgraph structure as fullgraph=False.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Split subgraphs are exactly what fullgraph=True disallows.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "fullgraph=True is a runtime performance optimization only.",
+      "errorType": "scope_error",
+      "whyWrong": "It is primarily a correctness/verification flag; performance benefit is indirect (no eager gaps).",
+      "sourceOrEvidence": "torch.compile docs"
+    }
+  ],
+  "implementationFacts": [
+    "Common break triggers: print, list mutations of externals, data-dependent branches, unsupported ops",
+    "The error names the offending bytecode / op for developer cleanup",
+    "fullgraph=True is often used as a CI check on production models"
+  ],
+  "performanceScenarios": [
+    "Eliminating graph breaks lets the compiled function run without eager gaps; fullgraph=True enforces this at CI level."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

@@ -1,0 +1,67 @@
+{
+  "id": "B-PHI-002",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Phi node placement at CFG merges",
+  "learningObjective": "Determine correct phi placement and semantics at a control-flow merge involving multiple predecessors.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "irSnippet": "; Non-SSA source (pseudo)\n; if (cond) { x = a; } else { x = b; }\n; return x;\n\n; Candidate SSA lowerings:\nbb_entry:\n  br i1 %cond, label %bb_then, label %bb_else\nbb_then:\n  %x1 = ... %a\n  br label %bb_merge\nbb_else:\n  %x2 = ... %b\n  br label %bb_merge\nbb_merge:\n  ; ??? phi placement\n  ret i32 %x_merged",
+  "stem": "In the CFG shown, block bb_merge has two predecessors bb_then and bb_else, each defining a version of x (%x1 in bb_then, %x2 in bb_else). Which is the correct SSA representation of the merged value used in bb_merge?",
+  "options": [
+    { "id": "A", "text": "Insert `%x_merged = phi i32 [%x1, %bb_then], [%x2, %bb_else]` at the beginning of bb_merge; the φ selects %x1 when control flow arrives from bb_then and %x2 when it arrives from bb_else." },
+    { "id": "B", "text": "Emit both %x1 and %x2 in bb_merge and let the register allocator pick which physical register holds the merged value at runtime; no φ is needed because SSA is only about textual assignments in the source block." },
+    { "id": "C", "text": "Duplicate bb_merge into two copies (one for each predecessor) so no merge exists; SSA cannot represent a value that has different definitions along different paths without CFG duplication." },
+    { "id": "D", "text": "Insert `%x_merged = select i1 %cond, i32 %x1, i32 %x2` at the top of bb_merge; select instructions replace φ nodes and are the canonical SSA construct for merging values." },
+    { "id": "E", "text": "Emit `%x_merged = or i32 %x1, %x2` in bb_merge; the OR guarantees SSA correctness because at runtime only one of %x1 or %x2 has been evaluated." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "SSA φ-functions at a merge point select the appropriate reaching definition based on the predecessor block from which control arrived. The correct LLVM syntax is `%x_merged = phi i32 [%x1, %bb_then], [%x2, %bb_else]` at the top of bb_merge. B is wrong (SSA requires the merge to be encoded in IR, not deferred to the register allocator). C is wrong (SSA does not require CFG duplication to represent joins). D is wrong at the SSA level: `select` requires both operands to be defined and both branches to have executed — it is a data-flow operation, not a control-flow merge; using select here would force evaluating both sides. E is wrong (OR is not a merge semantic).",
+  "optionExplanations": {
+    "A": "Correct: canonical SSA φ-placement at the merge with predecessor annotations.",
+    "B": "Wrong: SSA requires the merge to be textually represented via φ; deferring to register allocation defeats the point of SSA.",
+    "C": "Wrong: SSA handles joins with φ; duplication is neither required nor idiomatic.",
+    "D": "Wrong: `select` evaluates both operands and is a pure-data operation, not a control-flow merge. It is only equivalent when both branches can be safely evaluated (no side effects, no exceptions).",
+    "E": "Wrong: OR has value semantics unrelated to SSA merging; using it changes the program's meaning."
+  },
+  "assumptions": [
+    "Both bb_then and bb_else complete and reach bb_merge; no exceptions or aborts.",
+    "LLVM IR conventions (phi at block top, block-annotated incoming values)."
+  ],
+  "nonImplications": [
+    "Does not imply select can never replace a φ; it can when the merged expressions are pure and side-effect-free and both branches are always safe to evaluate.",
+    "Does not imply φ has runtime cost; it lowers to copies during out-of-SSA."
+  ],
+  "misconceptionTags": ["select_vs_phi_confusion", "ssa_cfg_duplication_myth"],
+  "distractorRationales": {
+    "B": "Defers φ to register allocator.",
+    "C": "Requires CFG duplication.",
+    "D": "Confuses select data-flow with control-flow merge.",
+    "E": "Uses arbitrary bitwise op with no merge semantics."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:llvm-langref", "locator": "phi instruction reference", "supports": ["A"] },
+    { "ref": "BOOK:eac3", "locator": "SSA chapter, phi placement", "supports": ["A"] },
+    { "ref": "BOOK:appel", "locator": "SSA and phi function chapter", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-PHI-002.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

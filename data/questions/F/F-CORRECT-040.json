@@ -1,0 +1,124 @@
+{
+  "id": "F-CORRECT-040",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Triton / Differential correctness testing under FP non-associativity",
+  "learningObjective": "Reason about tolerance selection when a Triton kernel's reduction order differs from a reference implementation.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any current NVIDIA architecture",
+    "device": "GPU",
+    "requiredFeatures": [
+      "FP32 arithmetic"
+    ]
+  },
+  "softwareContext": {
+    "framework": "Triton + PyTorch",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "K"
+      ],
+      [
+        "K",
+        "N"
+      ],
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float32"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major",
+      "row_major"
+    ]
+  },
+  "stem": "You wrote a Triton FP16-in/FP32-accumulate matmul kernel and compare its FP32 output against `torch.matmul(a.float(), b.float())` (also FP32). You observe max absolute error ~5e-3 and max relative error ~1e-3 on random inputs with K=4096. Which conclusion is best supported?",
+  "codeSnippet": "# a: [M, K] FP16 row-major; b: [K, N] FP16 row-major; K = 4096\n# y = my_kernel(a, b)          # Triton kernel: FP16 in, FP32 accum, FP32 out\n# y_ref = torch.matmul(a.float(), b.float())   # FP32 reference\n#\n# Observed:\n# torch.max(torch.abs(y - y_ref)).item()                              # ~5e-3\n# torch.max(torch.abs(y - y_ref) / (torch.abs(y_ref) + 1e-6)).item()  # ~1e-3",
+  "options": [
+    {
+      "id": "A",
+      "text": "The reference `torch.matmul(a.float(), b.float())` is itself imprecise on GPU because PyTorch uses TF32 by default on Ampere; the observed error is entirely from the reference and the Triton kernel is exact."
+    },
+    {
+      "id": "B",
+      "text": "The discrepancy indicates a bug in the kernel: FP32 accumulators guarantee bit-identical output to an FP32 reference, so any deviation above the FP32 machine epsilon (~1e-7) implies an incorrect implementation."
+    },
+    {
+      "id": "C",
+      "text": "The discrepancy is due to CUDA's non-determinism; the same kernel will produce a different result each run, so absolute tolerance measurement is meaningless and the test should use `torch.testing.assert_close(atol=inf, rtol=inf)` to always pass."
+    },
+    {
+      "id": "D",
+      "text": "The discrepancy is consistent with expected FP16-input matmul precision: FP16 has ~11 mantissa bits (~3 decimal digits), so per-element rounding accumulates over K=4096 reductions. The observed rtol ~1e-3 is a reasonable tolerance for FP16-input GEMM against an FP32-input reference; the kernel is likely correct."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "The kernel takes FP16 inputs and accumulates in FP32; the reference upcasts inputs to FP32 first (no FP16 rounding). The primary error source is FP16 input rounding — each of 4096 accumulated products contributes a small error, and errors partially cancel but do not vanish. Empirically, FP16-input matmul is expected to differ from FP32-input matmul by roughly rtol ~1e-3 at moderate K, which matches the observation. Choice B is wrong: FP32 accumulation reduces but does not eliminate FP16-input rounding. C fabricates non-determinism and rejects tolerance testing. D partially points at a real issue (TF32 on Ampere for `float()` inputs would introduce error), but the observed error is dominated by FP16 rounding.",
+  "optionExplanations": {
+    "D": "Correct: rtol ~1e-3 is consistent with FP16-input matmul error at K=4096.",
+    "B": "Wrong: FP32 accum does not restore FP16-input precision.",
+    "C": "Wrong: modern GPU matmul is largely deterministic per algorithm; tolerance is the right tool.",
+    "A": "Wrong: while TF32 default on Ampere can complicate references, the FP16-input error dominates here."
+  },
+  "assumptions": [
+    "FP16 has ~11 mantissa bits (relative machine epsilon ~9.77e-4).",
+    "Random inputs with reasonable range; no NaN/inf pathologies.",
+    "K = 4096 accumulation length."
+  ],
+  "nonImplications": [
+    "Does not imply the kernel is guaranteed correct — a proper test should include edge cases (extreme values, dimension boundaries).",
+    "Does not imply this tolerance applies to all dtypes; FP8 or INT8 kernels have very different acceptable error bands."
+  ],
+  "misconceptionTags": [
+    "fp32_accum_bitwise_myth",
+    "gpu_matmul_nondeterminism_myth"
+  ],
+  "distractorRationales": {
+    "B": "Confuses accumulator precision with input precision.",
+    "C": "Fabricates general GPU matmul non-determinism.",
+    "A": "Wrong attribution of the error source."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "IEEE-754 floating-point behavior and mixed precision matmul",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:triton",
+      "locator": "Triton matmul tutorial and tolerance guidance",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-CORRECT-040.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

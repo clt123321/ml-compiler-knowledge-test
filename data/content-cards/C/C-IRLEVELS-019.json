@@ -1,0 +1,79 @@
+{
+  "questionId": "C-IRLEVELS-019",
+  "learningObjective": "Understand how graph-level, tensor-expression-level, and loop-level IRs collaborate in a typical deep-learning compiler pipeline.",
+  "canonicalClaims": [
+    {
+      "claim": "Graph-level IR performs coarse-grained rewrites over atomic ops (fusion, constant folding, shape/layout choices) without exposing loops.",
+      "conditions": [
+        "The graph-level IR treats ops as opaque units with typed inputs/outputs (e.g., HLO, Relax)."
+      ],
+      "nonImplications": [
+        "Does not imply graph-level fusion is universally superior; it works at coarse granularity."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "TVM graph-level" },
+        { "ref": "PAPER:mlir", "locator": "MLIR dialect layering" }
+      ]
+    },
+    {
+      "claim": "Tensor-expression IR represents per-element computation via structured ops (linalg.generic, TensorIR) and is the natural layer for tiling and hardware-intrinsic mapping.",
+      "conditions": [
+        "The IR supports iteration attributes (indexing maps, iterator types)."
+      ],
+      "nonImplications": [
+        "Does not imply tensor-expression IR alone yields good performance without downstream loop-level passes."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "linalg dialect / structured ops" },
+        { "ref": "DOC:tvm-relax", "locator": "TensorIR" }
+      ]
+    },
+    {
+      "claim": "Loop-level IR makes iteration and memory access explicit; it is where unrolling, vectorization, and low-level scheduling apply.",
+      "conditions": [
+        "The IR uses explicit loop constructs (affine, scf, LLVM loops)."
+      ],
+      "nonImplications": [
+        "Does not imply loop-level IR is always necessary for GPU codegen; some pipelines emit Triton/GPU dialects from tensor form."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "affine / scf dialects" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Compilers author programs at the loop-level and recover graph structure upward.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The flow is top-down; graph-level is the authoring layer and loops are derived by lowering.",
+      "sourceOrEvidence": "TVM / MLIR docs"
+    },
+    {
+      "claim": "Graph-level IR handles all loop transformations including tiling.",
+      "errorType": "scope_error",
+      "whyWrong": "Tiling operates on iteration; it is a tensor- or loop-level transformation.",
+      "sourceOrEvidence": "Halide / TVM"
+    },
+    {
+      "claim": "Loop-level IR is the only layer needed; graph and tensor layers are redundant.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Each layer offers rewrites appropriate to its granularity; graph-level fusion and tensor-level intrinsic mapping cannot be expressed cleanly at the loop layer alone.",
+      "sourceOrEvidence": "MLIR CGO'21"
+    },
+    {
+      "claim": "The three IR layers must have hard, non-crossable boundaries.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Some pipelines cross layers for iterative refinement (e.g., re-planning after codegen feedback).",
+      "sourceOrEvidence": "MetaSchedule / Ansor discussions"
+    }
+  ],
+  "implementationFacts": [
+    "Graph-level: HLO, Relax, ONNX",
+    "Tensor-expression: linalg-on-tensor, TensorIR",
+    "Loop-level: affine, scf, LLVM loops"
+  ],
+  "performanceScenarios": [
+    "Each layer contributes complementary optimization opportunities; a good compiler explores all three."
+  ],
+  "versionSensitivity": "stable_principle"
+}

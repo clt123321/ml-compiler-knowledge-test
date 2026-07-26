@@ -1,0 +1,84 @@
+{
+  "id": "E-MLIRPASS-008",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "MLIR / Pass, PassManager, nested pipelines",
+  "learningObjective": "Reason about MLIR Pass and PassManager semantics: op-scoping, nesting, and how a pass's op-type constrains where it runs.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about MLIR PassManager and Pass scoping is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The PassManager runs all registered passes in parallel by default; users must explicitly opt out of parallelism to guarantee ordering, since MLIR provides no sequential pipeline semantics."
+    },
+    {
+      "id": "B",
+      "text": "MLIR Passes are always module-level: any pass registered with the PassManager runs exactly once on the top-level `ModuleOp`, and per-function work is achieved by having the pass walk the module manually with a `walk()` call."
+    },
+    {
+      "id": "C",
+      "text": "Each Pass declares the Op type it runs on (e.g., `ModuleOp` or `func.func`); the PassManager runs a pass over every matching Op in the IR, and nested pass managers can be composed to run inner passes on inner ops (e.g., a `func.func` pipeline nested inside a `ModuleOp` pipeline)."
+    },
+    {
+      "id": "D",
+      "text": "Passes may freely modify any op in the IR regardless of the declared scope; the declared Op type is only a documentation hint used by the pass registry to display help text."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "MLIR Passes are scoped to a specific Op type (typically `ModuleOp` or `FunctionOpInterface` / `func.func`). The PassManager iterates the pass over each matching Op in the IR. Nested pass managers allow structuring inner pipelines: e.g., a top-level `PassManager<ModuleOp>` with a nested `OpPassManager<func::FuncOp>` that runs a set of per-function passes. This nesting is the standard way to organize MLIR pipelines and to enable per-op parallel execution when opted-in.",
+  "optionExplanations": {
+    "C": "Correct: op-scoping and nested pass managers are the standard MLIR PassManager design.",
+    "B": "Wrong: many passes are scoped to `func.func` directly.",
+    "A": "Wrong: passes run sequentially in declared order by default; parallelism across ops of the same nested level is an opt-in.",
+    "D": "Wrong: pass scoping is a real verified constraint, not documentation."
+  },
+  "assumptions": [
+    "Standard upstream MLIR PassManager design."
+  ],
+  "nonImplications": [
+    "Does not imply that only `ModuleOp` and `func.func` are supported scopes; user-defined op types with `OpTrait::IsIsolatedFromAbove` also work.",
+    "Does not imply passes cannot cross scope boundaries via analyses; analyses can be shared across nested managers."
+  ],
+  "misconceptionTags": [
+    "pass_only_module_myth",
+    "pass_parallel_by_default_myth"
+  ],
+  "distractorRationales": {
+    "B": "Under-represents op scoping.",
+    "A": "Wrong claim about default parallelism.",
+    "D": "Wrong claim that scope is only a hint."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Pass Infrastructure — nesting, op-scoped passes",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-MLIRPASS-008.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,53 @@
+{
+  "questionId": "F-REDUCE-011",
+  "learningObjective": "Reason about canonical warp-level reduction using __shfl_down_sync tree.",
+  "canonicalClaims": [
+    {
+      "claim": "The canonical warp reduction loops `offset = 16, 8, 4, 2, 1` calling `__shfl_down_sync(mask, val, offset)`; after log2(32)=5 steps, lane 0 holds the warp-wide sum. Other lanes hold partial sums that are not the total.",
+      "conditions": [
+        "warpSize=32; all lanes active in `mask`.",
+        "`_sync` variants used (Volta+ Independent Thread Scheduling)."
+      ],
+      "nonImplications": [
+        "Does not imply every lane has the final sum.",
+        "Does not imply shuffle-only is optimal for block-wide reductions."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Warp shuffle functions" },
+        { "ref": "BOOK:pmpp4", "locator": "Reduction chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`__shfl_down_sync` broadcasts to all lanes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It reads from `lane + offset`; only lane 0 ends with the total.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Extra `__syncwarp()` between shuffles is required on Volta+.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The `_sync` suffix already provides required convergence.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Shuffles use shared memory addressed by `offset`.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Shuffles are register-to-register within the warp.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "The reduction works on any warp size without changes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Values 16, 8, ... are hardcoded for warpSize=32; different warp sizes need different sequences.",
+      "sourceOrEvidence": "PMPP4"
+    }
+  ],
+  "implementationFacts": [
+    "`__shfl_down_sync(mask, x, offset)` reads x from lane laneid + offset.",
+    "Block-wide reductions: warp-reduce then SMEM shuffle then one final warp-reduce."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

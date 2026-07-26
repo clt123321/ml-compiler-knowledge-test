@@ -1,0 +1,89 @@
+{
+  "id": "F-TCORE-018",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Tensor Core / dtypes and per-architecture support",
+  "learningObjective": "Understand which Tensor Core dtypes are supported on which NVIDIA architectures and how throughput scales.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Volta / Turing / Ampere / Hopper",
+    "device": "GPU",
+    "requiredFeatures": [
+      "Tensor Core generation-dependent dtypes"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "compilerVersionScope": "CUDA 12+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement about Tensor Core dtype support across NVIDIA architectures is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Tensor Cores support only FP16; other 'Tensor Core dtypes' (BF16, TF32, INT8, FP8) are software emulations built on the FP16 hardware path."
+    },
+    {
+      "id": "B",
+      "text": "All Tensor Core dtypes (FP16, BF16, TF32, INT8, FP8) have been supported since Volta; the throughput is identical across all NVIDIA architectures for a given dtype."
+    },
+    {
+      "id": "C",
+      "text": "FP8 Tensor Cores exist on every Ampere GPU; Hopper only added higher clock speeds without introducing new numeric formats to the Tensor Core."
+    },
+    {
+      "id": "D",
+      "text": "Tensor Cores were introduced with Volta (sm_70) supporting FP16 with FP16/FP32 accumulate; Turing (sm_75) added INT8/INT4; Ampere (sm_80) added TF32, BF16, and FP64 Tensor Cores; Hopper (sm_90) added FP8 (E4M3/E5M2) and improved throughput. Not every dtype is on every architecture; kernels must be conditionalized on `__CUDA_ARCH__`."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Tensor Core dtype support has expanded generation-by-generation: Volta (sm_70) — FP16; Turing (sm_75) added INT8 (also INT4/INT1 for research); Ampere (sm_80) added TF32, BF16, and FP64 Tensor Cores; Ada (sm_89) added FP8 for inference; Hopper (sm_90) formalized FP8 (E4M3/E5M2) with new throughput levels; Blackwell adds further dtypes. Because support is version-sensitive, portable kernels must dispatch on `__CUDA_ARCH__` or use CUTLASS-style dispatch. There is no software emulation of BF16/TF32/FP8 on the FP16 path — these are distinct hardware datapaths.",
+  "optionExplanations": {
+    "D": "Correct: generation-by-generation expansion of TC dtypes.",
+    "B": "Wrong: BF16/TF32 arrived with Ampere; FP8 with Ada/Hopper.",
+    "C": "Wrong: FP8 is not on Ampere; Hopper added new formats.",
+    "A": "Wrong: BF16/TF32/FP8 have their own hardware paths."
+  },
+  "assumptions": [
+    "NVIDIA architecture history through 2025 as documented in whitepapers."
+  ],
+  "nonImplications": [
+    "Does not imply FP4 or other exotic formats are absent; new formats continue to be added.",
+    "Does not imply throughput ratios are stable across generations."
+  ],
+  "misconceptionTags": [
+    "tc_dtype_uniform_myth",
+    "tc_emulation_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates uniform dtype support across generations.",
+    "C": "Wrong claim about FP8 on Ampere.",
+    "A": "Wrong claim about emulation on FP16."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Compute capability tables; Tensor Core dtype support per architecture",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-TCORE-018.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

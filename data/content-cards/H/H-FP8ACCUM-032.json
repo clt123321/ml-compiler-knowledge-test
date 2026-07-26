@@ -1,0 +1,56 @@
+{
+  "questionId": "H-FP8ACCUM-032",
+  "learningObjective": "Explain FP8 matmul semantics on Hopper Tensor Cores including accumulator dtype and scaling requirements.",
+  "canonicalClaims": [
+    {
+      "claim": "Hopper FP8 Tensor Core matmuls accumulate in FP32 for numerical stability; production FP8 pipelines rely on per-tensor or per-block scale factors managed by frameworks like NVIDIA Transformer Engine (DelayedScaling); FP8 peak throughput is ~2× BF16 in compute-bound kernels but only when memory bandwidth is not the bottleneck.",
+      "conditions": [
+        "The target GPU has FP8 Tensor Cores (Hopper / Ada).",
+        "The framework provides scale-factor management."
+      ],
+      "nonImplications": [
+        "Does not imply FP8 matches BF16 accuracy without workload-specific care.",
+        "Does not imply the 2× peak is always realized — bandwidth-bound kernels see less."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "H100 FP8 Tensor Core / WGMMA" },
+        { "ref": "BOOK:sze-eff", "locator": "Reduced-precision accumulation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP8 GEMM uses an FP8 accumulator to preserve full FP8 semantics.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Production Tensor Core FP8 GEMM accumulates in FP32 to avoid the tiny FP8 dynamic range overflowing on a long reduction.",
+      "sourceOrEvidence": "H100 architecture whitepaper"
+    },
+    {
+      "claim": "FP8 delivers 2× BF16 speedup automatically on any FP16 model.",
+      "errorType": "overgeneralization",
+      "whyWrong": "FP8 requires opt-in, scale-factor management, and often small algorithm changes; frameworks do not silently upgrade.",
+      "sourceOrEvidence": "Transformer Engine documentation"
+    },
+    {
+      "claim": "FP8's small dynamic range acts as an implicit regularizer that improves accuracy.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "FP8's small range causes information loss unless scale factors keep values in range; there is no evidence of consistent regularization benefits.",
+      "sourceOrEvidence": "FP8 training empirical studies"
+    },
+    {
+      "claim": "Because H100 FP8 peak is 2× BF16, every FP8 matmul is 2× faster in wall-clock than BF16.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Peak-throughput ratios apply only in compute-bound regimes; batch-1 decode and memory-bound kernels see much smaller gains.",
+      "sourceOrEvidence": "Roofline analysis on H100"
+    }
+  ],
+  "implementationFacts": [
+    "H100 WGMMA instruction supports E4M3/E5M2 inputs with FP32 accumulator.",
+    "Transformer Engine's DelayedScaling recipe uses per-tensor scale factors with lagged statistics.",
+    "H100 FP8 peak: ~1979 TFLOPS (sparse) / ~989 TFLOPS (dense); BF16 peak ~989/494."
+  ],
+  "performanceScenarios": [
+    "LLaMA-70B training with Transformer Engine FP8 achieves ~1.5-1.8× wall-clock speedup vs BF16 on H100 clusters."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

@@ -1,0 +1,62 @@
+{
+  "id": "B-CPROP-010",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Sparse Conditional Constant Propagation (SCCP)",
+  "learningObjective": "Explain how SCCP achieves greater precision than plain constant propagation by combining constant propagation with reachability analysis.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "irSnippet": "; Original SSA CFG snippet\nbb_entry:\n  %x = i32 5\n  %cond = icmp slt i32 %x, 10\n  br i1 %cond, label %bb_then, label %bb_else\nbb_then:\n  %y1 = add i32 %x, 1     ; reachable\n  br label %bb_merge\nbb_else:\n  %y2 = mul i32 %x, %unknown ; NOT reachable per SCCP\n  br label %bb_merge\nbb_merge:\n  %y = phi i32 [%y1, %bb_then], [%y2, %bb_else]",
+  "stem": "Sparse Conditional Constant Propagation (SCCP) achieves better precision than plain constant propagation by tracking both constant lattice values and edge reachability. Which statement about SCCP's advantage over plain constant propagation on the code above is correct?",
+  "options": [
+    { "id": "A", "text": "SCCP infers %cond = true (since 5 < 10), marks the bb_else edge as unreachable, and treats the φ as effectively %y = %y1 = 6; plain constant propagation, unaware of reachability, must merge %y1 and %y2 into a non-constant top." },
+    { "id": "B", "text": "SCCP is identical to plain constant propagation in this example; the difference only appears in loops." },
+    { "id": "C", "text": "Plain constant propagation would already conclude %y = 6 by ignoring the else branch heuristically; SCCP is unnecessary for this pattern." },
+    { "id": "D", "text": "SCCP marks bb_then as unreachable because plain propagation cannot decide which branch runs, and the algorithm defaults to the else path." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "SCCP (Wegman & Zadeck 1991) maintains two lattices: variable values and edge reachability. It propagates constants only along edges proven reachable. In the example, %cond folds to true (5 < 10), so the bb_else edge is unreachable and does not contribute to the φ. This makes %y = %y1 = 6. Plain constant propagation without reachability tracking must merge %y1 and %y2 (with %y2 unknown due to %unknown), yielding non-constant top for %y. SCCP is more precise. Options B, C, D contain factual errors about the algorithm.",
+  "optionExplanations": {
+    "A": "Correct: SCCP's edge-reachability tracking makes the difference.",
+    "B": "Wrong: SCCP is strictly more precise than plain propagation on branchy code, not only in loops.",
+    "C": "Wrong: plain constant propagation does not have a heuristic to skip a branch; it merges all reaching values.",
+    "D": "Wrong: SCCP does not default to a branch; it proves reachability from the constant condition."
+  },
+  "assumptions": [
+    "SSA form; canonical SCCP algorithm (Wegman & Zadeck)."
+  ],
+  "nonImplications": [
+    "Does not imply SCCP always beats plain propagation; when no conditional branches involve constants, the two coincide.",
+    "Does not imply SCCP is free; it operates on both lattices to fixpoint."
+  ],
+  "misconceptionTags": ["sccp_vs_cp_precision", "unreachable_edge_confusion"],
+  "distractorRationales": {
+    "B": "Understates SCCP's advantage.",
+    "C": "Overstates plain propagation's power.",
+    "D": "Falsely describes the algorithm's default."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:eac3", "locator": "Constant propagation chapter, SCCP", "supports": ["A"] },
+    { "ref": "BOOK:appel", "locator": "Constant propagation and SCCP chapter", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-CPROP-010.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

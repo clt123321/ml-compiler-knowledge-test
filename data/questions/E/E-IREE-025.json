@@ -1,0 +1,86 @@
+{
+  "id": "E-IREE-025",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "IREE / MLIR-based end-to-end compiler + runtime",
+  "learningObjective": "Understand IREE's overall architecture: an MLIR-based compiler that produces a bytecode module executed by IREE's runtime.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "IREE",
+    "frameworkVersionScope": "IREE 2024+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement about IREE's architecture is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "IREE is a pure Python interpreter for StableHLO IR; it does not perform ahead-of-time compilation and has no separate runtime binary."
+    },
+    {
+      "id": "B",
+      "text": "IREE is an MLIR-based compiler that lowers input IR (StableHLO / linalg / tosa) through target-specific pipelines and produces a serialized VM module (`.vmfb`) plus device-specific artifacts; the IREE runtime loads the module and dispatches host and device work through a HAL abstraction supporting CPU / Vulkan / CUDA / Metal / ROCm backends."
+    },
+    {
+      "id": "C",
+      "text": "IREE is a runtime wrapper around cuBLAS/cuDNN; the 'compilation' step consists of choosing which library kernel to invoke for each op, with no MLIR pipeline in between."
+    },
+    {
+      "id": "D",
+      "text": "IREE targets only mobile/edge deployment; it has no support for server-class GPUs like NVIDIA A100/H100 and cannot use MLIR dialects beyond `tosa`."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "IREE is an MLIR-based ahead-of-time compiler and runtime designed for portable ML deployment. Input dialects include StableHLO, linalg, and tosa; the compiler runs target-specific lowering pipelines (via the MLIR PassManager) and emits a VM bytecode module plus device-specific artifacts (SPIR-V, PTX, etc.). The runtime uses a Hardware Abstraction Layer (HAL) to dispatch to backends: CPU (LLVM), Vulkan, CUDA, Metal, ROCm, and more. Both edge and server GPUs are targets.",
+  "optionExplanations": {
+    "B": "Correct: MLIR-based AOT compiler + VM bytecode + HAL runtime.",
+    "A": "Wrong: IREE is not a Python interpreter.",
+    "C": "Wrong: IREE has a full MLIR lowering pipeline; it is not a library wrapper.",
+    "D": "Wrong: IREE targets both edge and server GPUs."
+  },
+  "assumptions": [
+    "IREE 2024+ architecture as documented on iree.dev."
+  ],
+  "nonImplications": [
+    "Does not imply IREE outperforms hand-tuned vendor libraries on every workload.",
+    "Does not imply the runtime is a single binary; it is a library integrated by the host application."
+  ],
+  "misconceptionTags": [
+    "iree_as_python_interpreter_myth",
+    "iree_edge_only_myth"
+  ],
+  "distractorRationales": {
+    "A": "Confuses IREE with an interpreter.",
+    "C": "Underestimates the MLIR pipeline in IREE.",
+    "D": "Wrong claim that IREE is edge-only."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:iree",
+      "locator": "IREE compiler and runtime overview; HAL abstraction",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-IREE-025.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

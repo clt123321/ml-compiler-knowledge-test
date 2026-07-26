@@ -1,0 +1,58 @@
+{
+  "questionId": "G-FUSION-001",
+  "learningObjective": "Distinguish vertical (producer-consumer) fusion, horizontal fusion, and epilogue fusion by their data-flow patterns.",
+  "canonicalClaims": [
+    {
+      "claim": "Vertical fusion merges producer-consumer ops along a data-flow edge to keep intermediates in registers/SMEM; horizontal fusion merges independent ops sharing launch dimensions to amortize launch/read overhead; epilogue fusion attaches a lightweight pointwise op onto the tail of a heavy compute op (e.g., GEMM/Conv) reusing the accumulator.",
+      "conditions": [
+        "The intermediate tensor is not consumed by any op outside the fused region.",
+        "Fused ops have compatible iteration/launch space.",
+        "The compute-heavy op provides an epilogue slot (cuBLAS/CUTLASS/TensorIR)."
+      ],
+      "nonImplications": [
+        "Does not imply fusion is always faster; register pressure, boundary mismatches, or reduced parallelism can reverse it.",
+        "Does not imply a single canonical taxonomy across compilers; naming may vary but the data-flow structure is standard."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "Operator fusion patterns (Section 3)" },
+        { "ref": "DOC:torch-inductor", "locator": "Fusion overview and epilogue" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Vertical fusion means merging operators from different devices into a single kernel.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Cross-device execution is scheduling / placement, not fusion; fusion is a compile-time IR transform.",
+      "sourceOrEvidence": "TVM paper Section 3"
+    },
+    {
+      "claim": "Horizontal fusion is the same as CSE within a basic block.",
+      "errorType": "definition_confusion",
+      "whyWrong": "CSE removes redundant computations; horizontal fusion merges independent ops sharing launch shape into one kernel — the ops need not be redundant.",
+      "sourceOrEvidence": "TorchInductor fusion doc"
+    },
+    {
+      "claim": "Epilogue fusion means merging the backward pass into the forward pass.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Epilogue fusion attaches a pointwise op to the tail of a compute op (e.g., GEMM+bias+GELU); forward-backward merging is a distinct autograd concern.",
+      "sourceOrEvidence": "cuBLAS/CUTLASS epilogue docs"
+    },
+    {
+      "claim": "All three fusion kinds are just names for launching kernels concurrently on separate CUDA streams.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion produces a single kernel body; multi-stream concurrency is a runtime scheduling choice, not fusion.",
+      "sourceOrEvidence": "CUDA Programming Guide streams section"
+    }
+  ],
+  "implementationFacts": [
+    "cuBLAS GEMM epilogue supports bias + activation fusion via cublasLtMatmul.",
+    "TorchInductor first fuses pointwise groups, then attaches to reduction/template heads.",
+    "TVM Relax uses a fuse-ops pass built on op patterns (injective, reduction, opaque)."
+  ],
+  "performanceScenarios": [
+    "Vertical fusion of add→relu→mul saves two HBM round-trips of the intermediate tensor.",
+    "Epilogue fusion of GEMM+bias+GELU avoids one full read/write of the M×N output tensor."
+  ],
+  "versionSensitivity": "stable_principle"
+}

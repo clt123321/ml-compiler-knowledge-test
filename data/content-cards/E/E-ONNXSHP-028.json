@@ -1,0 +1,49 @@
+{
+  "questionId": "E-ONNXSHP-028",
+  "learningObjective": "Understand ONNX shape inference and symbolic dynamic dimensions.",
+  "canonicalClaims": [
+    {
+      "claim": "ONNX shapes can carry symbolic (named) dynamic dimensions; `onnx.shape_inference` propagates shape/dtype through the graph via per-op rules, leaving unresolved dimensions symbolic.",
+      "conditions": ["Standard ONNX shape inference implementation."],
+      "nonImplications": [
+        "Does not imply shape inference resolves every case.",
+        "Does not imply symbolic dims are handled identically by all downstream tools."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Shape inference and TensorShapeProto" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "ONNX requires fully static shapes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Symbolic/unknown dims are supported.",
+      "sourceOrEvidence": "ONNX spec"
+    },
+    {
+      "claim": "ONNX has no shape inference; runtimes must build their own.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`onnx.shape_inference` exists and defines per-op rules.",
+      "sourceOrEvidence": "ONNX docs"
+    },
+    {
+      "claim": "Dynamic shapes are represented by a hidden runtime shape-input tensor.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Shape is value-level metadata (TensorShapeProto).",
+      "sourceOrEvidence": "ONNX spec"
+    },
+    {
+      "claim": "ONNX shape inference is monotonic: adding a pass never reduces information.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Shape inference is designed to be additive but a broken model or bad tool can introduce inconsistencies.",
+      "sourceOrEvidence": "ONNX docs"
+    }
+  ],
+  "implementationFacts": [
+    "TensorShapeProto uses `dim_value` (int) or `dim_param` (name) per dim.",
+    "`onnx.shape_inference.infer_shapes(model)` mutates value_info in place."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

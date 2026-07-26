@@ -1,0 +1,55 @@
+{
+  "questionId": "C-DIALECT-016",
+  "learningObjective": "Recall the core structural concepts of MLIR (Operation, Region, Block, Value, Type, Attribute) and how they relate.",
+  "canonicalClaims": [
+    {
+      "claim": "MLIR's IR is structured as: Operations contain zero or more Regions; Regions contain lists of Blocks; Blocks contain lists of Operations and carry SSA-value arguments; Values are SSA edges (block arguments and op results) referenced across operations. Types annotate Values; Attributes annotate Operations.",
+      "conditions": [
+        "The reference is MLIR's Language Reference model."
+      ],
+      "nonImplications": [
+        "Does not imply every op has a region (leaf ops have zero).",
+        "Does not imply every region has multiple blocks; single-block regions are common."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "MLIR core IR structure" },
+        { "ref": "PAPER:mlir", "locator": "MLIR CGO'21 paper" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Regions and Blocks are the same concept.",
+      "errorType": "definition_confusion",
+      "whyWrong": "A Region contains Blocks; the two levels are distinct.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "MLIR nests operations via side-tables mapping op ids to child ops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Nesting is expressed via Regions attached to ops.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Values are Python-only objects in MLIR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Values are first-class C++ SSA-graph entities in MLIR.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Attributes are the same as Types in MLIR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Types annotate Values; Attributes annotate Operations. They are separate concepts.",
+      "sourceOrEvidence": "MLIR docs"
+    }
+  ],
+  "implementationFacts": [
+    "`func.func` has one region for its body",
+    "`scf.for` has one region for the loop body; block arguments carry the iteration state",
+    "`module` is itself an Operation containing a Region"
+  ],
+  "performanceScenarios": [
+    "Correct navigation across the Op/Region/Block hierarchy is essential for writing correct passes."
+  ],
+  "versionSensitivity": "stable_principle"
+}

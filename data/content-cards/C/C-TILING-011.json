@@ -1,0 +1,56 @@
+{
+  "questionId": "C-TILING-011",
+  "learningObjective": "Explain the Halide/TVM compute-vs-schedule separation and identify what tiling changes in the resulting loop nest.",
+  "canonicalClaims": [
+    {
+      "claim": "In Halide/TVM, compute (the semantic description of the output) is separated from schedule (loop-level primitives such as split, reorder, tile, fuse, vectorize). Schedule transformations restructure the loop nest without changing what is computed, so long as they respect dependence constraints.",
+      "conditions": [
+        "The compute definition is fixed.",
+        "The schedule primitives obey dependence rules (e.g., not reordering a reduction dim that lacks associativity guarantees)."
+      ],
+      "nonImplications": [
+        "Does not imply the same compute can be scheduled optimally on every hardware target.",
+        "Does not imply that reordering a reduction dim is safe under FP (associativity is not exact for finite-precision floats)."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:halide", "locator": "Halide compute/schedule separation" },
+        { "ref": "PAPER:tvm", "locator": "TVM schedule primitives; compute vs. schedule" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Tiling changes the arithmetic done at each output; you must re-verify numerical correctness.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Tiling reorders iteration only; the arithmetic per element is unchanged when the reduction order is preserved.",
+      "sourceOrEvidence": "Halide / TVM primitives"
+    },
+    {
+      "claim": "Tiling is the mechanism used to fuse adjacent operators in the graph IR.",
+      "errorType": "scope_error",
+      "whyWrong": "Tiling is a loop-level schedule primitive; operator fusion is a graph-/operator-IR concern.",
+      "sourceOrEvidence": "TVM docs"
+    },
+    {
+      "claim": "Schedules that split loops are equivalent to strength reduction.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Strength reduction replaces expensive ops with cheaper equivalents; tiling reorganizes iteration.",
+      "sourceOrEvidence": "BOOK:eac3"
+    },
+    {
+      "claim": "Applying a schedule always improves performance.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Poorly chosen tile sizes can hurt locality, reduce parallelism, or increase register pressure; good schedules are search-driven or expert-tuned.",
+      "sourceOrEvidence": "Halide / TVM / Ansor discussions"
+    }
+  ],
+  "implementationFacts": [
+    "Halide/TVM schedule primitives: split, reorder, fuse, tile, vectorize, parallelize, unroll",
+    "The compute is invariant under schedule; the schedule only affects codegen",
+    "Reduction reorder requires FP-associativity considerations (or exact-integer types)"
+  ],
+  "performanceScenarios": [
+    "Tiling improves cache locality by reusing tile-resident data across the inner iteration space, especially for GEMM and stencil kernels."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,54 @@
+{
+  "questionId": "H-SMOOTH-019",
+  "learningObjective": "Explain the SmoothQuant technique: migrating activation outlier magnitude to weights via a per-channel diagonal scaling.",
+  "canonicalClaims": [
+    {
+      "claim": "SmoothQuant rewrites Y = X W as Y = (X · diag(1/s)) · (diag(s) · W), migrating per-channel activation outlier magnitude into weights; because weights are naturally per-channel-quantized, the rewritten activations become per-tensor-quantization-friendly.",
+      "conditions": [
+        "The activation outliers are per-channel (concentrated in a small subset of channels).",
+        "Weight quantization is per-channel (cheap to absorb the migrated magnitude)."
+      ],
+      "nonImplications": [
+        "Does not imply the migration factor s is unique; the paper introduces a tunable balance factor.",
+        "Does not imply SmoothQuant is equivalent to LLM.int8; LLM.int8 keeps outlier channels in FP16."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:smoothquant", "locator": "Sections 3-4: diagonal scaling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "SmoothQuant identifies outlier channels and keeps them in FP16.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That is LLM.int8's mixed-precision approach; SmoothQuant migrates magnitude via a mathematical rewrite instead.",
+      "sourceOrEvidence": "SmoothQuant and LLM.int8 papers"
+    },
+    {
+      "claim": "SmoothQuant applies a low-pass filter to activations to reduce outlier magnitude.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SmoothQuant is a mathematical rewrite (diagonal scaling), not a signal-processing filter.",
+      "sourceOrEvidence": "SmoothQuant paper"
+    },
+    {
+      "claim": "SmoothQuant is a training-time technique that modifies the loss function.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SmoothQuant is a PTQ method: it applies the diagonal scaling at inference-time and does not touch training.",
+      "sourceOrEvidence": "SmoothQuant paper abstract"
+    },
+    {
+      "claim": "The migration factor s is fixed at 0.5 in the SmoothQuant paper.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The paper introduces a tunable α parameter with a recommended range (typically 0.5 as a default but per-layer variation is discussed).",
+      "sourceOrEvidence": "SmoothQuant Section 4"
+    }
+  ],
+  "implementationFacts": [
+    "SmoothQuant fuses the `diag(1/s)` scaling into the preceding LayerNorm's affine parameters, so no extra runtime kernel is required.",
+    "`diag(s) · W` is precomputed offline; the deployed weight already includes the scaling."
+  ],
+  "performanceScenarios": [
+    "LLaMA / OPT with SmoothQuant W8A8 recover within 0.1-0.5 perplexity of FP16 while running INT8 GEMM."
+  ],
+  "versionSensitivity": "stable_principle"
+}

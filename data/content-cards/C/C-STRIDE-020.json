@@ -1,0 +1,56 @@
+{
+  "questionId": "C-STRIDE-020",
+  "learningObjective": "Compute the linear storage offset of a strided tensor element from shape, strides, and coordinate; and reason about broadcast strides.",
+  "canonicalClaims": [
+    {
+      "claim": "The linear storage offset of a strided tensor element is `offset = sum_i (index_i * stride_i)`. A zero stride on a dim is a legal metadata encoding for a broadcast view: all indices along that dim alias the same physical element.",
+      "conditions": [
+        "Strides are in element units (or bytes, consistently).",
+        "The tensor is a read-only broadcast view (writes to zero-stride dims are typically disallowed)."
+      ],
+      "nonImplications": [
+        "Does not imply broadcast views are writable.",
+        "Does not imply that a broadcast avoids all copies downstream; some ops may materialize."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Array indexing" },
+        { "ref": "DOC:mlir-langref", "locator": "MemRef strided-layout" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Zero strides are illegal in any tensor IR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PyTorch and MLIR memref both allow zero strides for broadcast views.",
+      "sourceOrEvidence": "PyTorch / MLIR docs"
+    },
+    {
+      "claim": "The offset formula ignores strides and sums only coordinates.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The offset is explicitly a stride-weighted sum.",
+      "sourceOrEvidence": "Standard array indexing"
+    },
+    {
+      "claim": "Zero strides mean the compiler will replace them at codegen with per-element stride.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Zero strides are semantic; they intentionally alias indices to the same physical element.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "A broadcast view always allocates full physical storage `product(shape)`.",
+      "errorType": "definition_confusion",
+      "whyWrong": "A broadcast view can share storage across dims; physical storage may be much smaller than product(logical shape).",
+      "sourceOrEvidence": "PyTorch broadcast docs"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch: `expand` produces a broadcast view with zero strides on the expanded dims",
+    "MLIR memref: strided layout accepts zero strides",
+    "Writing to a broadcast view is generally disallowed or produces undefined behavior"
+  ],
+  "performanceScenarios": [
+    "Broadcast views avoid materializing large intermediate tensors; downstream kernels must handle strided access."
+  ],
+  "versionSensitivity": "stable_principle"
+}

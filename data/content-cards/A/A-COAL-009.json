@@ -1,0 +1,51 @@
+{
+  "questionId": "A-COAL-009",
+  "learningObjective": "Estimate effective HBM bandwidth achieved by a strided access pattern compared to the ideal coalesced case and identify the underlying mechanism.",
+  "canonicalClaims": [
+    {
+      "claim": "Effective useful bandwidth for a global-memory access equals useful bytes divided by total sector bytes transferred; the waste factor is (sectors_touched × sector_size) / useful_bytes.",
+      "conditions": [
+        "First-touch access with no reuse from L2.",
+        "Sector granularity is the memory-system's minimum transfer unit (e.g., 32 B on recent NVIDIA GPUs).",
+        "HBM bandwidth is the bottleneck."
+      ],
+      "nonImplications": [
+        "Does not imply L2 or L1 can never mitigate the waste; repeated access to the same sectors amortizes it.",
+        "Does not imply that transactions are equal to sectors — coalescing can group multiple sectors into a single memory transaction."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Coalesced accesses / sector transactions" },
+        { "ref": "BOOK:pmpp4", "locator": "Global memory coalescing chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The number of sectors touched divides the effective bandwidth directly.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Effective bandwidth is useful bytes / total bytes moved. Total bytes = sectors × sector_size; sectors alone omit the sector size in the ratio.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "L2 caches transparently hide strided access waste on modern GPUs.",
+      "errorType": "overgeneralization",
+      "whyWrong": "L2 helps only for repeated access; first-touch access still pulls full sectors from HBM.",
+      "sourceOrEvidence": "CUDA Best Practices Guide, L2 discussion"
+    },
+    {
+      "claim": "Coalescing rules use 128 B transaction size on all recent architectures.",
+      "errorType": "version_leak",
+      "whyWrong": "Recent NVIDIA GPUs use 32 B sectors at L2 as the effective granularity; the 128 B figure is a legacy or aggregate description.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "Waste factor = sectors_touched × sector_size / useful_bytes.",
+    "Stride-1 with 4 B elements: warp touches 1 × 128 B / 128 B useful = 1.0 efficiency.",
+    "Stride-32 with 4 B elements: warp touches 32 × 32 B sectors / 128 B useful = 8× waste, 1/8 efficiency."
+  ],
+  "performanceScenarios": [
+    "Non-contiguous strided access (e.g., transposed matrix rows) is a common Nsight Compute finding, motivating layout transformations or shared-memory staging."
+  ],
+  "versionSensitivity": "stable_principle"
+}

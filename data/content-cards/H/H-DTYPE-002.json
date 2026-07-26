@@ -1,0 +1,57 @@
+{
+  "questionId": "H-DTYPE-002",
+  "learningObjective": "Explain why FP16 and BF16 trade precision against dynamic range and identify a scenario that dictates the choice.",
+  "canonicalClaims": [
+    {
+      "claim": "BF16 provides FP32-like dynamic range (8-bit exponent) at the cost of 7-bit mantissa precision, versus FP16's 5-bit exponent / 10-bit mantissa; for DNN training where gradient dynamic range is critical, BF16 typically eliminates underflow/overflow issues that require loss scaling in FP16.",
+      "conditions": [
+        "Hardware supports BF16 at competitive throughput.",
+        "The workload's precision requirement is compatible with 7-bit mantissa."
+      ],
+      "nonImplications": [
+        "Does not imply BF16 always matches FP32 accuracy; mantissa precision can matter in some workloads.",
+        "Does not imply loss scaling is never required with BF16 — it is much less common but not universally absent."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Numerical formats for DNN training" },
+        { "ref": "DOC:cuda-guide", "locator": "BF16 Tensor Core support" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "BF16 has more bits than FP16 and therefore takes more memory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both are 16-bit formats; total memory is identical.",
+      "sourceOrEvidence": "IEEE 754 / BF16 spec"
+    },
+    {
+      "claim": "BF16 has the same exponent width as FP16; the two differ only in rounding.",
+      "errorType": "definition_confusion",
+      "whyWrong": "BF16 has 8 exponent bits, FP16 has 5.",
+      "sourceOrEvidence": "BF16 specification"
+    },
+    {
+      "claim": "BF16 is a fixed-point format so underflow is impossible.",
+      "errorType": "definition_confusion",
+      "whyWrong": "BF16 is a floating-point format; underflow is possible but far less likely than FP16 due to the wider exponent range.",
+      "sourceOrEvidence": "BF16 format definition"
+    },
+    {
+      "claim": "Switching from FP16 to BF16 is always a Pareto improvement.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Reduced mantissa precision can cause small but real accuracy differences in some workloads (e.g., very small updates lost to rounding).",
+      "sourceOrEvidence": "BF16 vs FP16 training comparisons"
+    }
+  ],
+  "implementationFacts": [
+    "FP16 representable range: approximately [6e-5, 6.5e4] normal.",
+    "BF16 representable range: approximately [1.2e-38, 3.4e38].",
+    "Ampere Tensor Core: BF16 and FP16 have equal peak throughput."
+  ],
+  "performanceScenarios": [
+    "LLaMA / GPT training typically uses BF16 for weights and activations.",
+    "Some vision workloads still prefer FP16 with loss scaling for precision reasons."
+  ],
+  "versionSensitivity": "stable_principle"
+}

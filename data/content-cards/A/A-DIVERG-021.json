@@ -1,0 +1,49 @@
+{
+  "questionId": "A-DIVERG-021",
+  "learningObjective": "Estimate the throughput impact of warp divergence and identify when divergence does not degrade throughput.",
+  "canonicalClaims": [
+    {
+      "claim": "Warp divergence penalty applies when threads within a warp take different paths of a branch; the two sides execute serially under lane masking. Warps whose threads take a uniform side incur no divergence cost.",
+      "conditions": [
+        "The branch produces real control divergence (not predicated compile-time),",
+        "Threads within a warp truly take different sides."
+      ],
+      "nonImplications": [
+        "Does not imply that eliminating all branches always improves performance; small predicated branches are cheap.",
+        "Does not imply independent-thread-scheduling makes divergence free; it changes reconvergence semantics without removing serialization."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Branch divergence section, SIMT architecture" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Divergence is a block-scope property; if any thread in the block diverges, the whole block pays the penalty.",
+      "errorType": "scope_error",
+      "whyWrong": "Divergence is a warp-scope property; warps in the same block are independently scheduled.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Volta's independent thread scheduling eliminates warp divergence.",
+      "errorType": "version_leak",
+      "whyWrong": "ITS provides per-thread PCs and safer reconvergence, but divergent sides still execute in serial under masking within a warp.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, independent thread scheduling notes"
+    },
+    {
+      "claim": "Divergent warp time equals max(T_A, T_B), not T_A + T_B.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Lane masking serializes both paths; the warp progresses through both sides in sequence.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "Divergent path cost per warp ≈ sum of side durations for real control flow.",
+    "Warp size = 32; a warp's 32 threads share a scheduler."
+  ],
+  "performanceScenarios": [
+    "Softmax and reduction kernels align data by warp boundary to avoid divergence in reduction steps.",
+    "Sparse-mask kernels often route similar-mask threads into the same warp via pre-sorting to reduce divergence."
+  ],
+  "versionSensitivity": "stable_principle"
+}

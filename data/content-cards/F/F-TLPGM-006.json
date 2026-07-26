@@ -1,0 +1,49 @@
+{
+  "questionId": "F-TLPGM-006",
+  "learningObjective": "Reason about 2D Triton launch grids: program_id per axis, per-program tile bases, mask broadcasting.",
+  "canonicalClaims": [
+    {
+      "claim": "In a 2D Triton launch grid, `tl.program_id(0)` and `tl.program_id(1)` return the two coordinates; per-tile offsets are `pid * BLOCK + tl.arange(0, BLOCK)`; broadcasting `offs_m[:, None]` and `offs_n[None, :]` produces a `[BM, BN]` address grid.",
+      "conditions": ["Standard row-major FP32 layout with strides (N, 1)."],
+      "nonImplications": [
+        "Does not imply any specific BM/BN is optimal.",
+        "Does not imply 2D grids are required; a 1D flattened form is also valid."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "program_id, arange, broadcasting" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`pid_m * BM + tl.arange(0, BM)` is affected by Python operator precedence in the JIT frontend.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Standard arithmetic precedence: `*` binds tighter than `+`; Triton respects it.",
+      "sourceOrEvidence": "Triton language reference"
+    },
+    {
+      "claim": "`stride_n=1` collapses the column dimension.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Stride 1 just means adjacent-element addressing; arange still spans BN.",
+      "sourceOrEvidence": "Triton pointer arithmetic"
+    },
+    {
+      "claim": "`mask_m[:, None] & mask_n[None, :]` produces a 1D mask.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Broadcast semantics yield a 2D `[BM, BN]` mask.",
+      "sourceOrEvidence": "Triton broadcasting rules"
+    },
+    {
+      "claim": "A 2D launch grid requires a 2D block size for correctness.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Block size is a per-axis `constexpr`; 2D block dims are user-specified via BM/BN.",
+      "sourceOrEvidence": "Triton language reference"
+    }
+  ],
+  "implementationFacts": [
+    "`tl.program_id(axis=k)` returns the program's coordinate on axis k of the launch grid.",
+    "`tl.arange(0, BLOCK)` produces a compile-time-sized vector of iota values."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

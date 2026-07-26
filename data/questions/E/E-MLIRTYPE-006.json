@@ -1,0 +1,62 @@
+{
+  "id": "E-MLIRTYPE-006",
+  "type": "multiple",
+  "module": "mlir_tvm_xla",
+  "subtopic": "MLIR / Tensor, MemRef, Vector types",
+  "learningObjective": "Distinguish MLIR `tensor`, `memref`, and `vector` types by their semantics (value vs buffer), aliasing model, and role in the lowering pipeline.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about MLIR `tensor`, `memref`, and `vector` types are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "`tensor<...>` is a value type with SSA semantics: producers create new logical tensors; there is no in-place mutation and no explicit aliasing between different SSA values." },
+    { "id": "B", "text": "`memref<...>` models a buffer with an explicit memory space, strides, and offset; multiple `memref` values can alias the same underlying storage, and stores through one memref are visible via aliased memrefs." },
+    { "id": "C", "text": "`vector<...>` typically models SIMD/SIMT lane-aligned values held in registers; vector types are the primary lowering target for `arith` ops on `tensor` before bufferization, because tensors cannot be lowered to LLVM directly." },
+    { "id": "D", "text": "`tensor` and `memref` are fully interchangeable; the bufferization pass exists only for user convenience since MLIR's runtime executes both types with identical semantics." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "A: `tensor` is SSA-valued and immutable at the IR level; producers create new tensors, and the compiler is free to reuse buffers only after bufferization. B: `memref` models a strided buffer with memory-space, and aliasing is possible (this is why memref alias analysis exists). C is wrong: vector is a distinct lower-level type used inside kernel-shaped compute; the standard lowering path is tensor → memref (bufferization) → lower dialects; `vector` is a peer type, not tensor's only lowering target. D is wrong: bufferization exists precisely because `tensor` and `memref` differ semantically (value vs buffer, immutability vs aliasing).",
+  "optionExplanations": {
+    "A": "Correct: `tensor` is SSA-valued and immutable at the IR level.",
+    "B": "Correct: `memref` is a buffer type with aliasing and memory-space.",
+    "C": "Wrong: tensors are lowered to memrefs (bufferization) as the canonical path; vector is a separate register-level SIMD type.",
+    "D": "Wrong: bufferization is required precisely because the two types differ."
+  },
+  "assumptions": [
+    "Upstream MLIR bufferization semantics.",
+    "The reader is thinking of built-in tensor/memref/vector types, not downstream extensions."
+  ],
+  "nonImplications": [
+    "Does not imply memrefs cannot be non-aliasing; some passes assume `restrict`-style non-aliasing.",
+    "Does not imply that vector types are only for CPUs; GPU dialects also use vector for register-level SIMT."
+  ],
+  "misconceptionTags": ["tensor_memref_interchangeable_myth", "vector_lowering_confusion"],
+  "distractorRationales": {
+    "C": "Confuses `vector` with the canonical bufferization target.",
+    "D": "Ignores value/buffer semantic distinction."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:mlir-langref", "locator": "Tensor, MemRef, Vector types", "supports": ["A", "B"] },
+    { "ref": "PAPER:mlir", "locator": "MLIR CGO 2021 — types and bufferization", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-MLIRTYPE-006.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

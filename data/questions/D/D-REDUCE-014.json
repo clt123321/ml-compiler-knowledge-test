@@ -1,0 +1,107 @@
+{
+  "id": "D-REDUCE-014",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "TorchInductor reduction + pointwise fusion (softmax)",
+  "learningObjective": "Predict how TorchInductor fuses a reduction chain such as a numerically stable softmax and identify the resulting kernel structure.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        8,
+        4096
+      ]
+    ],
+    "dtypes": [
+      "float32"
+    ]
+  },
+  "stem": "Consider a compiled numerically-stable softmax over the last dim of a `[8, 4096]` FP32 tensor. Which best describes the kernel structure TorchInductor typically produces on CUDA?",
+  "codeSnippet": "import torch\n\n@torch.compile\ndef sm(x):\n    m = x.max(dim=-1, keepdim=True).values\n    e = (x - m).exp()\n    s = e.sum(dim=-1, keepdim=True)\n    return e / s\n\nx = torch.randn(8, 4096, device=\"cuda\")\ny = sm(x)  # first call warms up compilation",
+  "options": [
+    {
+      "id": "A",
+      "text": "Inductor emits one kernel per line of Python (four kernels: max, sub-exp, sum, div), because each intermediate tensor is materialized and cannot be fused across reduction boundaries. In this reading, Inductor emits one Triton kernel per line of Python (four kernels: one for max, one for the sub-exp, one for the sum reduction, and one for the final division), because each intermediate tensor is materialized in HBM and cannot be fused across the reduction boundary."
+    },
+    {
+      "id": "B",
+      "text": "Inductor fuses the reduction and elementwise ops into a small number of kernels (commonly one 2-pass kernel over the last dim, or two kernels: a reduction to compute (max, sum) and a pointwise finalize), avoiding materializing the intermediate `e` tensor as a full HBM buffer when possible."
+    },
+    {
+      "id": "C",
+      "text": "Inductor cannot compile softmax and falls back to eager per-op execution because `.max(dim=-1)` returns a namedtuple (values, indices) which is not supported by the tracer. Under this framing, Inductor cannot compile softmax at all and falls back to eager per-op execution for the entire function; the underlying reason is that `.max(dim=-1)` returns a `torch.return_types.max` namedtuple containing (values, indices), which the tracer does not know how to unpack."
+    },
+    {
+      "id": "D",
+      "text": "Inductor emits a single CPU C++ kernel and marshals data from CUDA to CPU for each softmax call because reductions on the last dim are always executed on the host in current releases. In this account, Inductor emits a single CPU C++ kernel and marshals data from CUDA to CPU for each softmax call, because reductions on the last dim are always executed on the host in current releases; the round-trip is what makes softmax slower than one might expect."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "TorchInductor's scheduler recognizes the softmax pattern as a reduction over the last dim followed by a pointwise finalize, and fuses aggressively along that reduction axis: typically producing a small number of kernels (a two-pass kernel that computes max and sum in one traversal is common, followed by the pointwise divide; or a single fused kernel when the reduction dim is small enough) that avoid materializing the intermediate `e` as a full HBM tensor. Softmax patterns are well-covered by Inductor's fusion; no per-line kernel or CPU fallback occurs.",
+  "optionExplanations": {
+    "A": "Wrong: per-line kernels defeat the fusion strategy Inductor is designed to apply.",
+    "B": "Correct: matches the typical fused softmax pattern in Inductor.",
+    "C": "Wrong: `.max(dim=-1)` returns a namedtuple that Inductor handles by taking `.values`; the pattern is supported.",
+    "D": "Wrong: CUDA inputs go to Triton codegen, not CPU."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 with default Inductor configuration on CUDA.",
+    "No user-provided decomposition disables softmax fusion."
+  ],
+  "nonImplications": [
+    "Does not imply softmax is always faster in Inductor than a hand-written CUDA kernel like FlashAttention's softmax.",
+    "Does not imply that all reductions fuse this cleanly; more complex patterns (multi-reduction with different reduction axes) may split."
+  ],
+  "misconceptionTags": [
+    "one_kernel_per_op",
+    "softmax_forces_eager"
+  ],
+  "distractorRationales": {
+    "A": "Contradicts Inductor's fusion.",
+    "C": "Wrong claim about namedtuple support.",
+    "D": "Wrong backend."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Reduction + pointwise fusion; softmax pattern",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Inductor scheduler and fusion",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "TorchInductor softmax kernel structure on CUDA",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-REDUCE-014.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

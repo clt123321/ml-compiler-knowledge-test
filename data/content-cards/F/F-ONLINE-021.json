@@ -1,0 +1,49 @@
+{
+  "questionId": "F-ONLINE-021",
+  "learningObjective": "Understand the online softmax recurrence: running max + rescale of running sum on each new tile.",
+  "canonicalClaims": [
+    {
+      "claim": "The online softmax recurrence for tile-wise processing is: `m = max(m_prev, m_new)`, `s = s_prev * exp(m_prev - m) + s_new * exp(m_new - m)`. This is an exact algebraic identity ensuring that after all tiles are processed, `s = sum_i exp(x_i - m)` with `m = max_i x_i`.",
+      "conditions": ["Tile-wise processing; sufficient FP precision (typically FP32)."],
+      "nonImplications": [
+        "Does not imply bit-associativity; different tile orders give different rounding.",
+        "Does not imply the recurrence is FlashAttention-specific; it applies to any tile-wise softmax."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Online softmax formulation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The recurrence is simple addition: `m = m_prev + m_new`, `s = s_prev + s_new`.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fails to rescale sums to the new max anchor.",
+      "sourceOrEvidence": "FlashAttention paper"
+    },
+    {
+      "claim": "The running max never updates after the first tile.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Fails when later tiles contain a larger max.",
+      "sourceOrEvidence": "FlashAttention paper"
+    },
+    {
+      "claim": "The recurrence only works in FP16.",
+      "errorType": "version_leak",
+      "whyWrong": "FP32 works fine and is the standard choice.",
+      "sourceOrEvidence": "FlashAttention paper"
+    },
+    {
+      "claim": "The recurrence is an approximation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is exact algebra of the softmax denominator.",
+      "sourceOrEvidence": "Milakov & Gimelshein, FlashAttention"
+    }
+  ],
+  "implementationFacts": [
+    "Also used as the core of FlashAttention's numerator recurrence via `l * exp(m_prev - m)` rescaling.",
+    "Well-conditioned when `m` stays finite; -inf initial max is safe (contributes zero)."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

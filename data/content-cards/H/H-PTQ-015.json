@@ -1,0 +1,56 @@
+{
+  "questionId": "H-PTQ-015",
+  "learningObjective": "Distinguish post-training quantization (PTQ) from quantization-aware training (QAT).",
+  "canonicalClaims": [
+    {
+      "claim": "PTQ quantizes a pre-trained FP model without further training, using a calibration set to determine scales; QAT inserts fake-quantization ops during training so weights become robust to quantization noise, typically at higher cost but higher low-bit-width accuracy.",
+      "conditions": [
+        "PTQ requires a representative calibration set for activation scales.",
+        "QAT requires a full training loop with quantization-aware ops."
+      ],
+      "nonImplications": [
+        "Does not imply QAT is always better; INT8 PTQ often matches QAT.",
+        "Does not imply PTQ is entirely training-free; per-layer weight optimization (GPTQ) does update weights, just not via full backprop."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "PTQ vs QAT" },
+        { "ref": "PAPER:gptq", "locator": "PTQ context" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PTQ and QAT differ only in the target bit width (INT8 vs INT4).",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both can target any bit width; the distinction is training-time involvement.",
+      "sourceOrEvidence": "TensorRT / PyTorch quantization docs"
+    },
+    {
+      "claim": "PTQ is applied at runtime during serving; QAT is applied offline.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PTQ is an offline process (calibrate, freeze, deploy); the 'post-training' refers to timing relative to model training, not inference.",
+      "sourceOrEvidence": "TensorRT INT8 workflow"
+    },
+    {
+      "claim": "QAT always yields a bit-exact quantized model with no accuracy loss.",
+      "errorType": "overgeneralization",
+      "whyWrong": "QAT reduces accuracy loss but does not eliminate it; residual gap depends on bit width and workload.",
+      "sourceOrEvidence": "Quantization survey"
+    },
+    {
+      "claim": "PTQ is universally applicable to all models; QAT is only needed for CNNs.",
+      "errorType": "overgeneralization",
+      "whyWrong": "QAT applies to any architecture; the choice between PTQ and QAT depends on target accuracy and bit width.",
+      "sourceOrEvidence": "PyTorch quantization tutorials"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch supports both PTQ (`torch.ao.quantization.prepare` + calibration) and QAT (`torch.ao.quantization.prepare_qat`).",
+    "TensorRT supports PTQ via calibration; QAT integration via ONNX Q/DQ nodes."
+  ],
+  "performanceScenarios": [
+    "INT8 ImageNet ResNet-50: PTQ typically loses <0.5% top-1 vs FP32.",
+    "INT4 LLM: QAT-based approaches reach lower perplexity than pure PTQ round-to-nearest."
+  ],
+  "versionSensitivity": "stable_principle"
+}

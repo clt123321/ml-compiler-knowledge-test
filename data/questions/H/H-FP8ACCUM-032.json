@@ -1,0 +1,68 @@
+{
+  "id": "H-FP8ACCUM-032",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "FP8 mul + FP32 accum on Hopper",
+  "learningObjective": "Explain FP8 matmul semantics on Hopper Tensor Cores including accumulator dtype and scaling requirements.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Hopper (sm_90, H100)",
+    "device": "GPU",
+    "requiredFeatures": ["FP8 Tensor Core (QMMA / WGMMA)"]
+  },
+  "softwareContext": {
+    "framework": "CUDA / CUTLASS / Transformer Engine",
+    "frameworkVersionScope": "CUDA 12.x; TE 1.x",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "On Hopper Tensor Cores, FP8 (E4M3/E5M2) matmul is a common training precision. Which of the following statements about the FP8 GEMM numerical pipeline are TRUE? (Select all that apply.)",
+  "profileData": "Hopper H100 Tensor Core peak throughput (dense, per NVIDIA whitepaper):\n  BF16 / FP16      : ~ 989 TFLOPS\n  FP8 (E4M3, E5M2) : ~1979 TFLOPS  (~ 2×)\n  Accumulator dtype in FP8 QMMA/WGMMA: FP32.\n  Transformer Engine 'DelayedScaling' recipe: per-tensor scale factors updated with a lag over recent statistics.",
+  "options": [
+    { "id": "A", "text": "FP8 Tensor Core matmuls use an FP32 accumulator; the per-tile accumulator is FP32 regardless of whether inputs are E4M3 or E5M2. This mitigates the very limited dynamic range of FP8 for the sum of products." },
+    { "id": "B", "text": "Because FP8's dynamic range is small, production FP8 pipelines apply per-tensor (or per-block) scale factors that keep the values within FP8's representable range; NVIDIA's Transformer Engine automates this via its `DelayedScaling` recipe." },
+    { "id": "C", "text": "FP8 GEMM on H100 has approximately 2× the peak throughput of BF16 GEMM on the same hardware, but only when memory bandwidth is not the bottleneck." },
+    { "id": "D", "text": "The FP8 accumulator is itself FP8; the small dynamic range is deliberately preserved to force early saturation, which acts as an implicit regularizer." },
+    { "id": "E", "text": "FP8 GEMM on H100 delivers its compute advantage automatically for any FP16 model; no code or precision-management change is required." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A: FP8 Tensor Core matmuls accumulate in FP32 (parallel to FP16/BF16 → FP32 accumulation). B: FP8's dynamic range is small (E4M3 ~±448, E5M2 ~±57344); production stacks apply scaling to keep values in range, with Transformer Engine automating it. C: H100 FP8 peak is roughly 2× BF16 peak (per NVIDIA specs), but the ratio only holds for compute-bound kernels. D is false: no framework uses FP8 accumulators for main compute; the small range makes this impractical. E is false: FP8 requires opt-in and scale management; frameworks do not silently convert FP16 to FP8.",
+  "optionExplanations": {
+    "A": "Correct: FP32 accumulator is standard for FP8 Tensor Cores.",
+    "B": "Correct: Transformer Engine's DelayedScaling recipe.",
+    "C": "Correct: peak-throughput advantage in compute-bound regimes.",
+    "D": "Wrong: no FP8 accumulator in production paths.",
+    "E": "Wrong: FP8 requires explicit opt-in and scale management."
+  },
+  "assumptions": [
+    "The target GPU is Hopper (sm_90) with FP8 Tensor Core support.",
+    "The workload uses NVIDIA's Transformer Engine or equivalent FP8 pipeline."
+  ],
+  "nonImplications": [
+    "Does not imply FP8 always matches BF16 accuracy — small residual differences are typical, and workload-dependent.",
+    "Does not imply the 2× peak is always realized — memory-bandwidth-bound kernels see much less benefit."
+  ],
+  "misconceptionTags": ["fp8_accum", "fp8_free_upgrade"],
+  "distractorRationales": {
+    "D": "Invents an FP8 accumulator that no production path uses.",
+    "E": "Ignores opt-in and scale management."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "H100 FP8 Tensor Core specification; QMMA / WGMMA", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:sze-eff", "locator": "Reduced-precision accumulation", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "FP8 Tensor Core semantics on Hopper",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/H/H-FP8ACCUM-032.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

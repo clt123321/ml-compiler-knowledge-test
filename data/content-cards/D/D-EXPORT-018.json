@@ -1,0 +1,68 @@
+{
+  "questionId": "D-EXPORT-018",
+  "learningObjective": "Identify true properties of `torch.export` and the `ExportedProgram` artifact it produces.",
+  "canonicalClaims": [
+    {
+      "claim": "`torch.export` captures a fully traced graph (no graph breaks) and returns an `ExportedProgram` containing the FX graph, parameter/buffer metadata, and the input/output pytree signature; the artifact is serializable and intended for downstream compilers/runtimes (AOTInductor, ONNX exporters, other backends).",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The model is traceable without graph breaks or with user-provided workarounds like `torch.cond`."
+      ],
+      "nonImplications": [
+        "Does not imply every model exports; some require rewrites.",
+        "Does not imply the export IR is identical across versions."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-export", "locator": "torch.export overview" },
+        { "ref": "DOC:torch-aoti", "locator": "AOTInductor and ExportedProgram" }
+      ]
+    },
+    {
+      "claim": "`torch.export` supports explicit dynamic-shape constraints via `Dim` objects passed through `dynamic_shapes`.",
+      "conditions": [
+        "The user provides valid `Dim` specifications matching the model's usage."
+      ],
+      "nonImplications": [
+        "Does not imply all dynamic constraints are expressible; complex data-dependent shapes may not export."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-export", "locator": "dynamic_shapes API" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "torch.export is an alias for torch.jit.trace producing TorchScript.",
+      "errorType": "definition_confusion",
+      "whyWrong": "torch.export produces the new export IR, distinct from TorchScript.",
+      "sourceOrEvidence": "torch.export docs"
+    },
+    {
+      "claim": "torch.export tolerates graph breaks like torch.compile does.",
+      "errorType": "scope_error",
+      "whyWrong": "torch.export requires a whole-graph capture.",
+      "sourceOrEvidence": "torch.export docs"
+    },
+    {
+      "claim": "The exported graph cannot express any dynamic shape.",
+      "errorType": "scope_error",
+      "whyWrong": "Dim constraints permit range-based dynamic shapes.",
+      "sourceOrEvidence": "torch.export docs"
+    },
+    {
+      "claim": "ExportedProgram cannot be consumed outside Python.",
+      "errorType": "scope_error",
+      "whyWrong": "AOTInductor consumes it to produce a native shared library callable without Python.",
+      "sourceOrEvidence": "torch.compile / AOTInductor docs"
+    }
+  ],
+  "implementationFacts": [
+    "ExportedProgram fields: graph_module, graph_signature, state_dict, constants, example_inputs",
+    "Dim objects specify constraints and can be shared across inputs to enforce equality",
+    "torch.export.save / load produce a portable artifact"
+  ],
+  "performanceScenarios": [
+    "Export decouples training-time model from deployment-time compile/runtime; enabling AOT compilation."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

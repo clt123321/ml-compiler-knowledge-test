@@ -1,0 +1,49 @@
+{
+  "questionId": "F-ATTN-022",
+  "learningObjective": "Reason about the O(S^2) HBM footprint of naive attention and its scaling implication for long sequences.",
+  "canonicalClaims": [
+    {
+      "claim": "Naive three-kernel scaled-dot-product attention writes and reads the [S,S] intermediate `S = QK^T` and softmax result `P` to/from HBM per (batch, head); memory cost scales as O(S^2), which becomes the dominant bottleneck for long sequences.",
+      "conditions": ["Standard three-kernel decomposition without tiled online softmax."],
+      "nonImplications": [
+        "Does not imply naive attention is slower than FlashAttention at small S.",
+        "Does not imply intermediates can be kept in FP16 without precision issues."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "FlashAttention problem statement" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Naive attention is compute-bound at all sequence lengths.",
+      "errorType": "performance_confusion",
+      "whyWrong": "For long sequences, S^2 memory traffic dominates.",
+      "sourceOrEvidence": "FlashAttention paper"
+    },
+    {
+      "claim": "FP16 intermediates are automatically kept in registers.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Register file cannot hold S x S tensors; they spill to HBM without tiled algorithms.",
+      "sourceOrEvidence": "GPU architecture"
+    },
+    {
+      "claim": "The S x S intermediate is virtual and never materialized.",
+      "errorType": "definition_confusion",
+      "whyWrong": "In three-kernel naive attention, it is materialized between kernels.",
+      "sourceOrEvidence": "FlashAttention paper"
+    },
+    {
+      "claim": "The problem can be solved simply by using FP16 intermediates.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Halves storage but does not change the quadratic scaling nor address numerical instability.",
+      "sourceOrEvidence": "FlashAttention paper"
+    }
+  ],
+  "implementationFacts": [
+    "FlashAttention avoids materialization via tiled online softmax + fused Q/K/V/O access.",
+    "For S=8192, one (B=1, H=1) head is 128 MB for S alone in FP16."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

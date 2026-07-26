@@ -1,0 +1,49 @@
+{
+  "questionId": "A-HIER-020",
+  "learningObjective": "Order the tiers of a modern GPU memory hierarchy by latency, bandwidth and capacity, and identify design consequences.",
+  "canonicalClaims": [
+    {
+      "claim": "In modern NVIDIA GPUs (Ampere/Hopper), the memory tiers ordered by increasing latency and capacity but decreasing (per-SM) bandwidth are: registers < shared memory / L1 < L2 < HBM.",
+      "conditions": [
+        "Ampere or newer NVIDIA architecture with standard R/S/L2/HBM hierarchy.",
+        "Aggregate bandwidth summed across SMs where relevant."
+      ],
+      "nonImplications": [
+        "Does not imply L2 is only a latency shield; L2 also provides bandwidth uplift for reused data.",
+        "Does not imply that using shared memory always beats direct HBM access; small kernels may perform fine without SMEM staging."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Memory hierarchy tables" },
+        { "ref": "BOOK:pmpp4", "locator": "Memory hierarchy chapters" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "L2 is only a latency shield and does not add bandwidth over HBM.",
+      "errorType": "definition_confusion",
+      "whyWrong": "L2 aggregate bandwidth exceeds HBM's; for L2-resident, reused data, L2 delivers a bandwidth multiplier in addition to latency reduction.",
+      "sourceOrEvidence": "NVIDIA architecture whitepapers"
+    },
+    {
+      "claim": "HBM has the highest bandwidth of any tier in the memory hierarchy.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Off-chip HBM has high absolute bandwidth but on-chip tiers (shared memory, register file) aggregate much higher bandwidth across the whole GPU.",
+      "sourceOrEvidence": "PMPP4"
+    },
+    {
+      "claim": "Shared memory and L1 are separate structures on Ampere; you cannot trade capacity between them.",
+      "errorType": "version_leak",
+      "whyWrong": "On Ampere/Hopper, shared memory and L1 share a configurable partition; software can request different splits within limits.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "A100: L1/SMEM up to 192 KB per SM (configurable); L2 = 40 MB; HBM ≈ 40–80 GB @ 2.0 TB/s.",
+    "H100: L2 = 50 MB; HBM3 up to ~3.35 TB/s."
+  ],
+  "performanceScenarios": [
+    "GEMM tiles are sized to fit into shared memory to enable maximal reuse before writing back through L2 to HBM."
+  ],
+  "versionSensitivity": "stable_principle"
+}

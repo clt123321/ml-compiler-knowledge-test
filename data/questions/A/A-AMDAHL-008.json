@@ -1,0 +1,63 @@
+{
+  "id": "A-AMDAHL-008",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Amdahl's Law / parallelization limits",
+  "learningObjective": "Apply Amdahl's Law to bound the maximum speedup of a workload with a non-parallel fraction, and identify the asymptotic ceiling.",
+  "archetype": "formula_performance",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic parallel system",
+    "device": "generic",
+    "requiredFeatures": ["independent parallel workers"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A workload spends 5% of its serial time in a sequential preprocessing step that cannot be parallelized; the remaining 95% is embarrassingly parallel. By Amdahl's Law, what is the maximum achievable speedup as the number of workers p → ∞?",
+  "options": [
+    { "id": "A", "text": "20×. Amdahl's Law says S(∞) = 1 / f_serial = 1 / 0.05 = 20." },
+    { "id": "B", "text": "Unbounded: with an embarrassingly parallel 95% region, adding workers keeps reducing wall time without limit, since only the parallel portion dominates asymptotically." },
+    { "id": "C", "text": "5×, because only the serial 5% survives, so the maximum improvement is a factor equal to the serial fraction expressed as a multiplier." },
+    { "id": "D", "text": "19×. S(∞) = (1 − f_serial) / f_serial = 0.95 / 0.05 = 19; the serial region does not itself contribute to speedup." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Amdahl's Law: S(p) = 1 / (f_s + (1 − f_s)/p). As p → ∞, S(p) → 1 / f_s. Here f_s = 0.05, so S(∞) = 1 / 0.05 = 20. The parallel portion vanishes asymptotically; only the serial fraction sets the ceiling.",
+  "optionExplanations": {
+    "A": "Correct: the asymptotic Amdahl ceiling is 1 / f_serial = 20×.",
+    "B": "Wrong: any non-zero serial fraction bounds the speedup; this is the classic Amdahl insight.",
+    "C": "Wrong: 5× is a misreading of the ratio; the ceiling is 1/f_serial, not 100×f_serial.",
+    "D": "Wrong: 19× uses (1 − f_s)/f_s, which gives the ratio of parallel-to-serial work but not the total speedup relative to the original wall time."
+  },
+  "assumptions": [
+    "The serial fraction 5% is measured on the original single-worker execution and remains serial at all p.",
+    "Communication, synchronization, and scheduling overheads are ignored (idealized Amdahl model)."
+  ],
+  "nonImplications": [
+    "Does not imply that increasing workers is worthless past some threshold; diminishing returns matter but useful speedup often remains.",
+    "Does not imply that Gustafson's Law gives the same ceiling — Gustafson considers scaled workloads, which relax Amdahl's bound in weak-scaling settings."
+  ],
+  "misconceptionTags": ["amdahl_serial_direction", "amdahl_vs_gustafson"],
+  "distractorRationales": {
+    "B": "Ignores the serial term entirely.",
+    "C": "Misapplies fraction as multiplier.",
+    "D": "Confuses parallel/serial ratio with total speedup formula."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:hp6", "locator": "Ch. 1, Amdahl's Law", "supports": ["A"] },
+    { "ref": "BOOK:pmpp4", "locator": "Amdahl and Gustafson in the introduction chapter", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "generic parallel speedup analysis, asymptotic p",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/A/A-AMDAHL-008.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

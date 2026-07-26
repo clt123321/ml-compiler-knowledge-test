@@ -1,0 +1,48 @@
+{
+  "questionId": "A-AMDAHL-008",
+  "learningObjective": "Apply Amdahl's Law to bound the maximum speedup of a workload with a non-parallel fraction, and identify the asymptotic ceiling.",
+  "canonicalClaims": [
+    {
+      "claim": "Amdahl's Law bounds asymptotic speedup at 1 / f_serial, where f_serial is the fraction of original wall time that remains strictly serial regardless of worker count.",
+      "conditions": [
+        "The serial fraction is measured in original single-worker units and does not itself shrink as workers are added.",
+        "Overheads (sync, communication) are ignored (idealized model)."
+      ],
+      "nonImplications": [
+        "Does not describe weak-scaling scenarios where workload grows with p (Gustafson's regime).",
+        "Does not imply the parallel fraction is worthless past some p; useful speedup accumulates before the asymptote."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 1, Amdahl's Law derivation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "With enough workers, any workload can achieve unbounded speedup because parallel time approaches zero.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The serial fraction cannot be shortened by adding workers; only the parallel portion scales, and its time floor is dominated by the fixed serial term.",
+      "sourceOrEvidence": "HP6 Ch. 1"
+    },
+    {
+      "claim": "Amdahl's ceiling equals the parallel-to-serial ratio (1 − f_s)/f_s.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That ratio is the fold-difference between parallel and serial work but not the wall-time speedup; wall time is (f_s + (1−f_s)/p) times the original, whose limit as p→∞ is 1/f_s.",
+      "sourceOrEvidence": "HP6 Ch. 1"
+    },
+    {
+      "claim": "Amdahl's Law describes weak-scaling speedup (larger problems with more workers).",
+      "errorType": "scope_error",
+      "whyWrong": "Amdahl's Law is a strong-scaling model (fixed problem size). Gustafson's Law addresses weak-scaling by letting the parallel portion grow with p.",
+      "sourceOrEvidence": "HP6 Ch. 1, and Gustafson's original argument"
+    }
+  ],
+  "implementationFacts": [
+    "Amdahl: S(p) = 1 / (f_s + (1 − f_s)/p); S(∞) = 1 / f_s.",
+    "For f_s = 0.05, S(∞) = 20×; at p = 20 already S ≈ 10.3×."
+  ],
+  "performanceScenarios": [
+    "GPU workloads with a fixed host-side launch overhead impose an Amdahl-like ceiling on multi-GPU scaling of short kernels."
+  ],
+  "versionSensitivity": "stable_principle"
+}

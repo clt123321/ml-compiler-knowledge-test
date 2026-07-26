@@ -1,0 +1,92 @@
+{
+  "id": "C-PROD-017",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Producer / Consumer relation and fusion boundary",
+  "learningObjective": "Explain when a producer-consumer relation between two ops in a tensor IR permits fusion into a single kernel and when it does not.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic tensor compiler",
+    "stability": "stable_principle"
+  },
+  "stem": "Two ops form a producer-consumer relation: op P produces tensor `t`, op C consumes `t`. Which condition is generally required for fusing P and C into a single kernel that avoids materializing `t` in memory?",
+  "options": [
+    {
+      "id": "A",
+      "text": "P and C must be implemented in the same source language (e.g., both C++ or both Triton); mixed-language producer/consumer pairs cannot be fused because their calling conventions differ. In this reading, cross-language producer-consumer fusion (say a CUDA C++ producer feeding a Triton consumer) is fundamentally impossible because their calling conventions differ, and the compiler must materialize the intermediate tensor between them."
+    },
+    {
+      "id": "B",
+      "text": "Each element of `t` consumed by C must be producible on demand at C's iteration site; equivalently, P's per-element production and C's per-element consumption must share (or be tileable into) a common iteration space."
+    },
+    {
+      "id": "C",
+      "text": "P and C must have the same op name (e.g., two `add` ops), because fusion in tensor compilers works by op-name pattern matching only. Under this framing, fusion in tensor compilers is implemented purely by textual pattern matching on op names; the scheduler looks up pairs like `(add, add)` or `(mul, add)` in a table and applies fusion iff both ops match a registered pair."
+    },
+    {
+      "id": "D",
+      "text": "P must be marked as a `pure` op and C as a `side-effecting` op; only pure-into-side-effecting fusion pairs are legal because the intermediate value would otherwise persist in memory. Under this account, only pairs where the producer is annotated `pure` and the consumer is annotated `side-effecting` can fuse; matching-polarity pairs (both pure) cannot fuse because the intermediate would otherwise leak into globally-visible memory."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Fusing P and C into a single kernel that avoids materializing `t` requires that each consumed element of `t` can be produced at the moment C needs it, without global synchronization. This is expressed as sharing (or being tileable into) a common iteration space: pointwise-into-pointwise is the classic case (identical elementwise iteration); pointwise-into-reduction fits when the reduction consumes each producer element once. Cases where the consumer needs values C's iteration cannot see (e.g., all-to-all shuffles) do not fuse this way. Source language, op names, and side-effect polarity are not the governing conditions.",
+  "optionExplanations": {
+    "A": "Wrong: language identity is a codegen concern, not a semantic fusion condition.",
+    "B": "Correct: shared/tileable iteration space is the core condition for producer-consumer fusion.",
+    "C": "Wrong: fusion is data-dependence based, not op-name based.",
+    "D": "Wrong: side-effect polarity is not the condition; both being pure is typically preferred, not opposite polarity."
+  },
+  "assumptions": [
+    "P and C both operate on tensor values with well-defined per-element production/consumption.",
+    "The compiler has an iteration model at some IR level (loop-form or structured tensor form)."
+  ],
+  "nonImplications": [
+    "Does not imply that every producer-consumer pair with a shared iteration space is worth fusing; register pressure and code size are additional heuristics.",
+    "Does not imply reductions can never fuse; matching consumer/producer patterns for reductions is well-known (softmax epilogue, etc.)."
+  ],
+  "misconceptionTags": [
+    "fusion_by_op_name",
+    "fusion_requires_side_effect_polarity"
+  ],
+  "distractorRationales": {
+    "A": "Wrong sufficiency claim on language identity.",
+    "C": "Confuses fusion with pattern-matching pairs.",
+    "D": "Wrong condition on purity polarity."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:halide",
+      "locator": "compute_at / producer-consumer scheduling",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "Operator fusion / iteration space",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-PROD-017.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

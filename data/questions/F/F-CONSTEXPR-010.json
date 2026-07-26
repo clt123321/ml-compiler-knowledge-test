@@ -1,0 +1,89 @@
+{
+  "id": "F-CONSTEXPR-010",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Triton / tl.constexpr specialization and re-compilation",
+  "learningObjective": "Understand `tl.constexpr` semantics: which arguments trigger shape specialization and per-value compilation.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "Triton JIT"
+    ]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Consider the Triton kernel signature below. Which statement about the difference between `N` and `BLOCK` is correct?",
+  "codeSnippet": "@triton.jit\ndef kernel(x_ptr, out_ptr, N, BLOCK: tl.constexpr):\n    pid = tl.program_id(0)\n    offs = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offs < N\n    x = tl.load(x_ptr + offs, mask=mask, other=0.0)\n    tl.store(out_ptr + offs, x * 2.0, mask=mask)\n\n# Caller launches many times with:\n#   N in {1000, 1024, 2048, 100000}\n#   BLOCK in {256, 512, 1024}",
+  "options": [
+    {
+      "id": "A",
+      "text": "Both `N` and `BLOCK` are runtime scalars; `tl.constexpr` is a type annotation that affects only IDE tooling and has no impact on compilation or specialization."
+    },
+    {
+      "id": "B",
+      "text": "`N` is a runtime scalar passed as a kernel argument; changing `N` reuses the same compiled kernel. `BLOCK: tl.constexpr` is a compile-time constant; each distinct `BLOCK` value triggers a fresh kernel compilation and produces a new specialized PTX."
+    },
+    {
+      "id": "C",
+      "text": "`N` is compile-time (any change re-compiles); `BLOCK` is runtime. The `tl.constexpr` marker on `BLOCK` is a hint that it is *permitted to be runtime-varying* and is optimized as a register value."
+    },
+    {
+      "id": "D",
+      "text": "Both `N` and `BLOCK` trigger re-compilation on every distinct value; Triton has no notion of runtime scalar arguments."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "In Triton, `tl.constexpr` promotes a Python argument to a compile-time constant: the JIT specializes the kernel per distinct value, giving the compiler opportunities to unroll loops, size vectors, and constant-fold. Non-`constexpr` scalar arguments (like `N`) are runtime values encoded into a single compiled kernel used for all values. This is why users commonly promote `BLOCK`/`GROUP_SIZE`/`NUM_STAGES` to `tl.constexpr` while keeping shape parameters as runtime scalars.",
+  "optionExplanations": {
+    "B": "Correct: constexpr = compile-time specialization; plain scalar = runtime.",
+    "A": "Wrong: `tl.constexpr` is meaningful for the JIT, not just tooling.",
+    "C": "Wrong: the meaning is inverted; `constexpr` is compile-time.",
+    "D": "Wrong: non-constexpr scalars are runtime arguments."
+  },
+  "assumptions": [
+    "Triton JIT specialization behavior as documented."
+  ],
+  "nonImplications": [
+    "Does not imply constexpr is always beneficial; excessive specialization inflates compile-time and cache size.",
+    "Does not imply Triton has no other specialization; pointer alignment and divisibility hints also trigger specialization."
+  ],
+  "misconceptionTags": [
+    "constexpr_inverted_meaning",
+    "constexpr_as_ide_hint_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrongly treats `tl.constexpr` as documentation.",
+    "C": "Inverts constexpr semantics.",
+    "D": "Ignores runtime scalar arguments."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:triton",
+      "locator": "tl.constexpr and JIT specialization",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-CONSTEXPR-010.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

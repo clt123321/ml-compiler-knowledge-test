@@ -1,0 +1,110 @@
+{
+  "id": "F-ONLINE-021",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Online softmax — tile-wise running max and sum",
+  "learningObjective": "Understand the online softmax recurrence used to compute softmax in tiles without materializing the full row.",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "FP32 arithmetic"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++ / Triton",
+    "frameworkVersionScope": "N/A (algorithmic)",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32"
+    ],
+    "layouts": [
+      "contiguous"
+    ]
+  },
+  "stem": "The online-softmax recurrence processes a row of length N in tiles of size B (with T = N/B tiles). Let `(m_t, s_t)` be the running (max, sum-of-exp-with-max-subtracted) after tile t. Which update rule is correct when a new tile `x_new` (of size B) with local max `m_new` and local sum `s_new = sum(exp(x_new - m_new))` arrives?",
+  "codeSnippet": "// Online softmax recurrence (per row, tiled over the reduction axis)\n// Given (m_prev, s_prev) and a new tile (m_new, s_new):\n//   m = max(m_prev, m_new)\n//   s = s_prev * exp(m_prev - m) + s_new * exp(m_new - m)\n// Final: y_i = exp(x_i - m_final) / s_final for the i-th element (rescaled on read)",
+  "options": [
+    {
+      "id": "A",
+      "text": "`m` remains `m_prev` and `s = s_prev + s_new * exp(m_new)`; the running max is never updated after the first tile because subsequent tiles' contributions are absolutely negligible."
+    },
+    {
+      "id": "B",
+      "text": "`m = m_prev + m_new` and `s = s_prev + s_new`; the recurrence is a straightforward sum-of-parts because addition is commutative and softmax is scale-invariant."
+    },
+    {
+      "id": "C",
+      "text": "`m = max(m_prev, m_new)`; `s = s_prev * exp(m_prev - m) + s_new * exp(m_new - m)`. The old sum is rescaled by `exp(m_prev - m)` (a value in (0, 1]) to reflect the new anchor; the new tile's sum by `exp(m_new - m)`. This is exact algebra: the merged tile is anchored at the new max."
+    },
+    {
+      "id": "D",
+      "text": "The online softmax recurrence works only for FP16 inputs because FP32 overflows before the second rescale; the algorithm is FlashAttention-specific and not applicable to plain softmax kernels."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "The online-softmax recurrence, popularized by Milakov & Gimelshein and central to FlashAttention, updates a running `(m, s)` per tile such that after processing all tiles the pair equals `(max(x_1..N), sum_i exp(x_i - max))`. When a new tile arrives, the new anchor is `m = max(m_prev, m_new)`; the previously accumulated `s_prev` was anchored at `m_prev`, so it is rescaled by `exp(m_prev - m)` (≤ 1 since m ≥ m_prev). The new tile's `s_new` (anchored at `m_new`) is rescaled by `exp(m_new - m)`. This is exact algebra, not an approximation.",
+  "optionExplanations": {
+    "C": "Correct: canonical online softmax recurrence.",
+    "B": "Wrong: naive sum ignores anchor rescaling and gives wrong result.",
+    "A": "Wrong: fails when a later tile has larger max.",
+    "D": "Wrong: FP32 works fine; algorithm is general-purpose."
+  },
+  "assumptions": [
+    "FP32 accumulation with well-behaved input ranges.",
+    "Tiles processed in some (order-agnostic) sequence."
+  ],
+  "nonImplications": [
+    "Does not imply the recurrence is only useful for attention; any tile-wise softmax benefits.",
+    "Does not imply the recurrence is bitwise-associative; order still matters at FP-rounding scale."
+  ],
+  "misconceptionTags": [
+    "online_softmax_naive_sum_myth",
+    "flashattn_only_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates a naive additive recurrence.",
+    "A": "Ignores updates to the running max.",
+    "D": "Wrong claim about FP32/FlashAttention specificity."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "FlashAttention — online softmax formula, Sect. 3",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:triton",
+      "locator": "FlashAttention tutorial in Triton",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-ONLINE-021.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

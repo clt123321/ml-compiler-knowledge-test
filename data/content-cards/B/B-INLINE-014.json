@@ -1,0 +1,50 @@
+{
+  "questionId": "B-INLINE-014",
+  "learningObjective": "Identify the benefits and costs of function inlining and the conditions when it may be inhibited.",
+  "canonicalClaims": [
+    {
+      "claim": "Inlining removes call/return overhead and enables cross-call optimizations (constant propagation, CSE, LICM), but has costs: increased code size, potential icache pressure, higher register pressure, and longer compile times; indirect calls require devirtualization before inlining.",
+      "conditions": [
+        "The caller's compilation unit can see the callee body (or LTO makes it visible).",
+        "The inlining heuristic decides the benefit outweighs the cost."
+      ],
+      "nonImplications": [
+        "Does not imply larger inlining budgets always improve performance.",
+        "Does not imply recursion prevents all inlining; bounded partial inlining is possible."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Inlining chapter" },
+        { "ref": "BOOK:appel", "locator": "Inlining chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Recursive functions can never be inlined.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Bounded partial inlining is possible (e.g., a few levels deep); unbounded recursion cannot be fully inlined but can still benefit from targeted specialization.",
+      "sourceOrEvidence": "EAC3 inlining chapter"
+    },
+    {
+      "claim": "Inlining always improves performance.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Aggressive inlining can inflate icache footprint and register pressure, slowing execution.",
+      "sourceOrEvidence": "Appel inlining chapter"
+    },
+    {
+      "claim": "Indirect calls can be inlined without devirtualization.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Inlining requires a statically known target; indirect calls need devirtualization or profiling-guided speculative inlining first.",
+      "sourceOrEvidence": "LLVM devirtualization / PGO documentation"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM inliner: cost-benefit heuristic based on caller/callee size, argument constants, and cold/hot annotations.",
+    "PGO (profile-guided optimization) informs the inliner about hot call sites.",
+    "attribute((always_inline)) and noinline override the heuristic."
+  ],
+  "performanceScenarios": [
+    "Small, hot accessors and inlined lambda callbacks benefit from inlining; large virtual dispatch tables often benefit from profile-guided devirtualization + inlining."
+  ],
+  "versionSensitivity": "stable_principle"
+}

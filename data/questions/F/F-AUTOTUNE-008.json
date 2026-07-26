@@ -1,0 +1,69 @@
+{
+  "id": "F-AUTOTUNE-008",
+  "type": "multiple",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Triton / triton.autotune and configuration search",
+  "learningObjective": "Understand triton.autotune configurations and their interaction with kernel launch keys.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80) or newer",
+    "device": "GPU",
+    "requiredFeatures": ["Triton autotuner"]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [["M", "N", "K"]],
+    "dtypes": ["float16"],
+    "layouts": ["row_major"]
+  },
+  "stem": "Consider the Triton autotuned matmul-like kernel below. Which statements about `triton.autotune` are correct? (Select all that apply.)",
+  "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.autotune(\n    configs=[\n        triton.Config({'BM':  64, 'BN':  64, 'BK': 32, 'GROUP': 8}, num_warps=4, num_stages=3),\n        triton.Config({'BM': 128, 'BN': 128, 'BK': 32, 'GROUP': 8}, num_warps=8, num_stages=3),\n        triton.Config({'BM': 128, 'BN':  64, 'BK': 32, 'GROUP': 8}, num_warps=4, num_stages=4),\n    ],\n    key=['M', 'N', 'K'],\n)\n@triton.jit\ndef matmul_kernel(A, B, C, M, N, K,\n                  stride_am, stride_ak, stride_bk, stride_bn, stride_cm, stride_cn,\n                  BM: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr, GROUP: tl.constexpr):\n    # ... body omitted ...\n    pass",
+  "options": [
+    { "id": "A", "text": "For each distinct combination of the `key` arguments (here `(M, N, K)`), the autotuner measures each config once, caches the best one, and reuses it for subsequent launches with the same key values; new key values trigger a fresh tuning pass." },
+    { "id": "B", "text": "`num_warps` and `num_stages` are per-Config launch parameters (warps per program, pipelining stages) that the autotuner selects together with the tile-size constants; they are not free-form Python arguments." },
+    { "id": "C", "text": "The autotuner runs at compile time only; once the module is loaded, it never re-tunes even if the caller launches with previously-unseen key values." },
+    { "id": "D", "text": "`triton.autotune` guarantees that the selected config is globally optimal because it exhaustively searches all possible `(BM, BN, BK, num_warps, num_stages)` combinations, not just the user-provided list." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "`triton.autotune` runs measurement over the user-provided `configs` list, keyed on the specified `key=[...]` arguments; for each new key tuple, it benchmarks each config once and caches the winner. `num_warps` and `num_stages` are structural launch parameters selected per Config (not free-form user args at call time). The autotuner is _not_ exhaustive over the entire configuration space — it only tries the configs the user listed. And it does re-tune when new key values appear; it is a runtime-invoked mechanism, not compile-time-only.",
+  "optionExplanations": {
+    "A": "Correct: key-based caching + measured selection.",
+    "B": "Correct: `num_warps` and `num_stages` are Config-level parameters.",
+    "C": "Wrong: autotuner runs at runtime for new key tuples.",
+    "D": "Wrong: search is limited to the user-listed configs, not globally exhaustive."
+  },
+  "assumptions": [
+    "Standard `triton.autotune` semantics as documented.",
+    "The kernel is launched with varying (M, N, K) tuples in practice."
+  ],
+  "nonImplications": [
+    "Does not imply the tuning cache is persistent across processes (in-memory by default).",
+    "Does not imply autotune measurement is noise-free; noisy measurements can select a suboptimal config."
+  ],
+  "misconceptionTags": ["autotune_exhaustive_myth", "autotune_compile_time_only_myth"],
+  "distractorRationales": {
+    "C": "Confuses autotune with compile-time constants.",
+    "D": "Overstates autotune's search space."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:triton", "locator": "triton.autotune, triton.Config, num_warps, num_stages, key argument", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-AUTOTUNE-008.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

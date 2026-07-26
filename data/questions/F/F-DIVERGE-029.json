@@ -1,0 +1,63 @@
+{
+  "id": "F-DIVERGE-029",
+  "type": "multiple",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Warp divergence — cost and mitigation",
+  "learningObjective": "Reason about the performance cost of intra-warp branch divergence and understand which patterns do or do not cause it.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Kepler+ (with Volta+ ITS considerations)",
+    "device": "GPU",
+    "requiredFeatures": ["warp SIMT execution"]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about intra-warp branch divergence are correct? (Select all that apply.)",
+  "codeSnippet": "// Case A: divergence within a warp\nif (threadIdx.x < 16) foo(); else bar();       // lanes 0-15 vs 16-31 diverge\n\n// Case B: uniform branch across a warp\nif (blockIdx.x < 10) foo(); else bar();        // whole warp goes one way\n\n// Case C: data-dependent branch\nif (x[tid] > 0) foo(); else bar();             // may or may not diverge depending on data\n\n// Case D: predication rewrite\nfloat v = cond ? a : b;                        // no divergence; both sides may compute",
+  "options": [
+    { "id": "A", "text": "Case A causes intra-warp divergence: the warp effectively serializes into two passes (one for lanes 0-15 running `foo`, one for lanes 16-31 running `bar`), so total cost ≈ cost(foo) + cost(bar) for the divergent instructions rather than max of the two." },
+    { "id": "B", "text": "Case B is not divergent within a warp because the branch condition depends on `blockIdx`, which is uniform across all threads of a block (and hence across each warp); the warp takes one path with no serialization." },
+    { "id": "C", "text": "Case D (`v = cond ? a : b`) compiled to predicated instructions avoids serialization but may compute both `a` and `b` (each lane keeps the value selected by its predicate), so if `a` and `b` are expensive, predication can be slower than a well-predicted branch." },
+    { "id": "D", "text": "All conditional constructs in CUDA C++ always compile to divergent branches; the compiler never emits predicated instructions, so `?:` in Case D is exactly as slow as the diverging `if/else` in Case A." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A: Classic intra-warp divergence — lanes that take different paths execute those paths serially with the inactive lanes predicated off. B: `blockIdx` is uniform across all threads in a block, so the entire warp evaluates the branch identically; no divergence. C: `?:` often compiles to select/predicated instructions on GPU (`selp.f32` etc.), which is divergence-free but may pay for both sides — well-predicted (uniform-within-warp) branches can beat predication when the two arms differ greatly in cost. D is wrong: nvcc does emit predicated instructions when profitable.",
+  "optionExplanations": {
+    "A": "Correct: divergent branches serialize the warp.",
+    "B": "Correct: uniform-within-warp branches do not diverge.",
+    "C": "Correct: predication trades divergence for possible dual-work.",
+    "D": "Wrong: nvcc uses predication where profitable."
+  },
+  "assumptions": [
+    "Standard nvcc code generation for control flow."
+  ],
+  "nonImplications": [
+    "Does not imply divergence always halves throughput; it depends on the length of the divergent code region.",
+    "Does not imply Volta+ ITS eliminates divergence cost; ITS allows independent forward progress but the SIMT-issue-per-warp model still applies."
+  ],
+  "misconceptionTags": ["all_branches_diverge_myth", "predication_free_myth"],
+  "distractorRationales": {
+    "D": "Denies compiler predication."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Branch predication and divergence", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:pmpp4", "locator": "Control divergence chapter", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Intra-warp branch divergence serialization cost",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-DIVERGE-029.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

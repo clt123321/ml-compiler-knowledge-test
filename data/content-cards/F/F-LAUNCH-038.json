@@ -1,0 +1,49 @@
+{
+  "questionId": "F-LAUNCH-038",
+  "learningObjective": "Identify legal kernel launch configurations against A100 (sm_80) hardware limits.",
+  "canonicalClaims": [
+    {
+      "claim": "On A100 (sm_80): max threads per block = 1024; max blockDim = (1024, 1024, 64); max gridDim.x = 2^31 − 1; max gridDim.y = gridDim.z = 65535. Illegal launches return an error at `cudaGetLastError`.",
+      "conditions": ["Compute capability 8.0 hardware."],
+      "nonImplications": [
+        "Does not imply maximum legal launch is efficient.",
+        "Does not imply older compute capabilities share these limits."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Compute Capability 8.0 launch limits" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A single block can hold more than 1024 threads if no SMEM is used.",
+      "errorType": "version_leak",
+      "whyWrong": "Threads-per-block cap is 1024 regardless of resource usage.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "nvcc silently truncates over-large blockDim to the nearest legal value.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The launch fails; no silent truncation.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "gridDim.x is capped at 65535.",
+      "errorType": "version_leak",
+      "whyWrong": "Since sm_30, gridDim.x cap is 2^31 − 1.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "All grid dimensions are equal 65535 caps.",
+      "errorType": "definition_confusion",
+      "whyWrong": "x is 2^31 − 1; y and z are 65535.",
+      "sourceOrEvidence": "CUDA guide"
+    }
+  ],
+  "implementationFacts": [
+    "Check limits: `cudaDeviceGetAttribute` with `cudaDevAttrMax*`.",
+    "Occupancy Calculator uses these limits + resource usage."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

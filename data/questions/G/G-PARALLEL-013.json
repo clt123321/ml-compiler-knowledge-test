@@ -1,0 +1,62 @@
+{
+  "id": "G-PARALLEL-013",
+  "type": "multiple",
+  "module": "graph_opt_schedule",
+  "subtopic": "Parallelization / Legality",
+  "learningObjective": "Enumerate the dependence conditions under which a loop can be parallelized across iterations.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following are TRUE preconditions for a compiler to legally parallelize a loop's iterations (e.g., `#pragma omp parallel for`, or emit them as independent CUDA threads/blocks)? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "No two distinct iterations write to the same memory location (no output dependence)." },
+    { "id": "B", "text": "No iteration reads a location that a different iteration writes (no true / anti dependence across iterations)." },
+    { "id": "C", "text": "For a reduction (e.g., `s += a[i]`), the reduction operator is treated as associative/commutative so that partial results can be combined in any order, or the language exposes an explicit `reduction(...)` clause." },
+    { "id": "D", "text": "The loop body must be entirely branch-free; any conditional inside the loop makes parallelization illegal." },
+    { "id": "E", "text": "The loop must have a compile-time-known trip count; parallelization of a loop with a runtime-known trip count is illegal." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "Parallelization requires the absence of cross-iteration dependences on the same memory location. A (output dependence: WAW), B (true/anti dependence: RAW/WAR across iterations), and C (reduction treated with an appropriate associative combiner) are the standard legality conditions. Branch-free bodies (D) and compile-time trip counts (E) are neither required — SIMT / OpenMP happily parallelize branchy bodies (with warp divergence penalties) and runtime trip counts (`omp parallel for` on a variable N is standard).",
+  "optionExplanations": {
+    "A": "Correct: WAW dependence blocks parallelization.",
+    "B": "Correct: RAW/WAR across iterations blocks parallelization without reordering.",
+    "C": "Correct: reductions require an associative combiner or an explicit clause.",
+    "D": "Wrong: branchy bodies are legal to parallelize; divergence is a performance concern, not legality.",
+    "E": "Wrong: runtime trip counts are routinely parallelized."
+  },
+  "assumptions": [
+    "Statements have no external I/O or non-reentrant side effects.",
+    "Reductions, when present, use an associative combiner or an explicit reduction clause."
+  ],
+  "nonImplications": [
+    "Does not imply parallelization is beneficial; small trip counts or memory-bound bodies may under-utilize parallel hardware.",
+    "Does not imply FP-associativity concerns are ignored in every context; numerical libraries may require deterministic ordering."
+  ],
+  "misconceptionTags": ["parallel_requires_static_trip_count", "parallel_requires_branch_free"],
+  "distractorRationales": {
+    "D": "Confuses warp-divergence performance concerns with legality.",
+    "E": "Confuses trip-count knowability with parallelization legality."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:eac3", "locator": "Parallelization legality; dependence-based analysis", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/G/G-PARALLEL-013.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

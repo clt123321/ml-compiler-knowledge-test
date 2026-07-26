@@ -1,0 +1,64 @@
+{
+  "id": "G-REORDER-010",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Loop reordering / GEMM ikj vs. ijk",
+  "learningObjective": "Compare two loop orderings of a naive GEMM for their locality behavior and identify which is legal and preferred on a row-major layout.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic CPU cache",
+    "device": "CPU",
+    "requiredFeatures": ["row-major memory layout"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "irSnippet": "// Order 1: i-j-k\nfor i in 0..M:\n  for j in 0..N:\n    for k in 0..K:\n      C[i,j] += A[i,k] * B[k,j]      // inner loop walks k: A row-wise (unit stride), B column-wise (stride N)\n\n// Order 2: i-k-j\nfor i in 0..M:\n  for k in 0..K:\n    for j in 0..N:\n      C[i,j] += A[i,k] * B[k,j]      // inner loop walks j: B[k,:] unit stride, C[i,:] unit stride, A[i,k] is a scalar in the inner loop",
+  "stem": "Two loop orderings of naive GEMM are shown. All matrices are row-major FP32. Compared to Order 1 (ijk), which correctly describes Order 2 (ikj)?",
+  "options": [
+    { "id": "A", "text": "Order 2 is not semantically equivalent to Order 1 because it accumulates into `C[i,j]` in a different order; floating-point non-associativity makes the two answer matrices different." },
+    { "id": "B", "text": "Order 2 is semantically equivalent (same +='s over the same triples) and has better spatial locality on row-major storage: the innermost loop reads `B[k,:]` and writes `C[i,:]` with unit stride, unlike Order 1 which strides through `B` by N." },
+    { "id": "C", "text": "Order 2 is illegal because it introduces a loop-carried dependence on `C[i,j]` that did not exist in Order 1; the reordering violates SSA form." },
+    { "id": "D", "text": "Order 2 is semantically equivalent but has worse locality: unit-stride writes to `C` cost more than unit-stride reads from `B`, so Order 1 remains preferred on row-major." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "Both orders compute the same set of multiply-accumulates on the same triples (i,j,k); the reduction on `C[i,j]` is +='s over `k`, so any permutation over `(j,k)` is semantically equivalent modulo FP non-associativity (typically ignored for GEMM correctness testing). Order 2 (ikj) is preferred on row-major layouts: the innermost `j` loop walks `B[k, 0..N]` and `C[i, 0..N]` with unit stride (cache-friendly, vectorizable), while Order 1's innermost `k` loop walks `B[0..K, j]` with stride `N` (cache-unfriendly). Option A over-states FP non-associativity as a correctness issue; option C is wrong (the dependence is a reduction on `C[i,j]`, present in both orders); option D reverses the locality direction.",
+  "optionExplanations": {
+    "A": "Wrong: while FP addition is non-associative, GEMM reductions are treated as commutative/associative in practice; the two orders are considered semantically equivalent for optimization.",
+    "B": "Correct: standard textbook explanation of the ikj vs. ijk locality difference on row-major.",
+    "C": "Wrong: the reduction dependence exists in both orders; SSA is preserved by both.",
+    "D": "Wrong: reverses the locality direction."
+  },
+  "assumptions": [
+    "Row-major storage for all three matrices.",
+    "FP non-associativity is treated as a numerical concern, not a correctness concern for GEMM."
+  ],
+  "nonImplications": [
+    "Does not imply ikj is optimal — blocked / vectorized orderings dominate in practice.",
+    "Does not imply the same order is preferred on column-major layouts (Fortran / BLAS-style would prefer jki)."
+  ],
+  "misconceptionTags": ["loop_reorder_semantic_change", "locality_direction_reversed"],
+  "distractorRationales": {
+    "A": "Overstates FP-non-associativity impact on optimization equivalence.",
+    "C": "Confuses reduction dependence with SSA violation.",
+    "D": "Reverses read-vs-write locality claim."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:eac3", "locator": "Loop interchange and locality analysis", "supports": ["B"] },
+    { "ref": "BOOK:pmpp4", "locator": "Naive GEMM row-major locality analysis", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Row-major naive GEMM cache behavior across loop orderings",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-REORDER-010.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

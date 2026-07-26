@@ -1,0 +1,50 @@
+{
+  "questionId": "B-PATTERN-017",
+  "learningObjective": "Distinguish rewrite-based (declarative) pattern matching from ad-hoc peephole optimization.",
+  "canonicalClaims": [
+    {
+      "claim": "Peephole optimization operates on a small local instruction window (target-specific, late in the pipeline); pattern rewriting frameworks apply declarative rewrite rules more broadly with framework-managed matching, and both share the pattern-to-replacement model but differ in expressiveness and pipeline position.",
+      "conditions": [
+        "Both operate on transformation-safe patterns preserving semantics.",
+        "Rewrite frameworks provide fixpoint/iteration control; peephole typically runs once or in a bounded loop."
+      ],
+      "nonImplications": [
+        "Does not imply rewrite frameworks replace peephole; target-specific peephole is still useful late in codegen.",
+        "Does not imply either technique is automatically terminating; rule design must avoid cycles."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Peephole chapter" },
+        { "ref": "DOC:llvm-langref", "locator": "InstCombine documentation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Peephole optimization is guaranteed to terminate.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Peephole is only guaranteed to terminate if rules strictly decrease some complexity measure or the framework enforces an iteration bound; cyclic rules can loop.",
+      "sourceOrEvidence": "EAC3 peephole chapter"
+    },
+    {
+      "claim": "Rewrite frameworks and peephole optimizers are completely unrelated concepts.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both apply pattern-to-replacement transformations; they differ in scope, expressiveness, and pipeline position rather than in core concept.",
+      "sourceOrEvidence": "Compiler textbook overviews"
+    },
+    {
+      "claim": "LLVM InstCombine is a strict peephole optimizer (pure local rewrites only).",
+      "errorType": "scope_error",
+      "whyWrong": "InstCombine operates on LLVM IR with more context than classical peephole (e.g., uses def-use graph, analysis results); it sits between peephole and full rewrite framework.",
+      "sourceOrEvidence": "LLVM InstCombine source and docs"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR provides PDL (Pattern Descriptor Language) and DRR (Declarative Rewrite Rules) for declarative rewriting.",
+    "TVM Relax and Ansor use rewrite rules for tensor-level transformations.",
+    "Late-backend peephole in LLVM (X86, ARM) handles target-specific fixups."
+  ],
+  "performanceScenarios": [
+    "Combining multiple micro-optimizations via a rewrite framework preserves compositionality; peephole handles final target-specific fixups."
+  ],
+  "versionSensitivity": "stable_principle"
+}

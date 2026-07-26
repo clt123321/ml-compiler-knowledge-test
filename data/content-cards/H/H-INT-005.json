@@ -1,0 +1,55 @@
+{
+  "questionId": "H-INT-005",
+  "learningObjective": "Precisely state the representable value ranges of INT8 (signed) and INT4 (signed) for symmetric quantization.",
+  "canonicalClaims": [
+    {
+      "claim": "In symmetric quantization, INT8 uses [-127, 127] and INT4 uses [-7, 7], sacrificing one representable value (the negative extreme) to keep the range symmetric around zero and simplify GEMM implementations.",
+      "conditions": [
+        "The quantization framework follows the standard symmetric convention.",
+        "Signed integer representation."
+      ],
+      "nonImplications": [
+        "Does not imply asymmetric quantization is inferior; it gains one representable value at the cost of a zero-point offset in the GEMM.",
+        "Does not imply the sacrificed value never appears — asymmetric quantization can use it."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Quantization definitions" },
+        { "ref": "DOC:cuda-guide", "locator": "TensorRT INT8 primer" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Signed INT8 has range [-128, 128].",
+      "errorType": "definition_confusion",
+      "whyWrong": "Two's-complement INT8 has range [-128, 127]; +128 does not exist.",
+      "sourceOrEvidence": "Two's-complement definition"
+    },
+    {
+      "claim": "Symmetric quantization uses the full two's-complement range [-128, 127].",
+      "errorType": "definition_confusion",
+      "whyWrong": "Symmetric quantization sacrifices -128 to keep the range symmetric [-127, 127].",
+      "sourceOrEvidence": "TensorRT / PyTorch quantization docs"
+    },
+    {
+      "claim": "INT8 quantization always uses unsigned [0, 255] representation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both signed [-127, 127] and unsigned [0, 255] variants exist, driven by the quantization scheme (symmetric vs. asymmetric).",
+      "sourceOrEvidence": "Quantization framework documentation"
+    },
+    {
+      "claim": "Symmetric quantization is always preferred over asymmetric because it wastes only one value.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For activations with a natural zero point (post-ReLU), asymmetric quantization is often more accurate; the choice is workload-dependent.",
+      "sourceOrEvidence": "Quantization survey papers"
+    }
+  ],
+  "implementationFacts": [
+    "TensorRT default INT8: symmetric per-tensor for activations, symmetric per-channel for weights.",
+    "PyTorch's `torch.ao.quantization` supports both symmetric and asymmetric configurations."
+  ],
+  "performanceScenarios": [
+    "Symmetric INT8 GEMM avoids the extra bias term needed by asymmetric quantization, simplifying kernels."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,55 @@
+{
+  "questionId": "C-REGION-021",
+  "learningObjective": "Explain what an MLIR Region represents and how it relates to structured control-flow ops like `scf.for` and `scf.if`.",
+  "canonicalClaims": [
+    {
+      "claim": "An MLIR Region is a first-class container of one or more Blocks executed under the semantics of the enclosing op; Regions enable structured control flow (loops, conditionals) with SSA scoping where values from outside are visible inside via dominance and blocks may carry their own arguments.",
+      "conditions": [
+        "The reference is MLIR's LangRef definition."
+      ],
+      "nonImplications": [
+        "Does not imply every Region has multiple Blocks.",
+        "Does not imply MLIR forbids CFG-style branching; unstructured cf.br exists."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Region / structured control flow" },
+        { "ref": "PAPER:mlir", "locator": "MLIR CGO'21" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Regions are only metadata for debug printing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are semantic containers with SSA scoping rules.",
+      "sourceOrEvidence": "MLIR LangRef"
+    },
+    {
+      "claim": "A Region and a Module are the same thing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "A Module is an op; a Region is a structural container inside an op.",
+      "sourceOrEvidence": "MLIR LangRef"
+    },
+    {
+      "claim": "Regions exist only in the LLVM dialect.",
+      "errorType": "scope_error",
+      "whyWrong": "Regions are pervasive across dialects (scf, affine, func, module).",
+      "sourceOrEvidence": "MLIR LangRef"
+    },
+    {
+      "claim": "Values defined outside a Region are invisible inside it.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SSA dominance permits references to outside values inside a Region, subject to standard dominance rules.",
+      "sourceOrEvidence": "MLIR LangRef"
+    }
+  ],
+  "implementationFacts": [
+    "`scf.for` has one region for the loop body; the induction variable is a block argument",
+    "`scf.if` has two regions (then/else); each is a single block terminated by `scf.yield`",
+    "`func.func` has one region for the function body"
+  ],
+  "performanceScenarios": [
+    "Structured control flow enables analyses and rewrites that CFG-style branches make harder."
+  ],
+  "versionSensitivity": "stable_principle"
+}

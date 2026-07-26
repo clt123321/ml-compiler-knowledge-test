@@ -1,0 +1,62 @@
+{
+  "id": "A-SIMT-011",
+  "type": "multiple",
+  "module": "arch_perf_model",
+  "subtopic": "SIMD vs SIMT execution model",
+  "learningObjective": "Contrast CPU SIMD lane execution with GPU SIMT warp execution, identifying differences in divergence handling, thread identity and programming model.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper (SIMT); modern x86 AVX-512 (SIMD)",
+    "device": "GPU",
+    "requiredFeatures": ["warp of 32 threads (NVIDIA SIMT)", "AVX-512 512-bit lanes (SIMD)"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following statements distinguishing CPU SIMD (e.g., AVX-512) from NVIDIA GPU SIMT (warp-based) execution are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "SIMT presents each warp lane as an independently addressable thread with its own program counter view (post-Volta), while SIMD lanes share one architectural instruction pointer and are handled explicitly by the programmer or compiler as vector data." },
+    { "id": "B", "text": "In SIMT, control-flow divergence within a warp is resolved by hardware serialization of taken/not-taken paths, whereas SIMD lanes rely on programmer-written masking (predication) to emulate divergent control." },
+    { "id": "C", "text": "SIMD guarantees higher peak throughput than SIMT on the same silicon area because SIMT wastes ~30% of area on per-thread state." },
+    { "id": "D", "text": "SIMT and SIMD are the same execution model with different names; the choice of terminology is purely marketing." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "A: Under SIMT, each thread of a warp has an independent logical program state; post-Volta CUDA GPUs support independent thread scheduling with per-thread PCs and reconvergence. SIMD lanes share a single instruction pointer and are packed into wide vector registers manipulated by explicit instructions. B: SIMT hardware handles branch divergence via masking + serialization of divergent sides; SIMD requires the compiler/programmer to write predicated code (e.g., mask registers on AVX-512). C is false — throughput comparisons depend on many factors (memory bandwidth, precision, occupancy); no such generic silicon-area rule applies. D is false — the models differ in programming abstraction, divergence handling and thread-identity semantics.",
+  "optionExplanations": {
+    "A": "Correct: SIMT exposes threads as first-class entities with independent state (especially post-Volta), while SIMD packs lanes into a single instruction.",
+    "B": "Correct: hardware-managed divergence in SIMT vs software-managed predication in SIMD is a canonical distinction.",
+    "C": "Wrong: peak throughput comparisons are workload- and architecture-specific; there is no universal SIMD > SIMT silicon efficiency claim.",
+    "D": "Wrong: the models differ meaningfully in abstraction (threads vs lanes), divergence handling and programming interface."
+  },
+  "assumptions": [
+    "GPU baseline is Volta+ NVIDIA SIMT with independent thread scheduling.",
+    "CPU SIMD baseline is AVX-512 or similar wide-vector ISA with mask registers."
+  ],
+  "nonImplications": [
+    "Does not imply SIMT eliminates divergence cost; divergence still serializes taken paths on GPUs.",
+    "Does not imply SIMD lanes cannot benefit from hardware-managed masking (some ISAs offer masks natively, e.g., AVX-512 k-registers)."
+  ],
+  "misconceptionTags": ["simt_simd_conflation", "divergence_handling_confusion"],
+  "distractorRationales": {
+    "C": "Overgeneralized area/throughput claim.",
+    "D": "Denies real semantic difference."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:hp6", "locator": "Ch. 4, DLP: SIMD vs SIMT execution", "supports": ["A", "B"] },
+    { "ref": "BOOK:pmpp4", "locator": "Ch. 3-4, CUDA execution model", "supports": ["A", "B"] },
+    { "ref": "DOC:cuda-guide", "locator": "Programming model, warps, independent thread scheduling", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/A/A-SIMT-011.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,60 @@
+{
+  "id": "B-PATTERN-017",
+  "type": "multiple",
+  "module": "compiler_basics",
+  "subtopic": "Pattern rewriting vs peephole",
+  "learningObjective": "Distinguish rewrite-based (declarative) pattern matching from ad-hoc peephole optimization.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about pattern rewriting vs peephole optimization are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "Peephole optimization inspects a small local window of instructions (e.g., 2–3 adjacent instructions) and applies rewrites without global information; it operates late in the backend and is largely target-specific." },
+    { "id": "B", "text": "Pattern rewriting frameworks (e.g., LLVM InstCombine, MLIR PDL/Rewrite, TVM Relax rewrite) apply declarative rewrite rules to IR patterns; the framework handles matching, termination, and cost-driven ordering, and the rules can be target-independent or target-specific." },
+    { "id": "C", "text": "Peephole optimization is guaranteed to terminate; pattern rewriting is inherently divergent unless a cost model bounds it." },
+    { "id": "D", "text": "Rewrite frameworks and peephole optimizers are conceptually related — both match a pattern and replace with an equivalent alternative — but differ in scope, expressiveness, and typical position in the compilation pipeline." }
+  ],
+  "correctAnswers": ["A", "B", "D"],
+  "explanation": "A: peephole is local, low-level, target-specific. B: rewrite frameworks provide declarative rule descriptions with framework-managed matching (e.g., LLVM InstCombine, MLIR's rewriter). D: they are conceptually similar (pattern → replacement) but differ in expressiveness (peephole is limited to small windows) and pipeline position (peephole late, rewriting throughout). C is wrong: neither is guaranteed to terminate without care; peephole can loop if rules produce a cycle. Both require attention to termination (e.g., decreasing complexity metric).",
+  "optionExplanations": {
+    "A": "Correct: canonical peephole characterization.",
+    "B": "Correct: rewrite frameworks provide declarative matching.",
+    "C": "Wrong: peephole is not guaranteed to terminate either; termination requires care in rule design.",
+    "D": "Correct: both share the pattern-replace model but differ in scope and pipeline position."
+  },
+  "assumptions": [
+    "Standard compiler pipeline with distinct optimization phases (front-end, mid-end, backend)."
+  ],
+  "nonImplications": [
+    "Does not imply rewriting subsumes peephole; targets may still benefit from ad-hoc peephole on machine instructions late in codegen.",
+    "Does not imply LLVM InstCombine is 'just' peephole; it operates on LLVM IR (mid-level) with cross-instruction knowledge."
+  ],
+  "misconceptionTags": ["peephole_rewrite_confusion", "peephole_termination_myth"],
+  "distractorRationales": {
+    "C": "Peephole termination is not automatic."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:eac3", "locator": "Peephole and rewrite optimization chapters", "supports": ["A", "B", "D"] },
+    { "ref": "BOOK:appel", "locator": "Machine-dependent optimization chapter", "supports": ["A", "B", "D"] },
+    { "ref": "DOC:llvm-langref", "locator": "InstCombine documentation, LLVM optimizer overview", "supports": ["A", "B", "D"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-PATTERN-017.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,49 @@
+{
+  "questionId": "E-IREERT-026",
+  "learningObjective": "Understand why IREE separates compiler and runtime and its edge-deployment implication.",
+  "canonicalClaims": [
+    {
+      "claim": "IREE separates a heavyweight AOT compiler from a small embeddable runtime library so that edge/mobile devices can execute compiled `.vmfb` bytecode without hosting the MLIR toolchain.",
+      "conditions": ["AOT deployment path."],
+      "nonImplications": [
+        "Does not imply the compiler cannot be embedded for JIT flows.",
+        "Does not imply the runtime is limited to edge use."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:iree", "locator": "IREE deployment architecture" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "IREE bytecode requires the compiler at runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Compiled artifacts run without the compiler.",
+      "sourceOrEvidence": "IREE deployment docs"
+    },
+    {
+      "claim": "The IREE runtime is only for development.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a production runtime library.",
+      "sourceOrEvidence": "IREE docs"
+    },
+    {
+      "claim": "Compiler and runtime are the same binary.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are structurally separate for size and deployment reasons.",
+      "sourceOrEvidence": "IREE docs"
+    },
+    {
+      "claim": "IREE separation implies compiled artifacts are portable across all backends without recompilation.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Artifacts contain target-specific code; different targets typically need separate compiles.",
+      "sourceOrEvidence": "IREE deployment docs"
+    }
+  ],
+  "implementationFacts": [
+    "Runtime library: `libireert.*`, embeddable in C/C++/Python hosts.",
+    "Bytecode container: `.vmfb`, contains module + device artifacts."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

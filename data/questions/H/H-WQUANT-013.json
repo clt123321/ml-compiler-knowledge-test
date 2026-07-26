@@ -1,0 +1,66 @@
+{
+  "id": "H-WQUANT-013",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "Weight-only vs. weight-activation quantization",
+  "learningObjective": "Distinguish weight-only, W8A8, and W4A16 quantization schemes by their memory-traffic and kernel-support profiles.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper GPU",
+    "device": "GPU",
+    "requiredFeatures": ["Tensor Core INT8 and FP16"]
+  },
+  "softwareContext": {
+    "framework": "generic (TensorRT / vLLM / TGI kernels)",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider three inference quantization schemes: (i) weight-only INT4 with FP16 activations (W4A16), (ii) weight-only INT8 with FP16 activations (W8A16), (iii) full W8A8 (weights AND activations INT8). Which statements are TRUE? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "W4A16 primarily targets memory-bandwidth-bound decode where the dominant cost is loading weights; the INT4 weights halve HBM traffic vs. INT8, and dequantization to FP16 in-register keeps the compute in FP16 Tensor Cores." },
+    { "id": "B", "text": "W8A8 targets compute-bound scenarios where an INT8 Tensor Core kernel is available and delivers higher TFLOPS than FP16; activations are quantized dynamically or with a calibrated static scale." },
+    { "id": "C", "text": "In W4A16, using an INT4 Tensor Core is required for the speedup; without INT4 Tensor Core support, the scheme cannot accelerate anything." },
+    { "id": "D", "text": "W8A16 is a compute-bound quantization scheme: it uses INT8 Tensor Cores for the matmul and therefore requires an activation calibration pass to determine INT8 activation scales." },
+    { "id": "E", "text": "For LLM decode with batch size 1, W4A16 is generally faster than W8A8 because decode is bandwidth-bound on weight loads, not compute-bound." }
+  ],
+  "correctAnswers": ["A", "B", "E"],
+  "explanation": "A: W4A16's design intent is exactly memory-bandwidth-bound decode; INT4 halves weight traffic vs. INT8 while dequant-in-register keeps compute in FP16 Tensor Cores. B: W8A8 targets compute-bound cases where INT8 Tensor Core throughput dominates and activations can be quantized cheaply. E: LLM decode at batch=1 is dominated by weight-loading bandwidth, making W4A16 typically faster than W8A8 despite W8A8's compute advantage. C is false: W4A16 GEMMs dequant INT4 to FP16 in registers and use FP16 Tensor Cores — INT4 Tensor Core support is not required. D is false: W8A16 is weight-only quantization; activations stay in FP16 so no activation-calibration step is needed and the matmul uses FP16 Tensor Cores (with dequantized weights), not INT8.",
+  "optionExplanations": {
+    "A": "Correct: W4A16 memory-bandwidth logic and dequant-in-register.",
+    "B": "Correct: W8A8 use case description.",
+    "C": "Wrong: W4A16 does not require INT4 Tensor Cores.",
+    "D": "Wrong: W8A16 is weight-only — activations stay in FP16, no activation calibration needed, matmul uses FP16 TCs.",
+    "E": "Correct: batch-1 decode bandwidth dominance."
+  },
+  "assumptions": [
+    "The GPU has FP16 Tensor Core support (Ampere or newer).",
+    "The kernel available for W4A16 performs dequant-in-register (typical of Marlin, ExLlama, gptq_gemm)."
+  ],
+  "nonImplications": [
+    "Does not imply W4A16 beats W8A8 for large-batch prefill (compute-bound); W8A8 can win there.",
+    "Does not imply weight-only quantization has zero accuracy cost; it depends on calibration method (RTN, GPTQ, AWQ)."
+  ],
+  "misconceptionTags": ["w4a16_requires_int4_tc", "quant_always_faster"],
+  "distractorRationales": {
+    "C": "Fabricates a Tensor Core precision requirement.",
+    "D": "Confuses weight-only W8A16 with W8A8; the '16' in A16 means FP16 activations."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:awq", "locator": "W4A16 design and memory-traffic argument", "supports": ["A", "B", "E"] },
+    { "ref": "PAPER:smoothquant", "locator": "W8A8 activation quantization design", "supports": ["A", "B", "E"] },
+    { "ref": "BOOK:sze-eff", "locator": "Weight-only vs weight-activation quantization", "supports": ["A", "B", "E"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Comparative use cases of W4A16 vs W8A8 vs W8A16 on GPU",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/H/H-WQUANT-013.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -37,6 +37,181 @@
       "reviewStatus": "draft",
       "contentCardFile": "data/content-cards/A/A-MEM-005.json",
       "version": 1
+    },
+    {
+      "id": "A-BW-006",
+      "file": "data/questions/A/A-BW-006.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-BW-006.json",
+      "version": 1
+    },
+    {
+      "id": "A-RIDGE-007",
+      "file": "data/questions/A/A-RIDGE-007.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-RIDGE-007.json",
+      "version": 1
+    },
+    {
+      "id": "A-AMDAHL-008",
+      "file": "data/questions/A/A-AMDAHL-008.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-AMDAHL-008.json",
+      "version": 1
+    },
+    {
+      "id": "A-COAL-009",
+      "file": "data/questions/A/A-COAL-009.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-COAL-009.json",
+      "version": 1
+    },
+    {
+      "id": "A-CACHE-010",
+      "file": "data/questions/A/A-CACHE-010.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-CACHE-010.json",
+      "version": 1
+    },
+    {
+      "id": "A-SIMT-011",
+      "file": "data/questions/A/A-SIMT-011.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-SIMT-011.json",
+      "version": 1
+    },
+    {
+      "id": "A-WARP-012",
+      "file": "data/questions/A/A-WARP-012.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-WARP-012.json",
+      "version": 1
+    },
+    {
+      "id": "A-PCIE-013",
+      "file": "data/questions/A/A-PCIE-013.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-PCIE-013.json",
+      "version": 1
+    },
+    {
+      "id": "A-NVLINK-014",
+      "file": "data/questions/A/A-NVLINK-014.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-NVLINK-014.json",
+      "version": 1
+    },
+    {
+      "id": "A-LAUNCH-015",
+      "file": "data/questions/A/A-LAUNCH-015.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-LAUNCH-015.json",
+      "version": 1
+    },
+    {
+      "id": "A-ENERGY-016",
+      "file": "data/questions/A/A-ENERGY-016.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-ENERGY-016.json",
+      "version": 1
+    },
+    {
+      "id": "A-THROUGH-017",
+      "file": "data/questions/A/A-THROUGH-017.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-THROUGH-017.json",
+      "version": 1
+    },
+    {
+      "id": "A-PEAK-018",
+      "file": "data/questions/A/A-PEAK-018.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-PEAK-018.json",
+      "version": 1
+    },
+    {
+      "id": "A-INTENSE-019",
+      "file": "data/questions/A/A-INTENSE-019.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-INTENSE-019.json",
+      "version": 1
+    },
+    {
+      "id": "A-HIER-020",
+      "file": "data/questions/A/A-HIER-020.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-HIER-020.json",
+      "version": 1
+    },
+    {
+      "id": "A-DIVERG-021",
+      "file": "data/questions/A/A-DIVERG-021.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-DIVERG-021.json",
+      "version": 1
+    },
+    {
+      "id": "A-BANK-022",
+      "file": "data/questions/A/A-BANK-022.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-BANK-022.json",
+      "version": 1
+    },
+    {
+      "id": "A-TC-023",
+      "file": "data/questions/A/A-TC-023.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-TC-023.json",
+      "version": 1
+    },
+    {
+      "id": "A-PARA-024",
+      "file": "data/questions/A/A-PARA-024.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-PARA-024.json",
+      "version": 1
+    },
+    {
+      "id": "A-REGSPILL-025",
+      "file": "data/questions/A/A-REGSPILL-025.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-REGSPILL-025.json",
+      "version": 1
+    },
+    {
+      "id": "A-STREAM-026",
+      "file": "data/questions/A/A-STREAM-026.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-STREAM-026.json",
+      "version": 1
+    },
+    {
+      "id": "A-CPUGPU-027",
+      "file": "data/questions/A/A-CPUGPU-027.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-CPUGPU-027.json",
+      "version": 1
+    },
+    {
+      "id": "A-BATCH-028",
+      "file": "data/questions/A/A-BATCH-028.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-BATCH-028.json",
+      "version": 1
+    },
+    {
+      "id": "A-POWER-029",
+      "file": "data/questions/A/A-POWER-029.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-POWER-029.json",
+      "version": 1
+    },
+    {
+      "id": "A-ILP-030",
+      "file": "data/questions/A/A-ILP-030.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-ILP-030.json",
+      "version": 1
     }
   ]
 }

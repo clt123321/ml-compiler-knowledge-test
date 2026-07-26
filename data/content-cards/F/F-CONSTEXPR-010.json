@@ -1,0 +1,49 @@
+{
+  "questionId": "F-CONSTEXPR-010",
+  "learningObjective": "Understand tl.constexpr as a compile-time specialization mechanism vs runtime scalars.",
+  "canonicalClaims": [
+    {
+      "claim": "`tl.constexpr` marks a kernel argument as compile-time; each distinct value triggers a fresh specialized compile, enabling loop unrolling, vector sizing, and constant folding. Non-constexpr scalars are runtime values shared by all invocations.",
+      "conditions": ["Standard Triton JIT specialization."],
+      "nonImplications": [
+        "Does not imply constexpr is always beneficial.",
+        "Does not imply pointer arguments are constexpr by default."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "tl.constexpr / JIT specialization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`tl.constexpr` is only an IDE type hint.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It has semantic effect on the JIT.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "`tl.constexpr` marks arguments as runtime-varying.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Inverted; it is compile-time.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "Every distinct value of any scalar argument re-compiles the kernel.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Only constexpr changes force re-compile; non-constexpr scalars reuse.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "Promoting shape dims like `N` to constexpr is always faster.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Compile-time blow-up and cache pressure may outweigh gains.",
+      "sourceOrEvidence": "Triton perf guidelines"
+    }
+  ],
+  "implementationFacts": [
+    "Triton also specializes on pointer alignment (16-byte) and value divisibility (`divisible_by`) attributes.",
+    "TRITON_CACHE_DIR caches compiled kernels across processes."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

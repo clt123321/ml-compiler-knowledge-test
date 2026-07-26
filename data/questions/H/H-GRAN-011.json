@@ -1,0 +1,65 @@
+{
+  "id": "H-GRAN-011",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "Quantization granularity / Per-tensor vs per-channel vs per-group",
+  "learningObjective": "Distinguish per-tensor, per-channel, and per-group quantization by scale/zero-point count and hardware/kernel implications.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic quantized GEMM",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "For quantizing an FP16 weight matrix `W` of shape `[out_channels, in_channels]` to INT8/INT4 for a subsequent quantized GEMM, which of the following statements about quantization granularity are TRUE? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "Per-tensor uses one (scale, zero-point) pair for the entire W; simplest to implement and cheapest in metadata storage but loses accuracy when different channels have very different value ranges." },
+    { "id": "B", "text": "Per-channel (also called per-output-channel or per-row here) uses one (scale, zero-point) per row of W; the GEMM epilogue applies a different scale to each output element, adding negligible extra work per output." },
+    { "id": "C", "text": "Per-group divides the `in_channels` axis into groups (e.g., 128 elements per group) and stores one scale per (row, group) pair; standard for W4A16 kernels where groups of 128 give a good accuracy/memory-metadata trade-off." },
+    { "id": "D", "text": "Per-tensor is strictly more accurate than per-channel because a single scale allows Tensor Cores to run at peak throughput without any metadata handling." },
+    { "id": "E", "text": "Per-group quantization is illegal in INT8 GEMM because the accumulator cannot mix multiple scales within one dot product." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A, B, C are standard characterizations: per-tensor (single scale, low metadata, worst fit on heterogeneous channels), per-channel (one scale per output row, negligible extra epilogue cost), per-group (finer scales along the K axis, the standard for W4A16 GPTQ/AWQ kernels typically with group_size 128). D is false: per-tensor is generally LESS accurate than per-channel because it forces one scale to cover all channels. E is false: per-group INT/W4 GEMMs handle multiple scales along the K axis by partial-accumulating within a group, applying the group scale, then adding to the outer accumulator.",
+  "optionExplanations": {
+    "A": "Correct: per-tensor definition and trade-off.",
+    "B": "Correct: per-channel implementation and epilogue cost.",
+    "C": "Correct: per-group is standard for W4A16.",
+    "D": "Wrong: per-tensor is generally LESS accurate.",
+    "E": "Wrong: per-group GEMM handles multiple scales via grouped accumulation."
+  },
+  "assumptions": [
+    "The GEMM kernel is designed for the chosen granularity.",
+    "The 'in_channels' axis in this discussion corresponds to the K axis of the matmul."
+  ],
+  "nonImplications": [
+    "Does not imply per-group is always better than per-channel — smaller group sizes increase metadata and can offset accuracy gains.",
+    "Does not imply per-channel weight quantization always requires per-channel activation quantization; the two are chosen independently."
+  ],
+  "misconceptionTags": ["per_tensor_more_accurate", "per_group_illegal"],
+  "distractorRationales": {
+    "D": "Reverses accuracy comparison.",
+    "E": "Denies well-established W4A16 kernel design."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:awq", "locator": "Per-group scale rationale (group_size 128)", "supports": ["A", "B", "C"] },
+    { "ref": "PAPER:gptq", "locator": "Per-group quantization for W4A16", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:sze-eff", "locator": "Quantization granularity trade-offs", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Granularity trade-off for quantized weight GEMMs",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/H/H-GRAN-011.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,60 @@
+{
+  "questionId": "E-MLIRCONV-003",
+  "learningObjective": "Understand roles of Conversion Target, TypeConverter, legalization patterns; distinguish partial vs full conversion.",
+  "canonicalClaims": [
+    {
+      "claim": "`applyFullConversion` requires every Op in the final IR to be legal per the ConversionTarget; unmatched illegal Ops cause failure. `applyPartialConversion` allows some illegal Ops to remain, supporting staged progressive lowering.",
+      "conditions": [
+        "The ConversionTarget defines legality via `addLegalDialect`, `addIllegalOp`, or dynamic legality callbacks.",
+        "Patterns are registered via `RewritePatternSet`."
+      ],
+      "nonImplications": [
+        "Does not imply that every conversion needs to be full.",
+        "Does not imply the framework can invent lowering for unmatched Ops."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-dialect-conversion", "locator": "applyFullConversion / applyPartialConversion semantics" }
+      ]
+    },
+    {
+      "claim": "TypeConverter is required when patterns rewrite block/function signatures, even for identity type mappings, so the framework can materialize the necessary casts.",
+      "conditions": ["Function/block-argument rewriting is involved."],
+      "nonImplications": ["Does not imply every pattern uses a TypeConverter."],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-dialect-conversion", "locator": "TypeConverter and signature conversion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Partial vs full conversion is about how many passes the framework runs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The distinction is whether unmatched illegal Ops in the final IR cause failure, not pass count.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    },
+    {
+      "claim": "The framework silently drops illegal ops without a matching pattern.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It fails the conversion; there is no silent drop.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    },
+    {
+      "claim": "TypeConverter is unnecessary if type mapping is identity.",
+      "errorType": "scope_error",
+      "whyWrong": "It is still needed for signature/block-argument rewriting to trigger cast materialization hooks.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    },
+    {
+      "claim": "A ConversionTarget's dynamic legality callback runs at rewrite time only on ops with matching patterns.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Dynamic legality is queried during target checking to decide whether the op is legal at all.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    }
+  ],
+  "implementationFacts": [
+    "`addLegalDialect<LLVMDialect>()`, `addIllegalOp<arith::AddIOp>()`, `addDynamicallyLegalOp<>` are common target configurations.",
+    "Type conversion hooks: `addConversion`, `addSourceMaterialization`, `addTargetMaterialization`."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

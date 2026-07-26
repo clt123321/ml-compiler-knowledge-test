@@ -1,0 +1,55 @@
+{
+  "questionId": "A-RIDGE-007",
+  "learningObjective": "Compute a GPU's Roofline ridge point from published peak throughput and memory bandwidth, and reason about how the ridge shifts across precisions.",
+  "canonicalClaims": [
+    {
+      "claim": "Ridge point equals peak compute divided by peak memory bandwidth, and increases as the precision path moves to lower-bit operands (FP16 → FP8 → FP4) because peak compute rises while HBM bandwidth stays fixed.",
+      "conditions": [
+        "Compute peak is measured with the same math path (Tensor Core) whose ridge is being computed.",
+        "Memory bandwidth reference is HBM (or whichever tier the AI is measured against)."
+      ],
+      "nonImplications": [
+        "Does not imply that a kernel automatically saturates the higher-precision peak at higher ridge; achievable throughput still requires high AI.",
+        "Does not imply that ridges are meaningful without matching AI accounting to the same memory tier."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Ridge point definition" },
+        { "ref": "DOC:cuda-guide", "locator": "Per-architecture peak throughput tables" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Ridge point is a hardware-fixed value independent of numerical precision.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Ridge point uses the peak compute of a specific precision path; different precisions produce different peaks and hence different ridges on the same GPU.",
+      "sourceOrEvidence": "Roofline definition, PMPP4"
+    },
+    {
+      "claim": "Halving operand bytes halves the ridge point.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Operand byte width affects AI (algorithmic side); ridge is compute/BW on the hardware side. In fact halving operand width usually doubles the hardware peak throughput, raising ridge.",
+      "sourceOrEvidence": "PMPP4 Roofline plot axes"
+    },
+    {
+      "claim": "Ridge point can be computed from L2 or SMEM bandwidth without changing meaning.",
+      "errorType": "scope_error",
+      "whyWrong": "Using L2/SMEM bandwidth defines a different Roofline; AI must be measured against the same memory tier, otherwise ridge comparisons are inconsistent.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "Sparse Tensor Core peaks should be used to compute the everyday FP16 ridge point.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Sparse peaks assume structured 2:4 sparsity and only apply to kernels using that path; using them for a dense kernel gives an unreachable ridge.",
+      "sourceOrEvidence": "NVIDIA architecture whitepapers"
+    }
+  ],
+  "implementationFacts": [
+    "A100 SXM: FP16 ridge ≈ 312e12 / 2.0e12 ≈ 156 FLOP/byte.",
+    "H100 SXM5 (dense): FP16 ridge ≈ 295 FLOP/byte; FP8 ridge ≈ 590 FLOP/byte."
+  ],
+  "performanceScenarios": [
+    "Moving from FP16 to FP8 GEMMs raises the ridge, so an FP16-compute-bound kernel may become memory-bound at FP8 if AI does not scale with precision."
+  ],
+  "versionSensitivity": "stable_principle"
+}

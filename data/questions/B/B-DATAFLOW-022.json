@@ -1,0 +1,61 @@
+{
+  "id": "B-DATAFLOW-022",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Data-flow lattice / meet-over-paths",
+  "learningObjective": "Explain the meet operator and lattice ordering choice for a canonical data-flow analysis.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "In classical data-flow analysis, the meet operator combines information at a join point (multiple predecessor paths). Which pairing of analysis and meet operator is correct?",
+  "options": [
+    { "id": "A", "text": "Liveness (may-analysis, backward): meet = union — a variable is live-in at a block if it is live-in on some successor. Available expressions (must-analysis, forward): meet = intersection — an expression is available at a block only if it is available on every predecessor path." },
+    { "id": "B", "text": "Liveness uses intersection because a variable must be live on all paths to be considered live; available expressions use union to be sound." },
+    { "id": "C", "text": "Both liveness and available expressions use union; the direction (forward/backward) is what distinguishes them." },
+    { "id": "D", "text": "Neither analysis uses a meet operator; both are point-to-point dataflow computations without merging." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Standard textbook pairing: liveness (may-analysis, backward, union) — some path uses the variable in the future. Available expressions (must-analysis, forward, intersection) — every path has computed the expression. The direction (forward/backward) and the may/must nature (union/intersection) are independent and combine into the four-quadrant classification of classical dataflow analyses.",
+  "optionExplanations": {
+    "A": "Correct: liveness = may/backward/union; available expressions = must/forward/intersection.",
+    "B": "Wrong: reverses the operators for both analyses.",
+    "C": "Wrong: available expressions use intersection, not union.",
+    "D": "Wrong: both use meet operators at join points."
+  },
+  "assumptions": [
+    "Standard textbook dataflow framework (Dragon Book, EAC3)."
+  ],
+  "nonImplications": [
+    "Does not imply all meet operators are union or intersection; more elaborate lattices (constant propagation, range analysis) have richer meets.",
+    "Does not imply meet direction of forward/backward is arbitrary; each analysis has a natural direction driven by its semantics."
+  ],
+  "misconceptionTags": ["may_must_operator_confusion", "dataflow_direction_confusion"],
+  "distractorRationales": {
+    "B": "Reverses may vs must.",
+    "C": "Wrong operator for available expressions.",
+    "D": "Denies join meet in dataflow."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:dragon2", "locator": "Data-flow analysis chapter", "supports": ["A"] },
+    { "ref": "BOOK:eac3", "locator": "Data-flow analysis chapter", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-DATAFLOW-022.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

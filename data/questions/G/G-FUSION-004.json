@@ -1,0 +1,65 @@
+{
+  "id": "G-FUSION-004",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Operator fusion / GEMM epilogue",
+  "learningObjective": "Given a GEMM followed by a pointwise chain, decide which fusion form (epilogue vs. separate kernel) is expressible and legal.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": ["Tensor Core FP16/BF16 MMA"]
+  },
+  "softwareContext": {
+    "framework": "generic (CUTLASS / cuBLAS / TensorIR)",
+    "stability": "stable_principle"
+  },
+  "irSnippet": "// Before fusion\n%c = matmul(%a, %b)          : tensor<M x K> * tensor<K x N> -> tensor<M x N>\n%d = add(%c, %bias)          : tensor<M x N>\n%e = gelu(%d)                : tensor<M x N>\n\n// After epilogue fusion (candidate rewrite)\n%e = matmul_epilogue(%a, %b, %bias)\n     { epilogue = [add_bias, gelu] }\n     : (tensor<M x K>, tensor<K x N>, tensor<N>) -> tensor<M x N>\n",
+  "stem": "The IR above shows a GEMM followed by a bias-add and GELU, and a proposed rewrite that folds them into a matmul epilogue. Which condition is required for the rewrite to be legal AND to deliver the intended memory-traffic benefit?",
+  "options": [
+    { "id": "A", "text": "The rewrite is always legal because bias-add and GELU are pointwise; the memory benefit is automatic and independent of how the compute op streams its output." },
+    { "id": "B", "text": "The GEMM implementation must expose an epilogue slot that writes each output tile only after applying the pointwise chain in registers; without this, the pointwise ops still read/write the full M×N output via DRAM and no traffic is saved." },
+    { "id": "C", "text": "The rewrite is legal only if `bias` has shape `[M, N]` (same as the GEMM output); a broadcast `[N]` bias cannot be fused into an epilogue." },
+    { "id": "D", "text": "The rewrite is legal only when M×N is a multiple of the warp size, otherwise the epilogue introduces a tail block that violates SSA form." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "Legality of the rewrite is a pattern match on pointwise-after-GEMM; the intended traffic benefit only materializes when the GEMM kernel actually applies the epilogue to each output tile in registers before writing back to DRAM (as in cuBLAS Lt / CUTLASS epilogues). If the compiler emits a standalone GEMM plus separate pointwise kernels, the pointwise ops re-read the M×N tensor from DRAM and the fusion is 'logical' but has no memory-traffic benefit. Broadcast bias `[N]` is a supported epilogue pattern in cuBLAS Lt and CUTLASS. Warp-size divisibility affects tile boundaries but not SSA legality.",
+  "optionExplanations": {
+    "A": "Wrong: legality alone does not deliver the traffic saving; the compute op must expose an epilogue path.",
+    "B": "Correct: this is the essential precondition — the GEMM kernel must fuse the epilogue in-register at tile granularity.",
+    "C": "Wrong: broadcast biases are a standard epilogue pattern in cuBLAS Lt / CUTLASS.",
+    "D": "Wrong: tail-block handling is a scheduling concern, not an SSA violation."
+  },
+  "assumptions": [
+    "The GEMM is implemented by a library or generated kernel that supports epilogue fusion.",
+    "Bias and GELU are pure and side-effect free."
+  ],
+  "nonImplications": [
+    "Does not imply epilogue fusion is always faster in wall-clock; small M×N or memory-bound follow-ups can flip the trade-off.",
+    "Does not imply cuBLAS Lt supports every arbitrary pointwise chain; supported epilogues are a fixed catalog."
+  ],
+  "misconceptionTags": ["fusion_legal_but_no_benefit", "epilogue_requires_kernel_support"],
+  "distractorRationales": {
+    "A": "Ignores the difference between logical fusion at IR level and physical fusion at kernel level.",
+    "C": "Confuses broadcast handling with legality.",
+    "D": "Introduces a spurious SSA claim about tail blocks."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-inductor", "locator": "Template epilogue for matmul", "supports": ["B"] },
+    { "ref": "PAPER:tvm", "locator": "Fusion classification kOutEWiseFusable", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GEMM + bias + activation epilogue on Tensor-Core capable GPUs",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-FUSION-004.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

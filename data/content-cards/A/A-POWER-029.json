@@ -1,0 +1,50 @@
+{
+  "questionId": "A-POWER-029",
+  "learningObjective": "Diagnose sustained-vs-burst GPU throughput given TDP constraints and identify power capping as a mechanism.",
+  "canonicalClaims": [
+    {
+      "claim": "Data-center GPUs use DVFS to keep long-run power draw within their TDP cap; sustained throughput can therefore be lower than short-burst throughput on compute-bound kernels because clocks reduce as the die heats up.",
+      "conditions": [
+        "Kernel is compute-bound (throughput ∝ clock frequency).",
+        "Ambient/system cooling and firmware policies are the standard configuration.",
+        "Measurement duration is long enough that TDP-average kicks in."
+      ],
+      "nonImplications": [
+        "Does not imply every burst-vs-sustained gap is TDP-driven; other causes exist.",
+        "Does not imply memory-bound kernels are equally throttled; HBM traffic is less clock-sensitive."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Performance tuning under thermal constraints" },
+        { "ref": "BOOK:hp6", "locator": "Power and DVFS chapters" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "HBM bandwidth drops under thermal load, causing the sustained throughput drop.",
+      "errorType": "hardware_leak",
+      "whyWrong": "HBM bandwidth is largely thermally stable across normal operating temperatures; the compute-bound throughput drop tracks clock frequency, not memory bandwidth.",
+      "sourceOrEvidence": "NVIDIA architecture whitepapers"
+    },
+    {
+      "claim": "Profiler overhead accounts for the 20% burst-vs-sustained gap.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Profiler overhead does not systematically bias short bursts vs sustained runs by 20%; consistent measurements typically capture both phases similarly.",
+      "sourceOrEvidence": "Nsight Systems documentation"
+    },
+    {
+      "claim": "PCIe bandwidth throttles compute under thermal load.",
+      "errorType": "scope_error",
+      "whyWrong": "A resident GEMM does not need PCIe traffic during execution; PCIe is only involved for H2D/D2H, not for the kernel's ongoing compute.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "nvidia-smi reports Power Limit, Power Draw, Perf State (P-states), and current SM clocks.",
+    "Data-center GPUs (A100, H100) support nvidia-smi -pl to configure power caps within a range."
+  ],
+  "performanceScenarios": [
+    "Server-side inference workloads can see 10–20% sustained throughput loss under aggressive power caps, motivating careful capacity planning for LLM serving."
+  ],
+  "versionSensitivity": "stable_principle"
+}

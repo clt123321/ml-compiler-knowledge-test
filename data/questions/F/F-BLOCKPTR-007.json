@@ -1,0 +1,104 @@
+{
+  "id": "F-BLOCKPTR-007",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Triton / tl.make_block_ptr and block pointers",
+  "learningObjective": "Understand `tl.make_block_ptr` semantics for structured tile access and how it differs from raw pointer arithmetic.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80) or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "Triton block-pointer support"
+    ]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float16"
+    ],
+    "layouts": [
+      "row_major"
+    ]
+  },
+  "stem": "Which statement about `tl.make_block_ptr` in the following Triton kernel is correct?",
+  "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef read_tile(in_ptr, M, N,\n              stride_m, stride_n,\n              pid_m, pid_n,\n              BM: tl.constexpr, BN: tl.constexpr):\n    block_ptr = tl.make_block_ptr(\n        base=in_ptr,\n        shape=(M, N),\n        strides=(stride_m, stride_n),\n        offsets=(pid_m * BM, pid_n * BN),\n        block_shape=(BM, BN),\n        order=(1, 0),        # innermost dim = axis 1\n    )\n    x = tl.load(block_ptr, boundary_check=(0, 1))\n    # ... use x ...\n\n# in_ptr: FP16 row-major [M, N], stride_m=N, stride_n=1\n# BM=64, BN=64",
+  "options": [
+    {
+      "id": "A",
+      "text": "`tl.make_block_ptr` allocates a shared-memory buffer of size `BM*BN*sizeof(fp16)` on entry and copies the tile into it before use; `boundary_check` prevents the shared-memory allocation from overflowing when the tile extends past `[M, N]`."
+    },
+    {
+      "id": "B",
+      "text": "`tl.make_block_ptr` builds a structured pointer describing a `[BM, BN]` tile inside an `[M, N]` tensor; `boundary_check=(0, 1)` tells `tl.load` to mask both axes so out-of-range lanes are safely zeroed; `order=(1, 0)` declares axis 1 as the fastest-varying, matching row-major storage."
+    },
+    {
+      "id": "C",
+      "text": "`boundary_check=(0, 1)` disables masking on both axes (0 means 'no check on axis 0', 1 means 'no check on axis 1'); users who want masking must specify `boundary_check=None`."
+    },
+    {
+      "id": "D",
+      "text": "The `order` argument sets element endianness inside each 16-bit half; `(1, 0)` reverses the byte order to little-endian on load. It has no effect on which dimension is contiguous in memory."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "`tl.make_block_ptr` is a structured pointer constructor that describes a `[block_shape]` tile inside a base tensor of `shape` with given `strides` at a starting `offsets` (in element units). The `order` tuple specifies the memory-layout order (fastest-varying axis first when reading right-to-left, or equivalently: which axis is innermost). `tl.load(block_ptr, boundary_check=(0, 1))` masks lanes that fall outside the tensor along the listed axes and substitutes zeros. It is a higher-level, boundary-aware alternative to raw pointer arithmetic, and lets the Triton compiler emit better vectorized loads on Ampere+.",
+  "optionExplanations": {
+    "B": "Correct: structured tile access + boundary check + memory order.",
+    "A": "Wrong: `tl.make_block_ptr` does not allocate shared memory; it produces a structured pointer.",
+    "C": "Wrong: `boundary_check=(0, 1)` enables checks on both axes, not disables them.",
+    "D": "Wrong: `order` describes memory layout, not endianness."
+  },
+  "assumptions": [
+    "Triton block-pointer semantics as documented.",
+    "Row-major FP16 tensor with `stride_m = N`, `stride_n = 1`."
+  ],
+  "nonImplications": [
+    "Does not imply block pointers are always faster than raw pointer arithmetic; they enable but do not guarantee vectorization.",
+    "Does not imply `boundary_check` catches all out-of-range accesses; the axes listed are the only checked ones."
+  ],
+  "misconceptionTags": [
+    "blockptr_smem_alloc_myth",
+    "boundary_check_inverted"
+  ],
+  "distractorRationales": {
+    "A": "Confuses structured pointer with SMEM allocation.",
+    "C": "Inverts the meaning of `boundary_check`.",
+    "D": "Fabricates endianness semantics."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:triton",
+      "locator": "tl.make_block_ptr, tl.load boundary_check, order parameter",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-BLOCKPTR-007.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

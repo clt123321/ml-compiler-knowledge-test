@@ -1,0 +1,56 @@
+{
+  "questionId": "G-MEMPLAN-015",
+  "learningObjective": "Precisely define compiler-driven memory planning and buffer reuse for tensor programs and distinguish it from runtime allocation.",
+  "canonicalClaims": [
+    {
+      "claim": "Compiler-driven memory planning analyzes tensor lifetimes across the data-flow graph, packs non-overlapping tensors onto shared buffers, and produces a static offset-based allocation plan that the runtime executes without per-op malloc/free.",
+      "conditions": [
+        "Tensor sizes and lifetimes are known at compile time (static shapes or bounded dynamic shapes).",
+        "The compiler has global visibility over the program's data-flow graph."
+      ],
+      "nonImplications": [
+        "Does not imply the runtime allocator becomes unnecessary; dynamic tensors and side effects still need it.",
+        "Does not imply the plan is provably optimal — buffer packing is NP-hard."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "Buffer assignment pass" },
+        { "ref": "DOC:tvm-relax", "locator": "Static memory planning" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Memory planning is the same thing as a caching allocator (e.g., PyTorch CUDA caching allocator).",
+      "errorType": "definition_confusion",
+      "whyWrong": "Memory planning is compile-time and produces a plan; caching allocators are runtime mechanisms that recycle freed blocks.",
+      "sourceOrEvidence": "TVM memory planner vs. PyTorch caching allocator"
+    },
+    {
+      "claim": "Buffer reuse means reusing the same buffer across multiple training iterations of the same graph.",
+      "errorType": "scope_error",
+      "whyWrong": "Intra-graph reuse packs non-overlapping tensors; inter-iteration reuse is a runtime property of the allocator.",
+      "sourceOrEvidence": "XLA HLO documentation"
+    },
+    {
+      "claim": "SSA renaming is what enables buffer reuse; more SSA names mean more buffers.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SSA is an IR property; buffer assignment is a physical allocation decision downstream that ignores logical name multiplicity.",
+      "sourceOrEvidence": "MLIR / XLA lowering"
+    },
+    {
+      "claim": "Memory planning eliminates the need for runtime allocation entirely, even under dynamic shapes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Dynamic shapes may prevent static packing; the runtime allocator must still handle unknown-size tensors.",
+      "sourceOrEvidence": "TVM Relax dynamic shape memory planning notes"
+    }
+  ],
+  "implementationFacts": [
+    "XLA's BufferAssignment pass computes live ranges and assigns HLO values to buffer allocations.",
+    "TensorRT builds a static engine plan with pre-allocated workspaces.",
+    "TVM Relax has a `StaticPlanBlockMemory` pass for compile-time buffer arenas."
+  ],
+  "performanceScenarios": [
+    "A pipeline with 20 intermediate tensors may pack into 3-4 arenas via lifetime analysis, saving GBs of peak memory versus per-tensor allocation."
+  ],
+  "versionSensitivity": "stable_principle"
+}

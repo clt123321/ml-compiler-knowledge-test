@@ -1,0 +1,61 @@
+{
+  "id": "A-HIER-020",
+  "type": "multiple",
+  "module": "arch_perf_model",
+  "subtopic": "Memory hierarchy ordering (latency, bandwidth, capacity)",
+  "learningObjective": "Order the tiers of a modern GPU memory hierarchy by latency, bandwidth and capacity, and identify design consequences.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper (sm_80+)",
+    "device": "GPU",
+    "requiredFeatures": ["register file", "shared memory (L1)", "L2 cache", "HBM"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about the NVIDIA GPU memory hierarchy (Ampere/Hopper) are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "Latency ordering (fastest to slowest): registers → shared memory / L1 → L2 → HBM. Latency grows by roughly an order of magnitude across the last two boundaries." },
+    { "id": "B", "text": "Capacity ordering (largest to smallest): HBM → L2 → shared memory (per SM) → register file (per SM). HBM dwarfs on-chip storage by several orders of magnitude." },
+    { "id": "C", "text": "Aggregate bandwidth ordering, summed across all SMs, is: register file ≫ shared memory ≫ L2 ≫ HBM. On-chip tiers close to compute are the widest." },
+    { "id": "D", "text": "Because L2 has higher bandwidth than HBM, an inference kernel that fits in L2 sees roughly HBM-tier throughput; L2 acts only as a latency shield, not a bandwidth multiplier." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A: standard latency ordering; each on-chip step is faster than off-chip. B: HBM is orders of magnitude larger than on-chip caches (tens of GB vs KB-MB). C: aggregate on-chip bandwidths scale with number of SMs, greatly exceeding HBM's bandwidth (~2 TB/s A100). D is wrong: L2 acts as both a latency shield and a bandwidth multiplier when data fits and is reused — L2 aggregate bandwidth is well above HBM.",
+  "optionExplanations": {
+    "A": "Correct: register < shared/L1 < L2 < HBM in latency; on-chip tiers dominate for locality.",
+    "B": "Correct: capacity increases moving away from compute.",
+    "C": "Correct: on-chip aggregate bandwidth greatly exceeds HBM; this is why kernels use shared memory and register-file reuse.",
+    "D": "Wrong: L2 provides substantial bandwidth uplift over HBM when data is reused; it is not merely a latency shield."
+  },
+  "assumptions": [
+    "Modern NVIDIA GPU (Ampere/Hopper) with the standard R/S/L2/HBM hierarchy.",
+    "Aggregate bandwidth is measured summed across all SMs where applicable."
+  ],
+  "nonImplications": [
+    "Does not imply every kernel benefits from L2 residency; write-back patterns and capacity misses can reduce L2 effectiveness.",
+    "Does not imply register-file size is negligible per SM; it is comparable to shared memory in capacity but with per-thread lifetime."
+  ],
+  "misconceptionTags": ["l2_latency_only_myth", "hierarchy_ordering_confusion"],
+  "distractorRationales": {
+    "D": "Reduces L2's role to latency reduction only, ignoring bandwidth aspect."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Memory hierarchy tables per compute capability", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:pmpp4", "locator": "GPU memory hierarchy chapters", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "NVIDIA GPU memory hierarchy latency/bandwidth/capacity ordering",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-HIER-020.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

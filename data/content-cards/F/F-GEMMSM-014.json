@@ -1,0 +1,49 @@
+{
+  "questionId": "F-GEMMSM-014",
+  "learningObjective": "Analyze arithmetic intensity of tiled GEMM as a function of thread-block tile size.",
+  "canonicalClaims": [
+    {
+      "claim": "For a tiled GEMM with thread-block tile `BM × BN × BK`, per K-loop iteration the arithmetic intensity is BM*BN/(2*(BM+BN)) FLOPs/byte. Larger square tiles yield higher intensity, moving the kernel above the memory-bandwidth ridge on modern GPUs (compute-bound).",
+      "conditions": ["FP32 without Tensor Cores; standard tiled algorithm."],
+      "nonImplications": [
+        "Does not imply arbitrarily large tiles are feasible; SMEM and register file limit tile size.",
+        "Does not imply this analysis applies unchanged to Tensor Core / TF32 kernels."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Tiled GEMM chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Increasing BK shrinks SMEM footprint.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Larger BK grows both A tile (BM*BK) and B tile (BK*BN).",
+      "sourceOrEvidence": "Tiled GEMM analysis"
+    },
+    {
+      "claim": "128×128 FP32 accumulators cost 64 KB per thread as registers, forcing spill.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Accumulators are distributed across all threads in the block; per-thread accumulator count is much smaller.",
+      "sourceOrEvidence": "GEMM tiling literature"
+    },
+    {
+      "claim": "GEMM is always memory-bound regardless of tile size.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Sufficiently large square tiles push arithmetic intensity above the ridge and become compute-bound.",
+      "sourceOrEvidence": "Roofline analysis"
+    },
+    {
+      "claim": "Only Tensor Cores can make GEMM compute-bound.",
+      "errorType": "overgeneralization",
+      "whyWrong": "FP32 GEMM with large enough tiles can approach compute-bound; TC just changes the peak FLOP rate.",
+      "sourceOrEvidence": "Roofline analysis"
+    }
+  ],
+  "implementationFacts": [
+    "SMEM per iter for BM=BN=128, BK=32, FP32: 128*32*4 + 32*128*4 = 32 KB total (both tiles).",
+    "A100 FP32 peak ~19.5 TFLOPs; HBM ~1.5 TB/s; ridge point ~13 FLOPs/byte."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

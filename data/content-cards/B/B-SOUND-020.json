@@ -1,0 +1,50 @@
+{
+  "questionId": "B-SOUND-020",
+  "learningObjective": "Distinguish sound and precise analyses and identify the direction of over-/under-approximation.",
+  "canonicalClaims": [
+    {
+      "claim": "Soundness of a static analysis is defined relative to intent: for compiler optimizations it is a may-analysis (over-approximation) so no illegal transformation is enabled; for bug-finding it may be an under-approximation (only true bugs reported). Precision is a separate axis measuring closeness to the ideal answer.",
+      "conditions": [
+        "Analysis is defined within an abstract interpretation or dataflow framework.",
+        "Sound direction is stated with respect to the intended use (transformation legality vs bug reporting)."
+      ],
+      "nonImplications": [
+        "Does not imply sound analyses are precise.",
+        "Does not imply unsound analyses are useless in practice; heuristic tools are widely used."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Dataflow soundness" },
+        { "ref": "BOOK:dragon2", "locator": "Formal aspects of dataflow" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A sound analysis is always precise.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The trivially conservative analysis (e.g., 'may-alias with everything') is sound but has zero precision. Soundness and precision are orthogonal.",
+      "sourceOrEvidence": "Cousot & Cousot abstract interpretation"
+    },
+    {
+      "claim": "Soundness always means 'no false positives'.",
+      "errorType": "scope_error",
+      "whyWrong": "Direction depends on intent. For optimization analyses, soundness means over-approximation (no false 'safe' answers); for bug-finding, soundness may mean no false positives.",
+      "sourceOrEvidence": "Dragon2 dataflow chapters"
+    },
+    {
+      "claim": "All static analyses in production compilers are provably sound.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Many practical analyses (especially in linters and JITs) trade soundness for scalability or usability; some are known-unsound and still useful.",
+      "sourceOrEvidence": "Livshits et al., 'In Defense of Soundiness'"
+    }
+  ],
+  "implementationFacts": [
+    "Sound over-approximation: may-alias, may-live, may-throw.",
+    "Sound under-approximation (bug-finding): must-alias, must-happen, definite null.",
+    "Precision-scalability trade-off: k-CFA, points-to abstractions."
+  ],
+  "performanceScenarios": [
+    "Optimizer must use sound may-analyses to preserve correctness; increasing precision typically shrinks conservative fallbacks and enables more optimizations."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "G-METASCHED-023",
+  "learningObjective": "Identify the design motivations behind MetaSchedule / Ansor's approach to schedule search.",
+  "canonicalClaims": [
+    {
+      "claim": "MetaSchedule / Ansor's design is motivated by (1) the unsustainability of per-operator manual templates as ops proliferate, (2) the superior predictiveness of learned cost models over pure analytical models on modern GPUs, and (3) the structural benefit of a two-phase search (sketch + annotation) that lets evolutionary search operate over a well-typed space.",
+      "conditions": [
+        "Comparison is made under equivalent tuning budgets.",
+        "The tuning target admits schedule primitives compatible with the sketch grammar."
+      ],
+      "nonImplications": [
+        "Does not imply the system eliminates human input entirely.",
+        "Does not imply MetaSchedule wins on every workload — hand-tuned templates can still lead in some cases."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "Sections 3-5" },
+        { "ref": "DOC:tvm-relax", "locator": "MetaSchedule design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "MetaSchedule replaces real-hardware measurement with pure static analysis.",
+      "errorType": "definition_confusion",
+      "whyWrong": "MetaSchedule retains hardware measurement for final ranking; the cost model only prunes the search space.",
+      "sourceOrEvidence": "Ansor Section 4"
+    },
+    {
+      "claim": "MetaSchedule is strictly worse than manual templates because it lacks domain knowledge.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Empirically MetaSchedule matches or exceeds hand-tuned templates on many workloads within similar tuning budgets.",
+      "sourceOrEvidence": "Ansor and MetaSchedule empirical results"
+    },
+    {
+      "claim": "The sketch + annotation two-phase design is a minor implementation detail unrelated to the paper's contributions.",
+      "errorType": "scope_error",
+      "whyWrong": "The two-phase design is one of the paper's central contributions, enabling tractable evolutionary search.",
+      "sourceOrEvidence": "Ansor paper design overview"
+    },
+    {
+      "claim": "Learned cost models eliminate all noise in the ranking of candidate schedules.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Learned models approximate; they reduce but do not eliminate ranking error, which is why final measurement remains.",
+      "sourceOrEvidence": "Ansor cost model evaluation"
+    }
+  ],
+  "implementationFacts": [
+    "MetaSchedule's TIR sketch generation produces algorithmic skeletons (tile, fuse, cache_read/write) parameterized by placeholders.",
+    "The annotation phase samples concrete integer values (tile sizes, bind axes) and stores them in a `Schedule` record.",
+    "Evolutionary search mutates schedule records using registered mutators."
+  ],
+  "performanceScenarios": [
+    "MetaSchedule reaches within 1-1.1× of hand-tuned GEMM kernels on Ampere within a few hours of tuning."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

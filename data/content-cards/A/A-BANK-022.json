@@ -1,0 +1,50 @@
+{
+  "questionId": "A-BANK-022",
+  "learningObjective": "Determine the degree of shared-memory bank conflict for a stride access pattern and its throughput impact.",
+  "canonicalClaims": [
+    {
+      "claim": "For a __shared__ float smem[32][32] on Ampere (32 banks × 4 B bank width), a warp-wide access pattern smem[threadIdx.x][fixed_y] produces a 32-way bank conflict because row stride equals the bank period.",
+      "conditions": [
+        "32 banks × 4 B bank width (default modern compute capability).",
+        "Warp accesses smem[threadIdx.x][fixed_y] with threadIdx.x = 0..31.",
+        "No shared-memory padding or swizzling applied."
+      ],
+      "nonImplications": [
+        "Does not imply padding to [32][33] is universally optimal; alternative swizzles exist.",
+        "Does not imply the kernel is incorrect; only throughput is affected."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Shared memory bank organization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The compiler automatically pads shared-memory declarations to avoid conflicts.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Padding must be explicit in source (e.g., [32][33]); the compiler does not silently reshape shared-memory declarations.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Bank conflicts on modern GPUs are limited to half-warp granularity.",
+      "errorType": "version_leak",
+      "whyWrong": "Half-warp granularity applied to legacy compute capabilities (Fermi and earlier). Ampere/Hopper use warp-wide conflict analysis.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, compute capability tables"
+    },
+    {
+      "claim": "Padding is only needed for double-precision arrays; float arrays are naturally conflict-free.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Conflict depends on the access pattern relative to the bank period, not the element dtype. Both float and double arrays can conflict depending on layout.",
+      "sourceOrEvidence": "CUDA C++ Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "Bank = (byte_address / bank_width) mod num_banks; on Ampere bank_width = 4 B, num_banks = 32.",
+    "Padding a 2D array to [dim][dim+1] shifts columns off the periodic alignment and typically resolves conflicts.",
+    "Swizzled shared-memory layouts (used in CUTLASS) avoid conflicts without explicit padding."
+  ],
+  "performanceScenarios": [
+    "Matrix-transpose kernels are a canonical example of a bank-conflict trap fixed by padding or swizzling."
+  ],
+  "versionSensitivity": "stable_principle"
+}

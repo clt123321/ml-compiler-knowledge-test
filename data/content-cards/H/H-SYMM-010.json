@@ -1,0 +1,56 @@
+{
+  "questionId": "H-SYMM-010",
+  "learningObjective": "Compare symmetric and asymmetric quantization formulas, and identify why symmetric is preferred for weights but asymmetric can help for activations.",
+  "canonicalClaims": [
+    {
+      "claim": "Symmetric quantization (z=0) simplifies the quantized GEMM by eliminating zero-point cross-terms, at the cost of poorly fitting skewed distributions; asymmetric quantization fits skewed activation distributions better but requires extra cross-term corrections in the GEMM.",
+      "conditions": [
+        "The GEMM kernel handles the chosen convention (symmetric-only vs. full asymmetric).",
+        "Rounding is consistent between quantize and dequantize."
+      ],
+      "nonImplications": [
+        "Does not imply asymmetric always improves accuracy; symmetric weight distributions benefit from symmetric quantization.",
+        "Does not imply asymmetric GEMM is prohibitively slow — cuBLAS and TensorRT handle the extra bias term efficiently."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Symmetric vs asymmetric quantization" },
+        { "ref": "DOC:cuda-guide", "locator": "cuBLAS INT8 GEMM zero-point" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Symmetric quantization to signed INT8 cannot represent negative values.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Signed INT8 represents [-127, 127] (symmetric convention) or [-128, 127] (full range); negatives are included.",
+      "sourceOrEvidence": "TensorRT INT8 primer"
+    },
+    {
+      "claim": "Unsigned asymmetric quantization to UINT8 has strictly more accuracy than signed symmetric INT8 because 256 > 255.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The level count differs by 1; per-distribution accuracy depends on how well the range fits, not the count.",
+      "sourceOrEvidence": "Quantization surveys"
+    },
+    {
+      "claim": "Symmetric and asymmetric quantization always produce identical dequantized results.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They differ in how they map the range; skewed distributions get different fidelity.",
+      "sourceOrEvidence": "TensorRT / PyTorch quantization examples"
+    },
+    {
+      "claim": "The extra zero-point cross-terms in asymmetric GEMM require rewriting the GEMM kernel from scratch.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The corrections are additive bias terms that can be precomputed or absorbed into the epilogue; kernel structure is unchanged.",
+      "sourceOrEvidence": "cuBLAS asymmetric INT8 GEMM"
+    }
+  ],
+  "implementationFacts": [
+    "TensorRT default: symmetric per-tensor for activations, symmetric per-channel for weights (avoids all zero-point terms).",
+    "PyTorch quantization supports both `torch.qint8` (symmetric) and `torch.quint8` (asymmetric)."
+  ],
+  "performanceScenarios": [
+    "Post-ReLU activations (all non-negative) benefit from asymmetric quantization mapping zero to 0.",
+    "Weight distributions in Transformers are approximately symmetric around zero; symmetric quantization suffices."
+  ],
+  "versionSensitivity": "stable_principle"
+}

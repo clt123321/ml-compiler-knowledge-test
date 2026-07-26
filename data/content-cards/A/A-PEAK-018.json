@@ -1,0 +1,50 @@
+{
+  "questionId": "A-PEAK-018",
+  "learningObjective": "Diagnose why a measured GEMM throughput falls significantly below the theoretical peak and identify the most plausible cause.",
+  "canonicalClaims": [
+    {
+      "claim": "For a large square GEMM with AI far above the ridge point, achieved throughput below peak is typically explained by imperfect Tensor Core packing (prologue/epilogue, tile boundaries, MMA scheduling) rather than by memory or launch overhead, and is consistent with a Tensor Core utilization metric well below 100%.",
+      "conditions": [
+        "AI ≫ ridge point (compute-bound regime).",
+        "Profile shows HBM not saturated (so not memory-bound).",
+        "Kernel runtime is not so short that launch overhead dominates."
+      ],
+      "nonImplications": [
+        "Does not imply Tensor Core utilization percentage maps linearly to achieved TFLOP/s across all metrics.",
+        "Does not imply the gap is unfixable; larger tiles, better scheduling, and vendor-tuned kernels can close some of it."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:ncu", "locator": "Tensor Core utilization metric semantics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A GEMM falling below peak must be memory-bound.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Being below peak has many causes; Roofline says memory-bound only when AI < ridge. Profile evidence of HBM saturation is required to attribute the gap to memory.",
+      "sourceOrEvidence": "Roofline analysis"
+    },
+    {
+      "claim": "Kernel launch overhead can account for a 30% gap on a multi-millisecond GEMM.",
+      "errorType": "scope_error",
+      "whyWrong": "Launch overhead is microseconds; large GEMMs run many milliseconds, so launch overhead is a negligible fraction.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "GEMMs at the ridge point achieve peak throughput.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Ridge is a theoretical crossover; achieving peak requires efficient tiling, high occupancy, and full MMA pipeline packing regardless of ridge alignment.",
+      "sourceOrEvidence": "Roofline model definition"
+    }
+  ],
+  "implementationFacts": [
+    "AI for N^3 GEMM: N/3 FLOP/byte for FP16.",
+    "A100 FP16 ridge ~ 156 FLOP/byte; N=8192 GEMM is deeply compute-bound.",
+    "Nsight Compute Tensor Core Active metric ≈ fraction of SM cycles with Tensor Core issuing."
+  ],
+  "performanceScenarios": [
+    "Vendor-tuned cuBLAS reaches ~ 75–85% of peak on square GEMMs; further gains come from problem-specific kernels (CUTLASS, hand-tuned)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

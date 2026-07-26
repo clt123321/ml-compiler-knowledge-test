@@ -1,0 +1,55 @@
+{
+  "questionId": "D-DYNKW-010",
+  "learningObjective": "Contrast `torch.compile(dynamic=True)` with the default automatic-dynamic behavior and identify their trade-offs.",
+  "canonicalClaims": [
+    {
+      "claim": "`torch.compile(dynamic=True)` requests symbolic-shape tracing from the first compile; the default automatic behavior first specializes on observed shapes and only promotes a dim to dynamic after several distinct sizes are seen.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 defaults."
+      ],
+      "nonImplications": [
+        "Does not imply `dynamic=True` is always faster than default; specialized kernels can be faster on hot shapes.",
+        "Does not imply that all dims become symbolic; some computations force specialization."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "dynamic argument" },
+        { "ref": "DOC:torch-dynamo", "locator": "Automatic dynamic" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`dynamic=True` only affects the compile-cache directory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It changes what the tracer records; the graph is different.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "`dynamic=True` disables compilation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Compilation still occurs; only shapes are treated symbolically.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "`dynamic=True` produces numerically different outputs due to lower precision.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Precision is not affected by the dynamic flag itself.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "The default never recompiles regardless of input shapes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Default may specialize on each new shape until auto-promotion kicks in.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    }
+  ],
+  "implementationFacts": [
+    "`dynamic=True` traces with SymInts from the first compile",
+    "`dynamic=False` forces static specialization for every new size",
+    "Default `dynamic=None` uses the automatic-dynamic heuristic"
+  ],
+  "performanceScenarios": [
+    "Choosing between static specialization and dynamic tracing is a trade-off between compile-cache size and per-shape kernel performance."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

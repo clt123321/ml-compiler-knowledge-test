@@ -1,0 +1,56 @@
+{
+  "questionId": "G-SHAPESPEC-018",
+  "learningObjective": "Contrast fully shape-specialized compilation with dynamic-shape compilation and identify the trade-offs each incurs.",
+  "canonicalClaims": [
+    {
+      "claim": "Shape specialization enables tile-size and constant-dependent optimizations that dynamic-shape emitters cannot exploit, but pays a compile-time and artifact-storage cost proportional to the number of specialized shapes; dynamic-shape emitters amortize one artifact over a shape range at some per-shape performance cost.",
+      "conditions": [
+        "The compiler supports both modes and can bucket if desired.",
+        "The workload's shape distribution is characterized (single hot shape vs. many rare shapes)."
+      ],
+      "nonImplications": [
+        "Does not imply one mode is universally superior; hybrid bucket-and-specialize strategies exist.",
+        "Does not imply dynamic shapes affect correctness — they are semantics-preserving."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Dynamic shape compilation" },
+        { "ref": "DOC:tvm-relax", "locator": "Relax symbolic shape and dispatch" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Full shape specialization is strictly faster at runtime than dynamic-shape compilation for any workload.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Rare / single-use shapes make specialization a net loss when compile time is included in the latency budget.",
+      "sourceOrEvidence": "TorchInductor guard/recompile literature"
+    },
+    {
+      "claim": "Dynamic-shape compilation produces incorrect results for shape-dependent numerics like broadcasts.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Dynamic-shape compilation tracks broadcasts symbolically and preserves semantics; correctness does not depend on compile-time shape knowledge.",
+      "sourceOrEvidence": "TorchInductor / TVM Relax symbolic shape docs"
+    },
+    {
+      "claim": "Bucketing shapes into a small number of specialized artifacts is impossible because every bucket boundary must be a compile-time constant.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Bucket boundaries are chosen at compile time; runtime shapes are dispatched to the nearest bucket-specialized artifact.",
+      "sourceOrEvidence": "Production LLM serving stacks (vLLM prefill length bucketing)"
+    },
+    {
+      "claim": "Dynamic-shape compilation emits one kernel that handles all shapes at zero runtime cost.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Dynamic-shape kernels typically pay for runtime tail handling, guard checks, and slightly less aggressive tile-size choices.",
+      "sourceOrEvidence": "TorchInductor benchmark reports"
+    }
+  ],
+  "implementationFacts": [
+    "TorchInductor's `dynamic=True` mode uses symbolic integer sizes and inserts runtime guards.",
+    "TVM Relax supports symbolic tensor shapes with runtime dispatch.",
+    "Production LLM systems commonly bucket batch and sequence lengths into a small set of specialized kernels."
+  ],
+  "performanceScenarios": [
+    "A single hot shape sees specialization win by 5-20%; a broad shape distribution sees dynamic-shape or bucketing win overall due to amortized compile cost."
+  ],
+  "versionSensitivity": "stable_principle"
+}

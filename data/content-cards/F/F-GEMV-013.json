@@ -1,0 +1,52 @@
+{
+  "questionId": "F-GEMV-013",
+  "learningObjective": "Analyze GEMV as memory-bound; understand coalescing in the one-warp-per-row layout.",
+  "canonicalClaims": [
+    {
+      "claim": "FP32 GEMV has arithmetic intensity ~0.25 FLOPs/byte (one FMA per FP32 load from A, amortized load from x); on Ampere and later, this is far below the compute:bandwidth balance, making GEMV memory-bound. In a one-warp-per-row layout, consecutive lanes read consecutive elements of the row, giving coalesced global-memory access.",
+      "conditions": ["FP32 without Tensor Core use; row-major A; warp iterates K in strides of 32."],
+      "nonImplications": [
+        "Does not imply this is the fastest GEMV variant.",
+        "Does not imply x's redundant loads are always a bottleneck."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "GEMV chapter" },
+        { "ref": "DOC:cuda-best", "locator": "Coalescing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GEMV is compute-bound at large K.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Arithmetic intensity is O(1) FLOPs/byte regardless of K; compute:bandwidth ratio determines the bottleneck.",
+      "sourceOrEvidence": "Roofline analysis"
+    },
+    {
+      "claim": "One-warp-per-row A access is stride-32 and non-coalesced.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Within one iteration of the loop, lanes 0..31 read A[row*K + 0..31] — stride 1 across the warp.",
+      "sourceOrEvidence": "CUDA coalescing rules"
+    },
+    {
+      "claim": "The redundant x reads cause shared-memory bank conflicts.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No SMEM is used in this kernel; bank conflicts do not apply.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "GEMV cannot benefit from Tensor Cores.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Modern kernels use MMA/TC for tall-skinny GEMMs including GEMV variants (with careful shape handling).",
+      "sourceOrEvidence": "cuBLAS release notes"
+    }
+  ],
+  "implementationFacts": [
+    "L2-cache-friendly: x reused across rows.",
+    "Alternative: block-parallel over K with cross-block reduction via atomic or two-stage kernels."
+  ],
+  "performanceScenarios": [
+    "For very small K, GEMV can be launch-overhead-bound; for very large K, memory bandwidth from A dominates."
+  ],
+  "versionSensitivity": "stable_principle"
+}

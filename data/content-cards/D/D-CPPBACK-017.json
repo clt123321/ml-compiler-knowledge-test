@@ -1,0 +1,56 @@
+{
+  "questionId": "D-CPPBACK-017",
+  "learningObjective": "Identify true statements about TorchInductor's CPU C++ backend and how it differs from the CUDA Triton backend.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchInductor targets a CPU backend that generates C++ code with OpenMP parallel loops and CPU vector intrinsics, compiled via a system compiler; the graph-level IR and Inductor lowerings are shared with the CUDA Triton backend, which diverges at codegen. Backend selection follows the device of the input tensors.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 defaults.",
+        "The user has not forced a backend override."
+      ],
+      "nonImplications": [
+        "Does not imply the C++ backend beats vendor CPU libraries (oneDNN, MKL) on every op.",
+        "Does not imply identical op coverage between CPU and CUDA backends."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "CPU C++ backend" },
+        { "ref": "PAPER:pytorch2", "locator": "Inductor codegen for CPU/GPU" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Inductor offloads reductions from CPU to CUDA transparently.",
+      "errorType": "scope_error",
+      "whyWrong": "Device dispatch is respected; Inductor does not silently cross devices.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "The CPU backend uses Triton to generate code.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Triton targets NVIDIA (and now AMD) GPUs; the CPU backend emits C++.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Backend selection is manual only.",
+      "errorType": "scope_error",
+      "whyWrong": "Backend follows the input tensor device by default.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "CPU and CUDA backends have entirely separate IRs and lowerings.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They share Inductor's graph-level IR and lowerings; codegen is where they diverge.",
+      "sourceOrEvidence": "Inductor docs"
+    }
+  ],
+  "implementationFacts": [
+    "C++ backend uses OpenMP for parallel loops",
+    "Vector intrinsics: AVX2 / AVX-512 / NEON depending on target",
+    "System compiler (typically g++/clang) builds a shared library that Python loads"
+  ],
+  "performanceScenarios": [
+    "Compiled CPU code can outperform eager op-dispatch overhead on many small ops; vendor libraries still win on some kernels."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

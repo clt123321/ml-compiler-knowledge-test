@@ -1,0 +1,49 @@
+{
+  "questionId": "A-PARA-024",
+  "learningObjective": "Distinguish instruction-level, data-level and thread-level parallelism, and identify architectural mechanisms exposing each form.",
+  "canonicalClaims": [
+    {
+      "claim": "ILP, DLP and TLP are three orthogonal forms of parallelism that modern systems combine: ILP within a core's pipeline, DLP within SIMD lanes / SIMT warps, and TLP across cores or independent thread streams.",
+      "conditions": [
+        "Comparison across general-purpose parallel architectures (CPUs and GPUs)."
+      ],
+      "nonImplications": [
+        "Does not imply the three are mutually exclusive.",
+        "Does not imply exploiting one always benefits another; there are tradeoffs (e.g., larger issue windows may cost area for wider SIMD)."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 3-4 parallelism taxonomy" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A program exhibits only one form of parallelism at a time; the architecture must choose which to exploit.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Modern GPUs combine DLP (SIMT), TLP (many warps), and ILP (per-thread pipeline) simultaneously.",
+      "sourceOrEvidence": "PMPP4 introduction"
+    },
+    {
+      "claim": "SIMT is a form of TLP because each lane has its own thread ID.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SIMT is primarily a DLP mechanism (same instruction across lanes); TLP within a GPU is expressed across warps and blocks.",
+      "sourceOrEvidence": "PMPP4 execution model"
+    },
+    {
+      "claim": "ILP is only relevant to CPUs, not GPUs.",
+      "errorType": "scope_error",
+      "whyWrong": "GPU threads execute pipelined instructions; per-thread ILP (independent instructions in the stream) still matters for MMA/scalar dispatch.",
+      "sourceOrEvidence": "HP6 ILP chapter and NVIDIA architecture whitepapers"
+    }
+  ],
+  "implementationFacts": [
+    "ILP mechanisms: OoO, register renaming, wide issue, pipelining.",
+    "DLP mechanisms: SIMD registers/instructions, SIMT warps.",
+    "TLP mechanisms: multi-core, SMT/hyperthreading, GPU warps/blocks."
+  ],
+  "performanceScenarios": [
+    "CPU BLAS kernels exploit SIMD (DLP) and multi-core (TLP) plus OoO (ILP) simultaneously.",
+    "GPU GEMM combines SIMT (DLP), warp-level pipelines (ILP), and many active warps (TLP for latency hiding)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

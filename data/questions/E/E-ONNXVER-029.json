@@ -1,0 +1,83 @@
+{
+  "id": "E-ONNXVER-029",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "ONNX / Versioning, IR version vs Opset version",
+  "learningObjective": "Distinguish ONNX's IR version (model format) from opset version (operator semantics).",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "ONNX",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement correctly distinguishes ONNX's IR version from its opset version?",
+  "options": [
+    {
+      "id": "A",
+      "text": "IR version and opset version are two names for the same field; both refer to the operator set used by the model."
+    },
+    {
+      "id": "B",
+      "text": "IR version defines the on-disk protobuf schema/structural features of ModelProto (e.g., which optional fields exist); opset version defines the semantics of individual operators (e.g., what attributes Conv accepts). The two evolve independently, and a model must declare both."
+    },
+    {
+      "id": "C",
+      "text": "IR version is used only during export; runtimes ignore it and only look at the opset when executing."
+    },
+    {
+      "id": "D",
+      "text": "Opset version is a subset of IR version: opset N is always the operator content of IR version N; both must be equal in every valid ONNX model."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "ONNX has two distinct versioning axes: (1) IR version — the ModelProto schema version, defining structural/format features (e.g., what fields exist, how initializers are stored); (2) Opset version(s) — the semantic version of each operator domain. A model declares its `ir_version` and one or more `opset_import` entries. These evolve independently: adding a new opset does not typically require a new IR version, and vice versa.",
+  "optionExplanations": {
+    "B": "Correct: IR version = format schema; opset version = operator semantics.",
+    "A": "Wrong: they are different fields with different roles.",
+    "C": "Wrong: IR version affects how the runtime parses the file.",
+    "D": "Wrong: they are not tied numerically."
+  },
+  "assumptions": [
+    "ONNX specification distinction between IR version and opset version."
+  ],
+  "nonImplications": [
+    "Does not imply a runtime supporting one high IR version supports all opsets.",
+    "Does not imply IR versions are backward-compatible without effort."
+  ],
+  "misconceptionTags": [
+    "ir_vs_opset_conflation"
+  ],
+  "distractorRationales": {
+    "A": "Conflates two separate versioning axes.",
+    "C": "Ignores IR version's role in parsing.",
+    "D": "Fabricates a numerical equality constraint."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:onnx",
+      "locator": "IR version / opset version distinction",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-ONNXVER-029.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

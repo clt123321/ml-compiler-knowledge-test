@@ -1,0 +1,63 @@
+{
+  "id": "A-RIDGE-007",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Ridge point / precision-dependent Roofline",
+  "learningObjective": "Compute a GPU's Roofline ridge point from published peak throughput and memory bandwidth, and reason about how the ridge shifts across precisions.",
+  "archetype": "formula_performance",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Hopper (sm_90, H100 SXM5)",
+    "device": "GPU",
+    "requiredFeatures": ["HBM3", "Tensor Cores FP16", "Tensor Cores FP8"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "H100 SXM5 published peaks (dense, non-sparse): FP16 Tensor Core ≈ 989 TFLOP/s, FP8 Tensor Core ≈ 1979 TFLOP/s, HBM3 bandwidth ≈ 3.35 TB/s. Which statement about ridge points on this GPU is correct?",
+  "options": [
+    { "id": "A", "text": "FP16 ridge ≈ 295 FLOP/byte; FP8 ridge ≈ 590 FLOP/byte; halving the operand precision doubles the ridge point (bytes per operand halve while compute doubles)." },
+    { "id": "B", "text": "FP16 ridge ≈ 295 FLOP/byte; FP8 ridge ≈ 590 FLOP/byte; lowering precision reduces the compute peak and hence the ridge point." },
+    { "id": "C", "text": "Both ridges collapse to the same value because ridge point is a hardware invariant defined by HBM alone, independent of the math throughput reported for a specific precision." },
+    { "id": "D", "text": "FP8 ridge ≈ 148 FLOP/byte, half of FP16's, because FP8 operands only need 1 byte and thus each byte can serve twice as many FLOPs at the same bandwidth." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Ridge point = peak compute / peak memory bandwidth. FP16: 989e12 / 3.35e12 ≈ 295 FLOP/byte. FP8: 1979e12 / 3.35e12 ≈ 590 FLOP/byte. As you move from FP16 to FP8, peak compute typically doubles (more MMA per cycle) while HBM bandwidth is unchanged, so the ridge point roughly doubles. This is why lower-precision kernels demand higher arithmetic intensity to stay compute-bound.",
+  "optionExplanations": {
+    "A": "Correct: ridges computed as compute/BW; FP8 ridge is approximately 2× the FP16 ridge because FP8 peak is ~2× FP16 peak while BW is unchanged.",
+    "B": "Wrong: the FP8 ridge point value is right but the causal claim is inverted; lowering precision raises the peak (in TFLOP/s counted) and thereby raises the ridge.",
+    "C": "Wrong: ridge point depends on the compute peak, which is a function of the precision path used.",
+    "D": "Wrong: reasoning confuses operand byte width with the compute peak. Ridge point is FLOP-per-byte-of-HBM-traffic; the operand byte width affects AI (op-side numerator/denominator), not the hardware ridge."
+  },
+  "assumptions": [
+    "Dense (non-sparse) Tensor Core peaks are used.",
+    "HBM3 bandwidth is the memory-side reference for ridge, not L2 or SMEM."
+  ],
+  "nonImplications": [
+    "Does not imply an FP8 kernel is faster than an FP16 kernel on any given workload; achievable throughput depends on AI, tile size, kernel implementation and whether the ops are supported natively.",
+    "Does not imply that lowering to FP4 continues to double the ridge; hardware support and effective FLOP counting rules govern real ridges."
+  ],
+  "misconceptionTags": ["ridge_precision_direction", "operand_byte_vs_ridge"],
+  "distractorRationales": {
+    "B": "Reverses the direction of change with precision.",
+    "C": "Treats ridge as HBM-only invariant.",
+    "D": "Conflates numerator/denominator sides of the Roofline plot."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:pmpp4", "locator": "Roofline model, ridge point definition", "supports": ["A"] },
+    { "ref": "DOC:cuda-guide", "locator": "Compute Capability 9.0 tables; Tensor Core throughput per precision", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "H100 SXM5, published peak FP16/FP8 Tensor Core and HBM3 bandwidth",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-RIDGE-007.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,62 @@
+{
+  "id": "A-WARP-012",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Warp / Block / Grid semantics",
+  "learningObjective": "Explain the semantics of warps, blocks and grids in CUDA and the resources they share.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": ["compute capability 8.0", "warp size 32"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement correctly describes the relationship among threads, warps, blocks and grids on NVIDIA GPUs (compute capability 8.0)?",
+  "options": [
+    { "id": "A", "text": "A warp is a group of 32 threads that share a warp scheduler and are always drawn from the same block; a block is assigned to a single SM and its threads share shared memory and __syncthreads() barrier; a grid spans many blocks that may run on different SMs and cannot rely on cross-block barriers without cooperative-groups grid sync." },
+    { "id": "B", "text": "A warp of 32 threads is scheduled independently and may be composed of threads from different thread blocks to improve occupancy when a single block cannot fill an SM." },
+    { "id": "C", "text": "All blocks in a grid share a single shared-memory bank because shared memory is L1-cached across SMs, providing a form of grid-level synchronization." },
+    { "id": "D", "text": "Grid-level synchronization is implicit at every kernel launch boundary; __syncthreads() therefore synchronizes all threads across the entire grid." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "A: The CUDA execution model defines a warp as 32 threads from a single block, scheduled together on one SM warp scheduler. A block is assigned to exactly one SM; block-scope shared memory and __syncthreads() operate within that block. Cross-block synchronization within a grid requires cooperative groups (grid.sync()) with grid-launch support. B is false — warps are not composed across blocks. C is false — shared memory is per-SM and per-block; there is no cross-SM shared bank. D is false — __syncthreads() is a block-scope barrier, not grid-scope.",
+  "optionExplanations": {
+    "A": "Correct: warps are within a block, blocks run on one SM, grid spans SMs, cross-block sync needs cooperative groups.",
+    "B": "Wrong: a warp cannot mix threads from different blocks.",
+    "C": "Wrong: shared memory is per-block; there is no cross-SM shared-memory bank.",
+    "D": "Wrong: __syncthreads() is block-scope; grid-level barriers require grid.sync() with cooperative launch."
+  },
+  "assumptions": [
+    "NVIDIA Ampere or later; warp size 32.",
+    "Standard (non-cooperative) kernel launch semantics for the __syncthreads() claim."
+  ],
+  "nonImplications": [
+    "Does not imply blocks are always resident concurrently on an SM; some blocks queue and become resident as prior ones finish.",
+    "Does not imply cooperative launch is always possible — it requires all blocks to fit resident on the GPU simultaneously."
+  ],
+  "misconceptionTags": ["warp_cross_block", "grid_sync_confusion"],
+  "distractorRationales": {
+    "B": "Confuses warp composition rules.",
+    "C": "Confuses per-block shared memory with global L2/L1 caches.",
+    "D": "Confuses block-scope __syncthreads() with grid-scope synchronization."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Programming model chapter: thread hierarchy, warps, blocks, grids", "supports": ["A"] },
+    { "ref": "BOOK:pmpp4", "locator": "Ch. 3-4, CUDA execution model", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-WARP-012.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,63 @@
+{
+  "id": "H-ACCUM-008",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "Accumulation precision / Small-magnitude loss",
+  "learningObjective": "Explain the swamping / small-magnitude-loss phenomenon in low-precision accumulation and identify the standard mitigations.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic FP16 accumulator",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "codeSnippet": "// Naive FP16 reduction over a large tensor\nhalf sum = 0.0;\nfor (int i = 0; i < N; ++i) {\n    sum += x[i];             // FP16 add\n}\n// Rewrite: block-parallel FP16 partial sums, final FP32 combine\nfloat sum32 = 0.0f;\nfor (int b = 0; b < N; b += BLOCK) {\n    float partial = 0.0f;    // FP32 partial\n    for (int i = b; i < min(b+BLOCK, N); ++i)\n        partial += (float)x[i];\n    sum32 += partial;\n}",
+  "stem": "The naive FP16 reduction can lose small-magnitude terms after the running sum grows large. Which explanation of the phenomenon and the rewrite is CORRECT?",
+  "options": [
+    { "id": "A", "text": "Once the FP16 sum exceeds ~2^k, values with magnitude below ~2^(k-11) round to zero when added, because FP16's 10-bit mantissa cannot distinguish them; this is 'swamping'. The rewrite fixes it by accumulating small partial sums in FP32 and combining them at the end — most additions happen when the running total is still small." },
+    { "id": "B", "text": "The naive loop is fine; both implementations produce identical results because FP16 addition is associative." },
+    { "id": "C", "text": "The rewrite is a bug: converting `x[i]` to float changes the mathematical result of the reduction, so it should be avoided in numerical code." },
+    { "id": "D", "text": "The issue is overflow (INF), not swamping; the rewrite's FP32 partial sums prevent overflow but not precision loss." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "This is the classical swamping / small-magnitude-lost-to-large-running-sum problem. FP16 has 11 bits of precision (including implicit leading 1); once the running sum reaches magnitude 2^k, additions of magnitude < 2^(k-11) round to zero. Block-parallel FP32 combining reduces the running sum in each partial, keeping most additions numerically visible. Option B claims associativity, which FP addition does not have. Option C confuses precision-preserving upcast with a semantic bug. Option D confuses swamping with overflow — the reduction may not overflow but still lose precision.",
+  "optionExplanations": {
+    "A": "Correct: standard analysis of swamping and its block-partial mitigation.",
+    "B": "Wrong: FP addition is not associative.",
+    "C": "Wrong: upcasting to FP32 is a precision-preserving refinement, not a bug.",
+    "D": "Wrong: swamping is a precision issue that can occur without overflow."
+  },
+  "assumptions": [
+    "N is large enough for the running sum to grow past the mantissa's precision threshold.",
+    "Input distribution has some small-magnitude entries."
+  ],
+  "nonImplications": [
+    "Does not imply block partials always match a reference FP32 reduction; different block sizes yield different (but generally better) results.",
+    "Does not imply Kahan summation is unnecessary — it can further reduce accumulated error."
+  ],
+  "misconceptionTags": ["fp_associativity", "swamping_confused_with_overflow"],
+  "distractorRationales": {
+    "B": "Denies FP non-associativity.",
+    "C": "Confuses valid precision refinement with a bug.",
+    "D": "Confuses precision loss with overflow."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:sze-eff", "locator": "Reduced-precision accumulation and swamping", "supports": ["A"] },
+    { "ref": "BOOK:pmpp4", "locator": "Reduction with FP32 partial sums", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-ACCUM-008.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

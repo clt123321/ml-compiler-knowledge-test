@@ -1,0 +1,93 @@
+{
+  "id": "E-XLASPMD-023",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "XLA SPMD / GSPMD — sharding annotations and automatic parallelization",
+  "learningObjective": "Understand the basic idea of XLA SPMD partitioning and how sharding annotations drive automatic parallelization.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "multi-device (TPU / GPU cluster)",
+    "device": "generic",
+    "requiredFeatures": [
+      "multi-device execution"
+    ]
+  },
+  "softwareContext": {
+    "compiler": "XLA GSPMD",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about XLA SPMD partitioning (GSPMD) is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "GSPMD replaces the single HLO program with N distinct per-device programs (one per device); each program is compiled and shipped independently, and there is no shared HLO representation after partitioning."
+    },
+    {
+      "id": "B",
+      "text": "GSPMD takes an HLO program annotated with sharding specifications (e.g., `sharding={devices=[4,1] ...}` on some tensors) and rewrites it into a per-device program that runs the same computation on each device, inserting collective communication (all-reduce/all-gather/reshard) where required to preserve semantics."
+    },
+    {
+      "id": "C",
+      "text": "GSPMD partitions only the model parameters; activations are always fully replicated across devices, so it does not require any collective communication for forward or backward passes."
+    },
+    {
+      "id": "D",
+      "text": "GSPMD is a runtime-only system; sharding annotations are ignored by the compiler and interpreted by the XLA runtime scheduler, which decides sharding decisions per step based on load."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "GSPMD (General and Scalable Parallelization for ML Computation Graphs) is XLA's SPMD partitioning. Users (or the frontend) annotate tensors with sharding specs (which mesh axes each tensor axis is split over); the compiler emits a single per-device HLO program (SPMD: same program, multiple data) with automatic insertion of collective communication where the sharding of an op's inputs and outputs doesn't match. This is a compile-time transformation, not a runtime dispatch.",
+  "optionExplanations": {
+    "B": "Correct: SPMD partitioning with automatic collective insertion.",
+    "A": "Wrong: SPMD produces one program run on all devices, not N distinct programs.",
+    "C": "Wrong: activations are commonly sharded; collectives are the whole point.",
+    "D": "Wrong: partitioning is compile-time."
+  },
+  "assumptions": [
+    "GSPMD as described in the XLA / OpenXLA project and Xu et al. 2021 paper."
+  ],
+  "nonImplications": [
+    "Does not imply GSPMD chooses shardings automatically; typical usage requires annotations.",
+    "Does not imply the resulting program is optimal; collective placement is a hard problem."
+  ],
+  "misconceptionTags": [
+    "mpmd_vs_spmd_confusion",
+    "spmd_as_runtime_myth"
+  ],
+  "distractorRationales": {
+    "A": "Confuses SPMD (single program) with MPMD (multiple programs).",
+    "C": "Wrong claim that activations never shard.",
+    "D": "Confuses compile-time with runtime."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "OpenXLA / XLA SPMD / GSPMD documentation",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "GSPMD paper (Xu et al., 2021) — SPMD partitioning + collectives",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-XLASPMD-023.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

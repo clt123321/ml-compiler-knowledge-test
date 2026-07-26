@@ -1,0 +1,49 @@
+{
+  "questionId": "F-WARP-028",
+  "learningObjective": "Reason about warp granularity: 32-thread SIMT execution unit with per-lane predication for divergence.",
+  "canonicalClaims": [
+    {
+      "claim": "On all NVIDIA CUDA GPUs, a warp is 32 threads (`warpSize == 32`), scheduled as one instruction issue unit; all 32 lanes execute the same instruction with per-lane predication handling divergence.",
+      "conditions": ["NVIDIA architecture as documented since Kepler."],
+      "nonImplications": [
+        "Does not imply divergence is always harmful; whole-warp branches are free.",
+        "Does not imply lockstep at every micro-op on Volta+ (Independent Thread Scheduling)."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Execution Model" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Warp size varies across NVIDIA generations.",
+      "errorType": "version_leak",
+      "whyWrong": "warpSize has always been 32 on NVIDIA CUDA GPUs.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Warps are a software-only abstraction with no hardware backing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Warp scheduler is a real hardware unit; warp primitives use real hardware ops.",
+      "sourceOrEvidence": "GPU architecture whitepapers"
+    },
+    {
+      "claim": "SIMT means threads in a warp execute one at a time, round-robin.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Threads execute in parallel per issued instruction.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Warp size is 64 on AMD, so NVIDIA is likely to move to 64.",
+      "errorType": "overgeneralization",
+      "whyWrong": "AMD's wavefront is 64 or 32 depending on gen; NVIDIA has kept warp=32 across generations.",
+      "sourceOrEvidence": "GPU vendor docs"
+    }
+  ],
+  "implementationFacts": [
+    "Volta+ Independent Thread Scheduling allows divergent lanes to maintain independent program counters.",
+    "Modern SMs have 4 warp schedulers each issuing one warp instruction per cycle."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

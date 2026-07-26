@@ -1,0 +1,89 @@
+{
+  "id": "F-BARRIER-033",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Synchronization — __syncthreads vs __syncwarp",
+  "learningObjective": "Distinguish __syncthreads and __syncwarp semantics and identify when each is appropriate.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Volta (sm_70) or newer for ITS semantics",
+    "device": "GPU",
+    "requiredFeatures": [
+      "cooperative_groups; __syncthreads; __syncwarp"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "compilerVersionScope": "CUDA 11+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about `__syncthreads()` and `__syncwarp()` in CUDA is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "`__syncthreads()` synchronizes only the warp of the calling thread; `__syncwarp()` synchronizes the entire block."
+    },
+    {
+      "id": "B",
+      "text": "`__syncthreads()` and `__syncwarp()` are the same operation with different names for portability; the compiler treats them identically."
+    },
+    {
+      "id": "C",
+      "text": "`__syncthreads()` is a block-wide barrier synchronizing all threads in a thread block; `__syncwarp(mask)` synchronizes only the specified lanes within a warp. On Volta+ (with Independent Thread Scheduling), explicit `__syncwarp` is often required between warp-shuffle operations that used to be implicitly convergent."
+    },
+    {
+      "id": "D",
+      "text": "Neither `__syncthreads()` nor `__syncwarp()` is required on Volta+, because Independent Thread Scheduling automatically ensures memory visibility and lane convergence at every instruction boundary."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "`__syncthreads()`: block-wide barrier + memory-fence for the block; all threads must reach the same call. `__syncwarp(mask)`: warp-scope barrier restricted to lanes in `mask` (default 0xffffffff = all lanes). Volta+ Independent Thread Scheduling allows lanes within a warp to advance their program counters independently, breaking pre-Volta implicit-convergence assumptions; therefore, warp-level primitives (`__shfl_*`, `__ballot_sync`, etc.) must use the `_sync` variants and often need explicit `__syncwarp()` between them to guarantee convergence.",
+  "optionExplanations": {
+    "C": "Correct: block-wide vs warp-scope; Volta+ requires explicit warp sync.",
+    "B": "Wrong: distinct primitives with different scopes.",
+    "A": "Wrong: scopes are swapped.",
+    "D": "Wrong: ITS does not eliminate the need for synchronization."
+  },
+  "assumptions": [
+    "CUDA 11+ toolchain and Volta+ or newer target."
+  ],
+  "nonImplications": [
+    "Does not imply all warp-shuffle operations require `__syncwarp` in every case.",
+    "Does not imply `__syncthreads()` guarantees any inter-block synchronization; it is strictly per-block."
+  ],
+  "misconceptionTags": [
+    "barrier_scope_swap",
+    "its_removes_sync_myth"
+  ],
+  "distractorRationales": {
+    "B": "Wrong claim of identical semantics.",
+    "A": "Swaps scopes.",
+    "D": "Denies the need for explicit sync."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Synchronization Functions; Independent Thread Scheduling notes",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-BARRIER-033.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

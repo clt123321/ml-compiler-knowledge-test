@@ -1,0 +1,56 @@
+{
+  "questionId": "A-SIMT-011",
+  "learningObjective": "Contrast CPU SIMD lane execution with GPU SIMT warp execution, identifying differences in divergence handling, thread identity and programming model.",
+  "canonicalClaims": [
+    {
+      "claim": "SIMT (NVIDIA GPUs) exposes lane-level threads with independent logical state and manages branch divergence in hardware, while SIMD (CPU vector ISAs like AVX-512) exposes lanes as packed vector operands manipulated by explicit instructions and typically requires software-generated predication/masking for divergent control.",
+      "conditions": [
+        "GPU baseline is Volta+ (independent thread scheduling).",
+        "CPU baseline is a wide-vector ISA such as AVX-512."
+      ],
+      "nonImplications": [
+        "Does not imply that SIMT eliminates divergence overhead; taken/not-taken paths still serialize.",
+        "Does not imply CPU SIMD lacks masking support; modern ISAs have mask registers."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 4 DLP" },
+        { "ref": "BOOK:pmpp4", "locator": "Ch. 3-4 CUDA model" },
+        { "ref": "DOC:cuda-guide", "locator": "Independent thread scheduling section" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "SIMT and SIMD are identical models under different names.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They differ in programming abstraction (threads vs lanes), divergence handling (hardware vs software), and thread-identity semantics.",
+      "sourceOrEvidence": "PMPP4 introduction"
+    },
+    {
+      "claim": "SIMT wastes silicon area vs SIMD by a fixed ~30%.",
+      "errorType": "overgeneralization",
+      "whyWrong": "No such universal figure exists; efficiency comparisons depend on workload, precision, memory system and target ISA.",
+      "sourceOrEvidence": "HP6 Ch. 4"
+    },
+    {
+      "claim": "SIMD ISAs cannot handle divergent branches at all.",
+      "errorType": "scope_error",
+      "whyWrong": "Predication and mask-registers are standard tools in modern SIMD ISAs; the difference is that divergence handling is explicit rather than hardware-managed.",
+      "sourceOrEvidence": "Intel Intrinsics Guide, AVX-512 masks"
+    },
+    {
+      "claim": "Post-Volta warps behave lockstep with a single shared PC.",
+      "errorType": "version_leak",
+      "whyWrong": "Since Volta, threads within a warp have independent PCs and support reconvergence; the pre-Volta lockstep model is outdated for correctness reasoning.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, Volta independent thread scheduling"
+    }
+  ],
+  "implementationFacts": [
+    "Warp size on NVIDIA GPUs = 32; warp threads share a scheduler but have independent state.",
+    "AVX-512 exposes 8 mask registers (k0..k7) for lane predication."
+  ],
+  "performanceScenarios": [
+    "Kernels with unpredictable data-dependent branches see divergence costs on GPUs and must vectorize carefully on CPUs; both models converge in cost when divergence is high."
+  ],
+  "versionSensitivity": "stable_principle"
+}

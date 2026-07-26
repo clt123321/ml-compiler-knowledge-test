@@ -1,0 +1,60 @@
+{
+  "id": "B-SOUND-020",
+  "type": "multiple",
+  "module": "compiler_basics",
+  "subtopic": "Soundness of static analysis",
+  "learningObjective": "Distinguish sound and precise analyses and identify the direction of over-/under-approximation.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about soundness and precision in static compiler analyses are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "A sound analysis over-approximates behavior for compiler optimizations: it never claims 'safe to transform' unless the transformation is truly safe. Its errors are conservative — foregoing legal optimizations, not enabling illegal ones." },
+    { "id": "B", "text": "A sound analysis in a bug-finding context can be an under-approximation: it may miss some bugs (false negatives) but reports only true bugs (no false positives). The direction of soundness depends on the analysis's intent." },
+    { "id": "C", "text": "Precision measures how close the analysis result is to the ideal answer; a maximally precise analysis is not always tractable, so most analyses trade precision for scalability." },
+    { "id": "D", "text": "Soundness and precision are equivalent: a sound analysis is always precise, and vice versa." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A: For compiler optimizations, sound = over-approximation of possible behaviors (may-analysis); this ensures no illegal optimizations. B: In bug-finding, soundness typically means no false positives (only true bugs reported); the direction depends on the intent. C: precision is orthogonal to soundness; scalability often forces trading precision. D is wrong: soundness and precision are distinct dimensions — a maximally conservative analysis (e.g., 'everything may alias') is sound but has zero precision.",
+  "optionExplanations": {
+    "A": "Correct: sound = over-approximation for optimization contexts.",
+    "B": "Correct: soundness direction depends on intent (optimization vs bug-finding).",
+    "C": "Correct: precision is a scalability-precision tradeoff.",
+    "D": "Wrong: soundness and precision are orthogonal dimensions."
+  },
+  "assumptions": [
+    "Standard abstract-interpretation framing (Cousot & Cousot lattices)."
+  ],
+  "nonImplications": [
+    "Does not imply that unsound analyses are useless; unsound bug-finders (e.g., some heuristic linters) are common and valuable in practice.",
+    "Does not imply that soundness comes for free; proving soundness of complex analyses is nontrivial."
+  ],
+  "misconceptionTags": ["sound_precise_conflation", "soundness_direction_confusion"],
+  "distractorRationales": {
+    "D": "Conflates orthogonal properties."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:eac3", "locator": "Dataflow soundness discussion", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:appel", "locator": "Static analysis chapters", "supports": ["A", "B", "C"] },
+    { "ref": "BOOK:dragon2", "locator": "Formal aspects of dataflow analysis", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-SOUND-020.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

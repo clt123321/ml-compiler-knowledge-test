@@ -1,0 +1,60 @@
+{
+  "id": "G-FUSION-001",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Operator fusion / Vertical vs. horizontal vs. epilogue",
+  "learningObjective": "Distinguish vertical (producer-consumer) fusion, horizontal fusion, and epilogue fusion by their data-flow patterns.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "In deep-learning compilers, three commonly discussed fusion patterns are 'vertical', 'horizontal', and 'epilogue' fusion. Which description matches all three correctly?",
+  "options": [
+    { "id": "A", "text": "Vertical fusion merges a producer with its consumer along the data-flow edge; horizontal fusion merges independent operators that share the same input or launch dimensions; epilogue fusion attaches a lightweight elementwise op onto the tail of a heavy compute op such as GEMM." },
+    { "id": "B", "text": "Vertical fusion means merging operators executed on different devices; horizontal fusion means merging operators of the same type across the batch dimension; epilogue fusion means merging the backward pass into the forward pass." },
+    { "id": "C", "text": "All three refer to launching multiple CUDA kernels concurrently on separate streams; the names only differ by which kernel finishes first in the timeline." },
+    { "id": "D", "text": "Vertical fusion is loop-level fusion of nested loops; horizontal fusion is basic-block CSE within a single operator; epilogue fusion is compile-time constant folding of the final output." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Vertical (producer-consumer) fusion combines an op with its data-flow consumer so the intermediate tensor is kept in registers/shared memory instead of DRAM. Horizontal fusion combines independent ops sharing a launch dimension (e.g., three sibling elementwise ops on the same tensor) into one kernel to amortize launch overhead. Epilogue fusion fuses a small pointwise op (bias-add, activation, scaling) into the tail of a compute-heavy op like GEMM/Conv, reusing the accumulator without an extra DRAM round-trip.",
+  "optionExplanations": {
+    "A": "Correct: matches the standard definitions used across TVM, TorchInductor, XLA, and cuBLAS epilogues.",
+    "B": "Wrong: cross-device merge is not fusion; forward-backward merging is not epilogue fusion.",
+    "C": "Wrong: concurrent-stream launching is not fusion at all — fusion is a single-kernel construction.",
+    "D": "Wrong: conflates fusion with unrelated optimizations (CSE, constant folding, loop nesting)."
+  },
+  "assumptions": [
+    "The three names are used in their standard compiler-community sense."
+  ],
+  "nonImplications": [
+    "Does not imply any of the three fusion kinds is always beneficial; each has legality and performance preconditions."
+  ],
+  "misconceptionTags": ["fusion_name_confusion"],
+  "distractorRationales": {
+    "B": "Confuses fusion with placement / autograd concepts.",
+    "C": "Confuses fusion with concurrent streams.",
+    "D": "Confuses fusion with CSE / constant folding."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-inductor", "locator": "Fusion overview; pointwise + template epilogue", "supports": ["A"] },
+    { "ref": "PAPER:tvm", "locator": "Operator fusion patterns (Section 3)", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/G/G-FUSION-001.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

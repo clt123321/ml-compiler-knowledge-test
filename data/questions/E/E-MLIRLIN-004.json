@@ -1,0 +1,92 @@
+{
+  "id": "E-MLIRLIN-004",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "MLIR / Linalg Dialect, generic ops, iterator types",
+  "learningObjective": "Read a `linalg.generic` op and identify which iterator types encode parallel vs reduction dimensions, and how indexing maps drive the semantics.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider the following `linalg.generic` op operating on `%A: tensor<MxKxf32>`, `%B: tensor<KxNxf32>`, `%C: tensor<MxNxf32>`. Which statement describes what this op computes?",
+  "irSnippet": "#map0 = affine_map<(m, n, k) -> (m, k)>\n#map1 = affine_map<(m, n, k) -> (k, n)>\n#map2 = affine_map<(m, n, k) -> (m, n)>\nlinalg.generic {\n  indexing_maps = [#map0, #map1, #map2],\n  iterator_types = [\"parallel\", \"parallel\", \"reduction\"]\n} ins(%A, %B : tensor<MxKxf32>, tensor<KxNxf32>)\n  outs(%C : tensor<MxNxf32>) {\n^bb0(%a: f32, %b: f32, %c: f32):\n  %0 = arith.mulf %a, %b : f32\n  %1 = arith.addf %c, %0 : f32\n  linalg.yield %1 : f32\n} -> tensor<MxNxf32>",
+  "options": [
+    {
+      "id": "A",
+      "text": "It computes a batched matmul across three parallel dimensions `(m, n, k)`, producing a rank-3 result tensor of shape `M x N x K` — because all iterators feed the output through the `linalg.yield`."
+    },
+    {
+      "id": "B",
+      "text": "It computes `C[m,n] = A[m,k] * B[k,n]` for a single arbitrary `k` chosen at runtime because there is no explicit `linalg.reduce` marker inside the region body."
+    },
+    {
+      "id": "C",
+      "text": "It computes elementwise `C[m,n] = A[m,n] * B[m,n] + C[m,n]`; the indexing maps are ignored by `linalg.generic` and only the region body determines the operation."
+    },
+    {
+      "id": "D",
+      "text": "It computes `C[m,n] += A[m,k] * B[k,n]` — a standard matrix multiplication with accumulation into `%C`. The `k` dimension is a reduction iterator, so contributions across `k` are summed; `m` and `n` are parallel iterators."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "`linalg.generic` semantics: for each point in the iteration space defined by `iterator_types`, apply the region body using operands and results indexed by the corresponding `indexing_maps`. Parallel iterators produce independent output entries; reduction iterators accumulate into the output using the body's yielded value written back through `outs`. Here iterators `(m, n, k)` with types `[parallel, parallel, reduction]` and maps for `A[m,k]`, `B[k,n]`, `C[m,n]` yield `C[m,n] += A[m,k]*B[k,n]` — exactly matmul with `C` initialized externally.",
+  "optionExplanations": {
+    "D": "Correct: standard `linalg.generic` matmul with reduction on `k`.",
+    "B": "Wrong: `reduction` iterators explicitly sum across all values, not sample one.",
+    "C": "Wrong: indexing maps are the core semantic driver and are honored.",
+    "A": "Wrong: the output shape is determined by `outs`, `tensor<MxNxf32>`, not by iteration space rank."
+  },
+  "assumptions": [
+    "Standard `linalg.generic` semantics as documented in MLIR Linalg dialect."
+  ],
+  "nonImplications": [
+    "Does not imply `linalg.generic` can only express matmul; it is a very general form for perfectly nested affine loops with reductions.",
+    "Does not imply reduction ordering is fixed; the dialect specifies commutative/associative reduction semantics for `linalg.generic`."
+  ],
+  "misconceptionTags": [
+    "reduction_iterator_confusion",
+    "indexing_map_ignored_myth"
+  ],
+  "distractorRationales": {
+    "B": "Confuses reduction with random sampling.",
+    "C": "Wrongly claims indexing maps are ignored.",
+    "A": "Confuses iteration-space rank with output-shape rank."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Linalg dialect — generic op semantics",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "MLIR paper on Linalg dialect design",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-MLIRLIN-004.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

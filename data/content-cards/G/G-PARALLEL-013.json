@@ -1,0 +1,54 @@
+{
+  "questionId": "G-PARALLEL-013",
+  "learningObjective": "Enumerate the dependence conditions under which a loop can be parallelized across iterations.",
+  "canonicalClaims": [
+    {
+      "claim": "A loop is legally parallelizable across iterations when there are no cross-iteration output (WAW), true (RAW), or anti (WAR) dependences, or when such dependences are captured by an associative reduction clause with an appropriate combiner.",
+      "conditions": [
+        "Statements are free of side effects outside of the reduction targets.",
+        "Reductions, if present, use an associative operator (or an explicit reduction clause)."
+      ],
+      "nonImplications": [
+        "Does not imply parallelization yields speedup; trip count, work per iteration, and hardware parallelism all matter.",
+        "Does not imply FP-associativity concerns can be ignored in numerically sensitive code."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Parallelization legality; dependence graphs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any conditional inside the loop body makes parallelization illegal.",
+      "errorType": "wrong_condition",
+      "whyWrong": "SIMT and multi-threaded parallelization handle conditionals via masking or thread-local branches; divergence is a performance issue, not a legality one.",
+      "sourceOrEvidence": "OpenMP specification; CUDA warp-divergence chapter"
+    },
+    {
+      "claim": "Parallelization requires a compile-time-known trip count.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Runtime trip counts are routinely parallelized (OpenMP `parallel for`, CUDA grid over `ceil(N/BLOCK)`).",
+      "sourceOrEvidence": "OpenMP / CUDA runtime documentation"
+    },
+    {
+      "claim": "A reduction inside the loop always blocks parallelization because it creates a WAW dependence on the accumulator.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Reductions are parallelizable via associative combiners and per-thread partial accumulators.",
+      "sourceOrEvidence": "OpenMP `reduction` clause"
+    },
+    {
+      "claim": "A cross-iteration write to distinct memory locations (`A[i]`) is a WAW dependence and blocks parallelization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Writing to `A[i]` (distinct per iteration) is not a WAW; WAW requires two iterations to write to the SAME location.",
+      "sourceOrEvidence": "Dependence analysis textbook"
+    }
+  ],
+  "implementationFacts": [
+    "OpenMP `#pragma omp parallel for reduction(+:s)` legalizes accumulator reductions.",
+    "CUDA blocks execute independently and rely on the compiler / programmer to enforce no cross-block dependences."
+  ],
+  "performanceScenarios": [
+    "A histogram loop `h[a[i]] += 1` cannot be parallelized as-is (WAW on random locations); it requires atomics or per-thread private histograms."
+  ],
+  "versionSensitivity": "stable_principle"
+}

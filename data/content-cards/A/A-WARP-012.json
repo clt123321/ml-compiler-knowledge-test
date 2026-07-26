@@ -1,0 +1,56 @@
+{
+  "questionId": "A-WARP-012",
+  "learningObjective": "Explain the semantics of warps, blocks and grids in CUDA and the resources they share.",
+  "canonicalClaims": [
+    {
+      "claim": "In CUDA, a warp is 32 threads from a single block scheduled together; a block is assigned to exactly one SM and its threads share shared memory and block-scope barriers; a grid may span many SMs and requires cooperative groups for cross-block synchronization.",
+      "conditions": [
+        "NVIDIA compute capability with warp size 32.",
+        "Standard kernel launch semantics (not cooperative)."
+      ],
+      "nonImplications": [
+        "Does not imply all blocks of a grid are resident concurrently.",
+        "Does not imply cooperative-groups grid sync is always available (requires cooperative launch and fitting all blocks in GPU)."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Thread hierarchy section" },
+        { "ref": "BOOK:pmpp4", "locator": "Execution model chapters" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Warps can be formed across blocks to fill an SM's occupancy.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Warps are formed from consecutive thread indices within a single block; the execution model does not mix blocks into warps.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Shared memory is grid-scope and can be used for cross-block synchronization.",
+      "errorType": "scope_error",
+      "whyWrong": "Shared memory is per-SM and per-block; cross-block communication uses global memory + atomics or cooperative groups.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, memory hierarchy"
+    },
+    {
+      "claim": "__syncthreads() synchronizes the entire grid.",
+      "errorType": "definition_confusion",
+      "whyWrong": "__syncthreads() is a block-scope barrier; grid-level barriers require cooperative groups' grid.sync().",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, cooperative groups"
+    },
+    {
+      "claim": "A block may migrate between SMs during execution to balance load.",
+      "errorType": "wrong_condition",
+      "whyWrong": "A block, once assigned to an SM, stays there until it completes; the runtime does not migrate active blocks.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "Warp size = 32.",
+    "Block runs on exactly one SM.",
+    "__syncthreads() is block-scope; grid.sync() (cooperative groups) is grid-scope."
+  ],
+  "performanceScenarios": [
+    "Reductions across the entire grid typically use two-kernel or cooperative-groups schemes because __syncthreads() cannot span blocks."
+  ],
+  "versionSensitivity": "stable_principle"
+}

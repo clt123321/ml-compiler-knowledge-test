@@ -1,0 +1,49 @@
+{
+  "questionId": "F-TEXTURE-035",
+  "learningObjective": "Understand the read-only / texture path for global-memory loads and its intended use.",
+  "canonicalClaims": [
+    {
+      "claim": "CUDA's read-only data path (accessed via `__ldg` or by loading through `const T* __restrict__`) routes loads through a cache optimized for read-only spatially-local access, reducing L1 pressure for weight/broadcast-like inputs; it is available on Kepler and later.",
+      "conditions": ["Kepler+ hardware; compiler can prove pointer is read-only or `__ldg` used explicitly."],
+      "nonImplications": [
+        "Does not imply the texture path is always faster than L1/L2.",
+        "Does not imply it replaces shared memory."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Read-Only Data Cache / __ldg" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Texture cache is faster than shared memory for any pattern.",
+      "errorType": "overgeneralization",
+      "whyWrong": "SMEM is a separate, generally faster on-chip memory with different use cases.",
+      "sourceOrEvidence": "CUDA best practices"
+    },
+    {
+      "claim": "__ldg is a host-side pre-copy API.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a device intrinsic issuing a single read-only load.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Using the read-only path causes stale reads because it bypasses coherence.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Within CUDA's memory model no coherence violation arises; write-then-read across kernels is properly ordered.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "The read-only path only works for texture-bound arrays.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`__ldg` operates on ordinary global pointers.",
+      "sourceOrEvidence": "CUDA guide"
+    }
+  ],
+  "implementationFacts": [
+    "`__ldg(ptr)` issues a `ld.global.nc` PTX instruction.",
+    "`const T* __restrict__` frequently triggers the same path implicitly."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

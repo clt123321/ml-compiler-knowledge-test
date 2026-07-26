@@ -1,0 +1,56 @@
+{
+  "questionId": "G-BUDGET-029",
+  "learningObjective": "Reason about the trade-off between compilation-time budget and end-to-end wall-clock savings across serving scenarios.",
+  "canonicalClaims": [
+    {
+      "claim": "The value of a longer tuning budget depends on the ratio of compilation cost to summed serving cost; heavily-served models amortize longer tuning easily, while short-lived experiments do not. Recompilation on shape or config changes is a hidden compile-budget line item.",
+      "conditions": [
+        "The serving workload's request count and lifetime are estimated.",
+        "Recompilation guards and their frequencies are known."
+      ],
+      "nonImplications": [
+        "Does not imply longer tuning always yields runtime speedup — cost-model plateaus and noise cap gains.",
+        "Does not imply short tuning is always sufficient."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "Tuning budget vs. speedup" },
+        { "ref": "DOC:torch-inductor", "locator": "Recompilation guards" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Tuning budget is orthogonal to serving latency; once the artifact is compiled, tuning does not affect performance.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Tuning selects the schedule that determines the compiled artifact's runtime; more tuning budget can find a faster schedule.",
+      "sourceOrEvidence": "AutoTVM / Ansor design"
+    },
+    {
+      "claim": "10× more tuning trials yield 10× runtime speedup.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Tuning curves show diminishing returns; late trials contribute much less than early ones.",
+      "sourceOrEvidence": "Ansor Section 6"
+    },
+    {
+      "claim": "Recompilation cost is negligible because it happens only once per program run.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Under `torch.compile` with shape variance, recompilation can happen many times per program run, one per unique shape combination.",
+      "sourceOrEvidence": "TorchInductor recompilation guard docs"
+    },
+    {
+      "claim": "For any serving workload, spending more compile time is always worthwhile.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For short-lived / one-off experiments, extra compile time dwarfs runtime savings.",
+      "sourceOrEvidence": "AutoTVM guidance"
+    }
+  ],
+  "implementationFacts": [
+    "TorchInductor exposes `TORCH_LOGS=+recompiles` to surface recompilation events.",
+    "MetaSchedule takes `num_trials_per_task` and `num_trials_total` knobs."
+  ],
+  "performanceScenarios": [
+    "Serving 10M requests/day: 4-hour extra tuning that saves 5 ms/request pays back within 1 day.",
+    "One-off experiment: 4-hour tuning saves 5 ms — net loss."
+  ],
+  "versionSensitivity": "stable_principle"
+}

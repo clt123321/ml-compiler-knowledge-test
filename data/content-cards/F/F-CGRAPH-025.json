@@ -1,0 +1,51 @@
+{
+  "questionId": "F-CGRAPH-025",
+  "learningObjective": "Understand CUDA Graph lifecycle: capture → instantiate → repeated launch; benefit is CPU-side overhead reduction.",
+  "canonicalClaims": [
+    {
+      "claim": "A CUDA Graph captures a DAG of GPU ops that is instantiated to an executable graph launchable many times, drastically reducing per-launch CPU overhead. It does not modify individual kernel bodies or change per-kernel GPU cost.",
+      "conditions": ["Standard CUDA Graph API; benefit visible when many short kernels dominate."],
+      "nonImplications": [
+        "Does not imply gains for long-running kernels.",
+        "Does not imply zero per-launch cost."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "CUDA Graphs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "CUDA Graphs speed up individual kernels' GPU execution.",
+      "errorType": "performance_confusion",
+      "whyWrong": "The savings are CPU-side (launch overhead); kernel body is unchanged.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "An instantiated graph can only be launched once.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It can be launched arbitrarily many times.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Graphs and Streams are the same mechanism.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Streams sequence ops; graphs capture and re-launch DAGs.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Any workload benefits from CUDA Graphs.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Long, launch-overhead-insignificant kernels see little benefit.",
+      "sourceOrEvidence": "CUDA best practices"
+    }
+  ],
+  "implementationFacts": [
+    "Stream capture: `cudaStreamBeginCapture` / `cudaStreamEndCapture`.",
+    "Explicit graph builder: `cudaGraphCreate`, `cudaGraphAddKernelNode`, etc."
+  ],
+  "performanceScenarios": [
+    "LLM decoding, RNN inference, and any per-step short-kernel loops are canonical wins for CUDA Graph."
+  ],
+  "versionSensitivity": "stable_principle"
+}

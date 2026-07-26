@@ -1,0 +1,49 @@
+{
+  "questionId": "F-REGSPILL-031",
+  "learningObjective": "Understand CUDA local memory as per-thread private storage in DRAM; register spilling implications.",
+  "canonicalClaims": [
+    {
+      "claim": "CUDA 'local memory' is per-thread private storage that physically resides in the same memory as global memory (GDDR/HBM), backed by L1 and L2 caches; register spills incur high-latency accesses and heavy spilling typically hurts performance.",
+      "conditions": ["Standard CUDA memory model."],
+      "nonImplications": [
+        "Does not imply every spill is fatal; caches absorb some traffic.",
+        "Does not imply local memory is the same as shared memory."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Memory Hierarchy" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Local memory is a dedicated small on-chip cache.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It lives in DRAM; only L1/L2 caches accelerate access.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Local memory is the same physical resource as shared memory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Distinct memory spaces with different properties.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "nvcc errors on register pressure; spilling never happens silently.",
+      "errorType": "definition_confusion",
+      "whyWrong": "nvcc silently spills; users check via `-Xptxas -v` or profiler.",
+      "sourceOrEvidence": "CUDA best practices"
+    },
+    {
+      "claim": "Register spilling has negligible performance impact due to L1 caching.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Heavy spilling generates DRAM traffic and reduces effective bandwidth for real data.",
+      "sourceOrEvidence": "CUDA best practices"
+    }
+  ],
+  "implementationFacts": [
+    "`nvcc -Xptxas -v` prints per-kernel register / spill / SMEM stats.",
+    "`-maxrregcount N` caps per-thread register count (may force spilling)."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

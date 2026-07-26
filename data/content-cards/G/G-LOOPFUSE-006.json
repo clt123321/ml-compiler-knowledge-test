@@ -1,0 +1,55 @@
+{
+  "questionId": "G-LOOPFUSE-006",
+  "learningObjective": "Determine whether two adjacent loops with a producer-consumer dependence can be legally fused into a single loop nest.",
+  "canonicalClaims": [
+    {
+      "claim": "Loop fusion is legal only when no fused iteration requires a value that would be produced by a later iteration of the fused loop; i.e., no forward-crossing flow dependence exists between the producer and consumer.",
+      "conditions": [
+        "The two loops have compatible trip counts (equal, or matched via peel/shift).",
+        "The iteration order is preserved after fusion.",
+        "No cross-loop dependence points backward in the fused iteration order."
+      ],
+      "nonImplications": [
+        "Does not imply matching trip counts alone is sufficient for legality.",
+        "Does not imply fusion is impossible when a cross-iteration dependence exists — peel/shift or pipelining may restore legality."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Loop transformations / dependence-based fusion legality" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Matching trip counts are sufficient to legalize loop fusion.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Trip count is a necessary structural condition; legality also requires dependence analysis to preclude forward-crossing dependences.",
+      "sourceOrEvidence": "Engineering a Compiler, 3rd ed."
+    },
+    {
+      "claim": "If two loops iterate in the same order and touch a common array, fusion is always safe.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Same-order iteration does not remove forward-crossing flow dependences (e.g., reading B[i+1] in iteration i).",
+      "sourceOrEvidence": "Engineering a Compiler, 3rd ed."
+    },
+    {
+      "claim": "Loop fusion requires that both loops write to the same array.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion joins iteration spaces, not write targets. Two loops writing to different arrays are commonly fused (producer-consumer fusion).",
+      "sourceOrEvidence": "Compiler textbook loop-fusion chapter"
+    },
+    {
+      "claim": "A read of B[i-1] in the consumer is a fusion blocker.",
+      "errorType": "wrong_condition",
+      "whyWrong": "B[i-1] is a *backward-crossing* read; in the fused loop, B[i-1] is produced in the previous iteration and is available. This does not block fusion.",
+      "sourceOrEvidence": "Loop transformation textbook examples"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR affine dialect uses affine access maps to check fusion legality automatically.",
+    "Loop peel + shift is a standard rewrite that can convert some illegal fusions into legal ones."
+  ],
+  "performanceScenarios": [
+    "Fusing a normalization producer with a subsequent activation consumer is legal when the consumer reads only B[i] (same-iteration flow) — this is the pattern used in LayerNorm+activation fusion."
+  ],
+  "versionSensitivity": "stable_principle"
+}

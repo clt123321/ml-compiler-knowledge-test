@@ -1,0 +1,117 @@
+{
+  "id": "F-SOFTMAX-019",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Softmax — numerical stability (subtract max)",
+  "learningObjective": "Understand why the numerically stable softmax subtracts the row maximum before exponentiation.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "FP32 arithmetic"
+    ]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "N"
+      ],
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major"
+    ]
+  },
+  "stem": "The Triton row-parallel softmax kernel below computes `y[m, :] = softmax(x[m, :])`. Which statement about the design is correct?",
+  "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef softmax_row(x_ptr, y_ptr, M, N,\n                stride_m, stride_n,\n                BLOCK: tl.constexpr):\n    row = tl.program_id(0)\n    cols = tl.arange(0, BLOCK)\n    mask = cols < N\n    # Load row into registers\n    x = tl.load(x_ptr + row * stride_m + cols * stride_n,\n                mask=mask, other=-float('inf'))\n    # (1) Subtract row max for stability\n    x_max = tl.max(x, axis=0)\n    x = x - x_max\n    # (2) Exp and sum\n    e = tl.exp(x)\n    s = tl.sum(e, axis=0)\n    y = e / s\n    tl.store(y_ptr + row * stride_m + cols * stride_n, y, mask=mask)\n\n# Launch: grid=(M,), BLOCK >= N (single-block-per-row)\n# x, y: FP32 row-major [M, N]",
+  "options": [
+    {
+      "id": "A",
+      "text": "Using `other=-float('inf')` for masked lanes causes the max computation to include -inf and biases `x_max` downward, so real softmax kernels must use `other=0.0` and add a separate `_valid_count` normalization step."
+    },
+    {
+      "id": "B",
+      "text": "Subtracting `x_max` speeds up the kernel by ~2x on Ampere because Triton uses a fast-path `exp` that only runs on inputs in [-1, 0]; without the subtraction, the slow-path is invoked."
+    },
+    {
+      "id": "C",
+      "text": "The subtraction is required for correctness because `tl.exp` returns undefined values for any input greater than 0; softmax's mathematical definition assumes all inputs are non-positive."
+    },
+    {
+      "id": "D",
+      "text": "Subtracting `x_max` from every element is a mathematical identity for softmax (numerator and denominator both scale by e^{-x_max}); the transform prevents `tl.exp(x)` from overflowing when `x` contains large values (FP32 `exp` overflows around x ≈ 88.7)."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "The numerically stable softmax uses the identity `softmax(x)_i = exp(x_i - c) / sum_j exp(x_j - c)` for any constant `c`; taking `c = max(x)` guarantees the largest exponent is 0 and all others are ≤ 0, so `exp` cannot overflow (FP32 `exp` overflows near x ≈ 88.7 → ~1e38). Choice B fabricates a fast-path story. C is wrong: `exp` accepts positive inputs; the issue is overflow, not undefined behavior. D is wrong: `other=-inf` is the correct identity for `max` — it never influences the row's max since real values dominate; -inf lanes contribute 0 to sum after `exp` because `exp(-inf) = 0`.",
+  "optionExplanations": {
+    "D": "Correct: standard numerically stable softmax formulation.",
+    "B": "Wrong: no such fast-path/slow-path split in Triton exp.",
+    "C": "Wrong: exp accepts any float; overflow is the concern.",
+    "A": "Wrong: -inf is the correct identity for the max reduction."
+  },
+  "assumptions": [
+    "FP32 arithmetic on IEEE-754 hardware.",
+    "`tl.exp` is the standard IEEE-consistent expf approximation."
+  ],
+  "nonImplications": [
+    "Does not imply subtracting max is the only stabilization technique; log-sum-exp and online softmax are alternatives.",
+    "Does not imply BLOCK ≥ N is required in production; large-N kernels use online (two-pass or tree) softmax."
+  ],
+  "misconceptionTags": [
+    "exp_undefined_positive_myth",
+    "softmax_stability_fastpath_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates a Triton fast-path.",
+    "C": "Wrong claim about exp semantics.",
+    "A": "Wrong claim about -inf's effect on max."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:triton",
+      "locator": "Triton softmax tutorial",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "FP32 exp range and overflow",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-SOFTMAX-019.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

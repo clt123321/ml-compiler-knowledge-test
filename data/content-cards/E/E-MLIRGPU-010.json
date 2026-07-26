@@ -1,0 +1,49 @@
+{
+  "questionId": "E-MLIRGPU-010",
+  "learningObjective": "Interpret MLIR gpu.launch_func: grid/block dimensions, memory-space conventions, kernel argument passing, and per-thread indexing.",
+  "canonicalClaims": [
+    {
+      "claim": "MLIR `gpu.launch_func` separates `blocks in (...)` and `threads in (...)` clauses so that total threads = product of block-count and threads-per-block; kernel arguments include memref types; per-thread global index typically requires `blockIdx * blockDim + threadIdx`, not `blockIdx + threadIdx`.",
+      "conditions": ["Upstream MLIR gpu dialect semantics."],
+      "nonImplications": [
+        "Does not imply memory-space integers are portable across targets.",
+        "Does not imply `gpu.launch` (inline-region form) is deprecated."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "GPU dialect" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Total thread count is only the `blocks in` product.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Total threads = blocks × threads-per-block; both are honored by lowering.",
+      "sourceOrEvidence": "MLIR gpu dialect doc"
+    },
+    {
+      "claim": "Memory space 1 in gpu memref denotes shared memory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Standard convention: 0 = global (default), 3 = workgroup/shared, 5 = private on NVVM lowering.",
+      "sourceOrEvidence": "gpu-to-nvvm lowering doc"
+    },
+    {
+      "claim": "`gpu.launch_func` cannot accept memref arguments.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Memref args are the primary way to pass tensor data; they are lowered to base pointer + descriptors.",
+      "sourceOrEvidence": "gpu dialect doc"
+    },
+    {
+      "claim": "`gpu.block_id x` returns the global thread index including intra-block position.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It returns only the block coordinate; global index needs `block_id * blockDim + thread_id`.",
+      "sourceOrEvidence": "gpu dialect doc"
+    }
+  ],
+  "implementationFacts": [
+    "Global x-index: `%bid * %bdim.x + %tid`.",
+    "`gpu.func ... kernel` marks a device entry point."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

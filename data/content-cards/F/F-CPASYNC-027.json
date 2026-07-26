@@ -1,0 +1,49 @@
+{
+  "questionId": "F-CPASYNC-027",
+  "learningObjective": "Understand cp.async: async GMEM→SMEM copy bypassing registers, introduced on Ampere.",
+  "canonicalClaims": [
+    {
+      "claim": "`cp.async` (Ampere sm_80+) copies data from global memory to shared memory asynchronously, bypassing the register file; completion is synchronized with `cp.async.commit_group` and `cp.async.wait_group`, enabling software-pipelined kernels (e.g., multi-stage GEMM).",
+      "conditions": ["Ampere or newer hardware; CUDA 11+ toolchain."],
+      "nonImplications": [
+        "Does not imply auto-completion; explicit wait is required.",
+        "Does not imply small copies always benefit."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "PTX cp.async" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`cp.async` is a synchronous load through registers.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is genuinely async and bypasses registers.",
+      "sourceOrEvidence": "PTX ISA doc"
+    },
+    {
+      "claim": "cp.async is Hopper-only.",
+      "errorType": "version_leak",
+      "whyWrong": "cp.async is Ampere (sm_80)+; Hopper adds TMA on top.",
+      "sourceOrEvidence": "Ampere / Hopper whitepapers"
+    },
+    {
+      "claim": "cp.async copies SMEM → GMEM.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Direction is GMEM → SMEM.",
+      "sourceOrEvidence": "PTX ISA doc"
+    },
+    {
+      "claim": "cp.async completes automatically after a fixed number of cycles.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Explicit `wait_group` / barrier is needed to observe completion.",
+      "sourceOrEvidence": "PTX ISA doc"
+    }
+  ],
+  "implementationFacts": [
+    "Multi-stage GEMM pipelines (CUTLASS `Sm80MultiStage*`) rely on cp.async.",
+    "Hopper TMA (Tensor Memory Accelerator) extends this with shape-aware bulk transfers."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

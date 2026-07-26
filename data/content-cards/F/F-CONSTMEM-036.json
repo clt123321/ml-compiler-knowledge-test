@@ -1,0 +1,49 @@
+{
+  "questionId": "F-CONSTMEM-036",
+  "learningObjective": "Understand CUDA constant memory: 64 KB module-scope, per-SM constant cache, warp-broadcast on uniform access.",
+  "canonicalClaims": [
+    {
+      "claim": "CUDA `__constant__` memory is a 64 KB per-module region cached in a dedicated per-SM constant cache; it is optimized for warp-uniform reads (broadcast in one access) and is populated from host via `cudaMemcpyToSymbol` before kernel launch.",
+      "conditions": ["Standard CUDA constant memory semantics."],
+      "nonImplications": [
+        "Does not imply non-uniform reads are free.",
+        "Does not imply constant memory is device-writable during kernel execution."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Constant Memory" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Constant memory is unlimited in size.",
+      "errorType": "definition_confusion",
+      "whyWrong": "64 KB per module.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Constant memory is per-thread-block.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is module-scope; not per-block.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Constant memory is writable from the device kernel.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Only host writes via cudaMemcpyToSymbol; device sees it as read-only.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Constant memory is always faster than shared memory.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Only for warp-uniform reads; non-uniform serializes.",
+      "sourceOrEvidence": "CUDA best practices"
+    }
+  ],
+  "implementationFacts": [
+    "`__constant__ float table[N];` at file scope; `cudaMemcpyToSymbol(table, ...)` on host.",
+    "Broadcast: warp-uniform reads serve in one access."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

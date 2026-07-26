@@ -1,0 +1,56 @@
+{
+  "questionId": "D-AOTAG-011",
+  "learningObjective": "Explain what AOTAutograd captures beyond the forward graph and how the joint (forward+backward) graph is used.",
+  "canonicalClaims": [
+    {
+      "claim": "AOTAutograd traces a joint forward+backward FX graph, then partitions it into forward and backward subgraphs (with a recompute/save decision) that are compiled by Inductor; this enables a compiled backward pass under torch.compile.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "Autograd is active for the compiled call."
+      ],
+      "nonImplications": [
+        "Does not imply the compiled backward is always faster than eager backward.",
+        "Does not imply the partitioner always makes optimal save/recompute choices."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:pytorch2", "locator": "AOTAutograd + partitioner" },
+        { "ref": "DOC:torch-compile", "locator": "AOTAutograd overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AOTAutograd traces only the forward.",
+      "errorType": "scope_error",
+      "whyWrong": "It traces a joint fw+bw graph.",
+      "sourceOrEvidence": "PyTorch 2 ASPLOS"
+    },
+    {
+      "claim": "AOTAutograd is a device scheduler.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a tracer + graph partitioner; not a device placement scheduler.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "AOTAutograd rewrites Python source code.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It operates on the traced FX graph, not on Python source.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "AOTAutograd forces all backward ops to run eagerly.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The backward is compiled together with the forward when possible.",
+      "sourceOrEvidence": "PyTorch 2 ASPLOS"
+    }
+  ],
+  "implementationFacts": [
+    "The joint graph is captured via a functional-tracing approach",
+    "The partitioner decides which activations to save vs. recompute",
+    "Backward subgraph is compiled through Inductor like the forward"
+  ],
+  "performanceScenarios": [
+    "Compiled backward reduces per-op dispatch cost; save-vs-recompute choices trade memory for compute."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

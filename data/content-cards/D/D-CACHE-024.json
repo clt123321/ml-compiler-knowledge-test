@@ -1,0 +1,56 @@
+{
+  "questionId": "D-CACHE-024",
+  "learningObjective": "Identify factors that can invalidate torch.compile's compilation cache and cause re-compilation.",
+  "canonicalClaims": [
+    {
+      "claim": "torch.compile's in-memory compile cache is keyed on guard-relevant attributes (shape/stride/dtype/device/requires_grad/etc.) and on the source-code identity of the function; changes to any guarded attribute or a process restart (without a persistent cache) result in fresh compilation.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 with default settings.",
+        "No experimental persistent-cache is enabled."
+      ],
+      "nonImplications": [
+        "Does not imply the cache is only in-memory forever; persistent-cache mechanisms exist.",
+        "Does not imply the key is limited to (shape, dtype, device, stride); many guards participate."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Compile cache" },
+        { "ref": "DOC:torch-dynamo", "locator": "Guard categories" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Matching input metadata still misses the cache.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Matching guarded metadata is a cache hit by design.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "torch.compile automatically persists its cache across process restarts by default.",
+      "errorType": "scope_error",
+      "whyWrong": "Default behavior is in-memory; persistent-cache is opt-in / experimental in current releases.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Device changes are not part of the cache key.",
+      "errorType": "scope_error",
+      "whyWrong": "Device is a guard; changes cause recompile.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    },
+    {
+      "claim": "The cache key excludes function source; two different functions with the same op sequence share cache entries.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Source identity is part of the cache key.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    }
+  ],
+  "implementationFacts": [
+    "Guards: shape, stride, dtype, device, requires_grad, class, source-code identity",
+    "Cache serves distinct compiled variants for distinct guard configurations",
+    "Persistent-cache mechanisms are being developed but are not the default"
+  ],
+  "performanceScenarios": [
+    "Cold-start latency in production is often dominated by cache-miss compiles; understanding guard categories helps reduce them."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

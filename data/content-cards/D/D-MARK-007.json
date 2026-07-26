@@ -1,0 +1,56 @@
+{
+  "questionId": "D-MARK-007",
+  "learningObjective": "Understand what `torch._dynamo.mark_dynamic` does and how it interacts with recompilation.",
+  "canonicalClaims": [
+    {
+      "claim": "`torch._dynamo.mark_dynamic(t, dim)` tells Dynamo to treat that dim as symbolic during tracing (using a SymInt), producing a compiled graph parameterized in that dim and installing a symbolic-shape guard so multiple sizes share the same graph.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The traced computation is compatible with symbolic-shape codegen (no path forces specialization)."
+      ],
+      "nonImplications": [
+        "Does not imply guarantees of one-compile-fits-all; other dims can still specialize.",
+        "Does not imply the symbolic-shape kernel is as fast as a size-specialized one."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Dynamic shapes API" },
+        { "ref": "DOC:torch-dynamo", "locator": "SymInt / symbolic tracing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "mark_dynamic disables all guards on the tensor.",
+      "errorType": "scope_error",
+      "whyWrong": "Only the marked dim becomes symbolic; other guards remain.",
+      "sourceOrEvidence": "torch._dynamo docs"
+    },
+    {
+      "claim": "mark_dynamic changes the tensor's rank.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Rank is unchanged; only the dim's compile-time treatment is adjusted.",
+      "sourceOrEvidence": "torch._dynamo docs"
+    },
+    {
+      "claim": "mark_dynamic is deprecated / a no-op.",
+      "errorType": "version_leak",
+      "whyWrong": "It remains an active API in current releases.",
+      "sourceOrEvidence": "PyTorch docs 2024-2026"
+    },
+    {
+      "claim": "mark_dynamic and `dynamic=True` do exactly the same thing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`dynamic=True` is a compile-time setting; mark_dynamic marks a specific tensor's specific dim.",
+      "sourceOrEvidence": "torch.compile docs"
+    }
+  ],
+  "implementationFacts": [
+    "`torch._dynamo.mark_dynamic(tensor, dim, min=None, max=None)` can also carry bounds",
+    "Automatic-dynamic promotion after N recompiles is a related mechanism",
+    "SymInt values propagate through the traced graph and reach Inductor codegen"
+  ],
+  "performanceScenarios": [
+    "Marking known-varying dims dynamic avoids recompile storms in production; overusing it may miss size-specific optimizations."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

@@ -1,0 +1,55 @@
+{
+  "questionId": "H-ACCUM-007",
+  "learningObjective": "Enumerate the correct properties of mixed-precision Tensor Core GEMM: FP16/BF16 inputs with FP32 accumulator.",
+  "canonicalClaims": [
+    {
+      "claim": "Mixed-precision Tensor Core GEMM stores inputs in FP16/BF16 (halving memory bandwidth vs FP32) but accumulates in FP32 for numerical stability; downcasting the FP32 accumulator to FP16/BF16 on write adds a per-element rounding error.",
+      "conditions": [
+        "The workload uses HMMA/BMMA Tensor Core kernels.",
+        "The framework respects the accumulator/output dtype configuration."
+      ],
+      "nonImplications": [
+        "Does not imply FP32 accumulator eliminates all numerical issues.",
+        "Does not imply FP32 output is free — it doubles output storage."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Tensor Core semantics" },
+        { "ref": "BOOK:sze-eff", "locator": "Mixed-precision training" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Because the accumulator is FP32, mixed-precision Tensor Core GEMM has the same throughput as pure FP32 GEMM.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Tensor Core throughput for mixed precision is 8-16× FP32 depending on generation; the accumulator width is not the bottleneck.",
+      "sourceOrEvidence": "NVIDIA Tensor Core whitepapers"
+    },
+    {
+      "claim": "Writing FP32 output has no storage overhead compared to FP16 output.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FP32 is 4 bytes/element; FP16 is 2 bytes/element. Output storage doubles.",
+      "sourceOrEvidence": "IEEE 754"
+    },
+    {
+      "claim": "The downcast on write is bit-exact and introduces no error.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Downcasting FP32 to FP16/BF16 rounds each element; error is bounded by half an ULP of the target format.",
+      "sourceOrEvidence": "IEEE 754 rounding"
+    },
+    {
+      "claim": "Mixed precision only saves memory footprint, not memory bandwidth.",
+      "errorType": "scope_error",
+      "whyWrong": "Halving element size halves both footprint and bandwidth; bandwidth is often the dominant end-to-end speed factor.",
+      "sourceOrEvidence": "PMPP4 memory bandwidth analysis"
+    }
+  ],
+  "implementationFacts": [
+    "cuBLAS Tensor Core GEMM: `computeType = CUBLAS_COMPUTE_32F` with FP16 inputs.",
+    "PyTorch autocast wraps ops that support FP16/BF16 while keeping FP32 for the accumulator."
+  ],
+  "performanceScenarios": [
+    "For a Transformer FFN, switching from FP32 to FP16 mixed precision typically yields 2-3× wall-clock speedup — dominated by bandwidth halving."
+  ],
+  "versionSensitivity": "stable_principle"
+}

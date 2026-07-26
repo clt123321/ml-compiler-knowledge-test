@@ -1,0 +1,49 @@
+{
+  "questionId": "B-CFOLD-009",
+  "learningObjective": "Distinguish constant folding from constant propagation and identify when folding is legal.",
+  "canonicalClaims": [
+    {
+      "claim": "Constant folding evaluates operations whose operands are compile-time constants at compile time, producing a new constant, while preserving source semantics for overflow, rounding, and floating-point edge cases (NaN, ±Inf).",
+      "conditions": [
+        "All operands are known at compile time.",
+        "The operation's semantics permit compile-time evaluation without changing observable behavior."
+      ],
+      "nonImplications": [
+        "Does not imply folding is unconditional; special values (NaN, Inf, div-by-zero) may block folding.",
+        "Does not imply folding requires SSA; it works in non-SSA IRs too."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Constant folding chapter" },
+        { "ref": "BOOK:dragon2", "locator": "Optimization chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Constant folding and constant propagation are synonyms.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Folding evaluates a constant expression; propagation substitutes a known constant value for a use site. They can be applied together.",
+      "sourceOrEvidence": "EAC3 optimization chapter"
+    },
+    {
+      "claim": "IEEE-754 arithmetic is associative, so constant folding may freely reassociate expressions.",
+      "errorType": "wrong_condition",
+      "whyWrong": "IEEE-754 addition and multiplication are NOT associative; naive reassociation changes rounding behavior. -ffast-math opts into unsafe reassociation.",
+      "sourceOrEvidence": "IEEE 754 standard"
+    },
+    {
+      "claim": "Constant folding requires SSA form.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Folding evaluates local constant expressions; SSA is not required, though it makes downstream propagation easier.",
+      "sourceOrEvidence": "Dragon2 optimization chapter"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM ConstantFolding pass folds arithmetic, bitwise, and known-safe FP operations.",
+    "Sparse Conditional Constant Propagation (SCCP) combines propagation with reachability analysis for improved precision."
+  ],
+  "performanceScenarios": [
+    "Front-end constant folding removes template/inline overhead in C++; downstream ML compilers rely on it to simplify shape computations."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,95 @@
+{
+  "id": "D-EXPORT-018",
+  "type": "multiple",
+  "module": "pytorch_compiler",
+  "subtopic": "torch.export produces an ExportedProgram",
+  "learningObjective": "Identify true properties of `torch.export` and the `ExportedProgram` artifact it produces.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statements about `torch.export` and the `ExportedProgram` it produces are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "`torch.export` requires a fully captured graph (no graph breaks) — semantically equivalent to `torch.compile(fullgraph=True)` — and returns an `ExportedProgram` containing the FX graph, parameter/buffer metadata, and the pytree signature."
+    },
+    {
+      "id": "B",
+      "text": "`torch.export` is a deprecated alias for `torch.jit.trace`; the two APIs produce identical `TorchScript` artifacts under the hood."
+    },
+    {
+      "id": "C",
+      "text": "`torch.export` produces a serializable artifact intended to be consumed by downstream compilers/runtimes (e.g., AOTInductor, other backends), independent of the calling Python process."
+    },
+    {
+      "id": "D",
+      "text": "`torch.export` supports explicit dynamic shape constraints via `Dim` objects passed through `dynamic_shapes`, allowing the exported graph to accept a range of shapes. In this reading, `torch.export` is a deprecated alias for `torch.jit.trace` retained purely for backward compatibility; the two APIs produce identical `TorchScript` artifacts under the hood, and consumers of the resulting graph cannot distinguish which entry point was called."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "A, B, C are correct: `torch.export` captures a whole graph (fullgraph-like), returns an `ExportedProgram` with graph + parameters/buffers + pytree signature; the artifact is serializable and consumed by downstream tools like AOTInductor; and it supports explicit dynamic-shape constraints via `Dim`. D is wrong: `torch.export` is not TorchScript; it produces a graph in the newer export IR distinct from TorchScript.",
+  "optionExplanations": {
+    "A": "Correct.",
+    "C": "Correct.",
+    "D": "Correct.",
+    "B": "Wrong: torch.export != torch.jit.trace."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 defaults.",
+    "The model can be traced without graph breaks (or the user has provided workarounds like `torch.cond`)."
+  ],
+  "nonImplications": [
+    "Does not imply every model can be exported; models with data-dependent Python control flow may require rewrites.",
+    "Does not imply the exported IR is identical across versions; the export IR evolves."
+  ],
+  "misconceptionTags": [
+    "export_is_torchscript"
+  ],
+  "distractorRationales": {
+    "B": "Wrong equivalence with TorchScript."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-export",
+      "locator": "torch.export: ExportedProgram, dynamic_shapes, Dim",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:torch-aoti",
+      "locator": "AOTInductor consumes ExportedProgram",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-EXPORT-018.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

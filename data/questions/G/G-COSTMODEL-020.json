@@ -1,0 +1,64 @@
+{
+  "id": "G-COSTMODEL-020",
+  "type": "multiple",
+  "module": "graph_opt_schedule",
+  "subtopic": "Cost model / Real measurement gap",
+  "learningObjective": "Enumerate factors that make a static analytical cost model differ from measured wall-clock runtime.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic accelerator",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Modern autotuning frameworks (Ansor, MetaSchedule, AutoTVM) use cost models to prune the search space before actual measurement. Which of the following make a static analytical cost model DIVERGE from the measured wall-clock runtime? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "Register spills that are hard to predict from source-level operation counts; the true register allocation is decided later by the backend (ptxas, LLVM)." },
+    { "id": "B", "text": "Cache and TLB hit-rate variability caused by neighbour kernels, previous benchmark iterations, or OS scheduling that a purely analytical model cannot see." },
+    { "id": "C", "text": "Warmup effects such as JIT compilation, lazy kernel loading, and GPU clock ramp-up that dominate the first few measurements." },
+    { "id": "D", "text": "The compiler's static model uses the same numerical precision as the target hardware; there is no divergence possible in principle." },
+    { "id": "E", "text": "Hardware-level effects (bank conflicts, MSHR saturation, memory-controller queuing) that are not represented in a purely analytical model built on op counts and shape dimensions." }
+  ],
+  "correctAnswers": ["A", "B", "E"],
+  "explanation": "Static analytical cost models operate on op counts, memory traffic estimates, and simple loop-bound arithmetic; they miss (A) spill decisions made later by the backend, (B) execution-context variability like cache pollution, and (E) fine hardware effects like bank conflicts and memory-controller queuing. Ansor's key contribution was to note that these gaps motivate learned or measurement-based rankings rather than pure analytical cost models. Option C describes warmup effects, which are a *measurement* concern, not a source of divergence between the model and the true underlying runtime — one runs multiple warmed-up measurements to remove them. Option D asserts no divergence in principle, contradicting the entire motivation of learned cost models.",
+  "optionExplanations": {
+    "A": "Correct: register allocation and spill decisions are made post-source and affect real runtime.",
+    "B": "Correct: cache/TLB context effects are outside a static model.",
+    "C": "Wrong: warmup is a measurement-methodology issue, not a model-vs-truth gap. Once warmed up, the underlying runtime is stable; both model and measurement target the warmed steady state.",
+    "D": "Wrong: precision alone does not close the model-vs-measurement gap.",
+    "E": "Correct: bank conflicts, MSHR saturation, memory-controller effects are not captured in simple analytical models."
+  },
+  "assumptions": [
+    "The analytical model is built on op counts, shape, and memory-traffic estimates only.",
+    "Measurements are taken after standard warmup and averaged/medianed."
+  ],
+  "nonImplications": [
+    "Does not imply analytical cost models are useless — they are effective search-space filters.",
+    "Does not imply learned cost models close all gaps — they still approximate."
+  ],
+  "misconceptionTags": ["cost_model_equals_measurement", "warmup_is_model_gap"],
+  "distractorRationales": {
+    "C": "Confuses measurement-hygiene concerns with model-vs-truth divergence.",
+    "D": "Denies the well-documented gap that motivates learned cost models."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:ansor", "locator": "Section 4-5: learned cost model motivation", "supports": ["A", "B", "E"] },
+    { "ref": "PAPER:tvm", "locator": "AutoTVM: measurement-based ranking rationale", "supports": ["A", "B", "E"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Analytical vs. measured cost gap in tensor program autotuners",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-COSTMODEL-020.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

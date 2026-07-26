@@ -1,0 +1,60 @@
+{
+  "id": "E-ONNXFMT-030",
+  "type": "multiple",
+  "module": "mlir_tvm_xla",
+  "subtopic": "ONNX / Interchange format vs high-performance runtime",
+  "learningObjective": "Understand the boundary between ONNX as a model interchange format and the runtimes that consume it, avoiding the assumption that interchange = high performance.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "ONNX / ONNX Runtime / TensorRT / etc.",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about ONNX as a model interchange format are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "ONNX defines a portable representation of a model (operators, initializers, shapes, versions); it does not itself define how to execute the model efficiently on any specific hardware — that is the job of ONNX-consuming runtimes (ONNX Runtime, TensorRT, OpenVINO, IREE, etc.)." },
+    { "id": "B", "text": "Two runtimes consuming the same ONNX model can produce different latency/throughput because their operator implementations, fusion policies, kernel selection, and memory management are runtime-specific, even though the numerical results should match within spec tolerance." },
+    { "id": "C", "text": "Because ONNX is a widely adopted format, exporting a model to ONNX automatically guarantees it will be as fast on any target as the fastest hand-tuned implementation for that hardware." },
+    { "id": "D", "text": "ONNX bundles a specific execution engine into the model file; loading an `.onnx` file automatically brings in a runtime and there is no distinction between the format and its executors." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "ONNX is an interchange format: it standardizes serialization, opset semantics, and shape/type info so a model produced by framework X can be consumed by runtime Y. It does not prescribe performance; different runtimes make different choices about kernel implementation, fusion, layout, and memory. C is a common misconception: interchange ≠ 'guaranteed maximum performance'. D is also wrong: an `.onnx` file is a data file; the runtime is separate.",
+  "optionExplanations": {
+    "A": "Correct: ONNX = interchange spec; execution is runtime-specific.",
+    "B": "Correct: same ONNX, different runtimes → different performance.",
+    "C": "Wrong: interchange format does not imply peak performance.",
+    "D": "Wrong: ONNX file does not embed a runtime."
+  },
+  "assumptions": [
+    "ONNX as documented at onnx.ai."
+  ],
+  "nonImplications": [
+    "Does not imply ONNX and downstream compilers (TensorRT, OpenVINO) do not share optimization work.",
+    "Does not imply ONNX is the only interchange format; StableHLO, GGUF, TorchScript serve different niches."
+  ],
+  "misconceptionTags": ["interchange_equals_perf_myth", "onnx_bundles_runtime_myth"],
+  "distractorRationales": {
+    "C": "Confuses portability with peak performance.",
+    "D": "Wrong claim that runtime is bundled."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:onnx", "locator": "ONNX overview — interchange purpose; runtime independence", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-ONNXFMT-030.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,64 @@
+{
+  "id": "H-OVERFLOW-006",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "FP16 accumulation overflow / Saturation",
+  "learningObjective": "Diagnose overflow in FP16 accumulation on a long reduction and explain why FP32 accumulation is required.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere Tensor Core",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "profileData": "Kernel: FP16 GEMM with FP16 accumulation, K = 4096.\n  Observed output: many INF values in the C matrix; ~5% of elements saturate.\n  Rework: same kernel with FP32 accumulator, downcast to FP16 on write.\n  Observed output: no INF; matches FP32 reference within 1e-3 tolerance.",
+  "stem": "An FP16 GEMM with K = 4096 and FP16 accumulation produces INF entries in the output. Switching to an FP32 accumulator fixes the issue. What is the correct explanation?",
+  "options": [
+    { "id": "A", "text": "FP16's maximum representable magnitude is roughly 6.5×10⁴; accumulating 4096 partial products of moderate magnitude can exceed this range, producing INF. FP32's ~3.4×10³⁸ range comfortably holds the intermediate sum; downcasting to FP16 on the final write preserves the observable output precision without overflow." },
+    { "id": "B", "text": "FP16 GEMM cannot compute anything mathematically meaningful; the fix is unrelated to overflow and is simply due to numeric library differences." },
+    { "id": "C", "text": "The FP16 kernel had a bug in its indexing that produced random INF values; the accumulator dtype is irrelevant." },
+    { "id": "D", "text": "The FP32 accumulator provides higher precision (23-bit mantissa), which somehow prevents overflow because higher-precision numbers cannot overflow." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "FP16's max value is ~65504; a K=4096 reduction of moderate-magnitude partial products commonly grows beyond this range. FP32's much larger dynamic range (~3.4×10³⁸) prevents overflow of the running sum. This is precisely why Tensor Core matmul (HMMA) accumulates in FP32 by default: A and B are FP16, but the multiply-accumulate accumulator is FP32, and the output is downcast on write. Option B dismisses the numerical issue. Option C invents an indexing bug. Option D confuses precision with range (they are orthogonal properties of a floating-point format).",
+  "optionExplanations": {
+    "A": "Correct: standard FP16 accumulation overflow argument.",
+    "B": "Wrong: dismisses the well-known accumulation-precision issue.",
+    "C": "Wrong: unsupported bug hypothesis.",
+    "D": "Wrong: conflates precision with range."
+  },
+  "assumptions": [
+    "Input magnitudes are typical for DNN GEMM (values in [-1, 10] range for both A and B).",
+    "K is large enough to allow the running sum to grow into the danger zone."
+  ],
+  "nonImplications": [
+    "Does not imply FP16 accumulation is always dangerous — for small K or bounded-magnitude inputs it can be fine.",
+    "Does not imply BF16 is immune to overflow of downstream operations (e.g., squaring)."
+  ],
+  "misconceptionTags": ["precision_prevents_overflow", "fp16_gemm_broken"],
+  "distractorRationales": {
+    "B": "Dismisses numerical issue.",
+    "C": "Fabricates indexing bug.",
+    "D": "Confuses precision and dynamic range."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Tensor Core mixed-precision accumulation; HMMA FP32 accumulator", "supports": ["A"] },
+    { "ref": "BOOK:sze-eff", "locator": "Accumulation precision in reduced-precision GEMM", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "FP16 accumulation overflow at K ≈ 4096",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-OVERFLOW-006.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

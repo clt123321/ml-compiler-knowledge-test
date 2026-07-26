@@ -1,0 +1,49 @@
+{
+  "questionId": "B-CSE-012",
+  "learningObjective": "Identify when CSE is legal given side effects and availability.",
+  "canonicalClaims": [
+    {
+      "claim": "CSE for memory loads requires proving that no intervening operation writes to the aliased memory; without this proof (via alias analysis or function purity attributes), the redundant load must be preserved.",
+      "conditions": [
+        "IR distinguishes read/write memory operations and function memory effects.",
+        "Alias analysis or attribute annotations must support the no-alias/readonly proof."
+      ],
+      "nonImplications": [
+        "Does not imply CSE always improves performance; increased register pressure can offset the win.",
+        "Does not imply loads are inherently side-effecting; volatile/atomic loads are, ordinary loads are not."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "CSE and availability chapter" },
+        { "ref": "DOC:llvm-langref", "locator": "Function attribute semantics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "SSA form guarantees that repeated loads from the same pointer are equivalent.",
+      "errorType": "scope_error",
+      "whyWrong": "SSA operates on virtual registers; memory contents at a pointer can change independently of SSA renaming.",
+      "sourceOrEvidence": "EAC3 SSA scope"
+    },
+    {
+      "claim": "Compilers assume functions are pure by default and treat calls as CSE-able.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The default assumption is that a call may read and write memory; purity requires explicit annotation (readnone/readonly) or interprocedural proof.",
+      "sourceOrEvidence": "LLVM function attributes"
+    },
+    {
+      "claim": "Loads can never be CSE'd because they access memory.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Non-volatile, non-atomic loads can be CSE'd when availability is proven; only volatile/atomic loads carry ordering side effects.",
+      "sourceOrEvidence": "LLVM optimization documentation"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM readnone: does not read or write memory; readonly: only reads; writeonly: only writes.",
+    "GVN (Global Value Numbering) is the modern generalization of CSE that reasons about equivalence classes."
+  ],
+  "performanceScenarios": [
+    "Hot loops with repeated indexed reads benefit from CSE / GVN, provided intervening writes can be proven not to alias."
+  ],
+  "versionSensitivity": "stable_principle"
+}

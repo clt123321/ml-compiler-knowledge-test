@@ -1,0 +1,56 @@
+{
+  "questionId": "D-SCHED-015",
+  "learningObjective": "Interpret an Inductor scheduler log showing that a chain broke into multiple kernels at a reduction boundary.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchInductor's scheduler keeps producer and consumer as separate kernels when their iteration spaces are incompatible; a reduction that produces a shape-`[N,1]` output followed by a pointwise chain over the original `[N,D]` shape often does not fuse into a single kernel in default configurations.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 with default Inductor.",
+        "The user has not applied a specialized fusion configuration."
+      ],
+      "nonImplications": [
+        "Does not imply Inductor never fuses reduction with pointwise; the softmax pattern fuses.",
+        "Does not imply the split kernels perform poorly; each may still be highly optimized."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Scheduler / iteration-space matching" },
+        { "ref": "PAPER:pytorch2", "locator": "Inductor scheduler" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Inductor never fuses reductions with pointwise ops.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Softmax epilogue and many similar patterns fuse.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Two Inductor kernels always indicate a graph break.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Multiple kernels can come from scheduler decisions inside one Inductor graph.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Inductor emits one kernel per Python op regardless of dependence.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion is scheduler-driven, not per-op.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "The reduction runs on CPU when the pointwise runs on GPU.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both kernels target CUDA for CUDA inputs.",
+      "sourceOrEvidence": "Inductor codegen docs"
+    }
+  ],
+  "implementationFacts": [
+    "Inductor kernel prefixes commonly seen: `triton_red_` (reduction), `triton_poi_` (pointwise)",
+    "Scheduler decisions can be dumped via `TORCH_LOGS=inductor`",
+    "Fusion across an iteration-space mismatch typically requires the reduction result to broadcast, which may not fit the scheduler's chosen tiling"
+  ],
+  "performanceScenarios": [
+    "Two-kernel structures pay one extra HBM round-trip for the reduction output; whether this matters depends on `N`."
+  ],
+  "versionSensitivity": "version_sensitive"
+}
