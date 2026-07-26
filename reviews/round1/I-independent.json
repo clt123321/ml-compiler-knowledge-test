@@ -1,0 +1,188 @@
+{
+  "module": "core_ops_attention",
+  "code": "I",
+  "reviewer": "primary-review-3",
+  "reviewedAt": "2026-07-27",
+  "answers": [
+    {
+      "id": "I-ATTBACK-025",
+      "independentAnswer": ["A", "C"],
+      "confidence": "high",
+      "rationale": "A: FA backward stores only (m, l) statistics of size O(BHN) and recomputes P block-by-block from Q,K — canonical FA backward. C: naive backward materializes P (or S) of shape [B,H,N,N], quadratic in N, main OOM source at long context. B is too strong: FA backward FLOPs are indeed larger than forward-only (recompute adds ~1x extra forward on top of backward), but 'wall-clock speedup comes ENTIRELY from I/O' is an overclaim — I/O dominance is the reason, not literally 100%. D is false: FA proves that P need not be materialized in HBM."
+    },
+    {
+      "id": "I-CONV-016",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Same FLOPs (both compute the same N*K*H_out*W_out*C*R*S multiplications). im2col replicates each input pixel R*S times → larger lowered matrix and extra memory/BW, but calls a heavily tuned GEMM (with tensor-core benefits). B is wrong (FLOP count unchanged). C is wrong (im2col uses MORE memory, not less). D is wrong (FLOPs same but memory traffic and peak memory differ)."
+    },
+    {
+      "id": "I-EMB-017",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Standard embedding lookup: per (b,n) index a whole row [D] is read contiguously from HBM. FLOPs are zero (pure gather). Bandwidth-bound on the D-element rows. A wrong: it is not per-scalar random-access; a warp cooperatively loads the row (per the assumption). B wrong (materializing one-hot is quadratic in V, no one implements it that way). C wrong (embedding lookup is a gather, not a reduction over B*N)."
+    },
+    {
+      "id": "I-EPILOGUE-024",
+      "independentAnswer": ["B", "D"],
+      "confidence": "high",
+      "rationale": "B: bias-add and elementwise activation fuse naturally as an epilogue on the accumulator tile before writing to HBM — standard cuBLASLt/CUTLASS epilogue. D: RMSNorm needs a reduction across the last-axis columns of the GEMM tile, which cuts across CTAs unless the tile spans a full output row, so it does not fit the standard epilogue model and is usually a separate kernel (or specialized 'GEMM with row reduction' epilogue). A is wrong (tensor cores accumulate in registers; standard epilogues operate on register-resident accumulators). C is wrong (RMSNorm is NOT elementwise — a per-row rsqrt(mean(x²)+eps) reduction is required)."
+    },
+    {
+      "id": "I-FFT-023",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: Cooley-Tukey is O(N log N) with log N butterfly rounds — textbook. B: each round is O(N) with low compute-per-byte → memory-bandwidth-bound on GPU at large N. D: FFT-based convolution via convolution theorem; the crossover kernel size at which FFT wins grows with kernel/context size — correct. C is wrong: Parseval (L2 preservation) is a mathematical property; FP arithmetic still has rounding, so FFT is NOT bit-exact regardless of precision."
+    },
+    {
+      "id": "I-FLASH-005",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Canonical description of FlashAttention v1/v2: exact attention, K/V-block tiling, online softmax, avoid materializing NxN in HBM, backward recomputes P from stored (m,l) stats + Q,K,V. B (low-rank approx) and C (sparse pruning) are unrelated approximate methods. D (FP8 with per-row scale) confuses FA with quantization schemes."
+    },
+    {
+      "id": "I-FLASHIO-006",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Naive attention writes S=[N,N] to HBM (O(N²)) between the softmax and PV matmul, plus the O(Nd) reads/writes for Q,K,V,O. FlashAttention's I/O complexity is O(N²d/M) — this is Dao et al.'s stated I/O bound where M is on-chip SRAM per SM; when a K/V tile fits, aggregate HBM traffic approaches O(Nd). A reverses the direction; B ignores the O(N²) intermediate; C misstates that both have O(N²) traffic and only saves compute."
+    },
+    {
+      "id": "I-FLASHPROP-026",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "B: FA backward deliberately recomputes softmax probs from (m,l) stats — canonical. C: FA is EXACT (up to summation-order rounding) with unchanged forward FLOPs. D: FA's asymptotic HBM I/O is O(N²d/M) with M = on-chip memory (Dao 2022 Theorem 1) — this is a stable algorithm-level result. A is wrong: 3-4x speedup is workload-dependent (shape, hardware, batch), NOT uniform across configurations. This is a canonical 'don't overgeneralize paper number' distractor."
+    },
+    {
+      "id": "I-FUSEDMLP-014",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "In modern LLM inference stacks (vLLM, TRT-LLM), the standard is fuse up+activation into one kernel and keep down as a separate GEMM. The [B,N,F] intermediate does hit HBM once, but F is a reduction dim for the down GEMM — full 3-way fusion (B) is possible with 'persistent' / 'streaming' fused-MLP but is not the mainstream design; it requires careful tile design and is not the standard pattern. C (no fusion at all) is wrong — up+act fusion is universally applied. D is nonsense (W_up and W_down^T concat doesn't preserve the algebra; the intermediate activation is between them)."
+    },
+    {
+      "id": "I-FUSEDPROP-030",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "B: fusion can inflate register footprint → spills → occupancy drop and worse perf. C: fusion reduces HBM intermediates & launch overhead, does not change FLOP count. D: fusing across a reduction (e.g., softmax) requires restructured tiling, pays off only under specific tile constraints (FlashAttention's core insight). A is a classical overclaim — 'fusion always improves latency' is wrong."
+    },
+    {
+      "id": "I-FUSEDQKV-010",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Numerically the fused GEMM equals concatenation of separate GEMMs up to summation-order rounding (each column of the output only depends on x @ the corresponding weight column). Benefit is one kernel launch and one HBM read of x. A is wrong (no numerical coupling — each output column is independent). B is wrong (MQA/GQA still concatenate: W has shape [D, D + 2*H_kv*d]). C is wrong (FLOPs don't 'double' — they equal 3 separate GEMMs' FLOPs; nothing new is added)."
+    },
+    {
+      "id": "I-GEMM-001",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "The formula in the code snippet is AI ≈ 2*M_TILE*N_TILE / ((M_TILE+N_TILE) * sizeof(elt)). For M_TILE = N_TILE = T, AI = T/sizeof(elt) — scales linearly with tile size — bounded by register/SMEM capacity. This is the classical GEMM tiling analysis. A is wrong (tiling DOES affect HBM traffic per output). B is wrong (K_TILE affects HBM chunk sizes, not the M*N/(M+N) reuse; huge K_TILE fills SMEM but doesn't asymptotically help intensity because the K loop iterates fully regardless). D is wrong (C write is O(MN); read traffic dominates and is what drives the intensity formula)."
+    },
+    {
+      "id": "I-GEMV-002",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "GEMV: 2MN flops, MN reads of A + N reads of x + M writes of y. AI ≈ 2 flops / 2 bytes (FP16) = 1 flop/byte. Modern GPU ridge points are 30-100 flop/byte (bf16/fp16 with tensor cores), so GEMV sits far below the ridge → memory-bound on HBM bandwidth of A. B is wrong (AI does not scale with N). C is wrong by a factor of ~30-100x on modern GPUs. D is wrong (per-row reduction is fully parallel with warp shuffles — not latency-bound)."
+    },
+    {
+      "id": "I-GGEMM-021",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Grouped GEMM: single kernel launch that dispatches E per-group tile schedules ({[n_i, D] x [D, F]}) across SMs, amortizing launch overhead and enabling small groups to share SM occupancy with large groups. A is nonsense (Winograd is a specific spatial transform for convolution, unrelated to MoE grouping). B mischaracterizes the reduction step (grouped GEMM per se doesn't fuse the token combine). C is misleading (padding to n_max wastes work when routing is skewed; grouped GEMM's whole point is to avoid padding). D matches CUTLASS grouped-GEMM design."
+    },
+    {
+      "id": "I-GQA-008",
+      "independentAnswer": ["A", "C"],
+      "confidence": "high",
+      "rationale": "A: GQA (Ainslie et al. 2023) reports quality closer to MHA than MQA, at the cost of more KV than MQA. C: per-token KV = 2*H_kv*d per layer; with G=H_kv=H/8, that's 8x reduction over MHA (which uses H). B is wrong: the GQA paper introduces 'uptraining' — a small amount of continued training to adapt an MHA model to GQA, no full retraining needed. D is wrong: GQA reduces KV cache and KV read bandwidth, but the attention math still has H query heads (H*N²*d compute for QK^T and softmax*V) — it does NOT reduce total attention FLOPs proportionally to H_kv reduction. It reduces KV-projection FLOPs (K,V linear layers) by H/H_kv, but the dominant attention FLOPs are unchanged."
+    },
+    {
+      "id": "I-KVCACHE-009",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "D correctly describes: prefill writes P tokens' KV once and reads the growing cache for causal attention (O(P²*H_kv*d) reads inside FA collapses to O(P²*d/M) HBM). Decode writes 1 KV entry per step and reads the full cache (P+t), giving read traffic Σ(P+t)*H_kv*d ≈ O(T*(P+T)*H_kv*d). A is close but misses that prefill involves causal reads too. B (writing entire cache every step) is wrong. C (KV never touched in decode) is nonsense."
+    },
+    {
+      "id": "I-KVDF-029",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: decode is memory-BW bound on KV reads (canonical) — KV quantization is a direct lever. B: exactly one new K, V entry per sequence written per step; read is the full cache per sequence — matches. D: MQA/GQA — the shared K/V tile is kept in SMEM and reused across query heads, saving HBM reads. This is well-known optimization. C is wrong: PagedAttention does NOT have 'strictly higher HBM latency per attention step' — the paged kernel has small per-block table lookup overhead but is still efficient (vLLM paper shows near-parity attention throughput; the main gain is memory efficiency)."
+    },
+    {
+      "id": "I-MHAMQA-007",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "MHA: H_kv=H, per-token KV = 2*H*d bytes/2 (well, elements) per layer. MQA (Shazeer 2019): H_kv=1, per-token KV = 2*d per layer. GQA (Ainslie 2023): 1 < H_kv < H, per-token KV = 2*H_kv*d per layer. Decode is KV-BW-bound so MQA reduces bandwidth by ~H over MHA. A is wrong (they DO have different KV footprints). C swaps definitions. D asserts fixed 2x and 4x ratios which are incorrect (H_kv can be any 1..H)."
+    },
+    {
+      "id": "I-MOEPROP-028",
+      "independentAnswer": ["C", "D"],
+      "confidence": "high",
+      "rationale": "C: params ~E (each expert has its own W_up/W_gate/W_down), but compute per token is k*expert_flops + O(E) gating (constant in E for the expensive part) — this is the parameter/FLOP leverage of MoE. D: routing imbalance is real; with random routing, per-expert variance ~ sqrt(BN/E); capacity limits or auxiliary balance losses address it. A is wrong (expert parallelism DOES help — each device stores only E/P experts' weights, cutting per-GPU BW for the loaded experts). B is wrong (compute per token does NOT scale with E — only k activated experts run their MLP; gating is a small O(E) score computation)."
+    },
+    {
+      "id": "I-MOEROUT-020",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Canonical MoE routing: gate produces E scores, top-k (typically k=2) selected, top-k weights softmaxed, only those k experts run on the token, outputs combined by gate weights. Balancing via auxiliary loss or capacity limits. B is wrong (top-k > 1 does not require k independent full-model passes; it's a scattered dispatch to k experts, standard). C describes top-1 not top-k. D describes soft-mixture-of-experts (dense), not sparse top-k MoE."
+    },
+    {
+      "id": "I-ONLINESM-004",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Standard online softmax update (Milakov & Gimelshein 2018, also FlashAttention Alg. 1): m_{t+1} = max(m_t, m'); d_{t+1} = d_t * exp(m_t - m_{t+1}) + d' * exp(m' - m_{t+1}). Both partial denominators must be rescaled to the new global max. B ignores the rescale (wrong). C rescales only the new tile (wrong — the running d_t was normalized to m_t, not to m_{t+1}). D adds max/denominator naively (nonsense)."
+    },
+    {
+      "id": "I-REDUCE-015",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Standard pattern (used in CUB, all CUDA best-practices): intra-warp reduce with __shfl_down_sync (5 shuffles for 32 lanes, no SMEM), one lane writes warp result to SMEM, then one warp reduces the 8 warp-partials with another shuffle. Fastest and most portable modern pattern. A (pure SMEM tree) is more sync-heavy. C (atomicAdd from every thread) has severe contention on a single word. D is nonsense (three strategies have different summation orders → different FP results)."
+    },
+    {
+      "id": "I-RMSPROP-027",
+      "independentAnswer": ["A", "B"],
+      "confidence": "high",
+      "rationale": "A: RMSNorm reads N x-values, writes N y-values, one reduction — clearly memory-BW bound (arithmetic intensity O(1) flop/byte range). B: single reduction E[x²], no mean subtraction — fewer ops than LayerNorm. C is wrong (compute-bound is opposite of reality). D is wrong: RMSNorm != LayerNorm on zero-mean inputs in general because gamma is trained differently, and RMSNorm has no beta term. Even the mathematical claim is only true for the FUNCTIONAL form on zero-mean input, not for a trained model."
+    },
+    {
+      "id": "I-RMSVSLN-011",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "RMSNorm needs one reduction (sum of x²) and no bias. LayerNorm computes mean and variance; the one-pass form uses two moments (E[x²] - E[x]²) — one reduction pass computing two moments in tandem (Welford-like or two-moment approach). Both read x once; RMSNorm skips mean-subtraction and beta bias → fewer per-element ops. A wrong (swap: RMSNorm reduces sum(x²), not sum(x)). B (LN in two passes) is wrong for optimized one-pass implementations. D (two passes over x) is wrong for both norms with typical implementations."
+    },
+    {
+      "id": "I-ROPE-012",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Standard RoPE (Su et al. 2021, Llama): rotate pairs of feature dimensions of Q and K by position-dependent angles θ_{pos,i}; applied after QKV projection, before the QK^T score; NOT applied to V; per-token, independent of other tokens. A is wrong (adding a bias to scores is ALiBi/T5-style, not RoPE). B (added elementwise after softmax) is wrong. D (reduction over sequence) is nonsense."
+    },
+    {
+      "id": "I-SAMPLE-019",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Standard definitions: Temperature T divides logits by T before softmax (T>1 flattens, T<1 sharpens); after softmax, top-p (nucleus, Holtzman et al. 2020) sorts probabilities descending and keeps the smallest cumulative-prob set that first exceeds p, then renormalizes. A wrong (both temperature step and top-p ordering are inverted). C wrong (top-p uses cumulative probability, not fixed count). D wrong (top-p != top-k)."
+    },
+    {
+      "id": "I-SOFTMAX-003",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Standard safe softmax: subtracting m ∈ [max_j x_j] makes exp(x_i - m) ∈ (0, 1] preventing overflow. The identity softmax(x) = softmax(x - c) is exact in real arithmetic (numerator and denominator both scale by exp(-c)). B is wrong (offset does not cancel by 'exp(-m)' — the offset applied INSIDE exp is what matters). C wrong (overflow to inf DOES cause NaN when the denominator also becomes inf — inf/inf = NaN). D wrong (LayerNorm doesn't fix softmax overflow)."
+    },
+    {
+      "id": "I-SPARSE-022",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "B: Unstructured sparsity is a well-known GPU pain point — indexing/scatter/gather dominates unless density is very low. C: Ampere 2:4 structured sparsity is a real hardware feature with cuSPARSELt support, ~2x GEMM speedup for supported dtypes. D: For memory-bound LLM decode, weight sparsity that reduces HBM reads is more impactful than FLOP reduction — this is the motivation for e.g. block-sparse quantization / N:M sparse weight formats. A is wrong (unstructured >50% sparsity does NOT auto-give proportional speedup — 'dynamically skip zero tiles' is not what Ampere sparse TCs do; they require the 2:4 constrained pattern)."
+    },
+    {
+      "id": "I-SWIGLU-013",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "SwiGLU (Shazeer 2020, used in Llama) has three linear layers W_gate, W_up, W_down → 3*D*F params vs 2*D*F for standard MLP at intermediate dim F. Llama-1/2/3 use intermediate dim (2/3)*F * multiple to keep parameter/FLOP budget approximately constant when moving from GELU MLP to SwiGLU. B is wrong (extra elementwise mul is negligible relative to matmul FLOPs; and param count is NOT the same). C is wrong on parameter/FLOP scaling (3x not 3x FLOPs — 3*D*F*BN vs 2*D*F*BN, so 1.5x). D is nonsense (no weight-sharing symmetry in SwiGLU)."
+    },
+    {
+      "id": "I-TOPK-018",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Two-stage top-k: partition rows into blocks, per-block partial top-k with a small heap/bitonic-select, then merge candidates for final top-k. Total work is O(V log k), well below full-sort O(V log V). Standard implementation in cuBLAS/torch topk. B is wrong (full sort is unnecessary; partial-selection is standard and correct with tie-breaking rules). C is nonsense (softmax threshold has nothing to do with top-k). D is wrong (top-k over V is highly parallelizable on GPU)."
+    }
+  ]
+}

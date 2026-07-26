@@ -42,7 +42,7 @@
     "B",
     "D"
   ],
-  "explanation": "A: atomicAdd on floats is a classic source of non-determinism due to non-associative addition and unspecified atomic ordering. C: cuDNN benchmark mode picks different algorithms across runs; deterministic mode locks it. B is wrong: PyTorch's deterministic-algorithms flag guarantees run-to-run reproducibility on the same GPU/software stack, not cross-architecture bit-identity. D is wrong: changing CUDA_VISIBLE_DEVICES / job allocation does not by itself alter a single-GPU workload's reduction shape; the option conflates 'different device' with 'different execution config' in a way that is not how the flag interacts with hardware.",
+  "explanation": "Correct: B, D.  A: Wrong: the option conflates 'different device count' with 'different reduction shape'; changing visible devices does not by itself alter kernel launch config within a single-GPU workload. B: Correct: cross-block atomicAdd is a known non-determinism source. C: Wrong: cross-architecture bit-identity is not a guarantee. D: Correct: cuDNN benchmark mode is a known non-determinism source; deterministic mode addresses it.",
   "optionExplanations": {
     "A": "Wrong: the option conflates 'different device count' with 'different reduction shape'; changing visible devices does not by itself alter kernel launch config within a single-GPU workload.",
     "B": "Correct: cross-block atomicAdd is a known non-determinism source.",

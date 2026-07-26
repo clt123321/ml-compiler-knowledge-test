@@ -3,8 +3,598 @@
   "code": "L",
   "label": "Profiling / Benchmark / Debug / 正确性",
   "generatedAt": "2026-07-26",
-  "count": 5,
+  "count": 30,
   "questions": [
+    {
+      "id": "L-ACCREG-014",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Accuracy regression triage",
+      "learningObjective": "Triage an accuracy regression across a model update by systematically bisecting the change (weights, kernel, precision, framework version).",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "stability": "stable_principle"
+      },
+      "stem": "A model that previously achieved 78.5% accuracy on the validation set now reports 76.2% after a joint change (new PyTorch version, new torch.compile mode, new BF16 mixed-precision recipe, retrained weights). What is the most defensible triage plan?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Immediately blame the new torch.compile mode and revert it; if accuracy comes back that confirms the compile mode is the cause. Bisecting other axes is unnecessary because compile changes are the most common source of accuracy drift in practice."
+        },
+        {
+          "id": "B",
+          "text": "Rerun the evaluation five times and average the accuracy. Accuracy drift of 2.3 percentage points is within the noise of any modern evaluation harness, so the reported regression is almost certainly a random fluctuation and no code investigation is needed."
+        },
+        {
+          "id": "C",
+          "text": "Bisect the axes one at a time: (1) hold everything else at old and switch back to old weights → see if accuracy recovers; (2) restore old PyTorch version; (3) disable mixed precision. This isolates which axis is responsible before any deep debugging. Only after the axis is known should we look at kernel-level differences."
+        },
+        {
+          "id": "D",
+          "text": "Skip axis bisection and instead directly compare the softmax outputs on 10 validation samples with `torch.testing.assert_close`; any bitwise difference would identify the exact op responsible for the accuracy drop, bypassing the need for controlled experiments."
+        }
+      ],
+      "assumptions": [
+        "The evaluation harness is deterministic given fixed inputs and seeds."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-ASYNC-007",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Async timing pitfall in benchmark code",
+      "learningObjective": "Identify a subtle timing bug in a benchmark loop where the CPU timer records the wrong quantity because of async launch and CUDA stream ordering.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "The benchmark below prints `per-iter mean: 0.041 ms`, but the model is a 4096×4096 FP16 matmul that could not possibly run in 41 µs on the target GPU. Which change is required to make the measurement meaningful?",
+      "codeSnippet": "import torch, time\nx = torch.randn(4096, 4096, device=\"cuda\", dtype=torch.float16)\nw = torch.randn(4096, 4096, device=\"cuda\", dtype=torch.float16)\n\n# Warmup\nfor _ in range(3):\n    y = x @ w\n\nt0 = time.perf_counter()\nfor _ in range(100):\n    y = x @ w\nt1 = time.perf_counter()\nprint(f\"per-iter mean: {(t1 - t0) / 100 * 1000:.3f} ms\")\n\n# Prints: per-iter mean: 0.041 ms",
+      "profileData": "Reported per-iter mean: 0.041 ms; expected ~2-3 ms based on 4096-square FP16 matmul on the target GPU.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Move the `time.perf_counter()` reads into a `with torch.no_grad():` block. The measurement is wrong because autograd tracking is running in the background, and disabling it eliminates the async accounting problem entirely."
+        },
+        {
+          "id": "B",
+          "text": "Add `torch.cuda.synchronize()` immediately before `t0` and immediately before `t1`. The CPU timer currently ends before the GPU has finished the queued kernels; the pre-timer sync flushes prior work, and the pre-t1 sync waits for all 100 kernels to finish, so the interval reflects real GPU wall-time."
+        },
+        {
+          "id": "C",
+          "text": "Replace `time.perf_counter()` with `time.time()`, which has higher resolution on Linux and can measure microsecond-level events. `perf_counter` under-reports for durations shorter than 100 µs."
+        },
+        {
+          "id": "D",
+          "text": "Run the loop 10 000 times instead of 100. The current 100-iter loop is too short to amortize warmup; with more iterations, the per-iter mean will asymptotically approach the correct value without any change to the timing methodology."
+        }
+      ],
+      "assumptions": [
+        "The kernel is a real cuBLAS matmul and is compute-heavy at this shape.",
+        "The target GPU has no anomalously fast FP16 GEMM implementation."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-BREAKLOG-027",
+      "type": "multiple",
+      "module": "profiling_debug",
+      "subtopic": "Graph break and recompile log diagnosis",
+      "learningObjective": "Diagnose torch.compile graph breaks and recompiles from the TORCH_LOGS='+dynamo,recompiles' output and identify remediation strategies.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch (torch.compile)",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The following TORCH_LOGS output was captured for a torch.compile'd function processing a variable-length batch. Which conclusions are correct? (Select all that apply.)",
+      "profileData": "TORCH_LOGS='+dynamo,recompiles' output for f(x, mask):\n\n[0] torch._dynamo.convert_frame: Recompiling function f (call 1) — new signature\n[0] torch._dynamo.symbolic_convert: graph break on `if mask.any():` — data-dependent branch\n[0] torch._inductor: compiled subgraph #0 (before break), #1 (after break)\n\n[1] torch._dynamo.convert_frame: Recompiling function f (call 2) — guard failure: tensor 'x' size changed 128 → 256\n[1] torch._inductor: recompile of #0 and #1\n\n[2] torch._dynamo.convert_frame: Recompiling function f (call 3) — guard failure: tensor 'x' size changed 256 → 128\n[2] torch._inductor: cache hit on #0 (size 128 already compiled), cache hit on #1",
+      "options": [
+        {
+          "id": "A",
+          "text": "The 'cache hit' at call 3 shows that torch.compile keeps compiled subgraphs indexed by (shape, dtype) guard set — bouncing between two sizes stops paying compile cost after both have been seen once, but each still uses shape-specific code."
+        },
+        {
+          "id": "B",
+          "text": "Replacing `if mask.any():` with `torch.where(mask, x, 0)` — an eager pattern that avoids the graph break — would still cause the same recompiles because guard failures on tensor shapes are unrelated to control flow."
+        },
+        {
+          "id": "C",
+          "text": "The `if mask.any():` triggers a graph break because it is a data-dependent Python control flow; the compiled region is split into two subgraphs (#0 before and #1 after) with eager execution of the branch decision itself in between."
+        },
+        {
+          "id": "D",
+          "text": "The recompile at call 2 is due to a shape guard failure (128 → 256); enabling dynamic shapes for `x` (`torch._dynamo.mark_dynamic(x, 0)`) would avoid the recompile by generating a shape-generic compiled graph that handles both sizes."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 torch.compile behavior.",
+        "cache_size_limit is not being exceeded by the two shapes in the log."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-CACHE-025",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Cache hit-rate diagnosis",
+      "learningObjective": "Interpret L1/L2 cache hit-rate metrics in Nsight Compute and decide whether the metric points to a real optimization opportunity or is expected for the workload.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (A100)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "Nsight Compute",
+        "stability": "stable_principle"
+      },
+      "stem": "Two elementwise FP32 kernels have identical implementations except for input size. Nsight Compute reports the following. Which conclusion is best supported?",
+      "profileData": "Kernel A: single-pass streaming over 1 GB (much larger than L2)\n  L1 Hit Rate: 40 %\n  L2 Hit Rate: 5 %\n  DRAM Throughput: 92 %\n\nKernel B: single-pass streaming over 8 MB (fits in L2)\n  L1 Hit Rate: 42 %\n  L2 Hit Rate: 78 %\n  DRAM Throughput: 22 %",
+      "options": [
+        {
+          "id": "A",
+          "text": "Kernel A's low L2 hit rate is a bug; adding a shared-memory blocking scheme (loading tiles into shared memory) will let the L2 hit rate climb to Kernel B's level, unlocking a proportional speedup."
+        },
+        {
+          "id": "B",
+          "text": "Kernel B is compute-bound because its DRAM throughput is only 22%; the correct optimization is to add more math per element to raise arithmetic intensity toward the ridge point of the roofline."
+        },
+        {
+          "id": "C",
+          "text": "The L2 hit rates prove the L2 is unreliable on Ampere; disabling the L2 (via `cudaFuncSetAttribute` with CU_CTX_CACHE_L2_NONE) will make DRAM utilization consistent between the two kernels and improve total throughput."
+        },
+        {
+          "id": "D",
+          "text": "Kernel A's low L2 hit rate is expected for a single-pass stream over data larger than L2 — each cache line is touched once and evicted before reuse. The kernel is memory-bound at 92% DRAM and shared-memory blocking cannot reduce the total number of unique bytes that must be read."
+        }
+      ],
+      "assumptions": [
+        "A100 has ~40 MB L2 cache; 1 GB is well beyond it, 8 MB fits comfortably.",
+        "The elementwise kernel has no cross-element reuse in either case."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-COMPTIME-026",
+      "type": "multiple",
+      "module": "profiling_debug",
+      "subtopic": "Compile time as a benchmark axis",
+      "learningObjective": "Reason about when compile time should be reported alongside inference latency in benchmarks and how the choice affects fair comparison.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (torch.compile, TensorRT, TVM)",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about compile time in ML performance benchmarks are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Reporting only steady-state inference latency without disclosing compile time can hide significant real-world cost, particularly for auto-tuners (TVM Ansor, TensorRT builder tactic search) that can take minutes to hours per shape/model."
+        },
+        {
+          "id": "B",
+          "text": "Compile time is fully amortizable in every deployment scenario: since the model is compiled once and served millions of times, per-request amortized compile time is always negligible and does not need to be reported."
+        },
+        {
+          "id": "C",
+          "text": "For iterative research workflows (e.g., quickly iterating on model architecture), long compile times can dominate wall-clock development cost; a fair benchmark for these workflows must include compile time."
+        },
+        {
+          "id": "D",
+          "text": "Benchmarks that compare compilers with different compile-time budgets (10 s vs 30 min) but the same inference latency should be treated as equivalent for deployment because compile is offline."
+        }
+      ],
+      "assumptions": [
+        "The benchmark is representative of a real workflow (development, canary, per-tenant, or steady-state)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-CPUEVT-006",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "CUDA Event vs CPU Timer: single-kernel timing",
+      "learningObjective": "Choose between CUDA events and CPU timers when timing a single small CUDA kernel; understand the precision and semantic implications.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch / CUDA",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "You want to time a single small CUDA kernel (expected duration ~30 µs) that runs on a non-default stream in the middle of a larger workload. Which measurement approach is most accurate, and why?",
+      "profileData": "Setup:\n  - Kernel duration expected ~30 µs\n  - Runs on user stream `s1`, while stream `s2` runs concurrent work\n  - Wall-clock question: time _only_ this one kernel, not the concurrent work\n\nCandidate approaches:\n  (i)   time.perf_counter() around a single non-synced launch\n  (ii)  time.perf_counter() around launch + torch.cuda.synchronize() (device-wide)\n  (iii) cuda.Event(enable_timing=True), event.record(s1) before and after kernel, elapsed_time after event.synchronize()\n  (iv)  time.perf_counter() around launch + s1.synchronize()",
+      "options": [
+        {
+          "id": "A",
+          "text": "Approach (i) is best because it eliminates any synchronization overhead; the reported time is exactly the wall-clock cost of the launch and it also captures the GPU-side execution because CUDA launches block the host until completion when the kernel is small enough (<100 µs)."
+        },
+        {
+          "id": "B",
+          "text": "Approach (iii) is best: CUDA events recorded on `s1` around the kernel isolate its execution on that stream, are timed by the GPU with ~0.5 µs resolution, and are unaffected by concurrent work on `s2`. Approaches using device-wide synchronize would also charge concurrent work on other streams."
+        },
+        {
+          "id": "C",
+          "text": "Approach (ii) is best because a device-wide synchronize also flushes work on `s2` before recording the end time, which gives the most accurate measurement of _only_ the kernel of interest by ensuring the entire GPU is idle at the endpoints."
+        },
+        {
+          "id": "D",
+          "text": "Approach (iv) is best because a stream-scoped synchronize combined with a CPU timer captures the full CPU dispatch cost plus GPU execution; CUDA events cannot record a stream because `cudaEventRecord` only accepts the default stream in single-context CUDA programs."
+        }
+      ],
+      "assumptions": [
+        "Modern CUDA runtime; `cudaEventRecord` supports non-default streams.",
+        "Concurrent work on `s2` may overlap in wall clock but is not the measurement target."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-DETERM-017",
+      "type": "multiple",
+      "module": "profiling_debug",
+      "subtopic": "Non-determinism in GPU computation",
+      "learningObjective": "Identify sources of non-determinism in GPU-based ML training/inference and which knobs (deterministic algorithms flag, atomic-free kernels, seed control) address them.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about non-determinism on GPU ML workloads are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Even with all determinism flags enabled, changing the number of GPU threads (e.g., via CUDA_VISIBLE_DEVICES or a different job allocation) can change the parallel reduction shape and thus low-order bits; determinism is only guaranteed for identical execution configurations."
+        },
+        {
+          "id": "B",
+          "text": "Reductions implemented with cross-block `atomicAdd` on floats are non-associative and can produce different low-order bits across runs even with the same input, because the order of concurrent atomic operations is not fixed."
+        },
+        {
+          "id": "C",
+          "text": "Setting `torch.use_deterministic_algorithms(True)` and seeding RNGs is sufficient to guarantee bit-identical outputs across GPU model changes (A100 → H100); once the flag is set, PyTorch reroutes any non-deterministic op through a deterministic kernel that is cross-architecture identical."
+        },
+        {
+          "id": "D",
+          "text": "cuDNN convolution algorithm selection (via benchmark mode) can pick different algorithms across runs with the same input; disabling benchmark mode (or using `torch.backends.cudnn.deterministic = True`) locks the algorithm choice and reduces one source of non-determinism."
+        }
+      ],
+      "assumptions": [
+        "Standard PyTorch 2.0+ with cuDNN backend for convolutions."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-DIFFTEST-010",
+      "type": "multiple",
+      "module": "profiling_debug",
+      "subtopic": "Differential testing",
+      "learningObjective": "Identify correct properties of differential testing (running two implementations of the same spec on many random inputs and comparing outputs) versus golden testing.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about differential testing (as applied to kernel/compiler correctness) are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Differential testing between an implementation and itself (e.g., torch.compile vs eager) always yields identical outputs by construction; any discrepancy indicates a compiler bug that must be fixed before shipping, with no room for numerical tolerance."
+        },
+        {
+          "id": "B",
+          "text": "Differential testing eliminates the need for golden tests entirely because random inputs provide statistically stronger coverage than any fixed input set."
+        },
+        {
+          "id": "C",
+          "text": "Differential testing compares outputs of two independent implementations of the same specification on many (often randomly generated) inputs; it is especially effective at surfacing corner-case bugs (empty shapes, extreme values, unusual strides) that a single golden test might miss."
+        },
+        {
+          "id": "D",
+          "text": "A differential-testing framework must record inputs that trigger a discrepancy so that the failure can be reproduced deterministically; without seed recording, non-deterministic failures degrade to noise and cannot be triaged."
+        }
+      ],
+      "assumptions": [
+        "The two implementations are actually independent, not two builds of the same code path."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-DYNREG-013",
+      "type": "multiple",
+      "module": "profiling_debug",
+      "subtopic": "Dynamic shape regression detection",
+      "learningObjective": "Diagnose dynamic-shape performance regressions in compiled workloads from a mix of graph-break/recompile logs and per-shape latency data.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch (torch.compile)",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A torch.compile-wrapped inference service handles requests of varying seq_len. In production, latency has become erratic. The following profiler output is captured. Which conclusions are supported? (Select all that apply.)",
+      "profileData": "Per-request torch.compile trace (500 requests, various seq_len):\n  Seq_len distribution: 128, 256, 384, 512, 640, 768, 896, 1024 (roughly uniform)\n  torch._dynamo.utils.count_calls_to_compile: 8 recompiles (one per unique seq_len)\n  torch._dynamo.config.cache_size_limit: default (8)\n  Median latency:  4.2 ms  (steady state after warmup)\n  p95 latency:     42.6 ms\n  p99 latency:     58.1 ms\n  First-time-seen seq_len latencies:  350 - 900 ms\n  Recompile reason in logs: \"tensor size mismatch, previous s0 = 128, new s0 = 256\" (× 7)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Enabling dynamic shapes (e.g., `torch.compile(dynamic=True)` or `torch._dynamo.mark_dynamic`) would allow one compiled graph to cover multiple seq_lens, converting the recompile spikes into a single warmup cost and stabilizing p95/p99."
+        },
+        {
+          "id": "B",
+          "text": "The default `cache_size_limit` (~8) is being fully consumed; workloads with more distinct shapes than the cache limit would trigger even more churn as cache entries evict, meaning higher shape diversity would make the situation worse if not addressed."
+        },
+        {
+          "id": "C",
+          "text": "The recompile latencies (~350–900 ms) are counted inside the per-request latency measurement, so the p95/p99 are dominated by compile-time cost, not actual GPU execution. Removing the compile cost by pre-warming all seq_lens or enabling dynamic shapes would fix the tail."
+        },
+        {
+          "id": "D",
+          "text": "The 8 recompiles correspond to shape-specialized graphs — one per unique seq_len — because dynamic shape was not enabled (or a guard forced specialization); the p99 spikes correspond to first-time-seen shapes paying the JIT cost."
+        }
+      ],
+      "assumptions": [
+        "Static-shape torch.compile mode (no explicit dynamic=True or mark_dynamic).",
+        "cache_size_limit default in 2.3~2.5 is around 8."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-E2E-020",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "End-to-end vs microbenchmark",
+      "learningObjective": "Distinguish end-to-end latency from microbenchmark latency and identify when a microbenchmark speedup does not translate to end-to-end speedup.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "A team reports a 4.7× speedup on a fused LayerNorm+bias microbenchmark and concludes the end-to-end model inference will speed up by 4.7×. Which critique is most accurate?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Kernel and end-to-end speedups can differ substantially: only the fraction of end-to-end time actually spent in that kernel is affected by the microbenchmark improvement (Amdahl's law). If LayerNorm is 5% of end-to-end time, a 4.7× kernel speedup translates into at most ≈ 4% end-to-end improvement, not 4.7×."
+        },
+        {
+          "id": "B",
+          "text": "The microbenchmark speedup is an underestimate: fusing LayerNorm with adjacent bias unlocks cache reuse in following ops as well, so the end-to-end speedup is typically 2-3× larger than the microbenchmark number."
+        },
+        {
+          "id": "C",
+          "text": "Since the microbenchmark speedup is 4.7×, the end-to-end speedup will be exactly 4.7× minus the launch-overhead constant of 5 µs times the number of layers; for typical 32-layer models this gives ≈ 4.6× end-to-end."
+        },
+        {
+          "id": "D",
+          "text": "The 4.7× is correct because kernel-level speedups compose multiplicatively into end-to-end speedup as long as at least one op is sped up; the only limit is the Amdahl fraction of the sped-up op, and LayerNorm is a mainstream op so its fraction is always high."
+        }
+      ],
+      "assumptions": [
+        "The microbenchmark measures the kernel in isolation, not with surrounding realistic context.",
+        "The end-to-end pipeline includes many other kernels."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-GENCODE-029",
+      "type": "multiple",
+      "module": "profiling_debug",
+      "subtopic": "Generated Triton code inspection",
+      "learningObjective": "Interpret generated Triton code emitted by TorchInductor and identify what the code does and does not tell you about performance.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch (TorchInductor + Triton)",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statements about inspecting the generated Triton code from TorchInductor are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Autotuning parameters (BLOCK_M, BLOCK_N, num_warps, num_stages) affect performance substantially; the generated code often includes an `@triton.autotune` decorator listing candidate configurations, and the actual runtime chooses among them on the first call."
+        },
+        {
+          "id": "B",
+          "text": "The generated Triton code is the same across all PyTorch 2.x versions: TorchInductor's codegen strategy has been frozen since 2.0, so any performance change between minor versions must come from other components (allocator, dispatcher) rather than from codegen changes."
+        },
+        {
+          "id": "C",
+          "text": "The generated Triton kernel exposes the fused iteration space (block sizes, program dimensions) and the sequence of `tl.load`, arithmetic, and `tl.store` calls; seeing multiple fused elementwise ops inside one kernel confirms that Inductor's scheduler recognized producer-consumer reuse."
+        },
+        {
+          "id": "D",
+          "text": "The generated Triton code alone determines steady-state performance: any two kernels with the same Triton source will run at the same latency on the same GPU regardless of tuning parameters or launch configuration."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 Inductor with Triton backend on CUDA."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-GOLDEN-009",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Golden test design",
+      "learningObjective": "Design a golden test for a custom kernel by choosing an appropriate reference implementation, deterministic inputs, and tolerance schema.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "You are writing a golden test for a new fused Triton `LayerNorm(x) * gamma + beta` kernel. Which combination of design choices best matches golden-test discipline?",
+      "codeSnippet": "# Custom Triton kernel under test:\ndef fused_ln_gamma_beta(x, gamma, beta, eps=1e-5):\n    ...\n\n# Reference options:\n#   (i)  torch.nn.functional.layer_norm on CUDA in FP32\n#   (ii) A hand-written numpy CPU LayerNorm in FP64\n#   (iii) An older version of the same Triton kernel\n\n# Input options:\n#   (a) torch.randn seeded with a fixed torch.manual_seed(0)\n#   (b) Different random inputs every test invocation\n\n# Tolerance options:\n#   (α) rtol=1e-2, atol=1e-2 (BF16-appropriate)\n#   (β) rtol=1e-6, atol=1e-6 (FP32/FP64-appropriate)\n#   (γ) tolerance derived from the input dtype (FP32 rtol~1e-5, BF16 rtol~1e-2)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Reference (i) — torch.nn.functional.layer_norm; input (a) — fixed seed; tolerance (β) — strict FP32/FP64 tolerance regardless of the actual input dtype. Golden tests should always assert bitwise-close equality; letting BF16 tests pass at 1e-2 masks real bugs."
+        },
+        {
+          "id": "B",
+          "text": "Reference (iii) — an older version of the same kernel; input (b) — random each run; tolerance (β) — FP32 strict. Using the same-family reference guarantees the closest numerical match, and random inputs each run maximize coverage across the input distribution over CI history."
+        },
+        {
+          "id": "C",
+          "text": "Reference (ii) — numpy CPU FP64; input (a) — fixed seed; tolerance (γ) — dtype-driven. A high-precision independent reference plus deterministic inputs plus dtype-appropriate tolerance is the strongest correctness signal, with the extra property that a floating-point-order difference between the CUDA implementation and the reference does not falsely fail the test."
+        },
+        {
+          "id": "D",
+          "text": "Reference — none; input (b) — random; tolerance (α) — loose BF16 tolerance. Golden tests are only useful for detecting NaN/Inf; numerical correctness is validated by end-to-end model accuracy on validation datasets, not by per-kernel numerical checks."
+        }
+      ],
+      "assumptions": [
+        "The CUDA implementation is being validated against a reference for correctness.",
+        "The test runs in CI where reproducibility matters."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-IRDUMP-028",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "IR dump interpretation",
+      "learningObjective": "Reason about what information a TorchInductor IR dump reveals and what it does not, and how to use it for debugging compilation issues.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch (TorchInductor)",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "You dump the TorchInductor IR (via `TORCH_COMPILE_DEBUG=1` or `torch._inductor.config.debug = True`) for a compiled function. Which statement most accurately describes what the dumps reveal for debugging?",
+      "codeSnippet": "# Debug dump enabled\nimport torch\ntorch._inductor.config.debug = True\n\n@torch.compile\ndef f(x, w):\n    return (x @ w).relu()\n\ny = f(torch.randn(1024, 1024, device=\"cuda\"), torch.randn(1024, 1024, device=\"cuda\"))\n# Produces torchinductor_*/[hash]/output_code.py, fx_graph_readable.py, etc.",
+      "options": [
+        {
+          "id": "A",
+          "text": "The dumps only contain the model's weights in a compressed format; they do not expose graph structure or generated code and are intended only as a runtime cache for the compiler."
+        },
+        {
+          "id": "B",
+          "text": "The dumps include a full PTX assembly listing with per-instruction SASS mapping and dynamic register allocation; they are the primary tool for register-pressure debugging and replace nvcc `--ptxas-options=-v` output entirely."
+        },
+        {
+          "id": "C",
+          "text": "The dumps are text protobuf files identical to ONNX and can be re-imported into any ONNX-compatible runtime; this is the standard way to convert a torch.compile'd model to TensorRT for deployment."
+        },
+        {
+          "id": "D",
+          "text": "The dumps show the FX graph (post-AOTAutograd), the scheduler decisions, and the generated Triton/C++ code. They let you verify which ops fused together, which were emitted as separate kernels, and where the compiler fell back to eager or an external kernel — invaluable for diagnosing missing-fusion or unexpected-kernel-launch bugs."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 default Inductor debug dump layout."
+      ],
+      "version": 1
+    },
     {
       "id": "L-LAUNCH-001",
       "type": "single",
@@ -29,7 +619,7 @@
       "options": [
         {
           "id": "A",
-          "text": "The workload is memory-bandwidth limited; the 40% idle time on the GPU indicates HBM is saturated in a way that stalls SM issue slots, and the correct mitigation is to shrink model weights via quantization to lower HBM pressure."
+          "text": "Launch-overhead limited: ~20 ms (40%) is CPU-side dispatch between many small kernels. Mitigate with fusion, CUDA Graphs, or larger per-kernel work."
         },
         {
           "id": "B",
@@ -41,12 +631,61 @@
         },
         {
           "id": "D",
-          "text": "Launch-overhead limited: ~20 ms (40%) is CPU-side dispatch between many small kernels. Mitigate with fusion, CUDA Graphs, or larger per-kernel work."
+          "text": "The workload is memory-bandwidth limited; the 40% idle time on the GPU indicates HBM is saturated in a way that stalls SM issue slots, and the correct mitigation is to shrink model weights via quantization to lower HBM pressure."
         }
       ],
       "assumptions": [
         "Nsight's 'GPU utilization' metric here reflects the fraction of wall time during which any SM is running a kernel; 60% ≈ 30/50 ms.",
         "The 'CPU-side gap' truly measures time between one kernel's end and the next kernel's start on the same stream, not synchronization waits."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-NAN-015",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "NaN / Inf detection and root-cause analysis",
+      "learningObjective": "Diagnose the appearance of NaN in a Transformer forward pass using loss / activation statistics and localize the source op.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere+ (sm_80+)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP16 or BF16 Tensor Cores"
+        ]
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "In mid-training a 7B Transformer, loss becomes NaN at step 4213 after being stable for hundreds of prior steps. Activation-hook profiling records per-layer max-abs statistics as shown. Which diagnosis is best supported?",
+      "profileData": "Per-layer max(|activation|) at step 4212 (last healthy) vs step 4213 (NaN):\n  layer 22 attn_scores:  before-softmax   step 4212 = 12.4       step 4213 = 27.8\n  layer 22 attn_scores:  after-softmax    step 4212 = 0.94       step 4213 = NaN\n  layer 22 attn_probs @ V                   step 4212 = 5.1        step 4213 = NaN (propagated)\n  All prior layers (0-21):                                              finite in both steps\n  Precision: fp16 activations, fp32 master weights, GradScaler enabled",
+      "options": [
+        {
+          "id": "A",
+          "text": "The GradScaler failed to scale the loss and gradients underflowed to zero at step 4213; disabling GradScaler will fix the NaN because zero-gradient training is stable at any precision."
+        },
+        {
+          "id": "B",
+          "text": "The attention scores at layer 22 exceeded FP16 range (max ≈ 65504) between steps 4212 and 4213, causing softmax input to overflow to Inf on one entry and produce NaN after normalization; typical fixes include upcasting attn_scores to FP32 before softmax (or using an implementation that fuses safe softmax with FP32 accumulator, e.g., FlashAttention)."
+        },
+        {
+          "id": "C",
+          "text": "Softmax over a vector with max ≈ 27.8 always overflows to Inf regardless of precision because exp(27.8) exceeds FP32 range; the fix is to switch entirely to FP64 for all training compute."
+        },
+        {
+          "id": "D",
+          "text": "The NaN is a numerical fluke unrelated to the profile data; retraining from an earlier checkpoint with a different seed will always resolve NaN issues without changing precision or fusing softmax."
+        }
+      ],
+      "assumptions": [
+        "Naive softmax (no safe-softmax max-subtract) at FP16.",
+        "The profile data reflects genuine max-abs activation statistics."
       ],
       "version": 1
     },
@@ -98,11 +737,11 @@
         },
         {
           "id": "B",
-          "text": "DRAM-bandwidth bound: 92% DRAM throughput near peak, low SM utilization from memory stalls; occupancy and math cannot help — reduce bytes moved (fusion, lower dtype)."
+          "text": "L1 hit rate (40%) is the primary bottleneck; increasing per-block shared-memory usage will lift the L1 hit rate and speed up the kernel by satisfying more accesses from on-chip cache instead of HBM."
         },
         {
           "id": "C",
-          "text": "L1 hit rate (40%) is the primary bottleneck; increasing per-block shared-memory usage will lift the L1 hit rate and speed up the kernel by satisfying more accesses from on-chip cache instead of HBM."
+          "text": "DRAM-bandwidth bound: 92% DRAM throughput near peak, low SM utilization from memory stalls; occupancy and math cannot help — reduce bytes moved (fusion, lower dtype)."
         },
         {
           "id": "D",
@@ -112,6 +751,420 @@
       "assumptions": [
         "A100 with HBM2e ≈ 2.0 TB/s peak; 92% of peak ≈ 1.84 TB/s.",
         "The kernel touches each element exactly once for read and once for write (no reuse)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-NOISE-018",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Performance noise and reporting statistics",
+      "learningObjective": "Choose a robust statistic (median or a percentile) rather than mean when reporting kernel latency in the presence of outliers.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Given the following 20 warmed-up per-iter latencies of the same kernel, which single number is the most defensible headline for a report and why?",
+      "profileData": "Per-iter latency, ms (sorted): 2.10, 2.12, 2.14, 2.15, 2.15, 2.16, 2.17, 2.17, 2.18, 2.18, 2.19, 2.19, 2.20, 2.21, 2.22, 2.23, 2.25, 2.30, 5.80, 12.4\n\nSummary:\n  mean   = 2.98 ms\n  median = 2.18 ms\n  p95    = 5.80 ms\n  p99    = 12.4 ms (single sample)\n  std    = 2.5 ms",
+      "options": [
+        {
+          "id": "A",
+          "text": "The mean (2.98 ms) is a good headline because it summarizes all 20 samples in a single number, and mean is the standard statistic in scientific reporting."
+        },
+        {
+          "id": "B",
+          "text": "The p99 (12.4 ms) is a good headline because it represents worst-case behavior and captures the tail; when in doubt, always report the worst observed sample as the summary number."
+        },
+        {
+          "id": "C",
+          "text": "The std (2.5 ms) is the most useful headline because it captures the spread; readers can infer any percentile from mean ± std under the assumption of a normal distribution of kernel latencies."
+        },
+        {
+          "id": "D",
+          "text": "The median (2.18 ms) is the most defensible headline: it is robust to the two obvious outliers (5.80 ms and 12.4 ms), agrees with the bulk of the distribution, and does not overstate steady-state cost. Ideally the report should include median plus one or more tail percentiles (p95, p99) rather than a single number."
+        }
+      ],
+      "assumptions": [
+        "The two outliers (5.80 ms, 12.4 ms) reflect infrequent noise events (GC, driver events), not the target measurement."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-OCC-022",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Occupancy diagnosis and its limits",
+      "learningObjective": "Diagnose whether a kernel with low achieved occupancy is actually occupancy-limited or is memory-bound at high occupancy.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "Nsight Compute",
+        "stability": "stable_principle"
+      },
+      "stem": "Nsight Compute reports the following metrics for a compute-heavy FP16 GEMM kernel on A100. Which diagnosis best matches the data?",
+      "profileData": "Kernel: hgemm_128x128\n  SM Utilization      : 96 %\n  Achieved Occupancy  : 0.30\n  DRAM Throughput     : 25 % of peak\n  L2 Hit Rate         : 65 %\n  Warp Stall Reason (top-1): Not Selected (waiting for issue slot)\n  Registers per thread: 168\n  Shared memory per block: 96 KB",
+      "options": [
+        {
+          "id": "A",
+          "text": "Low occupancy (0.30) is the bottleneck; force lower register usage to raise occupancy to 1.0, which will unlock roughly 3× speedup as more warps become resident on each SM."
+        },
+        {
+          "id": "B",
+          "text": "SM utilization is 96% and stall reason is 'not selected' (issue slot pressure), indicating the SMs are saturated with the current small number of resident warps — occupancy 0.30 is intentional (large tiles need many registers/shared memory) and reflects the standard trade-off in high-performance GEMM. The kernel is close to optimal and lowering register usage would not help."
+        },
+        {
+          "id": "C",
+          "text": "The kernel is memory-bound; the 25% DRAM throughput plus 65% L2 hit rate indicate the kernel is saturating HBM through L2; reducing register usage would only worsen the situation by evicting more L2 data through spills."
+        },
+        {
+          "id": "D",
+          "text": "The kernel is achieving 0.30 × 96% = 28.8% of peak; scaling occupancy to 1.0 would give 96% peak, which is the standard optimization target for any GEMM on any GPU generation."
+        }
+      ],
+      "assumptions": [
+        "Kernel is a well-tuned tile-based GEMM.",
+        "The metrics reported by Nsight Compute are on a warmed-up steady-state kernel launch."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-PCTL-019",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Percentile / variance reporting",
+      "learningObjective": "Reason about how many samples are needed to estimate a p99 latency with reasonable confidence, and identify a common under-sampling mistake.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "A team claims a service's p99 latency is 3.4 ms based on a benchmark of 100 samples. What is the correct critique of this claim, purely from a statistical standpoint?",
+      "options": [
+        {
+          "id": "A",
+          "text": "There is no critique — 100 samples is more than enough to estimate p99 within one significant figure, since p99 is defined as the 99th-largest value in any sample regardless of N and the estimator is unbiased for N ≥ 30."
+        },
+        {
+          "id": "B",
+          "text": "The critique is that the p99 must be reported alongside a p50 that is exactly 100× smaller, otherwise the p99 is meaningless. Since 3.4 ms is given, one can only accept the number if the p50 is 34 µs; otherwise the sample is biased."
+        },
+        {
+          "id": "C",
+          "text": "100 samples are too many; percentile estimators become less accurate as N grows due to increased opportunity for outliers in the tail. A benchmark should use exactly 10 samples to minimize variance."
+        },
+        {
+          "id": "D",
+          "text": "With N = 100, the p99 estimator is highly unstable: the empirical p99 corresponds to (roughly) the 1-2 slowest samples, and its variance is on the order of the tail spread. A defensible p99 estimate needs on the order of 10³-10⁴ samples, and reporting should include a confidence interval."
+        }
+      ],
+      "assumptions": [
+        "The samples are i.i.d. from the underlying latency distribution."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-PROF-030",
+      "type": "multiple",
+      "module": "profiling_debug",
+      "subtopic": "PyTorch Profiler vs Nsight Systems: choosing the right tool",
+      "learningObjective": "Compare PyTorch Profiler with Nsight Systems/Compute and choose the appropriate tool for a given debugging task.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch Profiler / Nsight Systems / Nsight Compute",
+        "frameworkVersionScope": "PyTorch 2.0+; Nsight Systems 2023+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about the split between PyTorch Profiler, Nsight Systems, and Nsight Compute are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Nsight Compute samples inside a single kernel (SM utilization, warp stall reasons, memory throughput, cache hit rate); it is the right tool for optimizing a specific kernel that you have already identified as the bottleneck via Nsight Systems or PyTorch Profiler."
+        },
+        {
+          "id": "B",
+          "text": "All three tools show the same information — kernel timeline, SM utilization, and warp stall reasons — with different UIs; picking one is a matter of preference and not of debugging need."
+        },
+        {
+          "id": "C",
+          "text": "PyTorch Profiler is the appropriate tool when you need op-level attribution (which aten op or Python line launched which kernel) and a timeline view that unifies CPU-side dispatcher work, autograd events, and CUDA kernel launches."
+        },
+        {
+          "id": "D",
+          "text": "Nsight Systems is oriented at system-level tracing (CPU, GPU, CUDA API, NVTX, cuDNN library calls, stream utilization); it is the right tool for diagnosing CPU launch gaps, PCIe bottlenecks, and cross-stream concurrency issues."
+        }
+      ],
+      "assumptions": [
+        "Modern versions of all three tools as of 2024-2025."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-RACE-016",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Race condition in a CUDA kernel",
+      "learningObjective": "Diagnose a race condition in a CUDA kernel from symptoms (non-deterministic output, small numerical drift across runs) and identify the missing synchronization primitive.",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "CUDA",
+        "stability": "stable_principle"
+      },
+      "stem": "A CUDA reduction kernel produces slightly different outputs across runs with the same input (differences beyond floating-point tolerance and inconsistent across GPU model). The relevant kernel snippet is shown. What is the root cause?",
+      "codeSnippet": "__global__ void reduce_bug(const float* x, float* out, int N) {\n    __shared__ float smem[256];\n    int tid = threadIdx.x;\n    int i = blockIdx.x * blockDim.x + tid;\n    smem[tid] = (i < N) ? x[i] : 0.0f;\n    // MISSING __syncthreads() here\n    for (int s = blockDim.x / 2; s > 0; s >>= 1) {\n        if (tid < s) smem[tid] += smem[tid + s];\n        // MISSING __syncthreads() at end of loop body\n    }\n    if (tid == 0) atomicAdd(out, smem[0]);\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "The bug is that `smem` is not initialized to zero before the load; on some GPUs uninitialized shared memory contains garbage, and threads with `i >= N` read stale bank contents instead of writing zero."
+        },
+        {
+          "id": "B",
+          "text": "The `atomicAdd` on `out` is non-associative for floats, and different launch orderings produce different accumulation orders; adding a `__threadfence()` before the atomicAdd would enforce a canonical order and eliminate the non-determinism."
+        },
+        {
+          "id": "C",
+          "text": "Missing `__syncthreads()` between the load and the reduction loop (and inside the loop). Without the barrier, threads with different warp scheduling can read `smem[tid + s]` before other threads have finished writing it, producing non-deterministic partial sums. Adding `__syncthreads()` after the load and at the end of each loop iteration fixes the race."
+        },
+        {
+          "id": "D",
+          "text": "The kernel uses `blockDim.x = 256` implicitly but should use `blockDim.x = 32` to match the warp size; different warp counts produce different rounding orders and this is the source of the observed non-determinism."
+        }
+      ],
+      "assumptions": [
+        "Compute capability ≥ sm_70 (Volta+), where independent warp scheduling makes intra-block races more visible.",
+        "The kernel is launched with a block size ≥ 32 (larger than a single warp)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-REGP-024",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Register pressure diagnosis",
+      "learningObjective": "Diagnose register-spill-induced slowdown from Nsight Compute metrics and compiler diagnostics.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "Nsight Compute",
+        "stability": "stable_principle"
+      },
+      "stem": "A custom CUDA kernel's Nsight Compute report and compiler output are shown. Which mitigation is most directly indicated?",
+      "profileData": "Compiler output (nvcc --ptxas-options=-v):\n  ptxas info: Used 168 registers, 96 KB shared, 40 stack frame, 320 bytes spill stores, 480 bytes spill loads\n\nNsight Compute metrics:\n  Achieved Occupancy: 0.12\n  Warp Stall Reason (top): Long Scoreboard (memory latency)\n  L1 Local Load Traffic: 22% of L1 traffic (unusually high; local memory is where spills go)\n  DRAM Throughput: 30%\n  SM Utilization: 40%",
+      "options": [
+        {
+          "id": "A",
+          "text": "40% SM utilization indicates the kernel is under-scheduled by the GPU driver; setting CUDA_LAUNCH_BLOCKING=0 and using per-thread default streams will bring SM utilization to 100% and fix the underlying issue."
+        },
+        {
+          "id": "B",
+          "text": "The 0.12 occupancy directly bounds SM throughput; raising `blockDim` (larger blocks) will proportionally increase performance because more threads per block always means more concurrent warps hiding latency."
+        },
+        {
+          "id": "C",
+          "text": "Register spilling to local memory (evident from the 40-byte stack frame + 320/480 spill stores/loads and the abnormally high L1 local-load traffic) is causing costly memory traffic disguised as 'Long Scoreboard' stalls. Mitigations: reduce register usage via `__launch_bounds__` or `-maxrregcount`, refactor to fewer live variables, or restructure the algorithm to shrink working set."
+        },
+        {
+          "id": "D",
+          "text": "The kernel is memory-bound at 30% DRAM throughput; the fix is to remove the shared-memory usage entirely because shared memory competes with registers for chip area, so shrinking shared memory automatically frees more registers per thread."
+        }
+      ],
+      "assumptions": [
+        "The kernel was compiled with default optimization and the ptxas verbose output is accurate."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-ROOFLINE-021",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Roofline analysis of a memory-bound kernel",
+      "learningObjective": "Compute arithmetic intensity, place a kernel on a roofline chart, and identify whether measured throughput is close to the roofline.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM2e"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic (Nsight Compute)",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            16777216
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ],
+        "layouts": [
+          "contiguous"
+        ]
+      },
+      "stem": "An FP32 elementwise kernel `out[i] = 3.0f * in[i] + 2.0f` runs on A100 (peak FP32 = 19.5 TFLOP/s, peak HBM = 2.0 TB/s). It reads 64 MB, writes 64 MB, and measures 40 ms. What is the arithmetic intensity and what does the roofline analysis say?",
+      "profileData": "Kernel: fma_bias\n  Input:  16,777,216 FP32 elements (64 MB read)\n  Output: 16,777,216 FP32 elements (64 MB written)\n  Ops per element: 1 fused multiply-add = 2 FLOPs\n  Measured wall time: 40 ms\n  A100 peak FP32: 19.5 TFLOP/s\n  A100 peak HBM:  2.0 TB/s\n  Roofline ridge point: 19.5e12 / 2.0e12 = ~9.75 FLOP/byte",
+      "options": [
+        {
+          "id": "A",
+          "text": "Arithmetic intensity ≈ 0.125 FLOP/byte (2 FLOPs / 16 bytes per element pair). The roofline predicts a compute-bound region since 0.125 > 9.75; the kernel should achieve near 19.5 TFLOP/s and the measured 40 ms indicates a bug."
+        },
+        {
+          "id": "B",
+          "text": "Arithmetic intensity depends on the number of thread blocks and cannot be computed from bytes and FLOPs alone; roofline analysis is not applicable to elementwise kernels because they never hit the roof."
+        },
+        {
+          "id": "C",
+          "text": "Arithmetic intensity ≈ 0.5 FLOP/byte (2 FLOPs / 4 bytes per element). The kernel is compute-bound and should achieve near 19.5 TFLOP/s; 40 ms is expected for this problem size."
+        },
+        {
+          "id": "D",
+          "text": "Arithmetic intensity ≈ 0.125 FLOP/byte. The kernel is well below the ridge point (0.125 << 9.75), so it is memory-bound: expected time = 128 MB / 2.0 TB/s ≈ 62 µs (peak). Measured 40 ms is roughly 640× slower than peak — the kernel is highly inefficient or the measurement is wrong (launch overhead, missing sync, tiny grid)."
+        }
+      ],
+      "assumptions": [
+        "A100 peak FP32 and HBM numbers used above are from NVIDIA specs.",
+        "The 'measured' time is a valid wall-clock number (not itself buggy)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-SHAPECOV-012",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Shape coverage in testing",
+      "learningObjective": "Design a shape-coverage matrix for testing a GPU kernel so that the test suite covers boundary shapes, tile-boundary shapes, and typical production shapes.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "You are writing shape-coverage tests for a fused pointwise kernel with a compile-time tile size of 128. Which shape set is most likely to catch bugs before production?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Only power-of-two shapes: 128, 256, 512, 1024, 2048. These are the most common in ML workloads; if the kernel works on power-of-two sizes it will work on all others by symmetry, so covering non-power-of-two is redundant."
+        },
+        {
+          "id": "B",
+          "text": "Only very large shapes (≥ 10⁶ elements) to make sure the kernel utilizes the GPU; small shapes never expose bugs because they finish quickly, and testing them wastes CI time."
+        },
+        {
+          "id": "C",
+          "text": "A matrix that includes: 0 (empty), 1 (singleton), tile-boundary sizes (127, 128, 129, 255, 256, 257), a couple of large production sizes, and a random-shape fuzz set. This covers boundary handling (mask logic), off-tile-multiple handling, and typical inputs."
+        },
+        {
+          "id": "D",
+          "text": "The exact production shape set (e.g., `M=32, N=4096`), because tests should validate the actual deployment path. Covering other shapes wastes CI cycles and is not required if the kernel is only used with fixed shapes at inference time."
+        }
+      ],
+      "assumptions": [
+        "Kernel has a compile-time tile size and uses masked loads/stores at tile boundaries."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-STREAM-008",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "Multi-stream timing pitfall with CUDA events",
+      "learningObjective": "Reason about a subtle event-timing bug where an event recorded on one stream is elapsed against an event recorded on another stream, giving a wall-time reading that is not the intended per-stream cost.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch / CUDA",
+        "stability": "stable_principle"
+      },
+      "stem": "A user times a kernel on stream `s1` using events but sees inconsistent numbers depending on what runs concurrently on `s2`. Which explanation best matches the reported profile data below?",
+      "profileData": "Scenario:\n  start_evt.record()   # recorded on the current (default/legacy) stream\n  kernel_A_on_s1()     # launched on stream s1\n  end_evt.record()     # recorded on the current stream, NOT on s1\n  end_evt.synchronize()\n  elapsed = start_evt.elapsed_time(end_evt)\n\nObserved:\n  When s2 is idle:  elapsed ≈ 2.5 ms (matches expected kernel A wall time)\n  When s2 runs a 100 ms independent kernel concurrently:  elapsed ≈ 100 ms",
+      "options": [
+        {
+          "id": "A",
+          "text": "The events are recorded on the default (legacy) stream, not on `s1`. Under legacy default-stream semantics the default stream synchronizes with all other streams, so `end_evt.record()` waits for `s2`'s 100 ms kernel to complete before recording. Fix: record the events on `s1` (`start_evt.record(s1)` / `end_evt.record(s1)`)."
+        },
+        {
+          "id": "B",
+          "text": "CUDA events do not have per-stream isolation; any concurrent GPU work always contributes to the elapsed time even when events are recorded correctly on the target stream, so the discrepancy is expected and cannot be fixed with better placement."
+        },
+        {
+          "id": "C",
+          "text": "`elapsed_time` reports the union of GPU activity between the two events; the fix is to divide the reported value by the number of streams that had work in the interval (2 streams → divide by 2)."
+        },
+        {
+          "id": "D",
+          "text": "The `synchronize()` on the end event drains the entire device; the reported 100 ms is the sum of s1 and s2 execution because synchronize serializes them. Fix: replace `end_evt.synchronize()` with `end_evt.query()` in a busy loop."
+        }
+      ],
+      "assumptions": [
+        "Legacy default-stream semantics (not per-thread default stream mode).",
+        "`s1` and `s2` are user-created streams distinct from the default stream."
       ],
       "version": 1
     },
@@ -234,6 +1287,75 @@
       "version": 1
     },
     {
+      "id": "L-TOL2-011",
+      "type": "single",
+      "module": "profiling_debug",
+      "subtopic": "BF16 tolerance and accumulation order",
+      "learningObjective": "Choose a realistic tolerance when validating a BF16 GEMM+bias implementation against an FP32 reference; distinguish rounding-mode and accumulation-order effects.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere+ (sm_80+)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "BF16 Tensor Cores"
+        ]
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.0+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            2048,
+            4096
+          ],
+          [
+            4096,
+            4096
+          ]
+        ],
+        "dtypes": [
+          "bfloat16",
+          "bfloat16"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "You compare a custom BF16 GEMM+bias kernel (with FP32 accumulator) against a reference `x @ w + b` cast to BF16 for `M=2048, K=4096, N=4096`. The naive check `torch.testing.assert_close(out_ref, out_test, atol=1e-3, rtol=1e-3)` fails on some rows. What is the most principled adjustment?",
+      "codeSnippet": "x = torch.randn(2048, 4096, device=\"cuda\", dtype=torch.bfloat16)\nw = torch.randn(4096, 4096, device=\"cuda\", dtype=torch.bfloat16)\nb = torch.randn(4096,       device=\"cuda\", dtype=torch.bfloat16)\n\nout_ref = (x @ w + b).to(torch.bfloat16)          # reference\nout_test = my_bf16_gemm_bias(x, w, b)             # kernel under test (FP32 accum)\n\ntorch.testing.assert_close(out_ref, out_test, atol=1e-3, rtol=1e-3)   # fails on some rows",
+      "options": [
+        {
+          "id": "A",
+          "text": "Compare in FP32 by upcasting `out_test` to FP32 and using the FP32 tolerance `atol=1e-5, rtol=1e-6`. The dtype of the output tensor governs the achievable precision, so casting up to FP32 automatically tightens error bounds without changing the underlying kernel."
+        },
+        {
+          "id": "B",
+          "text": "Raise tolerance to something like `atol=1e-2, rtol=1e-2` (BF16-scale). BF16 mantissa is only 7 bits; K=4096 accumulations amplify rounding, and different tile shapes/reduction orders in cuBLAS vs the custom kernel produce differences well above 1e-3 at large K."
+        },
+        {
+          "id": "C",
+          "text": "Sort each row of both outputs before comparing to remove accumulation-order effects; sorted-tolerance comparisons ignore permutations that arise from different tile scheduling in the two GEMMs, making BF16 GEMMs bit-comparable."
+        },
+        {
+          "id": "D",
+          "text": "The failure indicates a real bug: BF16 GEMMs with FP32 accumulators are bit-identical across all implementations because Tensor Cores use a standardized rounding mode; any mismatch indicates a saturation or overflow bug that must be found."
+        }
+      ],
+      "assumptions": [
+        "Random Gaussian inputs of moderate magnitude.",
+        "Both implementations use FP32 accumulation (as is standard for BF16 Tensor Core paths)."
+      ],
+      "version": 1
+    },
+    {
       "id": "L-WARMUP-005",
       "type": "single",
       "module": "profiling_debug",
@@ -260,11 +1382,11 @@
       "options": [
         {
           "id": "A",
-          "text": "First-run cost includes one-time setup (cuBLAS handle init, algo selection/autotune, kernel loading); benchmark should warm up and report a robust statistic (median) over remaining runs."
+          "text": "`start.elapsed_time(end)` returns the cumulative time between events, not the last kernel; the 100-run mean is thus miscomputed by dividing by 100 and cannot be interpreted as per-iteration cost in any meaningful way."
         },
         {
           "id": "B",
-          "text": "`start.elapsed_time(end)` returns the cumulative time between events, not the last kernel; the 100-run mean is thus miscomputed by dividing by 100 and cannot be interpreted as per-iteration cost in any meaningful way."
+          "text": "First-run cost includes one-time setup (cuBLAS handle init, algo selection/autotune, kernel loading); benchmark should warm up and report a robust statistic (median) over remaining runs."
         },
         {
           "id": "C",
@@ -278,6 +1400,51 @@
       "assumptions": [
         "PyTorch's default cuBLAS backend is used, not TensorRT or a custom kernel.",
         "There is no explicit `torch.compile` in the code."
+      ],
+      "version": 1
+    },
+    {
+      "id": "L-WARPSTALL-023",
+      "type": "multiple",
+      "module": "profiling_debug",
+      "subtopic": "Warp stall reason interpretation",
+      "learningObjective": "Interpret Nsight Compute warp stall reasons and translate them to actionable optimization steps.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere/Hopper (sm_80/sm_90)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "Nsight Compute",
+        "stability": "stable_principle"
+      },
+      "stem": "Nsight Compute reports the following warp stall breakdown for a custom kernel. Which conclusions and next steps are correct? (Select all that apply.)",
+      "profileData": "Kernel: my_reduce_kernel\n  Warp stall breakdown (% cycles per stall reason):\n    Long Scoreboard (memory latency)  : 42 %\n    Barrier                            : 18 %\n    Wait                               : 12 %\n    Not Selected                       :  8 %\n    Short Scoreboard                   :  6 %\n    Others (Selected, Drain, ...)      : 14 %\n  DRAM Throughput: 45 %\n  L2 Hit Rate: 30 %",
+      "options": [
+        {
+          "id": "A",
+          "text": "'Long Scoreboard' means the kernel is compute-bound on the FP32 unit; warps are waiting for math to complete. The right mitigation is to add more math per thread to fill in the pipeline."
+        },
+        {
+          "id": "B",
+          "text": "The dominant stall reason 'Long Scoreboard' points to memory-load latency: warps are waiting for global-memory loads. Mitigations include improving L2 hit rate (better data reuse or blocking), using async cp.async / prefetching, and increasing warps-per-SM to hide latency."
+        },
+        {
+          "id": "C",
+          "text": "'Barrier' stall at 18% suggests __syncthreads() is taking a large fraction of time; reducing block size or eliminating synchronization is always the right response to any Barrier stall regardless of the algorithm's synchronization needs."
+        },
+        {
+          "id": "D",
+          "text": "A 45% DRAM throughput combined with 30% L2 hit rate indicates room to reduce memory traffic (e.g., staging in shared memory) — this would attack the top stall reason at the source rather than raising occupancy to hide it."
+        }
+      ],
+      "assumptions": [
+        "Ampere/Hopper stall taxonomy as documented in Nsight Compute reference.",
+        "The workload is real and not measurement noise."
       ],
       "version": 1
     }

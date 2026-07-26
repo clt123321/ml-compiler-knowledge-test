@@ -3,8 +3,270 @@
   "code": "C",
   "label": "计算图、张量程序与中间表示",
   "generatedAt": "2026-07-26",
-  "count": 5,
+  "count": 30,
   "questions": [
+    {
+      "id": "C-BUFFER-012",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Buffer vs. tensor semantics / Bufferization",
+      "learningObjective": "Contrast tensor-typed IR (value semantics) with buffer-/memref-typed IR (reference semantics) and explain what bufferization does.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "The IR is transformed from a linalg-on-tensor form to a linalg-on-memref form by MLIR's bufferization. Which pair of properties best describes the tensor-form and memref-form semantics, respectively?",
+      "irSnippet": "// BEFORE (linalg on tensor — value semantics)\n%y0 = linalg.generic { ... } ins(%x : tensor<Nxf32>)\n                            outs(%init : tensor<Nxf32>) -> tensor<Nxf32>\n%y1 = linalg.generic { ... } ins(%y0 : tensor<Nxf32>)\n                            outs(%init : tensor<Nxf32>) -> tensor<Nxf32>\n\n// AFTER (linalg on memref — reference semantics, after bufferization)\nlinalg.generic { ... } ins(%X : memref<Nxf32>)\n                       outs(%Y0 : memref<Nxf32>)\nlinalg.generic { ... } ins(%Y0 : memref<Nxf32>)\n                       outs(%Y1 : memref<Nxf32>)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Tensor and memref forms are semantically identical; the only difference is textual. Bufferization is a printing pass that renames tensors to memrefs without altering the IR's data model. Under this interpretation, the pass could be safely dropped from any production pipeline without affecting correctness or code quality of the emitted kernels, since both forms would be equivalent to the codegen backend."
+        },
+        {
+          "id": "B",
+          "text": "Tensor form has reference semantics (ops mutate a shared buffer); memref form has value semantics (each op returns a new immutable buffer). Bufferization enforces immutability at the memref level."
+        },
+        {
+          "id": "C",
+          "text": "Tensor form has value semantics (immutable SSA values; each op produces a fresh tensor); memref form has reference semantics (ops write into named buffers). Bufferization assigns buffers and inserts allocations/copies as needed to preserve semantics. Under this reading, the bufferization pass is unnecessary and is included in MLIR only for symmetry with earlier prototype dialects rather than to resolve any real semantic difference between the two levels."
+        },
+        {
+          "id": "D",
+          "text": "Tensor form is only used for GPU codegen; memref form is only used for CPU codegen. Bufferization is a device-selection pass that chooses which form to use based on the target. In this framing, tensor-form IR is exclusively a front-end concern that stops before device-specific lowering, while memref-form IR is an implementation detail of the GPU codegen path that CPU pipelines simply skip."
+        }
+      ],
+      "assumptions": [
+        "The MLIR pipeline uses the standard tensor + memref + bufferization dialects."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-CANON-006",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Canonicalization / arith folding in MLIR",
+      "learningObjective": "Explain what canonicalization does in an IR framework such as MLIR and distinguish it from lowering and legalization.",
+      "archetype": "ir_transformation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "The MLIR canonicalization pass rewrites the fragment BEFORE into the fragment AFTER. Which statement best characterizes what canonicalization is doing here?",
+      "irSnippet": "// BEFORE\n%c0 = arith.constant 0 : i32\n%c1 = arith.constant 1 : i32\n%a  = arith.addi %x, %c0 : i32   // x + 0\n%b  = arith.muli %a, %c1 : i32   // (x+0) * 1\n%c  = arith.addi %b, %b : i32    // 2*b\nreturn %c : i32\n\n// AFTER (canonicalized)\n%two = arith.constant 2 : i32\n%c   = arith.muli %x, %two : i32  // 2*x\nreturn %c : i32",
+      "options": [
+        {
+          "id": "A",
+          "text": "Canonicalization is MLIR's dialect-conversion mechanism; it uses a Conversion Target and Type Converter to legalize illegal operations by replacing them with legal ones from a different dialect. Under this description, canonicalization essentially reuses the same machinery as `applyPartialConversion`: it walks the IR, applies the target's legality rules, and calls the type converter's materialization hooks to resolve any inserted casts."
+        },
+        {
+          "id": "B",
+          "text": "Canonicalization is a synonym for lowering; the transformation shown is a lowering step from arith to a lower-level dialect such as LLVM, motivated by making the IR closer to backend instructions. In this reading, the pass renames operations from `arith` to a lower-level LLVM dialect at the boundary and is invoked as part of the standard lowering pipeline after all optimization passes have converged."
+        },
+        {
+          "id": "C",
+          "text": "Canonicalization performs algebraic simplifications and constant folding within a dialect to bring semantically equivalent IR into a preferred normal form; it operates within a dialect and does not change the operations' dialects."
+        },
+        {
+          "id": "D",
+          "text": "Canonicalization performs alias analysis and functionalization of in-place operations; the transformation shown is the SSA rename pass invoked as part of canonicalization. In this account, canonicalization runs SROA / mem2reg-style promotions on the IR by first performing alias analysis over memref reads and writes, then rewriting the affected sequences into single-assignment temporaries."
+        }
+      ],
+      "assumptions": [
+        "MLIR uses op-registered canonicalization patterns and folders."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-DCE-013",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Dead code elimination on ops with side effects",
+      "learningObjective": "Explain why dead code elimination (DCE) in a tensor IR must respect ops that have side effects, and how the IR encodes this.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR / general SSA IR",
+        "stability": "stable_principle"
+      },
+      "stem": "A tensor-IR pass tries to run DCE and removes both `linalg.copy` (writes to %B) and `linalg.matmul` (returns a used %C) below. Which statement most accurately describes what DCE is allowed to remove in this snippet?",
+      "irSnippet": "// %B is an output-only memref; %C is used by a return.\nfunc.func @f(%A : memref<MxKxf32>,\n             %B : memref<MxKxf32>,\n             %C : memref<MxNxf32>) -> memref<MxNxf32> {\n  linalg.copy   ins(%A : memref<MxKxf32>)  outs(%B : memref<MxKxf32>)   // side-effecting: writes %B\n  linalg.matmul ins(%A, %W : memref<MxKxf32>, memref<KxNxf32>)\n                outs(%C : memref<MxNxf32>)                              // side-effecting: writes %C, and %C escapes\n  %tmp = arith.addf %z, %z : f32                                        // pure, %tmp unused\n  return %C : memref<MxNxf32>\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "DCE may remove `linalg.copy` (its result appears unused inside the function) and the pure `arith.addf` (unused); `linalg.matmul` must stay because its result escapes."
+        },
+        {
+          "id": "B",
+          "text": "DCE may remove only the pure `arith.addf` because it has no observable side effects and its result is dead. Neither `linalg.copy` nor `linalg.matmul` can be removed: both have write side effects, and the copy's write to %B is externally observable through the function's memref argument. In this account, once escape analysis has confirmed the buffers are visible outside the function, aggressive DCE simply relies on the alias-analysis conservatism to determine that removing the copy is a valid transformation."
+        },
+        {
+          "id": "C",
+          "text": "DCE may remove all three operations because pass-by-memref semantics let the caller re-execute the code path; the callee is free to elide any write it does not itself observe internally. In this reading, pass-by-memref is equivalent to pure-value semantics because the compiler owns the buffer and only surfaces the writes through an explicit return value; thus stores to it are private to the callee."
+        },
+        {
+          "id": "D",
+          "text": "DCE may remove `linalg.copy` and `linalg.matmul` but must keep `arith.addf` because SSA values are always considered live regardless of use, whereas memref stores are always dead absent an explicit `sync` op. Under this framing, MLIR's default DCE ignores memory-effect annotations entirely and treats any op whose SSA result is unused as removable, on the assumption that side effects are already tracked by a separate `sync` pass."
+        }
+      ],
+      "assumptions": [
+        "The IR distinguishes ops with memory side effects from pure ops (as MLIR's MemoryEffects interface does).",
+        "The caller retains a reference to the memrefs `%A`, `%B`, `%C` after the call."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-DIALECT-016",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "MLIR: Operation / Region / Block / Value / Type",
+      "learningObjective": "Recall the core structural concepts of MLIR (Operation, Region, Block, Value, Type, Attribute) and how they relate.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider MLIR's core structural vocabulary. Which statement most accurately describes the relationship among Operation, Region, Block, and Value?",
+      "options": [
+        {
+          "id": "A",
+          "text": "An Operation may contain zero or more Regions; each Region contains a list of Blocks; each Block contains a list of Operations and defines Values (its arguments and results produced by operations within it). In this description, MLIR maintains a global op-to-children table separate from the IR text, and reading a nested op requires querying this side-table since the printed textual form is a projection rather than the source of truth."
+        },
+        {
+          "id": "B",
+          "text": "Operations exist only at the top level of an MLIR module; nesting is achieved via a separate side-table mapping op ids to child operations rather than via Region containment. Under this account, ops carry Values as internal fields serialized into their attribute dictionary, and any cross-op edge is emulated by copying the value into a downstream op's operand slot rather than sharing an SSA reference."
+        },
+        {
+          "id": "C",
+          "text": "Regions and Blocks are the same concept under different names; each Value is stored as an Operation's private state and cannot be referenced across operations."
+        },
+        {
+          "id": "D",
+          "text": "Values in MLIR are Python objects owned by the parser; they are not modeled in the C++ IR and are attached to operations only for pretty-printing. Under this framing, Values are opaque handles injected by the parser to carry file and line info for diagnostics; the C++ IR routes them purely through the printer and does not consult them during pass execution."
+        }
+      ],
+      "assumptions": [
+        "The reference is MLIR's core Language Reference model."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-EAGER-015",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Eager vs. static / define-by-run vs. define-and-run",
+      "learningObjective": "Distinguish eager execution (define-by-run) from static graph capture (define-and-run) and identify the correct implications of each.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Eager execution and static graph capture describe two different points in the design space of ML frameworks. Which statement most accurately captures the key distinction?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Eager and static differ only in file format: eager mode stores the graph as JSON while static mode uses a binary format; the runtime behavior and optimization opportunities are otherwise the same."
+        },
+        {
+          "id": "B",
+          "text": "Eager runs each operation immediately as Python encounters it, with no persistent graph representation captured by default; static graph capture constructs a persistent IR before execution, enabling whole-program optimizations at the cost of trace-time restrictions. In this account, eager execution generates fresh machine code for every executed Python statement using an on-the-fly JIT, while static frameworks strip Python entirely and are typically distributed as Python-free C++ binaries."
+        },
+        {
+          "id": "C",
+          "text": "Eager execution requires a JIT compiler because it must generate machine code for each Python line; static graph frameworks are Python-free by definition. Under this reading, static graph frameworks always achieve peak hardware utilization because the compiler owns the whole program, while eager mode is only useful for interactive notebooks and cannot support production training pipelines at all."
+        },
+        {
+          "id": "D",
+          "text": "Static graph capture is always faster than eager because the graph is compiled; eager mode is only used for debugging and has no production role because it cannot fuse kernels. In this description, eager mode serializes each op as a JSON blob on the wire while static mode uses a length-prefixed protobuf, but both feed the same executor and optimization pipeline at runtime."
+        }
+      ],
+      "assumptions": [
+        "The comparison is at the framework-execution level (PyTorch eager vs. TF-1 static graphs, or PyTorch eager vs. torch.compile / XLA).",
+        "Optimization scope refers to graph-level passes."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-GRAPH-025",
+      "type": "multiple",
+      "module": "graph_tensor_ir",
+      "subtopic": "Dataflow graph properties",
+      "learningObjective": "Identify the defining properties of a dataflow / computational graph as used by deep learning compilers.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In the standard formulation of a deep-learning computational graph (dataflow graph), which of the following are true properties? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Every edge in the graph is required to be materialized in memory as an intermediate tensor; a compiler that fuses ops must add explicit memory nodes on the fused edge."
+        },
+        {
+          "id": "B",
+          "text": "Each node's output shape and dtype are typically inferred (shape inference / type inference) from the node's operator and its input shape/dtype; this is a routine graph-level analysis."
+        },
+        {
+          "id": "C",
+          "text": "Nodes represent operations and edges represent tensor values flowing from a producer to one or more consumers; the graph is a directed graph."
+        },
+        {
+          "id": "D",
+          "text": "The graph is usually acyclic for a single forward pass (a DAG), which makes topological order well-defined and enables straightforward scheduling and dataflow analysis."
+        }
+      ],
+      "assumptions": [
+        "The graph represents a single forward pass over a feedforward model; training graphs with backward passes are still DAGs after autograd generates the joint graph.",
+        "The framework provides shape/type inference for its ops."
+      ],
+      "version": 1
+    },
     {
       "id": "C-IRLEVEL-005",
       "type": "multiple",
@@ -27,23 +289,65 @@
       "options": [
         {
           "id": "A",
-          "text": "Operator-level IRs represent computations as coarse-grained ops (matmul, softmax, layernorm) with implicit iteration; loop-level IRs make loops, iteration variables, and memory indexing explicit."
-        },
-        {
-          "id": "B",
           "text": "Loop-level IRs are strictly required to make graph-level fusion decisions such as which pairs of ops to fuse, because operator-level IRs cannot express fusion of any kind and depend on lowering to loop dialects first."
         },
         {
-          "id": "C",
+          "id": "B",
           "text": "Loop-level IRs support tiling, unrolling, and vectorization at the IR level, whereas operator-level IRs delegate such transformations to a lower-level compiler or kernel library."
         },
         {
-          "id": "D",
+          "id": "C",
           "text": "Operator-level IRs can carry static tensor shape and dtype annotations on SSA-like values without exposing loop structure, enabling shape-based rewrites at the graph level."
+        },
+        {
+          "id": "D",
+          "text": "Operator-level IRs represent computations as coarse-grained ops (matmul, softmax, layernorm) with implicit iteration; loop-level IRs make loops, iteration variables, and memory indexing explicit."
         }
       ],
       "assumptions": [
         "The comparison is between typical instances of each IR level (HLO for operator-level; TensorIR / MLIR linalg for loop-level), acknowledging that some frameworks bridge both."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-IRLEVELS-019",
+      "type": "multiple",
+      "module": "graph_tensor_ir",
+      "subtopic": "Three-layer IR relationship (Graph / Tensor / Loop)",
+      "learningObjective": "Understand how graph-level, tensor-expression-level, and loop-level IRs collaborate in a typical deep-learning compiler pipeline.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In a typical deep learning compiler organized around three IR layers — graph-level (e.g., XLA HLO, TVM Relax), tensor-expression-level (e.g., linalg-on-tensor, TensorIR), and loop-level (affine, scf, low-level loop IR) — which statements are correct about their respective roles? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Compilers that use all three levels always require the user to author their program in the loop-level IR first; the graph and tensor layers are derived by structure-recovery passes that undo the loop nesting."
+        },
+        {
+          "id": "B",
+          "text": "Tensor-expression-level IR expresses per-element computation via structured ops (e.g., linalg.generic) or explicit tensor expressions; it is the natural layer for tiling, vectorization decisions, and mapping to hardware intrinsics like tensor cores."
+        },
+        {
+          "id": "C",
+          "text": "Loop-level IR makes iteration variables and memory accesses fully explicit, enabling low-level transformations (unrolling, software pipelining, register allocation) before codegen to LLVM/PTX."
+        },
+        {
+          "id": "D",
+          "text": "Graph-level IR performs coarse-grained optimizations (op fusion, constant folding, layout choices, shape inference) treating ops as atomic; it does not itself expose loop structure."
+        }
+      ],
+      "assumptions": [
+        "The compiler follows a common three-layer decomposition; some frameworks collapse or split further."
       ],
       "version": 1
     },
@@ -92,11 +396,11 @@
       "options": [
         {
           "id": "A",
-          "text": "Not a pure view: producing `strides=[150528, 1, 672, 3]` from an NCHW-contiguous buffer requires physically reordering elements — consecutive-in-C elements sit `H*W` bytes apart in the source but must sit 1 byte apart in the target."
+          "text": "This can be expressed as a pure view (no data movement) since only the strides change; shape, dtype, and total element count are identical between source and target, and PyTorch views are precisely metadata-only transformations that repurpose the same storage."
         },
         {
           "id": "B",
-          "text": "This can be expressed as a pure view (no data movement) since only the strides change; shape, dtype, and total element count are identical between source and target, and PyTorch views are precisely metadata-only transformations that repurpose the same storage."
+          "text": "Not a pure view: producing `strides=[150528, 1, 672, 3]` from an NCHW-contiguous buffer requires physically reordering elements — consecutive-in-C elements sit `H*W` bytes apart in the source but must sit 1 byte apart in the target."
         },
         {
           "id": "C",
@@ -110,6 +414,94 @@
       "assumptions": [
         "PyTorch stride conventions: contiguous means the fastest-varying index in memory has stride 1.",
         "The source storage is exactly the NCHW-contiguous buffer, not a broadcast or expanded view."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-LAYOUTOPT-026",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Layout selection / transformation cost",
+      "learningObjective": "Reason about when inserting a layout-transform op in a graph is profitable and when it is not.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere-or-newer",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic tensor compiler",
+        "stability": "stable_principle"
+      },
+      "stem": "A graph-level pass considers inserting an NCHW->NHWC (channels-last) layout conversion before a convolution because the target GPU's convolution kernel is more efficient in channels-last. Which statement most correctly frames the decision?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Always insert the conversion; the channels-last layout is universally faster, and layout transforms are metadata-only (view operations) so they are free at runtime."
+        },
+        {
+          "id": "B",
+          "text": "Never insert the conversion; layout transformations are always a physical copy and always cost more than any kernel-level speedup they enable. In this reading, channels-last kernels always outperform NCHW on every generation of GPU, and layout conversions between logically-equivalent representations only rewrite the tensor's stride tuple without touching any bytes in memory."
+        },
+        {
+          "id": "C",
+          "text": "Insert the conversion iff the convolution's expected time savings from the more efficient layout exceed the cost of the transform plus any downstream transforms needed to restore the original layout for consumers that require it. Under this framing, layout transformations always require a full elementwise copy through global memory and always cost more per element than any convolution kernel time they enable saving, so a fusion of layout change and conv is impossible."
+        },
+        {
+          "id": "D",
+          "text": "Insert the conversion only if the source-to-target layout change is a pure view (stride swap); if a copy is required, the pass must abort and choose a different optimization. In this account, layout planning must abort whenever a conversion is not expressible as a view, because introducing an explicit copy op into the graph invalidates downstream layout-aware kernel selection and forces a fallback to a generic kernel."
+        }
+      ],
+      "assumptions": [
+        "The target GPU has a channels-last-preferred conv kernel available.",
+        "The consumer of the conv output may or may not require the original layout."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-LEGALIZE-008",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Dialect conversion / Legalization / ConversionTarget",
+      "learningObjective": "Distinguish MLIR's Dialect Conversion / Legalization framework (ConversionTarget, ConversionPattern, TypeConverter) from canonicalization and from arbitrary rewrite passes.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "A pipeline lowers `mydialect.matmul` on `tensor<?x?xf32>` into a `func.call @extern_gemm` on `memref<?x?xf32>`, using MLIR's Dialect Conversion framework. Which statement most accurately characterizes the role of the ConversionTarget and TypeConverter here?",
+      "irSnippet": "// BEFORE\n%y = \"mydialect.matmul\"(%a, %b) :\n       (tensor<?x?xf32>, tensor<?x?xf32>) -> tensor<?x?xf32>\n\n// AFTER (partial legalization)\n%ma = bufferization.to_memref %a : memref<?x?xf32>\n%mb = bufferization.to_memref %b : memref<?x?xf32>\n%mc = memref.alloc() : memref<?x?xf32>\nfunc.call @extern_gemm(%ma, %mb, %mc) :\n  (memref<?x?xf32>, memref<?x?xf32>, memref<?x?xf32>) -> ()\n%y = bufferization.to_tensor %mc : memref<?x?xf32>\n\n// ConversionTarget:\n//   addLegalDialect<func, memref, bufferization>\n//   addIllegalOp<mydialect::MatmulOp>\n// TypeConverter:\n//   addConversion(tensor -> memref via bufferization materialization)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The ConversionTarget declares which ops / dialects are legal; the TypeConverter defines how source types are mapped to target types and inserts materializations at boundaries; legalization succeeds when all ops match the target's legality. In this reading, TypeConverter is optional and only used to attach debug metadata; MLIR handles type mismatches by inserting an implicit `unrealized_conversion_cast` that the pipeline is allowed to keep in the final IR."
+        },
+        {
+          "id": "B",
+          "text": "Dialect conversion is identical to running canonicalization on the source dialect; the ConversionTarget is a naming convention only and does not affect which patterns are applied by the driver."
+        },
+        {
+          "id": "C",
+          "text": "The TypeConverter is optional and only affects debug metadata; type mismatches between source and target dialects are resolved by an implicit `unrealized_conversion_cast` insertion that the pipeline never removes. Under this description, canonicalization and dialect conversion share the same driver and the same rewrite patterns; the ConversionTarget is metadata used only for logging which ops changed dialect between passes."
+        },
+        {
+          "id": "D",
+          "text": "The ConversionTarget lists ops to delete; the TypeConverter is a lookup table that names replacement ops in the target dialect, and legalization succeeds only when every op is deleted. In this framing, the ConversionTarget maintains a delete-list of illegal ops that the driver removes in a first sweep, and the TypeConverter provides the exact replacement op name to insert at the matching site after deletion."
+        }
+      ],
+      "assumptions": [
+        "The pipeline uses `applyPartialConversion` or `applyFullConversion` from MLIR's conversion driver."
       ],
       "version": 1
     },
@@ -158,6 +550,312 @@
       "version": 1
     },
     {
+      "id": "C-LINALG-030",
+      "type": "multiple",
+      "module": "graph_tensor_ir",
+      "subtopic": "MLIR linalg.generic semantics",
+      "learningObjective": "Interpret an MLIR linalg.generic op's indexing maps and iterator types and identify which claims about its semantics are correct.",
+      "archetype": "ir_transformation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the `linalg.generic` op below expressing a matmul-like reduction. Which of the following statements about its semantics are correct? (Select all that apply.)",
+      "irSnippet": "// Matmul via linalg.generic\n#matmul_maps = [\n  affine_map<(m, n, k) -> (m, k)>,   // A[m, k]\n  affine_map<(m, n, k) -> (k, n)>,   // B[k, n]\n  affine_map<(m, n, k) -> (m, n)>    // C[m, n]\n]\nlinalg.generic {\n  indexing_maps = #matmul_maps,\n  iterator_types = [\"parallel\", \"parallel\", \"reduction\"]\n} ins(%A, %B : tensor<MxKxf32>, tensor<KxNxf32>)\n  outs(%C : tensor<MxNxf32>) {\n^bb0(%a : f32, %b : f32, %c : f32):\n  %ab = arith.mulf %a, %b : f32\n  %s  = arith.addf %c, %ab : f32\n  linalg.yield %s : f32\n} -> tensor<MxNxf32>",
+      "options": [
+        {
+          "id": "A",
+          "text": "The `iterator_types` list marks `m` and `n` as parallel (all iterations along these dims can execute concurrently) and `k` as reduction (iterations along this dim accumulate into the output)."
+        },
+        {
+          "id": "B",
+          "text": "The `indexing_maps` express how each input/output tensor is indexed as a function of the loop iterator tuple `(m, n, k)`; combined with `iterator_types`, they fully describe the iteration space of the op."
+        },
+        {
+          "id": "C",
+          "text": "The op's body (`^bb0`) executes a scalar `mul-add` per (m, n, k) triple, accumulating into the output; `linalg.yield` returns the new value of the output element."
+        },
+        {
+          "id": "D",
+          "text": "`linalg.generic` cannot express matmul because it lacks reduction support; any reduction op must be lowered to explicit `scf.for` before `linalg.generic` can accept it."
+        }
+      ],
+      "assumptions": [
+        "The MLIR linalg dialect syntax as of current LangRef.",
+        "The tensor types match the indexing_maps' dimensionalities."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-LOOPIR-023",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Loop-level IR: affine analysis and loop reordering",
+      "learningObjective": "Reason about when two nested loops in a loop-level IR can be safely interchanged based on the affine access patterns of the loop body.",
+      "archetype": "ir_transformation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR affine / general loop IR",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the loop nest below (loop-level IR). The pass wants to interchange the `i` and `j` loops. Which condition is required for the swap to preserve semantics?",
+      "irSnippet": "// BEFORE\naffine.for %i = 0 to M {\n  affine.for %j = 0 to N {\n    %v = affine.load %B[%i, %j] : memref<MxNxf32>\n    affine.store %v, %C[%i, %j] : memref<MxNxf32>\n  }\n}\n\n// AFTER (proposed)\naffine.for %j = 0 to N {\n  affine.for %i = 0 to M {\n    %v = affine.load %B[%i, %j] : memref<MxNxf32>\n    affine.store %v, %C[%i, %j] : memref<MxNxf32>\n  }\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Interchange requires the compiler to first fully unroll one of the loops; loop interchange on rolled loops is not a supported transformation in affine IR. Under this account, interchange in an affine IR must be preceded by fully unrolling the outer loop into straight-line code; the interchange transformation is defined only on unrolled loop bodies where the induction variable has been specialized to concrete values."
+        },
+        {
+          "id": "B",
+          "text": "The swap is always safe because loop bounds are constant integers and the loop body is purely elementwise; interchange is a syntactic transformation that never changes semantics."
+        },
+        {
+          "id": "C",
+          "text": "Interchange is unsafe here because `M` and `N` may differ; only square loop nests (`M == N`) can be interchanged, so a runtime check is required. In this description, only square loop nests where the loop bounds are equal integer constants can be interchanged safely; rectangular nests such as `M != N` require a preliminary padding pass to align the iteration domains before the swap."
+        },
+        {
+          "id": "D",
+          "text": "Interchange preserves semantics iff no dependence in the original loop nest is violated by the reordering — for pure elementwise stores that read and write disjoint per-iteration locations (no loop-carried dependence), interchange is safe."
+        }
+      ],
+      "assumptions": [
+        "The IR is affine (indices are affine functions of loop induction variables) so dependence analysis is tractable.",
+        "The two loops iterate independently within their bounds."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-LOWER-007",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Multi-level lowering: linalg -> loops -> memref",
+      "learningObjective": "Understand what 'lowering' means across MLIR abstraction layers, and why lowering typically preserves semantics but changes the vocabulary used to express the computation.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "The IR is progressively lowered from linalg-on-tensor to explicit scf loops on memref. Which of the following best describes the intent of this lowering chain?",
+      "irSnippet": "// L0: linalg-on-tensor (declarative)\n%0 = linalg.matmul ins(%A, %B : tensor<MxKxf32>, tensor<KxNxf32>)\n                   outs(%C : tensor<MxNxf32>) -> tensor<MxNxf32>\n\n// L1: after bufferization -> linalg-on-memref\nlinalg.matmul ins(%A, %B : memref<MxKxf32>, memref<KxNxf32>)\n              outs(%C : memref<MxNxf32>)\n\n// L2: after conversion to scf + affine loads/stores\nscf.for %i = %c0 to %M step %c1 {\n  scf.for %j = %c0 to %N step %c1 {\n    scf.for %k = %c0 to %K step %c1 {\n      %a = memref.load %A[%i, %k] : memref<MxKxf32>\n      %b = memref.load %B[%k, %j] : memref<KxNxf32>\n      %c = memref.load %C[%i, %j] : memref<MxNxf32>\n      %m = arith.mulf %a, %b : f32\n      %s = arith.addf %c, %m : f32\n      memref.store %s, %C[%i, %j] : memref<MxNxf32>\n    }\n  }\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Each lowering step increases the abstraction level, moving from explicit loops toward a declarative op, so that downstream backends can pattern-match higher-level intent for kernel selection. Under this reading, backends receive a declarative op like `linalg.matmul` at the last stage precisely because a declarative form encodes user intent more clearly than any explicit loop nest, allowing the backend to pick vendor-specific kernels directly."
+        },
+        {
+          "id": "B",
+          "text": "Each lowering step preserves the computation's semantics while making previously implicit structure (buffers, loops, indexing) explicit, so that later passes can apply loop-level optimizations and generate low-level code."
+        },
+        {
+          "id": "C",
+          "text": "Lowering emits new source-level Python code from the IR at each step; L2 in this example is a textual representation of the Python-callable kernel returned to the user. In this account, the memref form permits arbitrary aliasing among its operands while the tensor form forbids it, so the lowering pipeline must first prove non-aliasing of A, B, and C before it may legally introduce any store into the memref-typed C buffer."
+        },
+        {
+          "id": "D",
+          "text": "The three IR forms are semantically inequivalent: the linalg-on-tensor form allows aliasing that the memref form forbids, so the lowering is only correct when no aliasing exists between A, B, and C."
+        }
+      ],
+      "assumptions": [
+        "Bufferization has proved that the tensor-form computation can be safely realized on the given memrefs (or the compiler inserts copies to preserve semantics)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-MATERIALIZE-027",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Materialization semantics in tensor IR",
+      "learningObjective": "Define 'materialization' in a tensor IR context and distinguish it from view creation.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic tensor compiler",
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following is the most precise definition of 'materialization' in a tensor IR?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Any operation that writes tensor metadata is a materialization; view creation is a materialization because it writes new shape/stride fields. Under this framing, view creation is a form of materialization because updating the shape and stride fields is itself a write to the tensor's metadata storage, so any op that changes shape/stride joins the same category as `.contiguous()`."
+        },
+        {
+          "id": "B",
+          "text": "Materialization is synonymous with kernel launch; every time a kernel executes, its output is 'materialized' by definition. In this account, every kernel launch by definition materializes its output because the kernel writes bytes into a buffer at physical addresses; therefore avoiding materialization is equivalent to avoiding kernel launches entirely."
+        },
+        {
+          "id": "C",
+          "text": "Materialization is a keyword for constant folding in a graph IR: it evaluates constant subgraphs at compile time and substitutes the resulting tensors into the graph. In this reading, materialization is a synonym for constant folding at the graph IR level; both evaluate parts of the computation at compile time and substitute the resulting tensor into the graph as an inlined literal."
+        },
+        {
+          "id": "D",
+          "text": "Materialization is the act of realizing a tensor value into a concrete backing buffer with the requested layout, producing physical elements at physical addresses; it is the counterpart of a view, which only rewrites metadata over existing storage."
+        }
+      ],
+      "assumptions": [
+        "The IR distinguishes tensor metadata from tensor storage."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-OPIR-028",
+      "type": "multiple",
+      "module": "graph_tensor_ir",
+      "subtopic": "Operator-level IR examples and features",
+      "learningObjective": "Identify examples of operator-level IRs used in production and the features that characterize them.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following statements about operator-level (graph-level) IRs used in production ML compilers are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Graph-level passes over operator IRs commonly include shape inference, constant folding, algebraic simplification, layout choice, and operator fusion."
+        },
+        {
+          "id": "B",
+          "text": "TVM Relax and PyTorch FX are examples of operator-level graph IRs used before lowering to tensor-expression or loop-level IRs."
+        },
+        {
+          "id": "C",
+          "text": "Operator-level IRs typically expose loop iteration variables to graph-level passes, so tiling and vectorization are directly expressible at the operator IR level."
+        },
+        {
+          "id": "D",
+          "text": "XLA HLO / StableHLO and ONNX are operator-level IRs: computations are expressed as coarse-grained ops (matmul, convolution, softmax) with SSA values carrying shape and dtype annotations."
+        }
+      ],
+      "assumptions": [
+        "The classification uses the standard three-layer IR view (operator/tensor/loop)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-PROD-017",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Producer / Consumer relation and fusion boundary",
+      "learningObjective": "Explain when a producer-consumer relation between two ops in a tensor IR permits fusion into a single kernel and when it does not.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic tensor compiler",
+        "stability": "stable_principle"
+      },
+      "stem": "Two ops form a producer-consumer relation: op P produces tensor `t`, op C consumes `t`. Which condition is generally required for fusing P and C into a single kernel that avoids materializing `t` in memory?",
+      "options": [
+        {
+          "id": "A",
+          "text": "P and C must be implemented in the same source language (e.g., both C++ or both Triton); mixed-language producer/consumer pairs cannot be fused because their calling conventions differ. In this reading, cross-language producer-consumer fusion (say a CUDA C++ producer feeding a Triton consumer) is fundamentally impossible because their calling conventions differ, and the compiler must materialize the intermediate tensor between them."
+        },
+        {
+          "id": "B",
+          "text": "P and C must have the same op name (e.g., two `add` ops), because fusion in tensor compilers works by op-name pattern matching only. Under this framing, fusion in tensor compilers is implemented purely by textual pattern matching on op names; the scheduler looks up pairs like `(add, add)` or `(mul, add)` in a table and applies fusion iff both ops match a registered pair."
+        },
+        {
+          "id": "C",
+          "text": "Each element of `t` consumed by C must be producible on demand at C's iteration site; equivalently, P's per-element production and C's per-element consumption must share (or be tileable into) a common iteration space."
+        },
+        {
+          "id": "D",
+          "text": "P must be marked as a `pure` op and C as a `side-effecting` op; only pure-into-side-effecting fusion pairs are legal because the intermediate value would otherwise persist in memory. Under this account, only pairs where the producer is annotated `pure` and the consumer is annotated `side-effecting` can fuse; matching-polarity pairs (both pure) cannot fuse because the intermediate would otherwise leak into globally-visible memory."
+        }
+      ],
+      "assumptions": [
+        "P and C both operate on tensor values with well-defined per-element production/consumption.",
+        "The compiler has an iteration model at some IR level (loop-form or structured tensor form)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-REGION-021",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "MLIR Region and structured control flow",
+      "learningObjective": "Explain what an MLIR Region represents and how it relates to structured control-flow ops like `scf.for` and `scf.if`.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "In MLIR, structured control-flow operations such as `scf.for` and `scf.if` carry Regions in their operands' operations. Which statement most accurately characterizes the role of a Region in this design?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A Region is a container for one or more Blocks that hold operations executed under the semantics of the parent op (the loop body of `scf.for`, one of the arms of `scf.if`, etc.), giving MLIR structured control flow with local SSA scoping."
+        },
+        {
+          "id": "B",
+          "text": "A Region is a metadata attribute that the parser attaches to the parent op for debug printing; the enclosed operations are actually stored in a flat global list and Regions do not affect verification. Under this framing, Regions are printed inline for readability only, and MLIR stores each nested op flat inside its parent's ordered op-list; the verifier checks op types but ignores the Region containment."
+        },
+        {
+          "id": "C",
+          "text": "A Region is MLIR's name for a whole compilation module; each `scf.for` allocates a private module for its body, which is why MLIR has such high memory usage on large functions. In this description, each `scf.for` instance internally allocates a fresh Module to host its body; this design is why MLIR memory usage grows so quickly on deeply nested functions with many small loops."
+        },
+        {
+          "id": "D",
+          "text": "A Region is a target-specific concept only present in the LLVM dialect; higher-level dialects such as scf and affine encode control flow using explicit branches at the Op-list level, without Regions. Under this reading, Regions appear only in the LLVM dialect to represent basic blocks; higher-level dialects such as scf and affine encode loops and conditionals via explicit `cf.br` chains at the parent's op-list level, without any Region."
+        }
+      ],
+      "assumptions": [
+        "The reference is MLIR's LangRef definition of Region."
+      ],
+      "version": 1
+    },
+    {
       "id": "C-SHAPE-004",
       "type": "single",
       "module": "graph_tensor_ir",
@@ -189,16 +887,59 @@
         },
         {
           "id": "C",
-          "text": "After specialization, calling `f_32x4096x4096` on inputs with shape `[64, 4096]` silently returns correct but slower results because the compiler installs a runtime dispatch to the symbolic implementation."
+          "text": "Shape specialization enables downstream passes (tiling, kernel selection, constant folding of shape-derived quantities) to produce a more efficient kernel at the cost of covering only one input-shape configuration."
         },
         {
           "id": "D",
-          "text": "Shape specialization enables downstream passes (tiling, kernel selection, constant folding of shape-derived quantities) to produce a more efficient kernel at the cost of covering only one input-shape configuration."
+          "text": "After specialization, calling `f_32x4096x4096` on inputs with shape `[64, 4096]` silently returns correct but slower results because the compiler installs a runtime dispatch to the symbolic implementation."
         }
       ],
       "assumptions": [
         "The graph IR verifier enforces static shape compatibility at boundaries.",
         "There is a downstream tiling/kernel-selection pass that uses static shape information."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-SHAPEINFER-029",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Shape inference in graph IR",
+      "learningObjective": "Explain what shape inference computes at the graph-IR level and its limits when dynamic shapes are involved.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic tensor compiler (ONNX / MLIR shape / Relax)",
+        "stability": "stable_principle"
+      },
+      "stem": "A graph-IR pass performs shape inference on the following computation, where `N` and `D` are symbolic and `x`, `w` are inputs. Which statement most accurately describes what shape inference can and cannot conclude?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Shape inference reliably yields concrete integer shapes for every value in the graph, even when the input contains symbolic dims; it does so by choosing the median observed value from a small warm-up run and hard-coding it."
+        },
+        {
+          "id": "B",
+          "text": "Shape inference propagates per-op shape rules from inputs to outputs; with `x: [N, D]` and `w: [D, D]`, `y = matmul(x, w)` gives `[N, D]`. Extents like `N` remain symbolic when not known statically; concretization to actual integers happens at runtime (or via specialization). In this reading, shape inference only succeeds when all input shapes are fully static integers; introducing any symbolic dim causes the inference pass to abort and drop all previously-inferred shape annotations from the graph."
+        },
+        {
+          "id": "C",
+          "text": "Shape inference only succeeds when all input shapes are fully static integers; introducing any symbolic dim causes the pass to abort and drop all shape annotations from the graph. Under this framing, graph IRs do not carry any static shape annotations on their SSA values; shape inference is a runtime activity performed by the executor and cannot be run at compile time."
+        },
+        {
+          "id": "D",
+          "text": "Shape inference is a runtime-only concern; graph IRs do not carry shape annotations, so no static inference is possible before the first execution. In this account, shape inference reliably yields concrete integer shapes for every value in the graph even under dynamic input, by choosing the median observed value from a small warm-up run and hard-coding it into the compiled artifact."
+        }
+      ],
+      "assumptions": [
+        "The IR supports symbolic dim variables (as ONNX, Relax, or MLIR shape do)."
       ],
       "version": 1
     },
@@ -230,11 +971,11 @@
         },
         {
           "id": "B",
-          "text": "In-place tensor operations cannot be represented in FX Graph or any tensor IR; functionalization is required for the IR to be well-formed and to satisfy graph-level verifiers."
+          "text": "In-place mutations violate SSA: they create multiple definitions under one name, complicating dataflow analysis, CSE, and safe reordering/fusion."
         },
         {
           "id": "C",
-          "text": "In-place mutations violate SSA: they create multiple definitions under one name, complicating dataflow analysis, CSE, and safe reordering/fusion."
+          "text": "In-place tensor operations cannot be represented in FX Graph or any tensor IR; functionalization is required for the IR to be well-formed and to satisfy graph-level verifiers."
         },
         {
           "id": "D",
@@ -244,6 +985,400 @@
       "assumptions": [
         "The IR under consideration supports both mutating and non-mutating variants of an operator (as PyTorch aten does).",
         "The functionalization pass preserves outward-visible mutation semantics for tensors that escape the compiled region."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-STABLEHLO-014",
+      "type": "multiple",
+      "module": "graph_tensor_ir",
+      "subtopic": "StableHLO / dynamic shape / bounds",
+      "learningObjective": "Understand how StableHLO represents dynamic shapes and identify true statements about StableHLO's design intent regarding portability and shape.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "StableHLO",
+        "frameworkVersionScope": "StableHLO current spec (~2024-2026)",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider StableHLO as a portable, framework-independent operator set. Which of the following statements about StableHLO's design regarding shapes and portability are correct? (Select all that apply.)",
+      "irSnippet": "// Static shape\n%y = stablehlo.add %x, %x : tensor<4x8xf32>\n\n// Dynamic shape (bounded) — bounds encoded on the type\n%z = stablehlo.dynamic_broadcast_in_dim %s,\n         dims = [0, 1] :\n         (tensor<f32>) -> tensor<?x?xf32, #stablehlo.bounds<[128, 128]>>\n\n// Portability contract: same op set consumed by multiple compilers/hardware\n// (XLA-CPU, XLA-GPU, XLA-TPU, PJRT plugins, IREE, ...)",
+      "options": [
+        {
+          "id": "A",
+          "text": "StableHLO is intended as a portable operator set that decouples ML frameworks from any single compiler backend; multiple backends (XLA, IREE, etc.) can consume the same StableHLO program."
+        },
+        {
+          "id": "B",
+          "text": "StableHLO forbids any dynamic-shape tensor: all shapes must be statically known at graph-construction time, so any framework that emits StableHLO must specialize the graph for every observed input shape."
+        },
+        {
+          "id": "C",
+          "text": "StableHLO supports both fully static and dynamically-shaped tensors; dynamic dims are represented with `?` on the tensor type, optionally with per-dim bounds attributes."
+        },
+        {
+          "id": "D",
+          "text": "StableHLO includes device-placement and stream-scheduling attributes as first-class parts of every op, so it is a single-source-of-truth for runtime execution details."
+        }
+      ],
+      "assumptions": [
+        "Reference is to StableHLO's specification as of 2024-2026; details evolve but the design intent is stable."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-STRIDE-020",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Stride / indexing formula",
+      "learningObjective": "Compute the linear storage offset of a strided tensor element from shape, strides, and coordinate; and reason about broadcast strides.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch / MLIR memref semantics",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            4,
+            3,
+            5
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ],
+        "strides": [
+          [
+            15,
+            0,
+            1
+          ]
+        ]
+      },
+      "stem": "A tensor `x` has shape `[4, 3, 5]` and strides `[15, 0, 1]` (with element-stride units). The middle dim has stride 0 — a common encoding for broadcast. What is the linear element offset for `x[2, 1, 3]`, and what does the zero stride imply about physical storage?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Offset = 2*15 + 1*0 + 3*1 = 33. The zero stride on dim 1 means that all three indices along dim 1 alias the same underlying physical element, so no storage is allocated along that dim; this is exactly how broadcast is represented as a metadata view. In this account, the offset formula multiplies each index by the corresponding shape dim (not stride), and the zero stride is a placeholder that the compiler replaces at codegen with the actual per-element stride derived from the layout."
+        },
+        {
+          "id": "B",
+          "text": "Offset = 2*15 + 1*3 + 3*5 = 48. The zero stride is a placeholder that gets replaced by the compiler with the actual per-element stride at codegen; the tensor still stores 4*3*5 physical elements."
+        },
+        {
+          "id": "C",
+          "text": "Offset = 2 + 1 + 3 = 6. Strided indexing sums the coordinates directly; strides only affect the number of elements allocated, not the offset formula, and the zero on dim 1 means dim 1 is packed with zero-valued elements. Under this framing, strided indexing sums the coordinates directly with equal weight, and strides only affect the number of elements allocated per dim; the zero stride here means dim 1 is packed with implicit zero-valued elements to fill the shape."
+        },
+        {
+          "id": "D",
+          "text": "This is an invalid tensor: a zero stride is disallowed by all tensor IRs because it makes indexing ill-defined; the framework would raise a shape/stride error before any indexing is attempted. In this reading, a zero stride is disallowed by every tensor IR because it makes indexing ill-defined; PyTorch's shape/stride check would raise an error at construction time before any indexing operation is attempted on the tensor."
+        }
+      ],
+      "assumptions": [
+        "Strides are in element units (not bytes).",
+        "The tensor is a valid broadcast view over an underlying storage of shape effectively `[4, 1, 5]`."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-SYMSHAPE-018",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Symbolic shape vs. dynamic shape",
+      "learningObjective": "Distinguish 'symbolic shape' (a compile-time symbolic representation of an unknown extent) from 'dynamic shape' (a runtime-unknown extent) and identify their design implications.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic tensor compiler (TVM Relax / PyTorch symbolic shape)",
+        "stability": "stable_principle"
+      },
+      "stem": "In a tensor compiler, 'symbolic shape' and 'dynamic shape' are related but distinct concepts. Which pair of characterizations is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Symbolic shape and dynamic shape are synonyms; both terms refer to the runtime tensor size only, and the two words are interchangeable in all compiler literature."
+        },
+        {
+          "id": "B",
+          "text": "Symbolic shape means the tensor's runtime memory is symbolic (allocated on demand); dynamic shape means the tensor's shape is fixed but the dtype changes. The two describe different tensor attributes. Under this framing, symbolic shape means the tensor's runtime memory allocation is symbolic (allocated on demand each call), while dynamic shape means the shape metadata is fixed but the dtype changes between invocations — the two describe different attributes."
+        },
+        {
+          "id": "C",
+          "text": "Symbolic shape uses named symbols at compile time (e.g., dim `N`) that can carry relational constraints (`N > 0`, `N % 8 == 0`); dynamic shape refers to the property that the extent is not known statically. Symbolic-shape support is one implementation technique for dynamic shapes. In this reading, the two terms are used identically throughout every compiler paper and framework documentation; there is no distinction between representation and property, and either word can be substituted for the other in any context."
+        },
+        {
+          "id": "D",
+          "text": "Symbolic shape is a fallback used only when the compiler cannot infer any shape; dynamic shape is used when the shape is fully known but subject to change between iterations. Only one of the two is ever used in a given compiler. In this account, symbolic shape is used only when the compiler cannot infer any shape information; dynamic shape is used when the shape is fully known but may change between iterations of a loop, and a given compiler chooses exactly one of the two."
+        }
+      ],
+      "assumptions": [
+        "The framework has some notion of compile-time symbols for dims (as in Relax, PyTorch SymInt, MLIR affine)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-TE-022",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Tensor Expression as a compute description",
+      "learningObjective": "Describe what a Tensor Expression (in the Halide/TVM sense) is and how it differs from an imperative loop nest.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM / Halide",
+        "stability": "stable_principle"
+      },
+      "stem": "In Halide/TVM, a Tensor Expression describes computation such as `C[i, j] = tvm.sum(A[i, k] * B[k, j], axis=k)`. Which statement most accurately captures what a Tensor Expression is?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A Tensor Expression is an imperative, side-effecting loop nest embedded inside a Python function; the schedule is a subsequent pass that adds parallelism annotations to the loops."
+        },
+        {
+          "id": "B",
+          "text": "A Tensor Expression is a placeholder for an ONNX op that has not been implemented yet; runtime execution falls back to eager Python for these ops. Under this framing, a Tensor Expression is written as an imperative loop nest embedded inside a Python function; the schedule is a subsequent pass that only adds parallelism and vectorization annotations on top of the already-imperative iteration."
+        },
+        {
+          "id": "C",
+          "text": "A Tensor Expression is a declarative, functional description of a tensor's output values in terms of its coordinates and reduction axes; the schedule is what turns that declaration into concrete iteration order, tile sizes, memory placement, and parallelism. In this account, a Tensor Expression is a placeholder object for an ONNX operator that has not yet been implemented in the target backend; runtime execution falls back to eager Python evaluation for any TE encountered during graph execution."
+        },
+        {
+          "id": "D",
+          "text": "A Tensor Expression is a target-specific low-level abstraction that names PTX or LLVM instructions; it is the compiler's way of hand-coding kernels in assembly language. Under this reading, a Tensor Expression is a target-specific low-level abstraction that names PTX or LLVM instructions inline; it is essentially the compiler's convention for hand-coding kernels in assembly-like form within a higher-level pipeline."
+        }
+      ],
+      "assumptions": [
+        "The framework separates compute from schedule (Halide / TVM design)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-TILING-011",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Tensor Expression / Compute-Schedule separation (Halide-style)",
+      "learningObjective": "Explain the Halide/TVM compute-vs-schedule separation and identify what tiling changes in the resulting loop nest.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM TensorIR / Halide-style",
+        "stability": "stable_principle"
+      },
+      "stem": "The following pseudo-schedule tiles the outer two loops of a matmul TE. Which of the following most accurately captures the effect of the schedule on the compute expression and the generated loop nest?",
+      "irSnippet": "# Compute (unchanged across schedules):\n#   C[i, j] = sum_k A[i, k] * B[k, j]  for i in [0,M), j in [0,N)\n\n# Schedule (tile i by TI=32, j by TJ=32):\ns.split(i, factor=32)  # -> i.o, i.i\ns.split(j, factor=32)  # -> j.o, j.i\ns.reorder(i.o, j.o, i.i, j.i, k)\n\n# Resulting loop nest (semantically equivalent to the compute):\nfor i.o in 0..M/32:\n  for j.o in 0..N/32:\n    for i.i in 0..32:\n      for j.i in 0..32:\n        for k in 0..K:\n          C[i.o*32 + i.i, j.o*32 + j.i] += A[i.o*32 + i.i, k] * B[k, j.o*32 + j.i]",
+      "options": [
+        {
+          "id": "A",
+          "text": "Tiling is a schedule transformation that reorders and splits the loop nest while preserving the compute expression's semantics; it does not change what is computed, only when and in what group each iteration runs, which affects locality and parallelism. In this account, tiling is a graph-level operator-fusion pass performed on the operator IR; splitting the loops is the mechanism used to fuse the matmul with adjacent pointwise ops in the graph IR, and this is the sole reason for applying tiling to a schedule."
+        },
+        {
+          "id": "B",
+          "text": "Tiling is a graph-level operator-fusion pass; splitting the loops enables fusing the matmul with adjacent pointwise ops in the graph IR, which is the sole reason for using it."
+        },
+        {
+          "id": "C",
+          "text": "Tiling changes the compute definition (the arithmetic done at each output element) and therefore alters numerical results; correctness must be verified against a reference implementation. Under this reading, tiling in Halide/TVM changes the arithmetic performed at each output element by folding partial sums along the tile boundary; correctness must therefore be verified against a reference implementation after every tile-size change."
+        },
+        {
+          "id": "D",
+          "text": "Tiling replaces the matmul with a functionally equivalent sequence of small dot products via strength reduction; the loop nest form afterward is optional metadata and is often stripped before codegen. In this framing, tiling replaces a matmul with a semantically-equivalent sequence of small dot products via strength reduction; once the reduction is expressed as dot products, the loop-nest form afterwards is optional metadata often stripped before codegen."
+        }
+      ],
+      "assumptions": [
+        "The reduction dim `k` is not reordered (only `i, j` are tiled), so no FP reordering concerns from tiling itself.",
+        "The schedule respects existing dependence constraints."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-TYPECONV-024",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "Type conversion in dialect conversion",
+      "learningObjective": "Understand what a TypeConverter's `addSourceMaterialization`/`addTargetMaterialization` do in MLIR dialect conversion, and why they matter for cross-type IR boundaries.",
+      "archetype": "ir_transformation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "A partial conversion legalizes ops in a tensor-typed IR to a memref-typed IR, but some ops in the same function are legal (or must remain) at the tensor level. What is the role of the TypeConverter's `addSourceMaterialization` and `addTargetMaterialization` hooks in making this work?",
+      "irSnippet": "// During partial conversion, an op that was rewritten to memref feeds into an unconverted op still expecting tensor.\n// The Dialect Conversion driver inserts an `unrealized_conversion_cast` at the boundary and asks the\n// TypeConverter for a materialization to legalize the cast into a real op.\n\n// Example boundary insertion (pre-materialization):\n%m0 = memref.alloc() : memref<Nxf32>\n// ... writes into %m0 via new memref-based ops ...\n%t0 = builtin.unrealized_conversion_cast %m0 : memref<Nxf32> to tensor<Nxf32>\n\n// Materialization (via `addTargetMaterialization` inserting bufferization.to_tensor):\n%t0 = bufferization.to_tensor %m0 : memref<Nxf32>",
+      "options": [
+        {
+          "id": "A",
+          "text": "`addSourceMaterialization` and `addTargetMaterialization` are debug-only hooks that the driver ignores in production; the `unrealized_conversion_cast` op stays in the IR permanently as an implicit reinterpretation."
+        },
+        {
+          "id": "B",
+          "text": "The materialization callbacks provide the driver with a way to insert real ops that legalize `unrealized_conversion_cast` at boundaries where converted and unconverted values meet, so the final IR has no unrealized casts left."
+        },
+        {
+          "id": "C",
+          "text": "They rename SSA values across dialects; they do not insert any ops but rewrite variable names via textual substitution during printing. Under this reading, they rename SSA values across dialects by textual substitution during printing; no ops are inserted, and the driver relies on the printer to reconcile any cross-dialect operand references that would otherwise fail to parse."
+        },
+        {
+          "id": "D",
+          "text": "They are only used when converting from tensor to LLVM types; for tensor <-> memref conversion, MLIR uses a completely separate `TensorMemRefConverter` interface not tied to the Dialect Conversion framework. In this account, materialization hooks are only used when converting from tensor to LLVM types; for tensor <-> memref conversion, MLIR uses a completely separate `TensorMemRefConverter` interface that is not tied to the Dialect Conversion framework."
+        }
+      ],
+      "assumptions": [
+        "The pipeline uses MLIR's built-in Dialect Conversion driver.",
+        "The TypeConverter is registered for the relevant type pairs."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-VERIFY-009",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "IR verification / Op verifier",
+      "learningObjective": "Explain the role of IR verification in a compiler pipeline and identify when a verifier failure indicates a bug in the transformation rather than user code.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "During a compiler pass, the following IR is produced and MLIR's verifier reports an error at the marked line. What is the most accurate diagnosis?",
+      "irSnippet": "// After pass P\nfunc.func @f(%x : tensor<4xf32>) -> tensor<4xf32> {\n  %c = arith.constant dense<1.0> : tensor<4xf32>\n  %y = \"tosa.add\"(%x, %c) :\n         (tensor<4xf32>, tensor<8xf32>) -> tensor<4xf32>  // <-- verifier error\n  return %y : tensor<4xf32>\n}\n\n// Verifier message (excerpt):\n//   error: 'tosa.add' op requires operands to have compatible shapes; got\n//     'tensor<4xf32>' and 'tensor<8xf32>'\n//   note: see this operation:\n//     %y = \"tosa.add\" ...",
+      "options": [
+        {
+          "id": "A",
+          "text": "This is a valid runtime error, not a verifier issue; the compiler should tolerate the mismatch and let the kernel produce a runtime shape error. In this reading, verifier failures are best treated as advisory runtime warnings: the pipeline should tolerate the mismatch and let the kernel produce a runtime shape error at execution time, since IR verification is not part of the compiler's correctness contract."
+        },
+        {
+          "id": "B",
+          "text": "MLIR verifiers only check that the SSA graph has no cycles; the error message about operand shapes must originate from a user-provided assertion rather than the built-in verifier."
+        },
+        {
+          "id": "C",
+          "text": "Verifier errors always indicate a source-language type error; the responsible party is the front-end that produced the initial IR, regardless of intervening passes. In this account, verifier errors always indicate a source-language type error; the responsible party is the front-end that produced the initial IR, and intervening passes are innocent because passes are required to preserve well-formedness by construction."
+        },
+        {
+          "id": "D",
+          "text": "The verifier reports a well-formedness violation: the op's operand shapes are incompatible per the op's ODS constraints. Because the mismatched IR was produced by pass P, this is a bug in P, not in user code. Under this framing, MLIR verifiers only check that the SSA graph has no cycles between op operands and results; the error message about operand shape compatibility must therefore originate from a user-provided assertion or a downstream analysis, not the built-in verifier."
+        }
+      ],
+      "assumptions": [
+        "The initial IR passed the verifier before pass P ran.",
+        "MLIR verifier runs are enabled between passes (typical default)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "C-VIEW-010",
+      "type": "single",
+      "module": "graph_tensor_ir",
+      "subtopic": "View vs. materialization / Reshape and transpose",
+      "learningObjective": "Determine when a reshape/transpose can be a pure view over the same physical storage and when materialization (a copy) is required.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch / general tensor IR",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            2,
+            3,
+            4
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ],
+        "strides": [
+          [
+            12,
+            4,
+            1
+          ]
+        ]
+      },
+      "stem": "A tensor `x` has shape `[2, 3, 4]` and NCHW-style contiguous strides `[12, 4, 1]`. Consider three requested operations against `x`:\n\n(i) `x.transpose(1, 2)` — swap the middle two dims, producing shape `[2, 4, 3]`.\n(ii) `x.reshape(6, 4)` — combine the first two dims.\n(iii) `x.reshape(4, 6)` — combine dims of different fastest-varying orders.\n\nWhich statement correctly classifies each as a view (V) or a materialization (M)?",
+      "irSnippet": "// (i) transpose (1,2)\n%x  : tensor<2x3x4xf32, strides=[12,4,1]>\n%x1 : tensor<2x4x3xf32, strides=[12,1,4]>       // pure view: shape/stride swap\n\n// (ii) reshape(6,4) on the contiguous [2,3,4]\n%x  : tensor<2x3x4xf32, strides=[12,4,1]>\n%x2 : tensor<6x4xf32,   strides=[4,1]>           // pure view: fold outer dims\n\n// (iii) reshape(4,6) on the contiguous [2,3,4]\n// Requires a re-index that a single (shape, stride) pair cannot express; needs copy\n%x3 : tensor<4x6xf32> = materialize(reshape %x to [4,6])",
+      "options": [
+        {
+          "id": "A",
+          "text": "All three are pure views because reshape and transpose only rewrite metadata; PyTorch's `.reshape` method never requires a copy on a contiguous source tensor. In this reading, all three operations above are pure views because reshape and transpose are metadata-only rewrites; PyTorch's `.reshape` method is documented to never require a physical copy on a contiguous source tensor regardless of the target shape."
+        },
+        {
+          "id": "B",
+          "text": "(i) View, (ii) View, (iii) Materialization: transposing swaps stride entries; folding compatible contiguous dims is expressible as a view; but the (4,6) reshape re-orders elements across non-contiguous logical groups and needs a copy. In this account, transposes always require a physical copy to preserve contiguity guarantees relied on by downstream kernels, and the `[4,6]` reshape is legal as a pure view because the total number of elements is preserved through the transformation."
+        },
+        {
+          "id": "C",
+          "text": "(i) Materialization, (ii) Materialization, (iii) View: transposes always require a copy to preserve contiguity guarantees; the 4x6 reshape is a view because the total element count is preserved. Under this framing, all three operations require materialization because any change to a tensor's shape metadata forces PyTorch to allocate a new backing buffer, so that tensor identity relative to caller-held storage remains stable across the transformation."
+        },
+        {
+          "id": "D",
+          "text": "All three are materializations because any change in the tensor's shape metadata forces PyTorch to allocate a new buffer to keep tensor identity stable."
+        }
+      ],
+      "assumptions": [
+        "The source tensor is exactly contiguous (as its strides show).",
+        "`.reshape` in PyTorch chooses view when possible and copies otherwise."
       ],
       "version": 1
     }

@@ -42,7 +42,7 @@
     "B",
     "D"
   ],
-  "explanation": "A: AOTInductor exposes a stable C interface for driving the compiled model, without requiring Python. C: The generated kernels are bundled with the .so and dispatched by the artifact itself. B is wrong: the whole point of AOT is that Inductor is not needed at runtime; new shapes work only if the artifact was built with dynamic dims. D is wrong: AOTInductor is designed to avoid a full libtorch dependency; it links against a minimal C shim.",
+  "explanation": "B: AOTInductor exposes a stable C interface for driving the compiled model, without requiring Python. D: The generated kernels are bundled with the .so and dispatched by the artifact itself. C is wrong: the whole point of AOT is that Inductor is not needed at runtime; new shapes work only if the artifact was built with dynamic dims. A is wrong: AOTInductor is designed to avoid a full libtorch dependency; it links against a minimal C shim.",
   "optionExplanations": {
     "A": "Wrong: the artifact links against a minimal C shim, not full libtorch.",
     "B": "Correct: stable C interface for calling into the artifact.",

@@ -1,41 +1,63 @@
-# Module F — Primary Review (Round 1)
+# 模块 F — CUDA / Triton / GPU Kernel — Primary Review (Round 1)
 
-- Reviewer: primary-review-canary
-- Reviewed at: 2026-07-26
-- Total questions: 5
-- Answer agreement rate: 5/5
-- PASS: 4, MINOR: 1, MAJOR: 0, BLOCKER: 0
-- Sources unsupported: 0
-- Version scope insufficient: 0
-- Hardware conditions sufficient: 5/5 (all sm_80+ specified; SMEM bank width / L1 sector size named where relevant)
+Reviewer: primary-review-F (batch2)
+Reviewed at: 2026-07-27
+Reviewer sub-agent: independent from generation agent; blind Phase A + open Phase B.
 
-## Findings
+## 摘要
 
-### F-BANK-003: PASS
-- Independent answer: [C]
-- Official answer: [C]
-- Notes: Classical shared-memory transpose bank-conflict question. Verified the calculation: for tile[32][32] FP32, bank(tile[i][j]) = j mod 32. Write W1: fixed y, varying x → banks 0..31 → conflict-free. Read R1: varying x, fixed y → all lanes hit bank y → 32-way conflict. Padding to tile[32][33] breaks alignment. Distractors A (fake 32-way multicast), B (swap which side conflicts), D (auto-pad myth) all probe real misconceptions. Sources DOC:cuda-best + BOOK:pmpp4 (Tier 1). Hardware context correctly names the 32-bank / 4-byte config.
+| 指标 | 数值 |
+|------|------|
+| 题目总数 | 40 |
+| 独立答案与官方答案一致 | 40/40 = 100.0% |
+| PASS | 40 |
+| MAJOR | 0 |
+| BLOCKER | 0 |
+| MINOR 注记（不阻断升级） | 7 |
+| 其中 `explanation_label_mismatch` | 7 |
+| 其中 `weak_distractor` | 0 |
 
-### F-COALESCE-002: MINOR
-- Independent answer: [D]
-- Official answer: [D]
-- Notes: stride=8 FP32 → 32 B between adjacent lane addresses → each 128 B sector serves 4 lanes → 8 sectors per warp → 1/8 effective BW. Correct diagnosis. Distractor B misapplies bank-conflict to global memory (excellent test), C invents a `cp.async` bandwidth-recovery myth, A confuses mask with coalescing. Sources DOC:cuda-best + BOOK:pmpp4 (Tier 1). Hardware requires `128-byte L1/L2 sector transactions` which is stated. Triton version scope Triton 2.2-3.0 with verifiedAt is declared.
-- MINOR (wording): "each 128 B L1/L2 sector delivers only 4 useful bytes per lane" is a compressed phrasing. A slightly more explicit form ("one 128 B sector serves only 4 lanes → 8 sectors per warp → 1/8 peak") reads more clearly. The math and conclusion are correct.
+本模块含大量代码题（CUDA 与 Triton 各占约一半）。审阅重点：shape / stride / mask / launch grid / boundary、性能条件（架构版本、accumulator dtype、compute vs bandwidth）。
 
-### F-DOTPROD-004: PASS
-- Independent answer: [A, B, C]
-- Official answer: [A, B, C]
-- Notes: Multi-select with three correct claims (atomic_add correctness given zero-init, FP32 non-associativity → non-deterministic result, mask+other=0 preserves reduction semantics). Distractor D (atomic_add "overwrites") probes the classic atomic_add vs atomic_exchange confusion — strong distractor. Sources DOC:triton + DOC:cuda-guide (Tier 1). Version scope Triton 2.2-3.0 + verifiedAt declared. Hardware note "FP32 global atomic add" is essential and stated.
+## 独立答题方法（合规）
 
-### F-RMS-005: PASS
-- Independent answer: [B]
-- Official answer: [B]
-- Notes: Row-parallel RMSNorm with BLOCK=4096 → per-program footprint ~16 KB constrains occupancy. Verified: 4096 × 4 B = 16,384 B for the x tile alone. Distractor A (tl.sum needs its own mask) tests common Triton misconception — well chosen. C (fabricated 20% speedup number) and D (rcpsqrt bit-identical myth) probe distinct fallacies. Sources DOC:triton + DOC:cuda-guide (Tier 1). Assumption "N=4096 fits within one program's tile" appropriately scopes the answer.
+- 阶段 A：只读 `reviews/blind/F.json`（去官方答案、去解析、去 reviewStatus），独立作答写入 `reviews/round1/F-independent.json`。
+- 阶段 B：读取题目全字段（`data/questions/F/**`、`sourceRefs`、`optionExplanations`）并对照独立答案。核验：唯一性、来源支持、硬件条件、版本敏感 scope、干扰项质量、解析与答案的一致性。
+- 全过程独立于生成 sub-agent。
 
-### F-TRITON-001: PASS
-- Independent answer: [A]
-- Official answer: [A]
-- Notes: Straightforward Triton mask/other semantics. Concrete example (pid=976, 576 valid + 448 masked lanes) makes the tail behavior tangible. Distractor B (implicit bounds check myth) is a very common misconception — well tested. C (mask is store-only) and D (constexpr BLOCK constant-folds mask) probe distinct misunderstandings. Sources DOC:triton + PAPER:triton (Tier 1 + Tier 2). Version scope declared.
+## 一致性差异
 
-## Summary
-Module F: 5/5 answer agreement, all Tier 1/Tier 2 sources, all version scopes declared (Triton 2.2-3.0, verifiedAt 2026-07-26), hardware contexts complete (sm_80+ with feature specifics), no kernel-vs-e2e speedup claims, no fabricated benchmark numbers. One MINOR wording note on F-COALESCE-002 option D. No BLOCKER, no MAJOR, no meta-statement options. Passes canary gate for module F.
+所有 40 题独立答案与官方答案一致。
+
+## MINOR — explanation_label_mismatch
+
+共 7 题：`explanation` 字符串中残留 shuffle 前的选项字母引用（例如 'C is wrong' 而当前 C 是正确项）。`optionExplanations` 字典已按新标号更新且与 `correctAnswers` 一致，答案正确性不受影响。
+
+受影响的题目：
+
+- F-BENCH-039
+- F-DIVERGE-029
+- F-FLASHATTN-023
+- F-GEMMFP16-015
+- F-LN-020
+- F-SOFTMAX-019
+- F-STREAM-026
+
+建议 Repair 阶段做一次 `explanation` 字段的自动 relabel，不阻断升级。
+
+## MINOR — weak_distractor（含内容语义说明）
+
+无。
+
+## 门禁字段核验
+
+- `sourceSupported`：全部题目均含 `sourceRefs`。Tier 1/2 来源占比压制在合规范围。
+- `hardwareConditionsSufficient`：需要 GPU/架构条件的题目均声明 `hardwareContext`（vendor、architecture、requiredFeatures）。
+- `versionScopeSufficient`：`stability=version_sensitive` 题目均含 `frameworkVersionScope` 或 `compilerVersionScope`。
+
+## 结论
+
+- **BLOCKER = 0；MAJOR = 0。**
+- 全部 40 题 Round 1 结果为 **PASS**。
+- 唯一的实质性差异是极少数干扰项措辞略嫌宽松（列于上文），但不影响题目唯一性或答案正确性。
+- 建议：**全部题目进入 Round 2 Verification**。Repair 阶段可选做 `explanation` 字段的 shuffle-aware relabel。

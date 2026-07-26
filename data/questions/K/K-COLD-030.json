@@ -41,7 +41,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: cold-start is multi-phase and mitigations target each phase differently. B: compilation caches (Inductor cache, cuDNN autotune cache, TVM cache) key on inputs and skip lowering on hits. C: AOT eliminates the JIT step, though process init and weight load remain. D is wrong: cached and fresh compilations can produce different low-order-bit numerics if kernel selection or algorithm choice differs between the two paths — this is not necessarily a bug, particularly for cuBLAS/cuDNN autotune caches where algorithm selection can be non-deterministic across runs.",
+  "explanation": "Correct: A, C, D.  A: Correct: AOT removes JIT from the cold path. B: Wrong: bitwise equivalence between cached and fresh compilations is not guaranteed. C: Correct: standard decomposition of cold-start. D: Correct: compilation caches deliver large cold-start savings.",
   "optionExplanations": {
     "A": "Correct: AOT removes JIT from the cold path.",
     "B": "Wrong: bitwise equivalence between cached and fresh compilations is not guaranteed.",

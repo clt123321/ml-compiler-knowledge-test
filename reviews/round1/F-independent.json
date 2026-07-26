@@ -1,38 +1,50 @@
 {
-  "module": "cuda_triton_kernel",
+  "module": "F",
   "code": "F",
-  "reviewer": "primary-review-canary",
-  "reviewedAt": "2026-07-26",
+  "reviewer": "primary-review-F-batch2",
+  "reviewedAt": "2026-07-27",
+  "phase": "A_blind_answer",
+  "notes": "Independent answers produced without reading data/questions/** or content-cards. Only reviews/blind/F.json was consulted. Each code snippet was manually traced for shape/stride/mask/launch-config correctness. This file overwrites an earlier canary-partial containing 5 canary Qs.",
   "answers": [
-    {
-      "id": "F-BANK-003",
-      "independentAnswer": ["C"],
-      "confidence": "high",
-      "rationale": "SMEM has 32 banks * 4 B. Bank(addr) = (addr/4) mod 32. For `tile[32][32]` FP32, address of tile[i][j] = (i*32 + j)*4; bank = (i*32 + j) mod 32 = j mod 32 = j. Write W1 uses index [ty][tx] with a warp varying tx (0..31), ty fixed => banks 0..31, conflict-free stride-1 write. Read R1 uses [tx][ty] with a warp varying tx (0..31) and fixed ty => all lanes hit bank ty => 32-way conflict serialized as 32 sub-transactions. The classical fix is `__shared__ float tile[32][33]` so bank(i*33+j) = (i*33+j) mod 32 = (i+j) mod 32 spreads across banks. A invents fake broadcast; B swaps which access conflicts; D fabricates a nonexistent nvcc pass."
-    },
-    {
-      "id": "F-COALESCE-002",
-      "independentAnswer": ["D"],
-      "confidence": "high",
-      "rationale": "For stride=8 FP32, consecutive warp lanes read addresses (base + lane*8)*4 bytes = 32 bytes apart. A 128-byte L1/L2 sector spans 4 lanes' worth of useful data per sector; equivalently, each fetched 128-byte sector delivers only 4 useful bytes per lane => effective BW ~ 1/8 peak. This is a global-memory coalescing/waste problem, not shared-memory banks. A confuses masking with coalescing. B miscategorizes the issue as SMEM banking. C fabricates a Triton cp.async hiding mechanism that doesn't remove sector waste."
-    },
-    {
-      "id": "F-DOTPROD-004",
-      "independentAnswer": ["A", "B", "C"],
-      "confidence": "high",
-      "rationale": "A: The kernel is correct given the caller pre-zeroes `out`; `tl.atomic_add` is necessary because programs concurrently accumulate to a single address. B: `tl.atomic_add` executes in non-deterministic order across programs; FP32 addition is non-associative so results can differ bitwise across runs. C: `mask+other=0.0` on both loads => tail lanes contribute 0*0=0 to `x*y` => `tl.sum` result unaffected by tail. D is wrong: atomic_add ADDS to the previous value; a non-zero initial value would corrupt the result."
-    },
-    {
-      "id": "F-RMS-005",
-      "independentAnswer": ["B"],
-      "confidence": "high",
-      "rationale": "With BLOCK=4096 FP32, each program's tile is 4096*4 = 16 KB just for `x`, plus another 16 KB for `x*x`/intermediate + `w` loads. This heavy per-program register/SRAM footprint limits how many blocks (and thus warps) can co-reside on an SM, constraining occupancy. A is wrong: `other=0.0` on the load already zeros tail lanes so `x*x` on those lanes is 0, no upward bias. C fabricates a 20% predicate-elimination claim. D is wrong: `1.0/sqrt(x)` is not guaranteed to be lowered to a hardware rcpsqrt and rcpsqrt is not IEEE-strict (PTX has approximate variants like rsqrt.approx that differ across arches)."
-    },
-    {
-      "id": "F-TRITON-001",
-      "independentAnswer": ["A"],
-      "confidence": "high",
-      "rationale": "Triton `tl.load(ptr, mask=mask, other=0.0)` predicates the load per-lane: masked-off lanes do NOT dereference the pointer (safe from OOB) and get `other` instead. `tl.store(ptr, x, mask=mask)` predicates the store: masked-off lanes do not write. So tail lanes are pure no-ops with respect to memory. B fabricates 'implicit bounds checking'; C wrongly claims mask only affects store; D wrongly claims the mask does not reduce memory traffic."
-    }
+    { "id": "F-ATOMIC-032",    "independentAnswer": ["A"],           "confidence": "high",   "rationale": "X: thousands of threads hit &out[0] => atomic-unit serialization. Y: block-local tree + 1 atomic per block => ~1/blockDim atomics. FP32 non-associativity permits minor differences." },
+    { "id": "F-ATTN-022",      "independentAnswer": ["D"],           "confidence": "high",   "rationale": "Naive 3-kernel path stores S×S intermediate (S and P) in HBM per (B,H); ~2*S^2*2B. S=8192 => ~256MB per (B,H). Dominant cost, quadratic growth." },
+    { "id": "F-AUTOTUNE-008",  "independentAnswer": ["A","D"],       "confidence": "high",   "rationale": "num_warps/num_stages are per-Config launch params (A). Autotuner keys off `key=` tuple, runs at first launch per key, caches best (D). B is wrong (autotuner runs at launch, not compile); C is wrong (searches only user-provided configs)." },
+    { "id": "F-BANK-003",      "independentAnswer": ["B"],           "confidence": "high",   "rationale": "SMEM 32 banks, 4-byte wide. tile[32][32] FP32: bank(tile[i][j])=(i*32+j) mod 32 = j. W1 = tile[ty][tx] with warp varying tx (0..31): banks 0..31, conflict-free. R1 = tile[tx][ty] with warp varying tx and fixed ty per warp: all lanes hit bank ty => 32-way conflict. Fix: tile[32][33] pads so bank(i*33+j) = (i+j) mod 32, spreading across banks." },
+    { "id": "F-BARRIER-033",   "independentAnswer": ["D"],           "confidence": "high",   "rationale": "__syncthreads = block barrier; __syncwarp(mask) = warp barrier. On Volta+ ITS, explicit syncwarp often needed between shuffles that used to be implicitly convergent." },
+    { "id": "F-BENCH-039",     "independentAnswer": ["C","D"],       "confidence": "high",   "rationale": "Warmup + synchronized event-timed inner loop is standard (C). Compare against reference with rtol/atol appropriate to dtype; torch.equal too strict (D). A false (no-warmup single-shot is unreliable), B false (autotune/JIT compile time must be excluded from steady-state)." },
+    { "id": "F-BLOCKPTR-007",  "independentAnswer": ["C"],           "confidence": "high",   "rationale": "make_block_ptr describes a [BM,BN] tile; boundary_check=(0,1) enables masking on both axes with zero fill; order=(1,0) declares axis 1 as fastest-varying (matches row-major)." },
+    { "id": "F-CGRAPH-025",    "independentAnswer": ["A"],           "confidence": "high",   "rationale": "CUDA Graph = captured DAG of ops instantiated to cudaGraphExec_t; repeated launch with much lower CPU overhead than per-op launches." },
+    { "id": "F-COALESCE-002",  "independentAnswer": ["D"],           "confidence": "high",   "rationale": "For stride=8 FP32, consecutive warp lanes read addresses stride*4=32B apart. 128B L1/L2 sector delivers 4 useful bytes/lane => effective BW ~ 1/stride of peak (~1/8). Global-memory coalescing/waste, not SMEM banking." },
+    { "id": "F-CONSTEXPR-010", "independentAnswer": ["D"],           "confidence": "high",   "rationale": "N is runtime scalar (same compiled kernel reused across N values); BLOCK: tl.constexpr => each distinct value triggers a new specialized PTX compilation." },
+    { "id": "F-CONSTMEM-036",  "independentAnswer": ["D"],           "confidence": "high",   "rationale": "64KB per module, dedicated constant cache, warp-uniform reads broadcast in one access." },
+    { "id": "F-CORRECT-040",   "independentAnswer": ["C"],           "confidence": "high",   "rationale": "FP16 has ~11 mantissa bits (eps ~9.77e-4). K=4096 accumulation with FP32 accum; observed rtol ~1e-3 is expected for FP16-input vs FP32-input reference. Likely correct." },
+    { "id": "F-CPASYNC-027",   "independentAnswer": ["A"],           "confidence": "high",   "rationale": "cp.async introduced on sm_80; asynchronous GMEM->SMEM bypassing registers; completion via commit_group/wait_group; enables software pipelining." },
+    { "id": "F-DIVERGE-029",   "independentAnswer": ["B","C","D"],   "confidence": "high",   "rationale": "A false — compiler emits predication when possible. B intra-warp divergence => cost sum of both paths. C blockIdx uniform across warp => no divergence. D predication computes both sides." },
+    { "id": "F-DOTPROD-004",   "independentAnswer": ["A","B","C"],   "confidence": "high",   "rationale": "A correct (atomic_add necessary, out pre-zeroed by caller). B FP non-associativity across programs => non-determinism. C mask+other=0 preserves reduction identity for sum (0*anything=0). D false — atomic_add adds, not overwrites; non-zero init would corrupt result." },
+    { "id": "F-FLASHATTN-023", "independentAnswer": ["C","D"],       "confidence": "high",   "rationale": "C tiling+online softmax avoids S×S materialization => O(S^2)->O(S) HBM traffic. D rescale factor exp(m_i-m_new) preserves exact algebra. A false (FlashAttention is numerically exact), B false (speedup from IO-awareness/tiling, not approx exp)." },
+    { "id": "F-GEMMFP16-015",  "independentAnswer": ["B","C"],       "confidence": "high",   "rationale": "B FP16 precision insufficient for long K accumulation. C tl.dot lowers to mma.sync accepting FP16 operands with FP32 accumulator on Ampere+. A false (wmma/mma.sync support mixed precision on all Volta+). D false (FP32->FP16 cast loses precision when values are near FP16 quantum)." },
+    { "id": "F-GEMMSM-014",    "independentAnswer": ["B"],           "confidence": "high",   "rationale": "Per K-iter: 128*32*4 + 32*128*4 = 32768 B; FLOPs = 128*128*32*2 = 1,048,576. Intensity ~32 FLOPs/B, well above A100 FP32 balance (~13 F/B), so compute-bound." },
+    { "id": "F-GEMV-013",      "independentAnswer": ["D"],           "confidence": "high",   "rationale": "GEMV is memory-bound; ~0.25 FLOPs/byte in FP32. Consecutive lanes read A[row*K+k] with k=lane, lane+32,... — consecutive lanes at consecutive addresses => coalesced within a warp. x is loaded redundantly per output row's warp." },
+    { "id": "F-KVCACHE-024",   "independentAnswer": ["B"],           "confidence": "high",   "rationale": "Decode-phase: Q is 1 token, K/V are full S_kv per sequence => memory-bound; per-step HBM traffic scales linearly with S_kv." },
+    { "id": "F-LAUNCH-038",    "independentAnswer": ["C"],           "confidence": "high",   "rationale": "sm_80 grid limits: x up to 2^31-1, y and z up to 65535; block up to 1024 threads. blockDim (32,32,1) = 1024 <= 1024 OK. gridDim (65535, 65535, 65535) all within limits => legal." },
+    { "id": "F-LN-020",        "independentAnswer": ["C"],           "confidence": "high",   "rationale": "Fused kernel keeps row in registers/SMEM across mean/var/norm reductions; naive multi-pass reloads x from HBM => 2x traffic." },
+    { "id": "F-MMA-016",       "independentAnswer": ["C"],           "confidence": "high",   "rationale": "mma.sync is warp-cooperative: 32 lanes jointly execute one MMA, each holding operand/accumulator fragments in registers per HW-defined layout." },
+    { "id": "F-OCC-030",       "independentAnswer": ["A"],           "confidence": "high",   "rationale": "Regs cap: 65536/(96*256)=2.66 => 2 blocks. SMEM cap: 164/32=5.12 => 5. Thread cap: 2048/256=8. Block cap: 32. Binding = 2 blocks => 512 active threads => 25% occupancy." },
+    { "id": "F-ONLINE-021",    "independentAnswer": ["A"],           "confidence": "high",   "rationale": "Canonical online softmax: m=max(m_prev,m_new); s=s_prev*exp(m_prev-m)+s_new*exp(m_new-m). Exact algebra with new anchor." },
+    { "id": "F-OTHER-009",     "independentAnswer": ["B"],           "confidence": "high",   "rationale": "For a max reduction, -inf is the identity so masked-out tail lanes do not bias the result. 0.0 would bias if all real values are negative." },
+    { "id": "F-PERSIST-037",   "independentAnswer": ["A"],           "confidence": "high",   "rationale": "Persistent kernel = fixed blocks (~SM count * blocks/SM) looping over global work queue via atomicAdd counter; amortizes launch overhead and tail load imbalance." },
+    { "id": "F-RACE-034",      "independentAnswer": ["A"],           "confidence": "high",   "rationale": "Missing __syncthreads between write smem[tid]=x[tid] and read smem[tid-1]. In multi-warp block, thread tid may read before thread tid-1 has written. Fix: __syncthreads() after the write." },
+    { "id": "F-REDUCE-011",    "independentAnswer": ["A"],           "confidence": "high",   "rationale": "Standard shuffle-down tree: 5 steps (log2(32)); lane 0 holds full warp sum; other lanes have partials. Consumers must read lane 0 or broadcast via shfl_sync." },
+    { "id": "F-REGSPILL-031",  "independentAnswer": ["A"],           "confidence": "high",   "rationale": "'Local memory' in CUDA = per-thread private storage in device memory (backed by L1/L2/DRAM), not on-chip. Heavy spilling severely hurts performance." },
+    { "id": "F-RMS-005",       "independentAnswer": ["B"],           "confidence": "high",   "rationale": "With BLOCK=4096 FP32, each program holds ~16KB of x (plus intermediates + w) in registers/SRAM, constraining how many blocks can co-reside on an SM and thus occupancy. A false (other=0.0 zeroes tail => x*x=0 no bias). C fabricates 20% claim. D false (rsqrt.approx is not IEEE-strict)." },
+    { "id": "F-SCAN-012",      "independentAnswer": ["A"],           "confidence": "high",   "rationale": "Hillis-Steele: depth O(log N), work O(N log N). Blelloch: depth O(log N), work O(N) => work-efficient; access pattern more complex, often needs bank-conflict padding." },
+    { "id": "F-SOFTMAX-019",   "independentAnswer": ["C"],           "confidence": "high",   "rationale": "Softmax is invariant to constant subtraction (both numerator & denominator scale by e^{-x_max}); subtracting max prevents FP32 exp overflow at x~88.7. other=-inf is correct for max reduction identity." },
+    { "id": "F-STREAM-026",    "independentAnswer": ["C","D"],       "confidence": "high",   "rationale": "C: same non-default stream = program order; different streams may run concurrently. D: EventRecord+StreamWaitEvent = cross-stream dependency without host block. A false (non-default streams do NOT block each other). B false (EventRecord is async on host)." },
+    { "id": "F-TCORE-018",     "independentAnswer": ["C"],           "confidence": "high",   "rationale": "Correct architectural history: Volta FP16, Turing INT8/INT4, Ampere added TF32/BF16/FP64, Hopper added FP8." },
+    { "id": "F-TEXTURE-035",   "independentAnswer": ["B"],           "confidence": "high",   "rationale": "Read-only path via __ldg or const T* __restrict__ routes loads through read-only cache; useful for weight matrices etc. Kepler+." },
+    { "id": "F-TLPGM-006",     "independentAnswer": ["A"],           "confidence": "high",   "rationale": "pid_m=17: rows 544..575 (all <2048). pid_n=3: cols 384..511 (all <1024). Mask uniformly True; no lanes skipped." },
+    { "id": "F-TRITON-001",    "independentAnswer": ["D"],           "confidence": "high",   "rationale": "pid=976: offsets 999_424..1_000_447; 576 valid, 448 OOB lanes masked out. tl.load with mask+other skips OOB loads; tl.store with mask skips OOB stores. No OOB access." },
+    { "id": "F-WARP-028",      "independentAnswer": ["A"],           "confidence": "high",   "rationale": "warpSize=32 fixed on NVIDIA; SM issues one instruction per warp; SIMT with per-lane predication for divergence." },
+    { "id": "F-WMMA-017",      "independentAnswer": ["C"],           "confidence": "high",   "rationale": "nvcuda::wmma is a higher-level C++ template API compiling down to mma.sync + ldmatrix. Raw mma.sync gives finer control (used by CUTLASS)." }
   ]
 }

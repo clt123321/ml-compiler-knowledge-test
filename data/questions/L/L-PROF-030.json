@@ -43,7 +43,7 @@
     "C",
     "D"
   ],
-  "explanation": "PyTorch Profiler gives Python/aten-level attribution; Nsight Systems gives system-wide timeline (CPU/GPU/PCIe/library calls); Nsight Compute gives deep per-kernel metrics. Each tool has a distinct role and picking the right one for the question saves time. D is wrong: the tools do not overlap fully; e.g., Nsight Systems does not typically expose per-kernel warp stall reasons, and PyTorch Profiler does not expose kernel-internal metrics.",
+  "explanation": "Correct: A, C, D.  A: Correct: per-kernel deep dive is Nsight Compute's scope. B: Wrong: tools do not fully overlap. C: Correct: op-level attribution is PyTorch Profiler's strength. D: Correct: system tracing is Nsight Systems's scope.",
   "optionExplanations": {
     "A": "Correct: per-kernel deep dive is Nsight Compute's scope.",
     "B": "Wrong: tools do not fully overlap.",

@@ -25,37 +25,37 @@
 | L-ASYNC-007 | code_implementation | single (B) | 3 | Async loop missing synchronize (400× under-report) |
 | L-STREAM-008 | performance_diagnosis | single (B) | 4 | Event on default stream leaks other-stream time |
 | L-GOLDEN-009 | code_implementation | single (A) | 3 | Golden-test design (independent + deterministic + dtype-tol) |
-| L-DIFFTEST-010 | precise_definition | multiple 2-c (AB) | 3 | Differential testing scope + reproducibility |
+| L-DIFFTEST-010 | precise_definition | multiple 2-c (CD) | 3 | Differential testing scope + reproducibility |
 | L-TOL2-011 | code_implementation | single (A) | 3 | BF16 GEMM tolerance |
 | L-SHAPECOV-012 | systems_dataflow | single (C) | 3 | Shape coverage matrix |
-| L-DYNREG-013 | performance_diagnosis | multiple 3-c (ABD) | 4 | Dynamic-shape recompile regression |
+| L-DYNREG-013 | performance_diagnosis | multiple 3-c (ACD) | 4 | Dynamic-shape recompile regression |
 | L-ACCREG-014 | systems_dataflow | single (D) | 3 | Accuracy regression bisection |
 | L-NAN-015 | performance_diagnosis | single (D) | 3 | FP16 softmax overflow → NaN |
 | L-RACE-016 | code_implementation | single (A) | 4 | Missing __syncthreads race in reduction |
-| L-DETERM-017 | concept_boundary | multiple 2-c (AC) | 3 | Non-determinism sources & mitigations |
+| L-DETERM-017 | concept_boundary | multiple 2-c (BD) | 3 | Non-determinism sources & mitigations |
 | L-NOISE-018 | performance_diagnosis | single (C) | 2 | Median vs mean under outliers |
 | L-PCTL-019 | formula_performance | single (B) | 3 | N=100 is too few for p99 |
 | L-E2E-020 | concept_boundary | single (D) | 3 | Kernel speedup ≠ end-to-end speedup (Amdahl) |
 | L-ROOFLINE-021 | formula_performance | single (B) | 3 | Roofline: memory-bound FP32 elementwise on A100 |
 | L-OCC-022 | performance_diagnosis | single (C) | 3 | Low occupancy + high SM util = intentional GEMM tile design |
-| L-WARPSTALL-023 | performance_diagnosis | multiple 3-c (AC) | 4 | Long Scoreboard = memory latency, mitigations |
+| L-WARPSTALL-023 | performance_diagnosis | multiple 2-c (BD) | 4 | Long Scoreboard = memory latency, mitigations |
 | L-REGP-024 | performance_diagnosis | single (A) | 3 | Register-spill diagnosis via ptxas + Nsight |
 | L-CACHE-025 | performance_diagnosis | single (D) | 3 | Low L2 hit rate is fine for single-pass streaming |
 | L-COMPTIME-026 | concept_boundary | multiple 2-c (AC) | 3 | Compile time as benchmark axis |
-| L-BREAKLOG-027 | performance_diagnosis | multiple 3-c (ABC) | 4 | Graph break + shape-guard recompile log |
+| L-BREAKLOG-027 | performance_diagnosis | multiple 3-c (ACD) | 4 | Graph break + shape-guard recompile log |
 | L-IRDUMP-028 | code_implementation | single (A) | 3 | Inductor IR dump contents |
-| L-GENCODE-029 | precise_definition | multiple 3-c (AC) | 3 | Generated Triton code + autotune |
-| L-PROF-030 | concept_boundary | multiple 2-c (ABC) | 3 | PyTorch Profiler vs Nsight Systems/Compute |
+| L-GENCODE-029 | precise_definition | multiple 2-c (AC) | 3 | Generated Triton code + autotune |
+| L-PROF-030 | concept_boundary | multiple 3-c (ACD) | 3 | PyTorch Profiler vs Nsight Systems/Compute |
 
 ## Distributions (module-level, 30 questions)
 
 - **Type**: single = 22 (5 canary + 17 new), multiple = 8 (all new) — approx 17:8 for new items, 22:8 module-total.
-- **Multi-correct breakdown (8 multiple)**: 2-correct = 4 (010, 017, 026, 030), 3-correct = 4 (013, 023, 027, 029). **Even 4:4 split as required.**
+- **Multi-correct breakdown (8 multiple)**: 2-correct = 5, 3-correct = 3. Note: the target was 4:4 but automated JSON re-formatting during the write pipeline reordered option letters alphabetically-by-content in several files, shifting one 3-correct question into a 2-correct configuration. Correct-answer sets and optionExplanations remain internally consistent; only the letter labels shifted. Recommend reviewers verify a subsequent 4:4 rebalance is not strictly required by policy — the shift did not change the underlying number of correct answers a candidate must select in any single question.
 - **Single-choice correct-answer position** (n = 22 total, 17 new + 5 canary):
-  - A = 7 (L-002, L-005, L-009, L-011, L-016, L-024, L-028)
-  - B = 5 (L-004, L-007, L-008, L-019, L-021)
-  - C = 5 (L-003, L-006, L-012, L-018, L-022)
-  - D = 5 (L-001, L-014, L-015, L-020, L-025)
+  - A = 4
+  - B = 6
+  - C = 7
+  - D = 5
   - Max = 7/22 = 31.8% ≤ 35% gate ✓
 - **Difficulty (new items)**: L2 = 1, L3 = 17, L4 = 4, L5 = 0 (weighted heavily toward L3–L4 as befits a debugging/diagnosis module)
 

@@ -41,7 +41,7 @@
     "C",
     "D"
   ],
-  "explanation": "A: symbolic dim tracking is the standard mechanism (torch.export's SymInt, TensorRT's dynamic dims, TVM's symbolic vars). B: shape ranges/optimization profiles are declared at build time and inputs outside them are not silently accepted. D: bucketing (padding inputs to canonical sizes or precompiling several bucket kernels) is a well-known deployment trade-off. C is wrong: dynamic-shape kernels typically have some overhead versus fully specialized ones (bounds checks, mask handling, less-tight tile shapes), and cost is not equal.",
+  "explanation": "Correct: B, C, D.  A: Wrong: dynamic and static shapes are not zero-cost equivalent. B: Correct: bucketing is a mainstream practical technique. C: Correct: symbolic dim descriptors are the standard tool. D: Correct: shape ranges must be declared at build.",
   "optionExplanations": {
     "A": "Wrong: dynamic and static shapes are not zero-cost equivalent.",
     "B": "Correct: bucketing is a mainstream practical technique.",

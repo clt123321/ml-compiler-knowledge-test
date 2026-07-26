@@ -40,7 +40,7 @@
     "B",
     "C"
   ],
-  "explanation": "A and B state the documented behavior of `cudaStreamSynchronize` and `cudaDeviceSynchronize`. C is wrong because overlap requires pinned host memory (page-locked) and appropriate stream separation — async doesn't guarantee overlap by itself. D reverses default-stream semantics: under legacy default-stream behavior, work on the default stream synchronizes with all other streams on the device (`cudaMemcpy` is blocking and will wait for prior work).",
+  "explanation": "Correct: B, C.  A: Wrong: legacy default stream synchronizes with other streams; the blocking `cudaMemcpy` will wait for the kernel. B: Correct: matches `cudaStreamSynchronize` semantics. C: Correct: overusing device-wide sync serializes execution. D: Wrong: async is necessary but not sufficient for overlap — pinned memory and correct stream placement are also required.",
   "optionExplanations": {
     "A": "Wrong: legacy default stream synchronizes with other streams; the blocking `cudaMemcpy` will wait for the kernel.",
     "B": "Correct: matches `cudaStreamSynchronize` semantics.",

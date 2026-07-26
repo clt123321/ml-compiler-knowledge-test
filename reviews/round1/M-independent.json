@@ -1,0 +1,99 @@
+{
+  "module": "M",
+  "reviewer": "primary-review-4",
+  "phase": "A_blind",
+  "generatedAt": "2026-07-27",
+  "notes": "Reviewer answered each question strictly from stem+options+assumptions without reading data/questions/** or content cards. No revision allowed after Phase B.",
+  "answers": [
+    {
+      "id": "M-A2A-004",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "MoE dispatch/combine: each rank sends distinct per-destination shards and receives distinct per-source shards, no reduction. This is the canonical definition of All-to-All. AllReduce sums (wrong: no reduction wanted), AllGather broadcasts full buffers (wasteful and wrong semantics), Broadcast from rank 0 is a bottleneck and wrong pattern."
+    },
+    {
+      "id": "M-AR-001",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "AllReduce(sum): all ranks obtain Σ_i T_i of shape S. AllGather: all ranks obtain stacked [N, *S]. A is wrong (extra 1/N factor is nowhere in AllReduce). C swaps shapes. D is nonsense (AllReduce and AllGather are distinct)."
+    },
+    {
+      "id": "M-BOUNDARY-014",
+      "independentAnswer": ["A", "B", "C"],
+      "confidence": "high",
+      "rationale": "Compiler-vs-runtime split: compiler picks WHICH collective on WHICH mesh axis (A); runtime picks HOW (algorithm, chunk sizes, lane assignment — B); fault tolerance is a runtime/framework concern (C). D is wrong: SPMD IR is intentionally topology-agnostic — the compiler emits mesh-axis-level collectives; concrete NVSwitch/PCIe mapping is a runtime concern (though topology-aware autotuning can inform hints, the IR is not 'topology-incorrect' without it)."
+    },
+    {
+      "id": "M-BUCKET-006",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Bucketing amortizes the per-collective latency term α over many small tensors and better fills link bandwidth. Trade-off: the bucket must wait for all its tensors to be produced by backward, which cuts into the overlap window if the bucket spans too many layers. A is false (β·S stays); B is false (NCCL supports many AllReduces); C confuses statistical averaging with allreduce arithmetic."
+    },
+    {
+      "id": "M-COST-002",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Ring AllReduce = Ring ReduceScatter + Ring AllGather. Each phase moves (N-1)/N · S per rank, so total per-rank bandwidth-limited time is 2·(N-1)/N · S/BW. This is the classic Rabenseifner/Patarasuk result. A ignores that AllReduce needs 2 passes; B is naive-broadcast cost; D is Recursive-Halving cost, not ring."
+    },
+    {
+      "id": "M-COSTAG-011",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "Ring: per-rank AllGather = (N-1)/N · S, ReduceScatter = (N-1)/N · S, AllReduce = 2·(N-1)/N · S. A restates AllReduce = RS + AG (correct). B claims N·S per rank (wrong — that's naive broadcast). C is AllGather per-rank cost (correct). D matches RS to AG per-rank cost (correct)."
+    },
+    {
+      "id": "M-COSTMODEL-010",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "α=10μs, β=100 ps/B. T(1KB=1000B) = 10μs + 1000·100ps = 10μs + 100ns ≈ 10μs (latency-dominated). T(10MB=1e7B) = 10μs + 1e7·100ps = 10μs + 1ms ≈ 1ms (bandwidth-dominated). Increasing 1KB→10KB adds only 900ns, barely noticeable relative to 10μs α. A/B/D have wrong arithmetic or wrong interpretation of β."
+    },
+    {
+      "id": "M-GSPMD-012",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "GSPMD propagation pushes sharding through ops (respecting per-op propagation rules) and inserts reshard collectives where producer/consumer shardings disagree — the user only needs to annotate a small subset. A is wrong (propagation is compile-time analytical, not runtime autotune). B is wrong (P2P replacement is not the intent). C is wrong (GSPMD lives inside XLA, not bypassing it)."
+    },
+    {
+      "id": "M-GSPMD-013",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "'Hints' means: user annotates a few tensors, compiler propagates and inserts reshards. B (runtime re-select) contradicts GSPMD's static-compile design. C (compiler randomly picks one) is a fabrication. D (strict placement, error if conflict) is the opposite of 'hint' semantics."
+    },
+    {
+      "id": "M-MESH-008",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "The Device Mesh is a LOGICAL named-axis grid; sharding specs reference axis names by name, and the runtime is free to map axes to physical devices to exploit fast interconnects (e.g. align inner axis with NVLink). B (exclusive axis restriction) is false — 2D sharding on a 2D mesh is the whole point. C (physical topology descriptor) is the anti-pattern. D (runtime-only object) contradicts sharding being an IR/HLO concept."
+    },
+    {
+      "id": "M-OVERLAP-005",
+      "independentAnswer": ["B", "C"],
+      "confidence": "high",
+      "rationale": "Two conditions for actual concurrency: (B) collective on a different stream + non-blocking backend, and (C) no earlier consumer forcing a wait/sync. A is false (GPUs achieve overlap via streams, not a dedicated comm core). D describes serialization, the opposite of overlap."
+    },
+    {
+      "id": "M-PIPE-015",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Classic GPipe bubble fraction: (P-1)/(P+M-1). Increasing M shrinks the bubble at the cost of holding activations (or recomputation). A (fixed 1/P) is wrong. C (P× per-microbatch speedup) confuses throughput vs latency. D (compiler can eliminate bubble by kernel fusion) is wrong."
+    },
+    {
+      "id": "M-RS-003",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "ReduceScatter reduces the N tensors elementwise then delivers a disjoint 1/N shard to each rank. This is exactly why AllReduce = ReduceScatter + AllGather (ring). A (delivers to rank 0 only) is wrong. B (aliasing All-to-All) is wrong. C (equivalent to AllGather+local reduce) has right endpoint but wrong intermediate."
+    },
+    {
+      "id": "M-SHARD-009",
+      "independentAnswer": ["C", "D"],
+      "confidence": "high",
+      "rationale": "C: D0-sharded → replicated = AllGather (canonical). D: partial-sum on all ranks → replicated = AllReduce (canonical). A is wrong: switching shard axis on the SAME mesh axis generally requires All-to-All (not local reshape) because different ranks hold different data. B is wrong: replicated → D0-sharded is a local slice only; no AllReduce is needed since all ranks already agree."
+    },
+    {
+      "id": "M-SPMD-007",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "B (MPMD requires per-rank code paths), C (SPMD rewrites ops per sharding + emits collectives at reshard boundaries), D (GSPMD relies on annotations propagated by partitioner) — all correct. A is too absolute: SPMD does support rank-varying data / mask-based per-rank differences; strict identical execution is not the definition."
+    }
+  ]
+}

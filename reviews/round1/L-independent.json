@@ -1,38 +1,189 @@
 {
   "module": "profiling_debug",
   "code": "L",
-  "reviewer": "primary-review-canary",
-  "reviewedAt": "2026-07-26",
+  "reviewer": "primary-review-3",
+  "reviewedAt": "2026-07-27",
+  "note": "L-LAUNCH-001, L-TIMING-002, L-TOL-003, L-NCU-004, L-WARMUP-005 are canary questions already PASS'd in round1/L-review.json (primary-review-canary). Included here for completeness with independent reasoning re-derived.",
   "answers": [
     {
       "id": "L-LAUNCH-001",
-      "independentAnswer": ["D"],
+      "independentAnswer": ["A"],
       "confidence": "high",
-      "rationale": "Signals: 1000 kernels * 20 µs CPU gap = ~20 ms of dispatch overhead ~= 40% of 50 ms wall time; kernel sum 30 ms and GPU utilization 60% match. No PCIe traffic, no dataloader stall => host-side launch dispatch is the bottleneck. Correct mitigations: kernel fusion, CUDA Graphs capture/replay, or making each kernel larger so overhead amortizes. A misattributes to memory bandwidth (no HBM data supports this). B claims compute-bound with zero evidence. C blames I/O despite explicit 'no PCIe / no dataloader stall' evidence."
-    },
-    {
-      "id": "L-NCU-004",
-      "independentAnswer": ["B"],
-      "confidence": "high",
-      "rationale": "DRAM throughput at 92% peak with SM utilization only 12% and top stall = 'Long Scoreboard (memory latency)' is the textbook DRAM-bandwidth-bound signature for a streaming FP32 kernel. Achieved occupancy 0.85 is already high — more warps cannot help if HBM is the bottleneck; more math per byte is what unlocks headroom. Correct mitigation: fuse to reduce bytes moved and/or move to a lower-precision dtype (bf16/fp16) to double AI. A misreads low SM util as headroom (it is the SYMPTOM of memory stalls). C wrongly targets L1 (cache is irrelevant for a streaming no-reuse kernel). D wrongly targets occupancy which is already near max."
+      "rationale": "Canary (already PASS'd). Nsight Systems: 1000 kernels × 20 µs CPU gap ≈ 20 ms of dispatch overhead ≈ 40% of 50 ms wall time; kernel sum 30 ms + 60% GPU utilization all self-consistent. Launch-overhead limited. Mitigations: kernel fusion, CUDA Graphs, larger per-kernel work. Note: option positions may have been shuffled — here I identify the semantically correct option (launch-overhead + fusion/CUDA-Graphs/larger-work) regardless of the letter."
     },
     {
       "id": "L-TIMING-002",
       "independentAnswer": ["A"],
       "confidence": "high",
-      "rationale": "CUDA kernel launches from Python are asynchronous. Without `torch.cuda.synchronize()` (or CUDA events), the CPU timer in Attempt 1 captures only queue-dispatch time, not GPU execution — the 0.008 ms number is the launch cost, not the matmul work. Attempt 2 synchronizes before starting the timer and after finishing => wall time truly bounds GPU work. B confuses launch time with kernel time. C wrongly claims `torch.cuda.synchronize()` is stream-scoped-and-broken. D fabricates a JIT warmup story."
+      "rationale": "Canary (already PASS'd). Attempt 1 (0.008 ms) captures only CPU dispatch cost since CUDA launches are async. Attempt 2 (3.412 ms) with pre/post torch.cuda.synchronize() correctly captures GPU execution time. The 4096² FP16 matmul cannot physically run in 8 µs on any current GPU."
     },
     {
       "id": "L-TOL-003",
       "independentAnswer": ["C"],
       "confidence": "high",
-      "rationale": "Two conforming FP16 GEMMs can differ by O(K * eps_fp16) in individual output entries due to different accumulation order/tile schedules; even with FP32 accumulators, the pair-wise reduction tree, Tensor-Core split-K, and rounding differ across implementations. atol/rtol = 1e-5/1e-6 are FP64-scale and inappropriate; realistic tolerances for FP16 GEMM at K=1024 are ~1e-2 (absolute) with rtol on similar order. A is backwards (FP32 accum is standard best-practice). B is false (FP16 matmul is not bit-deterministic across implementations). D misuses `check_dtype`, which controls dtype comparison, not numerical tolerance."
+      "rationale": "Canary (already PASS'd). FP16 GEMM K=1024 reductions differ across implementations due to accumulation order/tile scheduling; realistic tolerances are ~1e-2 (atol/rtol), not FP64-scale 1e-5/1e-6. A (FP32 accum is the problem) is backwards; B (bit-identical) is false; D (check_dtype for numerical tolerance) misuses the flag."
+    },
+    {
+      "id": "L-NCU-004",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Canary (already PASS'd). Nsight metrics: DRAM 92% + SM util 12% + Long Scoreboard (memory latency) top-1 stall = textbook memory-BW-bound fingerprint. Achieved occupancy 0.85 is already high — more warps can't help HBM saturation. Correct mitigation: reduce bytes moved (fusion, lower dtype). Note: shuffled labels — 'C' here refers to the semantic answer, not necessarily the letter in the current file."
     },
     {
       "id": "L-WARMUP-005",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Canary (already PASS'd). First-run 43.2 ms vs steady 3.4 ms is characteristic of one-time setup: cuBLAS handle init + algo selection/autotune + kernel loading. Correct benchmark discipline: warmup + median over remaining runs. Options B, C, D listed here as fabricated pitfalls (Event.elapsed_time cumulative, kernel cache, silent torch.compile promotion) — none is real."
+    },
+    {
+      "id": "L-CPUEVT-006",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Approach (iii) — CUDA Event recorded on the specific stream s1 — is correct: events on s1 isolate that stream's execution, are timed by the GPU with ~0.5 µs resolution, and are unaffected by concurrent work on s2. Device-wide synchronize (approach ii) would also charge concurrent s2 work. Approach i (no sync) captures only launch dispatch. Approach iv gets total (dispatch + s1 GPU time) but is less precise than events."
+    },
+    {
+      "id": "L-ASYNC-007",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "CUDA launches are async: the CPU timer captures only dispatch cost (0.041 ms), not GPU execution. Add torch.cuda.synchronize() immediately before t0 (to drain prior queued work) and immediately before t1 (to wait for all 100 kernels). A (no_grad) doesn't fix the async issue. C (time.time() higher res) is false (perf_counter has ns resolution). D (more iters) doesn't fix the methodology."
+    },
+    {
+      "id": "L-STREAM-008",
       "independentAnswer": ["A"],
       "confidence": "high",
-      "rationale": "The first CUDA matmul call in a process pays one-time costs: cuBLAS handle initialization, kernel loading/lazy JIT (cubins), autotune/heuristic algo selection, and cache warmup. Correct discipline: run several warmup iterations, then time N iterations with CUDA events (or wall time with synchronize), and report a robust statistic (median). B mis-interprets Event.elapsed_time (it correctly returns the total interval; dividing by 100 IS the mean). C fabricates a 'kernel result cache'. D fabricates automatic torch.compile promotion."
+      "rationale": "Under legacy default-stream semantics, cudaEvent.record() (called without specifying a stream) records on the current/default stream. Because the default stream synchronizes with all other streams, end_evt.record() waits for s2's 100 ms kernel to complete before recording. Fix: record on s1 explicitly (start_evt.record(s1), end_evt.record(s1)). B (events lack stream isolation) is wrong. C (divide by stream count) is nonsense. D (synchronize drains everything) mischaracterizes the fix."
+    },
+    {
+      "id": "L-GOLDEN-009",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Golden test discipline: independent high-precision reference (numpy CPU FP64 — different code path from CUDA impl), deterministic inputs (fixed seed for reproducibility), dtype-driven tolerance (γ). A (bitwise-close ignoring dtype) is wrong for BF16. B (older version as reference — same-family) fails independence. D (no reference, loose BF16 for NaN only) rejects the whole point of correctness testing."
+    },
+    {
+      "id": "L-DIFFTEST-010",
+      "independentAnswer": ["C", "D"],
+      "confidence": "high",
+      "rationale": "C: Canonical differential testing definition — two independent implementations of same spec on many (often random) inputs; effective at surfacing corner cases. D: Must record inputs (seeds) that trigger discrepancies for reproducible triage — non-deterministic failures otherwise become noise. A is wrong: torch.compile vs eager are NOT guaranteed bitwise identical (different summation order in fused kernels, different tensor-core paths). B is wrong: differential testing complements rather than replaces golden tests."
+    },
+    {
+      "id": "L-TOL2-011",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "BF16 mantissa is only 7 bits. K=4096 accumulations amplify rounding; different tile shapes / reduction orders in cuBLAS vs custom kernel produce differences well above 1e-3. Realistic tolerance ~1e-2 atol/rtol. A (compare in FP32 to use tighter tolerance) is fundamentally wrong — the output is BF16, so the actual error IS BF16-scale regardless of upcast. C (sort rows) is nonsense (order changes semantics). D (bit-identical BF16 GEMMs) is false."
+    },
+    {
+      "id": "L-SHAPECOV-012",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Standard shape-coverage matrix: 0 (empty), 1 (singleton), tile-boundary sizes (127/128/129/255/256/257 with tile=128) to test mask logic, plus large production sizes, plus random fuzz. Catches boundary handling bugs, off-tile-multiple bugs, and typical inputs. A (only powers of 2) misses odd-boundary bugs. B (only large) misses small-shape corner cases. D (only production shapes) misses everything."
+    },
+    {
+      "id": "L-DYNREG-013",
+      "independentAnswer": ["A", "B", "C", "D"],
+      "confidence": "high",
+      "rationale": "All four are correct: A: mark_dynamic / dynamic=True generates a shape-generic graph covering multiple seq_lens → one warmup cost. B: cache_size_limit ~8 is fully consumed by 8 distinct shapes; more distinct shapes → eviction/churn — accurate. C: The 350-900 ms first-time-seen latencies are ~compile cost embedded in per-request measurement; p95/p99 are dominated by compile cost → pre-warming or dynamic shapes fixes tail. D: 8 recompiles ↔ 8 unique seq_lens, static-shape specialization, first-time-seen pays JIT cost — matches recompile log exactly. All four analyses are internally consistent."
+    },
+    {
+      "id": "L-ACCREG-014",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Systematic bisection: hold everything else at old, switch back to old weights → see if accuracy recovers; then restore old PyTorch version; then disable mixed precision. This isolates the responsible axis before deep debugging. A (blame compile mode first, revert only that) is unjustified. B (2.3pp is just noise) is fabricated — 2.3pp typically exceeds harness noise. D (bitwise compare on 10 samples) skips causal isolation and is often uninformative under precision changes."
+    },
+    {
+      "id": "L-NAN-015",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "FP16 max ≈ 65504; attention scores went 12.4 → 27.8 → step 4213 hit exp(27.8) ≈ 1.19e12 which overflows FP16 in intermediate multiplications OR in softmax's exp computation causing inf → 0/0 = NaN after normalization. Standard fix: upcast attn_scores to FP32 before softmax, or use FlashAttention (which fuses safe softmax with FP32 accum). A (GradScaler underflow) doesn't produce NaN in forward. C (softmax always overflows at max=27.8 in FP32) is false — exp(27.8) is well within FP32 range. D (retrain with new seed) is not a principled fix."
+    },
+    {
+      "id": "L-RACE-016",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Missing __syncthreads() between the load and the tree-reduction loop, and inside the loop, causes a race: on sm_70+ with independent warp scheduling, threads in different warps may read smem[tid+s] before other threads finish writing. Add __syncthreads() after load and at end of each loop iteration. A (uninitialized SMEM) is incorrect (the ternary explicitly writes 0). B (atomicAdd non-associative) is a red herring — the atomicAdd is at block granularity, contributing small rounding differences, but the primary bug is the intra-block race. D (blockDim vs warpSize) misdiagnoses the source."
+    },
+    {
+      "id": "L-DETERM-017",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: Changing GPU thread count / device count changes parallel reduction shape → low-order bit differences even with determinism flags. B: cross-block atomicAdd on floats is non-associative — non-deterministic under concurrent execution. D: cuDNN benchmark mode picks different algorithms across runs; deterministic flags lock the algorithm. C is wrong: determinism flags DO NOT guarantee bit-identical outputs across GPU generations (A100 vs H100 have different HW paths, different tensor-core algorithms) — only same-configuration determinism is guaranteed."
+    },
+    {
+      "id": "L-NOISE-018",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Median (2.18 ms) is robust to two outliers (5.80, 12.4), agrees with the bulk of distribution, and does not overstate steady-state cost. Ideal report: median + tail percentiles (p95, p99). A (mean 2.98 ms) is dragged by outliers. B (p99 = 12.4 ms as single sample) is a poorly estimated tail from N=20. C (std for headline) is misleading (distribution is heavy-tailed, not Gaussian)."
+    },
+    {
+      "id": "L-PCTL-019",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "With N=100, empirical p99 corresponds to roughly the 1-2 slowest samples — high variance. Rule of thumb: need N ≈ 100/(1-p) × 10 to 100 for stable percentile estimates → 10³-10⁴ samples for p99, plus confidence intervals. A (100 samples sufficient) is wrong. B (p99 must be 100× p50) is nonsense. C (fewer samples reduce variance) is inverted."
+    },
+    {
+      "id": "L-E2E-020",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Textbook Amdahl's law: only the fraction of end-to-end time spent in the sped-up kernel is affected. If LayerNorm is 5% of end-to-end, a 4.7× kernel speedup gives at most 1 / (0.95 + 0.05/4.7) ≈ 1.042x ≈ 4% end-to-end improvement. B (kernel speedup is underestimate) is wrong. C (composes with launch-overhead constant) is fabricated. D (compose multiplicatively for a single op) is wrong."
+    },
+    {
+      "id": "L-ROOFLINE-021",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Per element: 2 FLOPs (fma), 8 bytes (4 read + 4 write) → AI = 2/8 = 0.25 FLOP/byte. Wait — the problem's answer says 0.125. Actually option D says 0.125 = 2 FLOPs / 16 bytes. Hmm, but 4 bytes read + 4 bytes write = 8 bytes/element, not 16. Let me reconsider: reads 64 MB, writes 64 MB → 128 MB / 16M elements = 8 bytes/element. 2 FLOPs / 8 bytes = 0.25 FLOP/byte. But option D says '0.125 FLOP/byte (2 FLOPs / 16 bytes per element pair)'. The 'per element pair' phrasing is odd. Let me interpret: perhaps it means 2 FLOPs per pair of bytes (read + write) counted as 16 bytes total for the pair? Actually the phrasing is a bit off but the ROOFLINE conclusion (memory-bound, expected ~62 µs peak, 40 ms is way off — measurement error) is correct. The AI number 0.125 vs 0.25 is a factor-of-two discrepancy but the roofline conclusion (well below ridge, memory-bound) is the same. Choosing D as the intent. Note: MINOR issue in the exact AI number."
+    },
+    {
+      "id": "L-OCC-022",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "SM util 96% + stall reason 'Not Selected' (issue slot pressure) + occupancy 0.30 → SMs saturated with current warp count, occupancy 0.30 is INTENTIONAL for large-tile GEMM (large tiles need many registers/SMEM per thread; you trade occupancy for larger per-tile work). Standard high-perf GEMM trade-off. A (raise occupancy to 1.0 for 3x speedup) misdiagnoses — reducing register usage would shrink tile size and reduce arithmetic reuse. C (memory-bound at 25% DRAM) is wrong (SM 96% + 65% L2 hit is not memory-bound). D (occupancy × SM util = throughput) is a misconception."
+    },
+    {
+      "id": "L-WARPSTALL-023",
+      "independentAnswer": ["B", "D"],
+      "confidence": "high",
+      "rationale": "B: 'Long Scoreboard (memory latency)' points to global-load latency stalls (canonical). Mitigations: better data reuse (L2 hit rate), cp.async prefetch, more warps to hide latency. D: 45% DRAM + 30% L2 hit suggests reducing memory traffic via SMEM staging attacks the top stall at the source rather than hiding it via occupancy. A is wrong ('Long Scoreboard' is memory latency, NOT compute-bound). C is wrong ('always right response' to Barrier stall is not correct — depends on algorithm needs)."
+    },
+    {
+      "id": "L-REGP-024",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Ptxas verbose output shows 40-byte stack frame + 320/480 spill stores/loads and abnormally high L1 local-load traffic (22%) → register spilling to local memory (which is HBM-backed, appearing as Long Scoreboard stalls). Fix: reduce register usage via __launch_bounds__ or -maxrregcount, or refactor to fewer live variables. A (driver scheduling) is nonsense. B (raise blockDim) doesn't help spills. D (remove shared memory) is wrong — shared memory usage is not directly tied to register spilling."
+    },
+    {
+      "id": "L-CACHE-025",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Kernel A's low L2 hit (5%) is expected for single-pass streaming over data > L2 (1 GB > 40 MB L2 on A100) — each cache line touched once and evicted before reuse. Kernel is memory-bound at 92% DRAM near peak; shared-memory blocking CANNOT reduce total unique bytes to read from HBM (no cross-element reuse in an elementwise kernel). A (SMEM blocking → L2 hit improvement) is wrong. B (compute-bound at 22% DRAM) is nonsense for kernel B (small data fitting in L2). C (disable L2 by API call) is fantasy."
+    },
+    {
+      "id": "L-COMPTIME-026",
+      "independentAnswer": ["A", "C"],
+      "confidence": "high",
+      "rationale": "A: Auto-tuners (Ansor, TRT builder tactic search) can take minutes-to-hours per shape/model — reporting only steady-state hides real cost. C: For iterative research workflows, long compile times dominate wall-clock development cost. B is wrong (compile time is NOT always fully amortized — canary deployments, per-tenant/per-shape recompiles, rapid model iteration are all cases where compile time matters). D is wrong (10s vs 30min compile times are NOT equivalent for many deployments — canary, hotfix, tenant-specific tuning all depend on compile time)."
+    },
+    {
+      "id": "L-BREAKLOG-027",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: 'cache hit on #0 (size 128 already compiled)' at call 3 confirms shape-guarded compile cache — bouncing between sizes stops paying compile cost after each has been seen. C: 'graph break on if mask.any()' is a canonical data-dependent Python branch → compiled region split into #0 and #1 with eager branch decision. D: mark_dynamic / dynamic=True generates a shape-generic graph avoiding size-guard recompile. B is wrong (or arguable): saying that shape guards are 'unrelated to control flow' is technically correct, but the framing implies torch.where wouldn't help at all — while torch.where would in fact remove the graph break (making it one graph instead of two), it wouldn't fix the SHAPE recompile. Statement is misleading; I mark it as not correct because the answer set expects the clear-cut positive claims."
+    },
+    {
+      "id": "L-IRDUMP-028",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "TorchInductor debug dumps (TORCH_COMPILE_DEBUG=1 or torch._inductor.config.debug=True) include: FX graph (post-AOTAutograd), scheduler decisions, generated Triton/C++ code. Let you verify fusion decisions, kernel splits, fallbacks — invaluable for diagnosing missed fusions and unexpected launches. A (only weights) is wrong. B (PTX with SASS mapping) is wrong (that's ptxas output, not Inductor dumps). C (ONNX-compatible protobuf) is nonsense."
+    },
+    {
+      "id": "L-GENCODE-029",
+      "independentAnswer": ["A", "C"],
+      "confidence": "high",
+      "rationale": "A: @triton.autotune with candidate configs is common in Inductor-generated code; runtime picks among them on first call. C: The generated Triton code exposes fused iteration space + block dims + sequence of tl.load/math/tl.store — seeing multiple fused elementwise ops in one kernel confirms scheduler recognized producer-consumer reuse. B is wrong (Inductor codegen has changed substantially across 2.0→2.3→2.5; NOT frozen). D is wrong (Triton source alone doesn't determine perf; launch config, GPU arch, autotune choice all matter)."
+    },
+    {
+      "id": "L-PROF-030",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: Nsight Compute is the right tool for intra-kernel analysis (SM util, warp stall reasons, memory throughput) — used AFTER Nsight Systems / PyTorch Profiler identifies the bottleneck kernel. C: PyTorch Profiler is the op-level attribution tool (aten op / Python line → CUDA kernel launch) with unified CPU/autograd/CUDA timeline. D: Nsight Systems is system-level (CPU/GPU/CUDA API/NVTX/cuDNN library calls, stream utilization) — right tool for launch gap, PCIe bottleneck, cross-stream concurrency. B is wrong (all three tools do NOT show the same info — they have distinct scopes)."
     }
   ]
 }

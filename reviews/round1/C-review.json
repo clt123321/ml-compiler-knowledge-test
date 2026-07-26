@@ -1,10 +1,182 @@
 [
   {
-    "id": "C-IRLEVEL-005",
-    "reviewer": "primary-review-canary",
+    "id": "C-BUFFER-012",
+    "reviewer": "primary-review-batch1",
     "round": "round1",
-    "independentAnswer": ["A", "C", "D"],
-    "officialAnswer": ["A", "C", "D"],
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-CANON-006",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-DCE-013",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-DIALECT-016",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-EAGER-015",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-GRAPH-025",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch",
+        "note": "Explanation says 'Option C is wrong' but C is in the correct-answer set {B,C,D}. Shuffle-mislabel bug \u2014 the explanation was written pre-shuffle and refers to the old option A ('every edge materialized') content that now sits at a different label. Suggested repair: relabel the wrong-option references in the explanation."
+      }
+    ],
+    "overallResult": "MINOR"
+  },
+  {
+    "id": "C-IRLEVEL-005",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-IRLEVELS-019",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
     "answerAgreement": true,
     "uniqueAnswerConfidence": "high",
     "sourceSupported": true,
@@ -15,30 +187,214 @@
   },
   {
     "id": "C-LAYOUT-002",
-    "reviewer": "primary-review-canary",
+    "reviewer": "primary-review-batch1",
     "round": "round1",
-    "independentAnswer": ["A"],
-    "officialAnswer": ["A"],
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
     "answerAgreement": true,
     "uniqueAnswerConfidence": "high",
     "sourceSupported": true,
     "hardwareConditionsSufficient": true,
     "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-LAYOUTOPT-026",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
     "issues": [
       {
-        "level": "MINOR",
-        "type": "source_scope",
-        "note": "The question uses PyTorch-specific terminology (`torch.channels_last`) but the sourceRefs are compiler-general (BOOK:eac3, DOC:mlir-langref). The underlying stride-vs-physical-layout reasoning IS captured by those sources; the argument is language-agnostic. Nonetheless, adding a Tier 1 PyTorch reference (e.g., torch.Tensor.stride / channels_last docs) would tighten the source-to-claim mapping for the PyTorch phrasing. Consider adding for future revisions."
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
       }
     ],
-    "overallResult": "MINOR"
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-LEGALIZE-008",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
   },
   {
     "id": "C-LICM-001",
-    "reviewer": "primary-review-canary",
+    "reviewer": "primary-review-batch1",
     "round": "round1",
-    "independentAnswer": ["B"],
-    "officialAnswer": ["B"],
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-LINALG-030",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-LOOPIR-023",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-LOWER-007",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-MATERIALIZE-027",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-OPIR-028",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-PROD-017",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-REGION-021",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
     "answerAgreement": true,
     "uniqueAnswerConfidence": "high",
     "sourceSupported": true,
@@ -49,10 +405,14 @@
   },
   {
     "id": "C-SHAPE-004",
-    "reviewer": "primary-review-canary",
+    "reviewer": "primary-review-batch1",
     "round": "round1",
-    "independentAnswer": ["D"],
-    "officialAnswer": ["D"],
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
     "answerAgreement": true,
     "uniqueAnswerConfidence": "high",
     "sourceSupported": true,
@@ -62,11 +422,39 @@
     "overallResult": "PASS"
   },
   {
-    "id": "C-SSA-003",
-    "reviewer": "primary-review-canary",
+    "id": "C-SHAPEINFER-029",
+    "reviewer": "primary-review-batch1",
     "round": "round1",
-    "independentAnswer": ["C"],
-    "officialAnswer": ["C"],
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-SSA-003",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
     "answerAgreement": true,
     "uniqueAnswerConfidence": "high",
     "sourceSupported": true,
@@ -74,5 +462,187 @@
     "versionScopeSufficient": true,
     "issues": [],
     "overallResult": "PASS"
+  },
+  {
+    "id": "C-STABLEHLO-014",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "A",
+      "C"
+    ],
+    "officialAnswer": [
+      "A",
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-STRIDE-020",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-SYMSHAPE-018",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-TE-022",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-TILING-011",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-TYPECONV-024",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "C-VERIFY-009",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
+  },
+  {
+    "id": "C-VIEW-010",
+    "reviewer": "primary-review-batch1",
+    "round": "round1",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "medium",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MAJOR",
+        "type": "weak_distractor_self_contradicting_option",
+        "note": "The correct option contains a self-contradicting 'poison tail' introduced by a phrase like 'Under this reading/In this account'. The trailing text presents wrong claims (often borrowed from other options) that contradict the option's leading (correct) claim. The primary claim is canonical and matches Tier 1 sources; however, the tail damages option clarity and could confuse a partially-informed test-taker. Suggested repair: strip the trailing 'Under this reading...' / 'In this account...' block from every correct option in module C, since the wrong-option content is already carried in dedicated distractor options."
+      }
+    ],
+    "overallResult": "MAJOR"
   }
 ]

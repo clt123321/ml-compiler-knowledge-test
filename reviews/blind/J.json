@@ -1,0 +1,1380 @@
+{
+  "module": "llm_inference",
+  "code": "J",
+  "label": "LLM 推理优化与生成系统",
+  "generatedAt": "2026-07-26",
+  "count": 30,
+  "questions": [
+    {
+      "id": "J-CBATCH-004",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Continuous batching / Iteration-level scheduling",
+      "learningObjective": "Explain what continuous (iteration-level) batching is and why it improves throughput over static batching for LLM serving.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM / TRT-LLM / SGLang / Orca-style",
+        "stability": "stable_principle"
+      },
+      "stem": "Continuous batching (also called iteration-level batching, as introduced by Orca and used by vLLM) is compared to static request-level batching. Which description of its main mechanism and benefit is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Continuous batching runs each request on its own dedicated CUDA stream so that per-request scheduling decisions do not serialize across the batch; the throughput win comes from independent execution paths per request."
+        },
+        {
+          "id": "B",
+          "text": "At every model-forward iteration the scheduler builds a batch from currently-active requests: new requests can join and finished requests can leave between iterations without waiting for the whole batch to complete. This keeps the GPU utilized despite variable-length outputs."
+        },
+        {
+          "id": "C",
+          "text": "Continuous batching converts autoregressive decode into a single-pass generation by predicting all output tokens simultaneously with a non-autoregressive draft model; the primary win is bypassing the sequential decode dependency."
+        },
+        {
+          "id": "D",
+          "text": "Continuous batching packs all decode requests together every step but forbids adding new requests until every existing request has produced the same number of tokens; this uniform-progress requirement preserves batching efficiency at the cost of latency."
+        }
+      ],
+      "assumptions": [
+        "Requests share the same model but can have different sequence lengths and prompt positions.",
+        "The scheduler operates at the model-forward-iteration granularity."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-CBPROP-022",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "Continuous batching properties / Trade-offs",
+      "learningObjective": "Distinguish real benefits and limits of continuous batching from common overclaims.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic serving stack",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all correct statements about continuous (iteration-level) batching in LLM serving. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Continuous batching removes head-of-line blocking under variable-length outputs: short requests exit as soon as they finish rather than waiting for the longest request in the batch."
+        },
+        {
+          "id": "B",
+          "text": "Continuous batching reduces per-token latency (TPOT) below the batch-1 baseline because sharing weight loads across requests amortizes HBM bandwidth per token."
+        },
+        {
+          "id": "C",
+          "text": "Continuous batching is only meaningful for MoE models; dense transformers see no benefit because their batch dynamics are fully static."
+        },
+        {
+          "id": "D",
+          "text": "Continuous batching improves aggregate throughput but does not improve (and may slightly worsen) per-token latency for a single request compared to running that request alone: joining a batch adds interference."
+        }
+      ],
+      "assumptions": [
+        "'Continuous batching' means iteration-level scheduling.",
+        "Standard dense transformer decode."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-CHUNKPRE-008",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Chunked prefill / Prefill-decode interleaving",
+      "learningObjective": "Explain what chunked prefill is and why it improves multi-tenant serving under mixed prefill+decode load.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM / SGLang / TRT-LLM (2024+)",
+        "frameworkVersionScope": "vLLM 0.4+, SGLang, TRT-LLM 0.9+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Chunked prefill in modern LLM serving systems addresses which problem, and how?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Long prefill requests block decode requests behind them, spiking TPOT for concurrent short-completion requests. Chunked prefill splits a prefill of length P into chunks (e.g., 512 tokens each) and lets each chunk share a model-forward iteration with ongoing decode requests, keeping per-token latency bounded while making forward progress on the long prefill."
+        },
+        {
+          "id": "B",
+          "text": "Prefill sometimes exceeds available HBM for the intermediate activations of the whole prompt at once; chunked prefill processes the prompt in windows so that only one chunk of activations lives in memory at a time. This is the sole reason for chunked prefill."
+        },
+        {
+          "id": "C",
+          "text": "Chunked prefill splits the prompt across multiple GPUs via tensor parallelism; each GPU handles one chunk of the prompt independently, and the chunks are recombined at the attention step. It is essentially a form of context parallelism."
+        },
+        {
+          "id": "D",
+          "text": "Chunked prefill converts the prefill matmul into smaller matmuls that fit tensor-core tile sizes better; the primary benefit is arithmetic throughput improvement of the prefill phase itself."
+        }
+      ],
+      "assumptions": [
+        "Serving system supports continuous / inflight batching so a chunk can be co-scheduled with decode requests.",
+        "Chunk size is a tunable parameter, typically 512-2048 tokens."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-CUDAGRAPH-015",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "CUDA Graph / Decode-step capture",
+      "learningObjective": "Explain when CUDA Graphs help LLM inference and what limitation they impose on batch composition.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": [
+          "CUDA Graphs"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Which characterization of CUDA Graphs in LLM inference is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "CUDA Graphs re-order kernels for better cache reuse across a captured region; the primary benefit is fusion of adjacent kernels into a single hardware unit that runs at higher SM utilization than the individual kernels combined."
+        },
+        {
+          "id": "B",
+          "text": "CUDA Graphs automatically fuse kernels across their captured region into a smaller number of hardware kernels; the fusion is opaque to the user but is the source of the throughput improvement in inference workloads."
+        },
+        {
+          "id": "C",
+          "text": "CUDA Graphs are only useful for compute-bound workloads; memory-bound kernels do not benefit because their runtime is dominated by HBM traffic, not launch overhead. LLM decode is memory-bound and thus CUDA Graphs provide no wall-clock benefit."
+        },
+        {
+          "id": "D",
+          "text": "CUDA Graphs amortize per-kernel launch overhead by capturing a sequence of kernels once and replaying it many times. For LLM decode (many small kernels per step), replay eliminates most CPU-side dispatch cost. The limitation is that the shape and memory layout must match the captured version; batch composition changes require different graphs (or falling back to eager)."
+        }
+      ],
+      "assumptions": [
+        "Standard CUDA Graphs API (capture + replay).",
+        "Kernels have known static shapes at capture time."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-DECDIAG-026",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "Decode performance diagnosis / Memory-bandwidth bound",
+      "learningObjective": "Diagnose memory-bandwidth-bound decode from profile data and identify effective vs ineffective mitigations.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "A100 80GB (HBM ~2 TB/s)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic serving stack",
+        "stability": "stable_principle"
+      },
+      "stem": "The following profile is collected for a single decode step at batch size 1 on a Llama-2-13B model on A100 80GB. Which mitigations are consistent with the bottleneck and select those that would concretely reduce TPOT. (Choose all that apply.)",
+      "profileData": "Model: Llama-2-13B, FP16 weights.\n  Per decode step (batch=1):\n    HBM read for weights: 26 GB / step, elapsed 13 ms → effective bandwidth ≈ 2000 GB/s (close to A100 peak ~2 TB/s)\n    HBM read for KV cache: 200 MB / step, elapsed 0.1 ms\n    SM compute utilization inside kernels: 22%\n    Kernel launch gaps: ~10% of step time\n    TPOT (this step): ~14.5 ms",
+      "options": [
+        {
+          "id": "A",
+          "text": "Continuous batching that raises the effective batch size (multiple requests decoded together) would amortize the same weight read across all requests, cutting TPOT-per-request substantially when the amortized batch is large enough (moving the operator toward compute-bound)."
+        },
+        {
+          "id": "B",
+          "text": "Adding tensor-core-accelerated math kernels for the MLP GEMMs would raise SM utilization from 22% to near 100% and cut TPOT proportionally, because the low utilization directly indicates undersubscribed compute."
+        },
+        {
+          "id": "C",
+          "text": "CUDA Graph capture of the decode step would eliminate most of the 10% launch-gap fraction, cutting TPOT by roughly that amount (a modest but real improvement)."
+        },
+        {
+          "id": "D",
+          "text": "Weight-only INT4 quantization would cut weight HBM reads by ~4x, reducing the weight-read time (dominant cost) by close to a factor of 4 and directly cutting TPOT — subject to available INT4 GEMM kernels and acceptable accuracy loss."
+        }
+      ],
+      "assumptions": [
+        "INT4 kernels are available and accuracy loss is acceptable.",
+        "Multiple concurrent requests are available for batching."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-DIAG-021",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "TTFT and TPOT diagnosis / Metric decomposition",
+      "learningObjective": "Diagnose per-metric bottlenecks (TTFT vs TPOT) from serving-side data.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic serving stack",
+        "stability": "stable_principle"
+      },
+      "stem": "A team observes the following per-request metrics under moderate load. Select all diagnoses that are consistent with the data. (Choose all that apply.)",
+      "profileData": "Workload: 4K-token prompts on average, 200-token outputs. TP=1, batch scheduler = continuous batching.\n  P50 TTFT: 800 ms\n  P99 TTFT: 3.2 s\n  P50 TPOT: 45 ms/token\n  P99 TPOT: 60 ms/token\n  GPU compute utilization during prefill windows: 92%\n  GPU compute utilization during pure decode windows: 25%\n  KV cache usage: ~85% of budget under steady load\n  Preemption rate: 12% of requests are preempted at least once",
+      "options": [
+        {
+          "id": "A",
+          "text": "P99 TTFT >> P50 TTFT combined with a 12% preemption rate is consistent with head-of-line blocking or queueing under load: new prefills wait for KV space, and preempted sequences pay extra prefill on resume. TTFT tail is largely a queueing / preemption problem."
+        },
+        {
+          "id": "B",
+          "text": "P50 TPOT ~ 45 ms/token combined with decode-window utilization ~25% is consistent with decode being memory-bandwidth bound (low compute utilization, low SM occupancy per token, but bandwidth spent on weight and KV reads). Adding more compute density would not directly reduce TPOT."
+        },
+        {
+          "id": "C",
+          "text": "Prefill compute utilization ~92% indicates prefill is memory-bound; the fix is to increase batch size for prefill to reduce arithmetic intensity, since bandwidth is the current bottleneck."
+        },
+        {
+          "id": "D",
+          "text": "High KV cache usage (~85%) plus a nontrivial preemption rate is a symptom that batch size is constrained by KV memory; MQA/GQA if applicable, KV quantization, or shorter contexts are direct levers to raise effective batch and reduce preemption."
+        }
+      ],
+      "assumptions": [
+        "Compute utilization is measured as active-SM fraction inside kernels.",
+        "Baseline model is a dense transformer (non-MoE)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-DISAG-029",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "Disaggregated serving / Properties and trade-offs",
+      "learningObjective": "Distinguish correct claims about disaggregated prefill/decode serving from common overclaims.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "multi-node cluster",
+        "device": "GPU",
+        "requiredFeatures": [
+          "high-speed inter-node interconnect (RDMA / NVLink Switch)"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic disaggregated serving",
+        "frameworkVersionScope": "current research/production stacks",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Select all correct statements about disaggregated prefill/decode serving. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Disaggregation adds a per-request KV cache transfer between prefill and decode pools; this transfer cost sets a floor on TTFT that co-located serving does not have. High-bandwidth interconnects (NVLink Switch, InfiniBand RDMA) are needed to keep this cost small."
+        },
+        {
+          "id": "B",
+          "text": "Disaggregation eliminates the need for KV cache entirely because prefill's KV is only consumed by decode via the transfer, so both pools can operate stateless."
+        },
+        {
+          "id": "C",
+          "text": "Disaggregation improves TPOT under mixed load compared to co-located serving because decode nodes are shielded from long prefills interrupting the decode-step cadence."
+        },
+        {
+          "id": "D",
+          "text": "Disaggregation reduces total GPU count for a given SLA because each phase's pool can be sized smaller than the combined co-located pool needed to satisfy both metrics simultaneously."
+        }
+      ],
+      "assumptions": [
+        "Disaggregation refers to physically separate prefill and decode GPU pools.",
+        "KV transfer uses zero-copy RDMA over InfiniBand or NVLink."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-DISAGG-019",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Disaggregated prefill/decode / Split serving architecture",
+      "learningObjective": "Explain the motivation and dataflow of disaggregated prefill/decode serving.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "multi-GPU cluster with high-speed interconnect",
+        "device": "GPU",
+        "requiredFeatures": [
+          "cross-node KV cache transfer capability"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic disaggregated serving (e.g., DistServe, SplitWise)",
+        "frameworkVersionScope": "current research/production stacks",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Disaggregated prefill/decode (as in DistServe / SplitWise / TRT-LLM disagg mode) serves prefill and decode on different physical GPU pools. What is the primary motivation?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Different LLMs are used for prefill and decode; disaggregation lets each pool run a model best suited to its phase, improving quality without doubling parameter memory."
+        },
+        {
+          "id": "B",
+          "text": "Prefill is compute-bound and benefits from high compute density (large batches on high-flops GPUs); decode is memory-bandwidth bound and benefits from high HBM bandwidth per token. Serving them on separate pools lets each pool be provisioned and scheduled independently (avoiding mutual interference), at the cost of transferring KV cache from prefill pool to decode pool once per request."
+        },
+        {
+          "id": "C",
+          "text": "The two phases have different numerical precision requirements; prefill is run in FP32 on CPUs while decode runs in FP16/BF16 on GPUs. Disaggregation is fundamentally a precision-partitioning technique."
+        },
+        {
+          "id": "D",
+          "text": "Disaggregation is a security-driven design that isolates prefill (which handles user prompts) from decode (which produces model outputs) into different trust domains; the performance benefits are secondary."
+        }
+      ],
+      "assumptions": [
+        "High-bandwidth interconnect (NVLink or InfiniBand) is available for KV transfer.",
+        "The extra KV transfer cost is small relative to gained scheduling flexibility."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-DYNBATCH-005",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Dynamic vs continuous batching / Diagnosis",
+      "learningObjective": "Distinguish dynamic (request-level) batching from continuous (iteration-level) batching and diagnose a workload that suffers head-of-line blocking.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic serving stack",
+        "stability": "stable_principle"
+      },
+      "stem": "A serving stack uses dynamic batching (each 'batch' completes fully before the next batch starts). The following aggregated metrics are observed for a workload with heterogeneous output lengths. What is the correct diagnosis?",
+      "profileData": "Server: 8 concurrent requests batched per iteration.\n  Output length distribution across a batch: 15, 20, 22, 28, 30, 35, 800, 40 tokens.\n  Observed metrics (per batch):\n    - GPU utilization during first 40 decode steps: ~78%\n    - GPU utilization during decode steps 41 through 800: ~13%\n    - Wall time: 800 * ~20 ms = ~16 s\n    - Requests 1-7 (short) block waiting for request 8 to complete before returning.\n    - New arriving requests wait for the batch to finish before being scheduled.",
+      "options": [
+        {
+          "id": "A",
+          "text": "This is head-of-line blocking under request-level (static) dynamic batching: the batch is dominated by the single long request, wasting SM cycles on almost-empty batches and delaying shorter requests. The right fix is to move to continuous (iteration-level) batching so shorter requests can leave the batch and new requests can join per iteration."
+        },
+        {
+          "id": "B",
+          "text": "The workload is memory-bound during long decode; the correct fix is to enable KV cache quantization to speed up decode steps 41-800, which will bring GPU utilization back up."
+        },
+        {
+          "id": "C",
+          "text": "The bottleneck is compute-bound decode; adding a smaller draft model for speculative decoding will improve utilization by generating multiple tokens per verification step."
+        },
+        {
+          "id": "D",
+          "text": "This is a launch-overhead problem: 800 kernel launches per decode step create CPU-side dispatch gaps. The correct fix is CUDA Graph capture of the decode loop."
+        }
+      ],
+      "assumptions": [
+        "The reported utilization measure captures effective batch size after short requests are done.",
+        "The scheduler is truly static (no per-iteration rebatching)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-EP-014",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Expert parallelism and sequence parallelism / Purposes and dataflow",
+      "learningObjective": "Distinguish expert parallelism (EP) and sequence parallelism (SP) from TP/PP and identify their communication primitives.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "multi-GPU node/cluster",
+        "device": "GPU",
+        "requiredFeatures": [
+          "inter-device interconnect"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Which comparison of Expert Parallelism (EP) and Sequence Parallelism (SP) is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "EP places different experts of a Mixture-of-Experts on different devices; token-to-expert routing requires all-to-all communication to shuffle tokens to their assigned expert. SP shards intermediate activations along the sequence dimension inside a TP region (e.g., after a norm) to reduce activation memory; SP requires AllGather/ReduceScatter around the sharded region."
+        },
+        {
+          "id": "B",
+          "text": "EP shards attention heads across experts; SP shards the sequence length across attention groups. Both are Attention-only parallelism schemes and do not touch the MLP block."
+        },
+        {
+          "id": "C",
+          "text": "Both EP and SP shard the MLP weights across devices. They differ only in whether the shard axis is aligned with expert index (EP) or with sequence position (SP); both require a single AllReduce per MLP block just like TP."
+        },
+        {
+          "id": "D",
+          "text": "EP is used for training-time load balancing only and has no role in inference; SP is exclusively an inference-time trick that reduces KV cache footprint by sharding along the sequence axis."
+        }
+      ],
+      "assumptions": [
+        "Standard EP as in GShard / DeepSpeed-MoE / vLLM MoE.",
+        "SP is defined as in Megatron-LM's sequence-parallel augmentation of TP."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-FAIRTHR-030",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "Multi-tenancy fairness / Diagnosis and levers",
+      "learningObjective": "Diagnose fairness issues in multi-tenant LLM serving and identify levers that improve fairness without collapsing throughput.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM / SGLang / TRT-LLM",
+        "frameworkVersionScope": "current stable",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Multi-tenant serving of an LLM shows the following per-user metrics under load. Which mitigations would reduce the unfairness without regressing aggregate throughput below the load's floor. (Choose all that apply.)",
+      "profileData": "Two tenants share a serving pool:\n  Tenant A (short prompts, ~200 tokens; short outputs, ~50 tokens): TPOT p50 = 55 ms, TTFT p50 = 200 ms\n  Tenant B (long prompts, ~4K tokens; long outputs, ~500 tokens): TPOT p50 = 55 ms, TTFT p50 = 4.5 s\n  Preemption rate on tenant A: 25%\n  Preemption rate on tenant B: 8%\n  When tenant B has a burst of arrivals, tenant A's TPOT spikes to 180 ms.\n  KV usage: ~90% steady, ~99% during bursts.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Add a fairness-aware scheduler (e.g., token-level fair queueing across tenants): prevents one tenant's long-decoding requests from monopolizing decode iterations."
+        },
+        {
+          "id": "B",
+          "text": "Enable chunked prefill so tenant B's long prefills are broken into chunks that interleave with tenant A's decode iterations; tenant A's TPOT during bursts drops back near the steady-state 55 ms."
+        },
+        {
+          "id": "C",
+          "text": "Serialize the scheduler to only run one tenant at a time: this eliminates cross-tenant interference and guarantees fair TPOT to whichever tenant is running."
+        },
+        {
+          "id": "D",
+          "text": "Enforce per-tenant KV budgets or admission quotas so tenant B's bursty long prompts cannot consume more than a bounded fraction of KV, preventing tenant A's preemption rate from spiking."
+        }
+      ],
+      "assumptions": [
+        "Serving stack supports chunked prefill and per-tenant admission control.",
+        "Fair-queueing scheduler is available (or can be added)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-FRAG-018",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "KV cache fragmentation / Paged vs contiguous allocator",
+      "learningObjective": "Diagnose external fragmentation in a contiguous per-sequence KV allocator vs paged allocation.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic serving stack",
+        "stability": "stable_principle"
+      },
+      "stem": "A serving stack allocates KV cache as contiguous per-sequence slabs sized to each request's max_new_tokens. Diagnose the memory behavior described below.",
+      "profileData": "Setup: 40 GB total KV cache budget.\n  Requests come and go with varying max_new_tokens = 512 to 8192.\n  Steady-state observation:\n    Sum of active sequences' allocated KV: 38 GB\n    Sum of KV actually used by generated tokens: 12 GB\n    Free KV memory: 2 GB\n    New request (max_new_tokens=2048, requires 300 MB contiguous KV): FAILS to allocate despite 2 GB free.\n    OOM error reported.",
+      "options": [
+        {
+          "id": "A",
+          "text": "This is a bug in the KV cache accounting; free memory shows 2 GB but the allocator sees 0. Fix the accounting by including reserved slabs in the free counter, and the new request will succeed."
+        },
+        {
+          "id": "B",
+          "text": "This is compute-bound behavior: the OOM is a symptom of decode being too slow to release KV blocks quickly enough. Increasing tensor parallelism will speed up decode and prevent OOM."
+        },
+        {
+          "id": "C",
+          "text": "This is a data race between the scheduler and the allocator; the fix is to serialize KV cache allocation with a global mutex, which will resolve the OOM at the cost of some throughput."
+        },
+        {
+          "id": "D",
+          "text": "This is textbook external fragmentation from contiguous per-sequence slab allocation: each slab is reserved up-front at max_new_tokens size, so 26 GB of allocated KV is actually unused (reserved for tokens not yet generated), and the 2 GB free area is scattered in non-contiguous pieces too small to fit any single slab. Paged KV cache (fixed-size blocks + indirection) directly addresses this."
+        }
+      ],
+      "assumptions": [
+        "'External fragmentation' is used in the OS memory-management sense: free space exists but not in a single contiguous block.",
+        "'Internal waste' is the reservation-up-to-max phenomenon."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-FUSION-016",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "LLM kernel fusion / Serving stack fused kernels",
+      "learningObjective": "Identify which fusions are standard in production LLM inference stacks and what each fusion saves.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any modern data-center GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM / TRT-LLM / SGLang",
+        "frameworkVersionScope": "current stable",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which set of kernel fusions is typical in a production LLM inference stack such as vLLM or TensorRT-LLM?",
+      "options": [
+        {
+          "id": "A",
+          "text": "No fusion is applied; each math op (matmul, add, softmax, silu, mul, norm) has its own kernel launched separately. This gives the profiler the cleanest boundary information and modern GPUs' launch overhead is negligible for LLM workloads."
+        },
+        {
+          "id": "B",
+          "text": "Fused full transformer block into a single CUDA kernel per layer that computes attention + MLP + residuals together; this is the standard pattern because it collapses all HBM roundtrips of intermediates into a single kernel."
+        },
+        {
+          "id": "C",
+          "text": "Fused entire model into one giant kernel per forward pass; because CUDA supports variable-shape launches, this scales to any model size without recompilation."
+        },
+        {
+          "id": "D",
+          "text": "Fused QKV projection; fused RMSNorm (or RMSNorm as GEMM epilogue on the following linear); fused SwiGLU (silu on gate output * up output); fused attention using FlashAttention/PagedAttention that combines QK^T, softmax, and PV in one kernel; fused sampling (temperature + top-k/top-p) at the end of the head."
+        }
+      ],
+      "assumptions": [
+        "'Production' means widely-deployed inference stacks like vLLM, TRT-LLM, SGLang.",
+        "Fusion decisions target both HBM traffic and launch overhead."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-KVCAP-007",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "KV cache capacity / Memory budget arithmetic",
+      "learningObjective": "Compute the KV cache memory footprint of a specific model configuration and reason about capacity limits.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "A100 80GB",
+        "device": "GPU",
+        "requiredFeatures": [
+          "80 GB HBM"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Model configuration: 32 layers, H_kv = 8 KV heads, head_dim = 128, FP16 KV. The model weights occupy 26 GB on an 80 GB GPU. Which computation of KV cache capacity and its implication is correct?",
+      "profileData": "GPU: A100 80 GB (usable HBM ≈ 76 GB after runtime/allocator overhead)\nModel weights (FP16): 26 GB\nActivation + workspace budget: ~4 GB\nAvailable for KV cache: ~46 GB\nModel config: L=32 layers, H_kv=8, d=128, FP16 (2 bytes)\nPer-token KV = 2 (K and V) * L * H_kv * d * 2 B = 2 * 32 * 8 * 128 * 2 = 131,072 B ≈ 128 KB",
+      "options": [
+        {
+          "id": "A",
+          "text": "Per-token KV is ~256 KB; the cache holds ~180,000 tokens. If the average sequence length is 2000 tokens, that supports about 90 concurrent sequences before running out of KV cache."
+        },
+        {
+          "id": "B",
+          "text": "Per-token KV is 8 * 128 * 2 = 2 KB (one KV entry across all layers). The cache holds ~23 million tokens. KV capacity is effectively unlimited for realistic workloads and cannot be a bottleneck on an 80 GB A100."
+        },
+        {
+          "id": "C",
+          "text": "Per-token KV = 2 (K and V) * L * H_kv * d * 2 B = 128 KB. With 46 GB available for KV: 46 * 1024^3 / 131072 ≈ 376,832 tokens total. At 2000 tokens per sequence, that's ~188 concurrent sequences. Long-context (say 32K tokens/seq) drops this to ~11 concurrent sequences — a direct capacity constraint on batch size."
+        },
+        {
+          "id": "D",
+          "text": "KV cache capacity is fixed by the model architecture alone (32 layers * 8 heads * 128 * 2 bytes = 65 KB) and does not scale with sequence length; capacity per GPU is therefore just ~700,000 sequences regardless of context length."
+        }
+      ],
+      "assumptions": [
+        "FP16 KV storage (2 bytes per element).",
+        "L=32 layers, all with the same KV shape."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-LONGCTX-025",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "Long context serving / KV bandwidth and capacity",
+      "learningObjective": "Reason about the primary bottlenecks that appear when scaling LLM inference to very long contexts.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": [
+          "large HBM"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic serving stack",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all statements that correctly characterize challenges specific to long-context (say 32K+ token) LLM serving. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Decode-step attention time grows linearly with context length because the attention kernel reads the full growing KV cache each step; at long context, attention read bandwidth can rival weight read bandwidth per step, changing the per-step latency composition."
+        },
+        {
+          "id": "B",
+          "text": "Long context has no impact on prefill latency: prefill is a single forward pass that always takes the same wall-clock time regardless of prompt length, so TTFT stays constant with longer prompts."
+        },
+        {
+          "id": "C",
+          "text": "Per-token KV cache grows linearly with context length; at fixed HBM budget, doubling context length approximately halves the maximum concurrent batch size, directly cutting throughput."
+        },
+        {
+          "id": "D",
+          "text": "TPOT is independent of context length because decode still processes only one new token per step; the KV cache size is a memory-only concern with no effect on per-step latency."
+        }
+      ],
+      "assumptions": [
+        "'Long context' means the KV cache is a significant fraction of HBM.",
+        "Attention kernel reads the full KV each decode step (no sliding window or sparse attention)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-OOM-028",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "KV cache OOM / Diagnosis and mitigations",
+      "learningObjective": "Diagnose KV cache OOM under long-context multi-tenant serving and identify effective mitigations.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "H100 80GB or A100 80GB",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM 0.4+",
+        "frameworkVersionScope": "vLLM 0.4+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A vLLM deployment on an 80GB GPU running Llama-3-70B (with GQA, 8 KV heads) is throwing frequent 'KV cache full' preemptions. Prompt/output stats and observed metrics: (Select all mitigations that would concretely reduce OOM/preemption rates.)",
+      "profileData": "Model: Llama-3-70B, GQA (H_kv=8, d=128, L=80), FP16 KV.\n  Per-token KV: 2 * 80 * 8 * 128 * 2 B = 320 KB.\n  Deployment: TP=8 across 8 x H100 80GB (so per-GPU KV budget ≈ (80GB - weights_per_GPU - workspace) / 8 shard).\n  Actually TP-8 means KV cache is also sharded (H_kv=8 goes to 1 KV head per GPU) → per-GPU per-token KV ≈ 40 KB.\n  Workload: 4K-token prompts, 500-token outputs on average; target concurrent batch = 128.\n  Observed: KV usage per GPU peaks at 99%, preemption rate 30%, tail TTFT p99 = 5x p50.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Switch from TP=8 to PP=8: pipeline parallelism replicates KV cache across all pipeline stages (each stage stores the whole per-request KV), providing 8x more KV capacity per pipeline stage."
+        },
+        {
+          "id": "B",
+          "text": "Enable INT8 or FP8 KV cache: cuts per-token KV bytes ~2x, roughly doubling concurrent batch capacity at the cost of small accuracy loss."
+        },
+        {
+          "id": "C",
+          "text": "Reduce max_concurrent_batch (batch admission cap) so that KV pressure doesn't reach 99%: this trades peak throughput for lower preemption / better tail TTFT."
+        },
+        {
+          "id": "D",
+          "text": "Enable prefix caching if requests share long system prompts: shared prefill KV is reused across requests, cutting effective per-request KV cost for repeated prefixes."
+        }
+      ],
+      "assumptions": [
+        "Standard vLLM configuration with PagedAttention.",
+        "Prefix caching is enabled and workload has shared prefixes."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-PAGED-006",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Paged KV Cache / Memory abstraction",
+      "learningObjective": "Explain the paged KV cache abstraction used by vLLM's PagedAttention and its motivation.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": [
+          "sufficient HBM for KV cache"
+        ]
+      },
+      "softwareContext": {
+        "framework": "vLLM (or PagedAttention-based systems)",
+        "stability": "stable_principle"
+      },
+      "stem": "vLLM's PagedAttention introduces a paged KV cache. Which description of the abstraction and its primary motivation is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Paged KV cache stores KV entries in a hash table indexed by (request_id, position); the primary motivation is O(1) random access to individual entries, which enables sparse attention patterns not possible with contiguous storage."
+        },
+        {
+          "id": "B",
+          "text": "Paged KV cache allocates one contiguous [max_seq_len, H_kv, d] slab per request and reserves virtual memory to grow it lazily; the primary motivation is compatibility with existing FlashAttention kernels that require contiguous memory."
+        },
+        {
+          "id": "C",
+          "text": "Paged KV cache compresses KV entries by quantizing them to INT8 blockwise; the 'paging' refers to the quantization block boundaries, not to memory layout."
+        },
+        {
+          "id": "D",
+          "text": "Paged KV cache divides KV memory into fixed-size blocks (e.g., 16 tokens per block) and gives each sequence a block table mapping logical positions to physical blocks. This eliminates external fragmentation and internal reservation of unused space that would otherwise result from pre-allocating each sequence's full max-length KV."
+        }
+      ],
+      "assumptions": [
+        "'Paged' is used in the OS-VM sense: fixed-size blocks addressed via a page table.",
+        "Attention kernel must be aware of the block table (custom paged attention kernel)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-PAGEDATT-020",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "PagedAttention kernel / Block-table indirection",
+      "learningObjective": "Explain how a PagedAttention kernel differs from a FlashAttention kernel and what block-table indirection costs at execution time.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "SMEM sufficient for KV tile"
+        ]
+      },
+      "softwareContext": {
+        "framework": "vLLM (PagedAttention)",
+        "frameworkVersionScope": "vLLM 0.2+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The PagedAttention kernel differs from a standard FlashAttention kernel primarily in how it accesses KV cache. Which characterization is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "PagedAttention resolves each logical KV position to a physical block address via the per-sequence block table, then loads the block into SMEM and runs the same online-softmax + tiled attention math as FlashAttention. The extra cost is a table lookup per block (small), not per element; SMEM staging and math dataflow are essentially unchanged."
+        },
+        {
+          "id": "B",
+          "text": "PagedAttention performs a scatter operation over the full KV cache to gather scattered blocks into a temporary contiguous buffer before running the attention math; the gather step is bandwidth-heavy and the primary source of PagedAttention overhead."
+        },
+        {
+          "id": "C",
+          "text": "PagedAttention runs a completely different attention algorithm (approximate sparse attention) because contiguous access is required for exact softmax; the 'paged' name refers to a windowed truncation of the attention that skips distant tokens."
+        },
+        {
+          "id": "D",
+          "text": "PagedAttention keeps the entire KV cache in host memory (paged in via zero-copy CUDA UVA) and only pulls in the currently needed positions per attention step; the block table is an operating-system-style page table mapping virtual to host addresses."
+        }
+      ],
+      "assumptions": [
+        "PagedAttention v1/v2 as in vLLM.",
+        "Block table is a small per-sequence array in HBM."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-PAGEDDES-024",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "PagedAttention design / Fixed-size blocks and sharing",
+      "learningObjective": "Distinguish correct claims about PagedAttention's design and its capabilities from common misconceptions.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM PagedAttention",
+        "frameworkVersionScope": "vLLM 0.2+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Select all correct statements about PagedAttention's design. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The block-table indirection allows different sequences to share physical blocks — used to implement prefix caching (across requests) and beam-search fork points (within a request)."
+        },
+        {
+          "id": "B",
+          "text": "PagedAttention decompresses KV blocks on-the-fly from a lossy quantized format; the 'paged' name refers to lossy compression pages, not memory blocks."
+        },
+        {
+          "id": "C",
+          "text": "PagedAttention is compatible with FlashAttention-style tiled softmax: the paged attention kernel loads blocks into SMEM via the block table and runs the same online-softmax math. The paging overhead is a small per-block table lookup, not a per-element cost."
+        },
+        {
+          "id": "D",
+          "text": "PagedAttention uses fixed-size KV blocks (e.g., 16 tokens per block) and a per-sequence block table mapping logical positions to physical block indices; internal waste per sequence is bounded by block_size - 1 tokens."
+        }
+      ],
+      "assumptions": [
+        "PagedAttention as in vLLM (not a hypothetical variant).",
+        "Block size is a small fixed number (8-32 tokens)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-PDCOMP-001",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Prefill vs decode / Compute vs memory characterization",
+      "learningObjective": "Distinguish the compute and memory characteristics of prefill and decode phases in autoregressive LLM inference.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (vLLM / TRT-LLM / SGLang architecture)",
+        "stability": "stable_principle"
+      },
+      "stem": "Which characterization of prefill vs decode in a batch-1 LLM inference is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both prefill and decode are memory-bandwidth bound because both phases read the same model weights from HBM per forward pass; the difference in wall time between them reflects only the number of tokens processed."
+        },
+        {
+          "id": "B",
+          "text": "Prefill is memory-bound (streaming weights once) and decode is compute-bound (each token performs a full transformer forward with high arithmetic intensity on cached KV)."
+        },
+        {
+          "id": "C",
+          "text": "Prefill (processing a prompt of P tokens together) is typically compute-bound on the QKV / MLP GEMMs because arithmetic intensity per weight scales with P; decode (batch-1, one token at a time) is memory-bandwidth bound because each linear layer becomes a batch-1 GEMV with intensity ~1 flop/byte."
+        },
+        {
+          "id": "D",
+          "text": "Prefill and decode both incur the same arithmetic intensity because they use the same weights and the same operators; the choice of prefill vs decode is entirely a scheduling artifact with no impact on where the bottleneck lies."
+        }
+      ],
+      "assumptions": [
+        "Batch size 1 for a single request; batching changes decode intensity.",
+        "Standard dense (non-MoE) transformer forward."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-PP-013",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Pipeline parallelism / Layer partition and bubble",
+      "learningObjective": "Explain how pipeline parallelism shards a model across devices and what causes pipeline bubbles.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "multi-GPU node or multi-node",
+        "device": "GPU",
+        "requiredFeatures": [
+          "inter-device interconnect"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Pipeline parallelism (PP) with P stages splits a model's layers across P devices. Which characterization of PP for LLM inference is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "PP partitions layers into P contiguous groups, one per device. In decode inference, a single-request forward passes sequentially through P stages, so per-request latency is not reduced (only memory is shared); throughput improves only with multiple in-flight requests, and imbalanced stages create bubbles."
+        },
+        {
+          "id": "B",
+          "text": "PP partitions attention heads across devices (like TP) but with additional latency-hiding across P forward passes; per-token latency in decode is P times faster than a single-device baseline because P stages run concurrently."
+        },
+        {
+          "id": "C",
+          "text": "In inference, PP has no bubble because there is no backward pass; a single request can flow through all P stages with perfectly overlapped stage execution, and per-token latency drops by P× under any load."
+        },
+        {
+          "id": "D",
+          "text": "Each PP stage holds a copy of the full model and processes different tokens of the same request in parallel; the pipeline works because each token can be processed independently along the layer dimension after residual connections."
+        }
+      ],
+      "assumptions": [
+        "Standard layer-wise PP as in GPipe / PipeDream / Megatron-LM.",
+        "Stage transfer overhead is small relative to stage compute."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-PREFIX-009",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Prefix caching / KV cache reuse across requests",
+      "learningObjective": "Explain prefix caching, its correctness conditions, and its effect on TTFT.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM / SGLang / TRT-LLM",
+        "frameworkVersionScope": "vLLM 0.4+, SGLang, TRT-LLM 0.9+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Prefix caching (also called 'prompt caching' or 'radix cache' in SGLang) is a KV-cache reuse mechanism. Which description of its behavior and correctness conditions is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Prefix caching stores the softmax outputs of past attention layers keyed by the prompt hash; when a new request's prompt matches, the softmax output is directly reused for the shared prefix, skipping both the QKV projections and the attention math."
+        },
+        {
+          "id": "B",
+          "text": "Prefix caching stores the KV cache blocks of previously computed token positions and reuses them for new requests whose prompts share a token-identical prefix. Reuse is exact only if the shared prefix has identical token ids (any diff invalidates from that position onward). It reduces or eliminates the prefill of the shared prefix, cutting TTFT."
+        },
+        {
+          "id": "C",
+          "text": "Prefix caching is a text-level LRU cache of the model's output strings keyed by prompt; it is only correct when the model temperature is 0 (deterministic decoding), and it cannot be applied when sampling is stochastic."
+        },
+        {
+          "id": "D",
+          "text": "Prefix caching approximates the KV of a matching prompt with the closest cached embedding vector via cosine similarity; because the approximation is very close (typically >0.98 cosine similarity), the resulting output is nearly identical for most prompts."
+        }
+      ],
+      "assumptions": [
+        "Prompts are tokenized identically across requests (same tokenizer, same normalization).",
+        "System stores KV in a form (paged blocks) that supports reuse."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-SCHED-017",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Serving scheduler / Preemption and swapping",
+      "learningObjective": "Explain how a serving scheduler handles KV cache pressure via preemption / swap-out and its trade-offs.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": [
+          "host memory for optional swap"
+        ]
+      },
+      "softwareContext": {
+        "framework": "vLLM / SGLang / TRT-LLM",
+        "frameworkVersionScope": "current stable",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "In a serving system running near KV-cache capacity, a burst of new prefill requests arrives. Which description of the scheduler's response is correct for vLLM-style continuous batching + paged KV?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The scheduler admits all new requests immediately and rewrites older sequences' KV cache in-place with the new prefill data; this is safe because older KV entries can always be recomputed later at negligible cost by re-prefilling those sequences."
+        },
+        {
+          "id": "B",
+          "text": "The scheduler preempts one or more ongoing sequences (typically the ones with least urgency by policy) — either dropping their KV cache to be recomputed later, or swapping their KV blocks to host memory — and admits the new prefills into the freed KV blocks. Preempted sequences are resumed when capacity is available; this trades their added latency for aggregate throughput."
+        },
+        {
+          "id": "C",
+          "text": "The scheduler compacts the KV cache by moving all blocks to contiguous memory, which frees up fragmented space for the new prefills; this defragmentation is fast because it uses async DMA copies within HBM."
+        },
+        {
+          "id": "D",
+          "text": "The scheduler rejects all new requests until the cache pressure drops; ongoing decode continues unaffected. New requests receive an HTTP 503 response after a short timeout."
+        }
+      ],
+      "assumptions": [
+        "Paged KV cache with a block-level allocator.",
+        "Scheduler is aware of per-request KV footprint and priorities."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-SPECAR-011",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Speculative decoding / Acceptance rate and speedup",
+      "learningObjective": "Reason about how acceptance rate determines speedup in speculative decoding and where speedup is bounded.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "In a spec-decoded run with k = 5 proposals per step, the observed acceptance rate per proposed token is p = 0.7. The target forward costs ~10 ms; the draft forward costs ~2 ms per token. Which statement about expected speedup is correct?",
+      "profileData": "Setup:\n  Target forward on k+1 positions:   10 ms\n  Draft forward per token:            2 ms\n  Proposals per verification:         k = 5\n  Per-token acceptance probability:   p = 0.7 (independent Bernoulli approximation)\n\nExpected accepted prefix length ≈ (1 - p^{k+1}) / (1 - p) for Bernoulli-independent acceptance.\n  = (1 - 0.7^6) / 0.3 ≈ (1 - 0.117) / 0.3 ≈ 2.94 tokens\n  Per-verification: 1 target step (10 ms) + 5 draft steps (5 * 2 = 10 ms) = 20 ms\n  Expected accepted tokens per verification: ~2.94 + 1 (target's sample) = ~3.94\n  Baseline: target alone = 10 ms per token",
+      "options": [
+        {
+          "id": "A",
+          "text": "Speedup equals 1 / (1 - p) = 3.33x independent of k, because acceptance rate solely determines throughput; increasing k beyond 1 has no effect on wall time."
+        },
+        {
+          "id": "B",
+          "text": "Speedup is exactly k = 5x because k tokens are proposed per target forward; the acceptance rate p only affects quality, not throughput."
+        },
+        {
+          "id": "C",
+          "text": "Expected tokens per verification is ~3.94, at 20 ms per verification: ~0.20 tokens/ms. Baseline is 0.10 tokens/ms. Speedup ≈ 2x. Acceptance rate p is the dominant lever; as p → 1 speedup approaches (k+1) / (1 + draft-cost-fraction * (k+1)), bounded by the draft/target cost ratio."
+        },
+        {
+          "id": "D",
+          "text": "Because the draft forward runs in parallel with the target forward on the same GPU, there is no draft overhead in wall time and speedup is (k+1) * p ≈ 4.2x."
+        }
+      ],
+      "assumptions": [
+        "Bernoulli-independent per-token acceptance is a first-order approximation; real acceptance is position-dependent.",
+        "Draft and target run on the same GPU without overlap; some implementations overlap by pipelining, complicating the calculus."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-SPECDEC-010",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Speculative decoding / Basic mechanism",
+      "learningObjective": "Explain the mechanism of speculative decoding and its correctness property.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Which description of speculative decoding for LLM inference is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A small 'draft' model is used to generate k candidate tokens at once by predicting all k positions in parallel; the target model is then used only to compute a probability for the whole k-token sequence, and the whole sequence is accepted if the joint probability exceeds a threshold."
+        },
+        {
+          "id": "B",
+          "text": "Speculative decoding uses a distilled quantized version of the target model as the sole decoder; the 'speculative' name refers to running INT4 arithmetic that may be numerically wrong but recovers quality through calibration."
+        },
+        {
+          "id": "C",
+          "text": "A smaller/faster draft model proposes k tokens autoregressively. The target model runs one forward pass on all k proposed positions (like a k-token prefill) and, using its own logits, accepts a prefix of the proposal by comparing probabilities per position via rejection sampling; the accepted prefix has the exact same distribution as target-only sampling."
+        },
+        {
+          "id": "D",
+          "text": "The target model itself decodes in parallel over k positions by conditioning each of the k output positions on the same input hidden state; the 'draft' terminology refers to these draft positions being generated in one shot before being ranked."
+        }
+      ],
+      "assumptions": [
+        "Both draft and target use the same vocabulary and tokenization.",
+        "Rejection sampling scheme correctly implemented."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-SPECPROP-023",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "Speculative decoding properties / Correctness and scope",
+      "learningObjective": "Distinguish correct claims about speculative decoding from common overclaims.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all correct statements about speculative decoding. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Speculative decoding always speeds up inference by a factor of (k+1) — the number of proposed tokens plus one — regardless of the draft model's quality or the workload characteristics."
+        },
+        {
+          "id": "B",
+          "text": "Speculative decoding is most beneficial when the target model is memory-bandwidth bound (batch-1 decode), because the extra k-token verification is essentially free compared to a single-token forward. It is less beneficial at large batch when the target is already compute-bound."
+        },
+        {
+          "id": "C",
+          "text": "Speculative decoding requires the draft and target models to share weights (be identically initialized) so that rejection sampling has an easy path to bit-exact agreement; using unrelated models breaks the algorithm's correctness guarantees."
+        },
+        {
+          "id": "D",
+          "text": "When implemented with proper rejection sampling against the target model's logits, the sequences produced by speculative decoding have exactly the same distribution as target-only sampling — no quality loss."
+        }
+      ],
+      "assumptions": [
+        "'Speculative decoding' refers to Leviathan et al. 2023 style rejection sampling.",
+        "Draft and target share vocab and tokenization."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-TP-012",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "Tensor parallelism / Row-column sharding for MLP and Attention",
+      "learningObjective": "Explain how tensor parallelism shards MLP and attention weights across devices and what collective is required per layer.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "multi-GPU node with NVLink",
+        "device": "GPU",
+        "requiredFeatures": [
+          "NVLink or equivalent fast interconnect"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic (Megatron-LM / vLLM / TRT-LLM)",
+        "stability": "stable_principle"
+      },
+      "stem": "In Megatron-LM-style tensor parallelism with TP degree T, the MLP block up projection W_up is column-parallel (sharded along output dim) and the MLP down projection W_down is row-parallel (sharded along input dim). Which characterization of the resulting dataflow is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Each of the T devices holds the full [D, F] W_up and computes the full output; only W_down is sharded, requiring one AllGather per MLP block after the activation."
+        },
+        {
+          "id": "B",
+          "text": "Column-parallel W_up requires an AllGather of x to every device (since each device needs the full input to multiply against its columns); row-parallel W_down then requires an AllGather of the intermediate; two AllGathers per MLP block are needed and TP scaling is bounded by interconnect bandwidth."
+        },
+        {
+          "id": "C",
+          "text": "The column-then-row parallel arrangement is chosen because it requires no communication at all; the intermediate slices align exactly so that each device's partial down-output equals the correct global output for its shard, so all-to-all is unnecessary."
+        },
+        {
+          "id": "D",
+          "text": "Column-parallel W_up: each device computes x @ W_up_shard producing 1/T of the intermediate columns; row-parallel W_down: each device multiplies its intermediate slice by its 1/T rows of W_down. A single AllReduce sums partial outputs across devices at the end of each MLP (and separately at the end of each attention block)."
+        }
+      ],
+      "assumptions": [
+        "Standard Megatron-LM-style TP.",
+        "Input x is replicated across TP ranks at the start of each transformer block."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-TPOT-003",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "TPOT / Inter-token latency metric",
+      "learningObjective": "Define TPOT (Time Per Output Token) and distinguish it from TTFT and throughput.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (vLLM / TRT-LLM / SGLang)",
+        "stability": "stable_principle"
+      },
+      "stem": "Which definition of TPOT (Time Per Output Token, also called inter-token latency) is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "TPOT is the total generation time (TTFT plus all decode steps) divided by the total number of output tokens; it is therefore equal to end-to-end latency per output token including the prefill amortization."
+        },
+        {
+          "id": "B",
+          "text": "TPOT is the server's overall tokens-per-second throughput divided by the number of concurrent requests; it is a purely server-level metric that has no per-request interpretation."
+        },
+        {
+          "id": "C",
+          "text": "TPOT is the average wall-clock time between consecutive output tokens after the first token, per request. It excludes TTFT and captures how fast the decode phase runs; for a request generating M tokens, total latency ≈ TTFT + (M-1) * TPOT."
+        },
+        {
+          "id": "D",
+          "text": "TPOT is the elapsed time of the prefill phase divided by the number of prompt tokens; it measures per-prompt-token processing efficiency."
+        }
+      ],
+      "assumptions": [
+        "'After the first token' is the standard convention; some tools compute TPOT including the first token.",
+        "Metric is per request; server-side aggregations report averages / percentiles."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-TTFT-002",
+      "type": "single",
+      "module": "llm_inference",
+      "subtopic": "TTFT / Metric definition and diagnosis",
+      "learningObjective": "Define TTFT precisely and use timeline data to diagnose which phase drives it.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (vLLM / TRT-LLM / SGLang)",
+        "stability": "stable_principle"
+      },
+      "stem": "The latency budget for one request is broken down in the timeline below. Which choice correctly identifies TTFT and its dominant contributor for this request?",
+      "profileData": "Per-request timeline (single request, batch size 1):\n  T0: request arrives at server\n  T0 → T0 + 5 ms  : queueing (server busy with other requests)\n  T0 + 5 ms  → T0 + 8 ms  : tokenization + input transfer\n  T0 + 8 ms  → T0 + 190 ms: prefill of a 1024-token prompt on a single GPU\n  T0 + 190 ms → T0 + 210 ms: first token generation (decode step 1) + detokenize + response send\n  T0 + 210 ms → T0 + 500 ms: subsequent 30 decode steps (average 9.7 ms/token)",
+      "options": [
+        {
+          "id": "A",
+          "text": "TTFT is the total decode time (about 310 ms in this trace); the dominant factor is the per-step decode latency, so mitigation should focus on speeding up decode via KV cache quantization or speculative decoding."
+        },
+        {
+          "id": "B",
+          "text": "TTFT is only the queueing time (5 ms here); the prefill and decode contribute to throughput but not TTFT because those computations happen 'inside' the model and are amortized across all output tokens."
+        },
+        {
+          "id": "C",
+          "text": "TTFT = time from request arrival to when the first output token is available (~210 ms here). It is dominated by the 182 ms prefill of the 1024-token prompt; mitigation focuses on prefill (chunked prefill, prefix caching, tensor parallelism)."
+        },
+        {
+          "id": "D",
+          "text": "TTFT is the average inter-token latency of subsequent decode steps (~9.7 ms/token in this trace); it excludes the prefill, which is a separate metric usually called 'time-to-prefill-complete'."
+        }
+      ],
+      "assumptions": [
+        "'First token' is delivered as soon as it is available (streaming).",
+        "Tokenization and detokenize are minor components and included in TTFT bookkeeping."
+      ],
+      "version": 1
+    },
+    {
+      "id": "J-TVL-027",
+      "type": "multiple",
+      "module": "llm_inference",
+      "subtopic": "Throughput vs latency trade-off / Batch-size lever",
+      "learningObjective": "Reason about the throughput vs latency trade-off in LLM serving and identify how batch size affects each metric.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all correct statements about the throughput vs latency trade-off in LLM decode serving. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Beyond some batch size, the workload transitions from memory-bandwidth bound to compute-bound; further batch-size increases raise per-step compute time proportionally with fewer amortization gains, giving diminishing returns on aggregate throughput and larger per-request TPOT penalties."
+        },
+        {
+          "id": "B",
+          "text": "Increasing batch size always reduces both TPOT and total request latency because more compute is used in parallel per step; there is no downside to arbitrarily large batches other than memory limits."
+        },
+        {
+          "id": "C",
+          "text": "Increasing batch size amortizes weight-HBM reads across more requests, raising aggregate tokens/second (throughput), but each batched step takes slightly longer (because of extra compute and possibly attention I/O), so per-request TPOT increases mildly."
+        },
+        {
+          "id": "D",
+          "text": "Latency and throughput are the same metric expressed in different units (1/latency = throughput); optimizing one always optimizes the other."
+        }
+      ],
+      "assumptions": [
+        "'Latency' = per-request TPOT or total request latency.",
+        "'Throughput' = aggregate output tokens/sec across all users."
+      ],
+      "version": 1
+    }
+  ]
+}

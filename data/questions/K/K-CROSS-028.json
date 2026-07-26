@@ -41,7 +41,7 @@
     "B",
     "C"
   ],
-  "explanation": "A: cross compilation targets a different ISA / OS / GPU arch than the build host — standard for embedded and edge deploys. B: autotuning benefits from on-target measurement; when unavailable, static heuristics or cached tables replace it, with some performance loss. D: leaving PTX or SPIR-V in the artifact lets the target driver finalize codegen at load time (JIT). C is wrong: NVCC / ROCm can emit PTX and native SASS for many architectures without running on the target device.",
+  "explanation": "Correct: A, B, C.  A: Correct: JIT-from-PTX / SPIR-V is a widespread strategy. B: Correct: canonical cross-compilation setup. C: Correct: autotuning-vs-static-cost is a live trade-off. D: Wrong: NVCC supports cross emission of PTX/SASS for multiple targets.",
   "optionExplanations": {
     "A": "Correct: JIT-from-PTX / SPIR-V is a widespread strategy.",
     "B": "Correct: canonical cross-compilation setup.",

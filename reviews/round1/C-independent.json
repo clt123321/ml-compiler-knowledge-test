@@ -1,38 +1,188 @@
 {
   "module": "graph_tensor_ir",
   "code": "C",
-  "reviewer": "primary-review-canary",
+  "reviewer": "primary-review-batch1",
   "reviewedAt": "2026-07-26",
   "answers": [
     {
-      "id": "C-IRLEVEL-005",
-      "independentAnswer": ["A", "C", "D"],
+      "id": "C-BUFFER-012",
+      "independentAnswer": ["C"],
       "confidence": "high",
-      "rationale": "A: operator-level IRs (HLO/ONNX) treat matmul/softmax/layernorm as coarse-grained ops with implicit iteration; loop-level IRs (linalg/affine/TensorIR) make loops/indexing explicit => TRUE. B: XLA HLO performs graph-level fusion at the operator level (HloFusion pass); the claim that loop-level IRs are strictly required for fusion decisions is false. C: tiling/unrolling/vectorization are IR-level ops in TensorIR/affine, whereas HLO delegates to a downstream compiler/library => TRUE. D: HLO/StableHLO/ONNX carry static shape+dtype on SSA-like values enabling shape-based rewrites (e.g., algebraic simplification) => TRUE."
+      "rationale": "Tensor = value semantics (immutable SSA); memref = reference semantics (mutates named buffers). Bufferization assigns buffers and inserts alloc/copies. Note: option C has a poison trailing sentence about 'bufferization is unnecessary' that contradicts its leading definition. But leading claim matches canonical MLIR bufferization docs; B inverts the semantics; A/D absurd. MAJOR concern to flag: self-contradicting option."
+    },
+    {
+      "id": "C-CANON-006",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Canonicalization = algebraic simplification + folding within a dialect, normal form. Matches C. A conflates with dialect conversion. B conflates with lowering. D is nonsense."
+    },
+    {
+      "id": "C-DCE-013",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "%B is caller-visible memref; linalg.copy write is externally observable → cannot remove. Matmul writes %C which is returned → cannot remove. Only pure arith.addf (unused, no side effects) can go. Matches B leading. B has a distractor tail; A is wrong (copy write IS externally observable, not 'unused'). C/D nonsense."
+    },
+    {
+      "id": "C-DIALECT-016",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Correct hierarchy: Op → Regions → Blocks → Ops → Values. A leads with correct structure. B/C/D wrong. Poison tail in A about 'side-table' contradicts."
+    },
+    {
+      "id": "C-EAGER-015",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Eager = run-as-you-go, no persistent graph; static = capture then execute, whole-graph opts. Matches B leading sentence. Trailing part poison."
+    },
+    {
+      "id": "C-GRAPH-025",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — fusion allows non-materialized edges. B: true — shape/type inference is routine. C: true — canonical dataflow graph definition. D: true — DAG for forward pass."
+    },
+    {
+      "id": "C-IRLEVEL-005",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — operator IRs (HLO, ONNX) can express fusion decisions without loop lowering. B: true — loop IRs allow tiling/unroll/vec. C: true — operator IRs carry shape/dtype on SSA values. D: true."
+    },
+    {
+      "id": "C-IRLEVELS-019",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — the natural direction is graph→tensor→loop, not the reverse. B/C/D: canonical descriptions."
     },
     {
       "id": "C-LAYOUT-002",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "channels_last strides [150528,1,672,3] put C at stride 1, but source has W at stride 1 → physical element order changes → requires data movement, not a pure view."
+    },
+    {
+      "id": "C-LAYOUTOPT-026",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Cost-benefit: transform cost vs kernel time savings vs downstream restore. Matches C leading. Poison tail in C about 'copy always costs more'. A/B/D more wrong."
+    },
+    {
+      "id": "C-LEGALIZE-008",
       "independentAnswer": ["A"],
       "confidence": "high",
-      "rationale": "NCHW-contig storage index = n*C*H*W + c*H*W + h*W + w. channels_last storage index = n*C*H*W + h*W*C + w*C + c. For any (n,c,h,w) with c>0 or h>0, these physical positions differ, so the two layouts represent different byte orderings of the SAME logical shape. Changing strides alone reinterprets the buffer under a different bijection, producing wrong element values unless data is physically reordered => not a pure view. B/C wrongly conflate strides-change with view-only; D confuses strides with shape."
+      "rationale": "ConversionTarget declares legal ops; TypeConverter maps types and inserts materializations at boundaries. Matches A leading. Poison tail in A about 'TypeConverter optional'. B/C/D wrong."
     },
     {
       "id": "C-LICM-001",
       "independentAnswer": ["B"],
       "confidence": "high",
-      "rationale": "LICM correctness for hoisting `c[0]*d[0]` out of the loop requires that neither c[0] nor d[0] is modified by any statement inside the loop across iterations. Because the loop stores through a[i], a must not alias c or d at the invariant addresses; otherwise a[i] = ... could clobber c[0]/d[0], invalidating the hoisted temporary. A (compile-time N) is a scheduling/analysis concern unrelated to correctness; C (element-type match) is a type-inference issue, not a safety condition; D (integer-only) is false — FP LICM of pure multiplication does not change per-iteration rounding order because the hoisted expression itself is scalar and iteration-independent."
+      "rationale": "Aliasing precondition: a must not alias c or d, otherwise stores through a[i] can invalidate the hoisted invariant."
+    },
+    {
+      "id": "C-LINALG-030",
+      "independentAnswer": ["A", "B", "C"],
+      "confidence": "high",
+      "rationale": "A: true — iterator_types semantics. B: true — indexing_maps + iterator_types describe iteration space. C: true — body is mul-add per (m,n,k). D: false — linalg.generic supports reduction natively via iterator_types=reduction."
+    },
+    {
+      "id": "C-LOOPIR-023",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Loop interchange safety = dependence-preservation. Elementwise disjoint accesses (no loop-carried dep) → safe. Matches D."
+    },
+    {
+      "id": "C-LOWER-007",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Lowering preserves semantics + makes structure explicit for later opts. A inverted (lowering DECREASES abstraction). C nonsense. D wrong (aliasing resolved by bufferization pass inserting copies)."
+    },
+    {
+      "id": "C-MATERIALIZE-027",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Materialization = realize tensor into concrete backing buffer with layout; counterpart of view (metadata-only). Matches D."
+    },
+    {
+      "id": "C-OPIR-028",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: true — canonical graph passes. B: true — Relax and FX are graph IRs. C: false — operator IRs don't expose loop iters. D: true — HLO/StableHLO/ONNX are operator-level IRs."
+    },
+    {
+      "id": "C-PROD-017",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Fusion requires producer per-element production and consumer per-element consumption to share (or tile into) a common iteration space. Matches C."
+    },
+    {
+      "id": "C-REGION-021",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Region = container for Blocks holding ops executed under parent's semantics, with local SSA scoping. Matches A. B/C/D wrong per LangRef."
     },
     {
       "id": "C-SHAPE-004",
-      "independentAnswer": ["D"],
+      "independentAnswer": ["C"],
       "confidence": "high",
-      "rationale": "Static shape specialization narrows the input domain to a specific configuration, enabling tile-size selection, kernel library dispatch, constant-folding of shape-derived quantities (strides, loop bounds), and layout decisions. Trade-off: only that one shape configuration is served, requiring guards + a fallback for other shapes. A inverts the direction of specialization (specialization is a refinement, not a superset). B ignores that shape metadata drives kernel/tile selection. C fabricates a runtime dispatch behavior."
+      "rationale": "Static specialization enables more downstream opts (tiling, shape folding) at cost of covering one shape configuration. Matches C."
+    },
+    {
+      "id": "C-SHAPEINFER-029",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Shape inference propagates per-op rules; symbolic dims remain when not statically known. Matches B leading. B has self-contradicting tail claiming 'only succeeds with fully static integers' — MAJOR distractor-quality issue. But B's leading claim is the only correct one among 4 options."
     },
     {
       "id": "C-SSA-003",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "In-place mutation creates multiple defs of same name, violating SSA and complicating dataflow. A/C/D give wrong reasons."
+    },
+    {
+      "id": "C-STABLEHLO-014",
+      "independentAnswer": ["A", "C"],
+      "confidence": "high",
+      "rationale": "A: true — portable operator set. B: false — supports dynamic shape. C: true — dyn dims with ? and optional bounds. D: false — no device/stream placement per op."
+    },
+    {
+      "id": "C-STRIDE-020",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Offset = sum(idx_i * stride_i) = 2*15+1*0+3*1 = 33. Zero stride on dim 1 = broadcast (all three indices along dim 1 alias same physical element). Matches A leading. Poison tail in A about 'multiplies by shape dim' contradicts. MAJOR distractor-quality issue but A is the only option with correct leading claim."
+    },
+    {
+      "id": "C-SYMSHAPE-018",
       "independentAnswer": ["C"],
       "confidence": "high",
-      "rationale": "The primary reason compilers functionalize in-place ops is SSA compliance: mutations create multiple definitions of the same value name, which breaks single-static-assignment invariants and complicates use-def chains, CSE, DCE, and reordering-based fusion. A/D invent bogus perf reasons. B is too strong — in-place ops CAN be represented (with side-effect modeling) but are typically functionalized to enable classical dataflow analyses."
+      "rationale": "Symbolic shape = named symbolic dims with constraints (representation); dynamic shape = extent not known statically (property). Symbolic is one impl of dynamic. Matches C leading. Poison tail in C. A/B/D more wrong."
+    },
+    {
+      "id": "C-TE-022",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Tensor Expression = declarative functional description of output values in terms of coordinates + reduction axes; schedule = execution details. Matches C leading (Halide/TVM canonical). Poison tail about 'ONNX placeholder' contradicts. MAJOR quality issue but C leading matches."
+    },
+    {
+      "id": "C-TILING-011",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Tiling = schedule transformation preserving compute semantics; changes iteration order/grouping for locality. Matches A leading. Poison tail in A about 'operator fusion'. B/C/D more wrong."
+    },
+    {
+      "id": "C-TYPECONV-024",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Materialization hooks let the driver insert real ops (e.g., bufferization.to_tensor) at boundaries where unrealized_conversion_cast would otherwise remain."
+    },
+    {
+      "id": "C-VERIFY-009",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Verifier reports well-formedness violation per ODS constraints. Pre-pass IR was valid, post-pass invalid → bug in P. Matches D leading. Poison tail in D. Best-fit."
+    },
+    {
+      "id": "C-VIEW-010",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "(i) transpose = stride swap = view. (ii) reshape(6,4) folds contiguous [2,3,4] with strides [4,1] = view. (iii) reshape(4,6) requires re-index across non-contiguous groups = copy. Matches B leading. Poison tail in B. A/C/D more wrong."
     }
   ]
 }

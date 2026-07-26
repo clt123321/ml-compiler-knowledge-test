@@ -41,7 +41,7 @@
     "B",
     "D"
   ],
-  "explanation": "A: Long Scoreboard = waiting on global-memory loads. Latency-hiding (more warps) and reducing memory traffic are both valid mitigations. C: 45% DRAM with only 30% L2 hit rate implies workload has room to increase locality via shared-memory staging or tiling, which reduces the source of memory latency. B is wrong: Barrier stalls reflect true synchronization needs; reducing block size can hurt occupancy or algorithm correctness. D is wrong: Long Scoreboard is a memory-latency stall, not a compute stall.",
+  "explanation": "Correct: B, D.  A: Wrong: 'Long Scoreboard' = memory, not compute. B: Correct: standard Long-Scoreboard interpretation. C: Wrong: barriers exist for correctness; removing them is not a general fix. D: Correct: reducing memory traffic attacks the root cause.",
   "optionExplanations": {
     "A": "Wrong: 'Long Scoreboard' = memory, not compute.",
     "B": "Correct: standard Long-Scoreboard interpretation.",

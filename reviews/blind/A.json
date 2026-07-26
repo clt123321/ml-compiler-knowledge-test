@@ -3,8 +3,53 @@
   "code": "A",
   "label": "计算机体系结构与性能模型",
   "generatedAt": "2026-07-26",
-  "count": 5,
+  "count": 30,
   "questions": [
+    {
+      "id": "A-AMDAHL-008",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Amdahl's Law / parallelization limits",
+      "learningObjective": "Apply Amdahl's Law to bound the maximum speedup of a workload with a non-parallel fraction, and identify the asymptotic ceiling.",
+      "archetype": "formula_performance",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic parallel system",
+        "device": "generic",
+        "requiredFeatures": [
+          "independent parallel workers"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A workload spends 5% of its serial time in a sequential preprocessing step that cannot be parallelized; the remaining 95% is embarrassingly parallel. By Amdahl's Law, what is the maximum achievable speedup as the number of workers p → ∞?",
+      "options": [
+        {
+          "id": "A",
+          "text": "20×. Amdahl's Law says S(∞) = 1 / f_serial = 1 / 0.05 = 20."
+        },
+        {
+          "id": "B",
+          "text": "Unbounded: with an embarrassingly parallel 95% region, adding workers keeps reducing wall time without limit, since only the parallel portion dominates asymptotically."
+        },
+        {
+          "id": "C",
+          "text": "5×, because only the serial 5% survives, so the maximum improvement is a factor equal to the serial fraction expressed as a multiplier."
+        },
+        {
+          "id": "D",
+          "text": "19×. S(∞) = (1 − f_serial) / f_serial = 0.95 / 0.05 = 19; the serial region does not itself contribute to speedup."
+        }
+      ],
+      "assumptions": [
+        "The serial fraction 5% is measured on the original single-worker execution and remains serial at all p.",
+        "Communication, synchronization, and scheduling overheads are ignored (idealized Amdahl model)."
+      ],
+      "version": 1
+    },
     {
       "id": "A-ARITH-001",
       "type": "single",
@@ -54,7 +99,7 @@
       "options": [
         {
           "id": "A",
-          "text": "Compute-bound; the achievable ceiling is approximately the FP16 Tensor-Core peak of about 312 TFLOP/s, since Tensor Cores are the dispatched math path for FP16 GEMV kernels on A100."
+          "text": "Memory-bound; AI ≈ 1 FLOP/byte is far below A100's FP16 ridge point (~ 153 FLOP/byte), so the ceiling is HBM × AI ≈ 2 TFLOP/s."
         },
         {
           "id": "B",
@@ -62,7 +107,7 @@
         },
         {
           "id": "C",
-          "text": "Memory-bound; AI ≈ 1 FLOP/byte is far below A100's FP16 ridge point (~ 153 FLOP/byte), so the ceiling is HBM × AI ≈ 2 TFLOP/s."
+          "text": "Compute-bound; the achievable ceiling is approximately the FP16 Tensor-Core peak of about 312 TFLOP/s, since Tensor Cores are the dispatched math path for FP16 GEMV kernels on A100."
         },
         {
           "id": "D",
@@ -121,11 +166,11 @@
         },
         {
           "id": "B",
-          "text": "Memory-bound; arithmetic intensity ≈ 2.5 FLOP/byte, obtained by counting only the input reads and ignoring the output writes since writes are asynchronous on the memory bus."
+          "text": "Memory-bound; AI = 10/8 = 1.25 FLOP/byte < A100 FP32 ridge (~ 9.75); ceiling ≈ 2.5 TFLOP/s."
         },
         {
           "id": "C",
-          "text": "Memory-bound; AI = 10/8 = 1.25 FLOP/byte < A100 FP32 ridge (~ 9.75); ceiling ≈ 2.5 TFLOP/s."
+          "text": "Memory-bound; arithmetic intensity ≈ 2.5 FLOP/byte, obtained by counting only the input reads and ignoring the output writes since writes are asynchronous on the memory bus."
         },
         {
           "id": "D",
@@ -135,6 +180,635 @@
       "assumptions": [
         "No cache reuse: each byte of A is read from HBM exactly once, each byte of B is written to HBM exactly once.",
         "Softplus operates on a single tensor and does not fuse with adjacent ops in this measurement."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-BANK-022",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Shared memory bank conflict",
+      "learningObjective": "Determine the degree of shared-memory bank conflict for a stride access pattern and its throughput impact.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "32 shared-memory banks, 4-byte bank width"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A CUDA kernel declares `__shared__ float smem[32][32]` (32 banks × 4-byte bank width on Ampere). After a `__syncthreads()`, the block reads `smem[threadIdx.x][threadIdx.y]` with a 32×32 thread block. What is the resulting bank-conflict behavior for a warp with a single value of threadIdx.y (threads share y, differ in x)?",
+      "codeSnippet": "__shared__ float smem[32][32];\n// Load\nsmem[threadIdx.y][threadIdx.x] = ...;\n__syncthreads();\n// Later access:\nfloat v = smem[threadIdx.x][threadIdx.y];  // access pattern in question",
+      "options": [
+        {
+          "id": "A",
+          "text": "No conflict: threads in a warp read column `y` from rows `0..31`; each row starts on a different bank, so all 32 threads target distinct banks in one cycle."
+        },
+        {
+          "id": "B",
+          "text": "The compiler automatically pads the shared-memory declaration to avoid conflicts, so this access pattern is transparently conflict-free."
+        },
+        {
+          "id": "C",
+          "text": "16-way conflict: half-warp granularity limits shared-memory conflicts to at most 16-way on Ampere."
+        },
+        {
+          "id": "D",
+          "text": "32-way conflict: threads in the warp read a single column `y`, i.e., addresses smem[0][y], smem[1][y], ..., smem[31][y]. Each of these lies in the same bank because 32 × 4 B row stride is a multiple of the bank stride (32×4 B), serializing to 32 accesses."
+        }
+      ],
+      "assumptions": [
+        "32 banks × 4 B bank width (default on modern NVIDIA compute capabilities).",
+        "Warp is 32 threads with threadIdx.x varying and threadIdx.y constant.",
+        "No compiler transformation altering the declared layout."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-BATCH-028",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Batch size to cross ridge point",
+      "learningObjective": "Compute the batch size needed to move an LLM decode's linear layer from memory-bound into compute-bound regime on a specific GPU.",
+      "archetype": "formula_performance",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100 SXM)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP16 Tensor Cores",
+          "312 TFLOP/s FP16 peak",
+          "2.0 TB/s HBM"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            4096
+          ],
+          [
+            4096,
+            4096
+          ],
+          [
+            "B",
+            4096
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ]
+      },
+      "stem": "For a transformer linear layer Y = X · W with W ∈ ℝ^{4096×4096} FP16 (weight streamed once), on A100 SXM (FP16 Tensor-Core peak ≈ 312 TFLOP/s, HBM ≈ 2.0 TB/s, ridge point ≈ 156 FLOP/byte). Approximately what batch/token dimension B is needed for the layer's arithmetic intensity to reach the ridge point (assuming AI ≈ B in the weight-dominated small-B regime)?",
+      "options": [
+        {
+          "id": "A",
+          "text": "B ≈ 4096: the batch must match the hidden dimension for arithmetic intensity to saturate."
+        },
+        {
+          "id": "B",
+          "text": "B ≈ 16 tokens: because the FP16 Tensor Core is 16× faster than FP32, the required B is FLOP-peak / (16 × HBM) ≈ 16."
+        },
+        {
+          "id": "C",
+          "text": "B = 1: LLM decode is always compute-bound because Tensor Cores parallelize FLOPs faster than HBM streams weights."
+        },
+        {
+          "id": "D",
+          "text": "B ≈ 156 tokens: since AI ≈ B in the weight-dominated regime, B must equal the ridge point (~156 FLOP/byte) to cross into compute-bound territory."
+        }
+      ],
+      "assumptions": [
+        "AI ≈ B in the small-B, weight-dominated regime (activations negligible).",
+        "Ridge point ≈ 156 FLOP/byte for A100 SXM FP16 (312 TFLOP/s / 2.0 TB/s).",
+        "Kernel implementation can realize the theoretical AI (e.g., cuBLAS or hand-tuned)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-BW-006",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Arithmetic intensity / batched GEMM",
+      "learningObjective": "Compute the arithmetic intensity of a batched matrix multiplication and compare it against a GPU's ridge point to determine bind regime.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100 SXM)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM2e",
+          "Tensor Cores FP16"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            1024,
+            1024
+          ],
+          [
+            1024,
+            1024
+          ],
+          [
+            1024,
+            1024
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "Consider a single-tile FP16 GEMM C = A · B with A ∈ ℝ^{M×K}, B ∈ ℝ^{K×N}, C ∈ ℝ^{M×N}, M=N=K=1024, all tensors streamed once from HBM (no persistence). On A100 SXM (FP16 Tensor Core peak ≈ 312 TFLOP/s, HBM ≈ 2.0 TB/s, ridge point ≈ 156 FLOP/byte), which classification is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Compute-bound only for FP32 accumulation, but memory-bound for FP16 accumulation because the accumulator halves the effective register file and forces spilling to HBM."
+        },
+        {
+          "id": "B",
+          "text": "Memory-bound: even at K=1024, streaming the operands limits performance; AI ≈ 1 FLOP/byte because each element of A and B is loaded once and reused only during the tile computation."
+        },
+        {
+          "id": "C",
+          "text": "Compute-bound: FLOPs = 2·M·N·K ≈ 2.15 G; bytes moved ≈ (M·K + K·N + M·N)·2 ≈ 6.29 MB; AI ≈ 342 FLOP/byte, above the FP16 ridge of ~156, so the ceiling is the FP16 Tensor Core peak of ~312 TFLOP/s."
+        },
+        {
+          "id": "D",
+          "text": "Undetermined without knowing the launch grid; the same math on the same GPU can flip compute/memory regimes depending on how many blocks are launched."
+        }
+      ],
+      "assumptions": [
+        "Operands are loaded from HBM exactly once through a tiled schedule; the arithmetic intensity is measured against HBM traffic.",
+        "No exotic streaming (e.g., persistent kernels reusing weights across steps) that would change effective bytes moved."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-CACHE-010",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Cache line utilization / data locality",
+      "learningObjective": "Compute the effective cache-line utilization of a strided CPU access pattern and connect it to the arithmetic intensity seen by the memory system.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "Intel",
+        "architecture": "modern x86-64 with 64 B cache lines",
+        "device": "CPU",
+        "requiredFeatures": [
+          "64 B cache lines"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A CPU loop reads a[i * S] for i = 0 .. N−1 where a is a contiguous FP32 array and S = 16 (stride 16 elements = 64 B). Cache lines are 64 B. Assuming N is large so warm-up effects are negligible and no prefetch reuse across iterations, what fraction of each transferred cache line is useful to the loop?",
+      "options": [
+        {
+          "id": "A",
+          "text": "1/16 (~6.25%): each 64 B cache line delivers only the 4 B accessed element; the remaining 60 B are transferred but unused."
+        },
+        {
+          "id": "B",
+          "text": "1: hardware prefetchers combine adjacent strided loads into a single wide access, so effective utilization approaches 100% once the prefetcher locks on."
+        },
+        {
+          "id": "C",
+          "text": "1/4: 4 B out of 16 B per element, computed against the SIMD lane width rather than the cache line width."
+        },
+        {
+          "id": "D",
+          "text": "1/2: modern out-of-order cores double the effective utilization by reading two elements per cache line through speculative execution."
+        }
+      ],
+      "assumptions": [
+        "Each accessed element lies in a distinct 64 B cache line (stride 16 × 4 B = 64 B).",
+        "No temporal reuse within the loop; each iteration touches a fresh line.",
+        "Cache pressure is high enough that prefetched but unused bytes cannot be later re-used."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-COAL-009",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Global memory coalescing / effective bandwidth",
+      "learningObjective": "Estimate effective HBM bandwidth achieved by a strided access pattern compared to the ideal coalesced case and identify the underlying mechanism.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "L2 sector 32B",
+          "coalesced global loads"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Two kernels each read 32 × 4 B = 128 useful bytes per warp. Kernel A reads contiguous 4 B elements (stride 1) and issues one 128 B coalesced transaction. Kernel B reads with stride 32 (4 B elements 128 B apart), touching 32 distinct 32 B sectors, so the memory system transfers 32 × 32 B = 1024 B per warp. Assuming HBM bandwidth is the bottleneck, what is the ratio of effective useful-bytes throughput of Kernel B to Kernel A?",
+      "profileData": "Kernel A (coalesced 4B stride-1 load, warp of 32 threads): 128 B per transaction, 1 transaction per warp. Kernel B (stride-32 4B load with 128 B sectors): 32 sectors, 32 B each = 1024 B moved per warp.",
+      "options": [
+        {
+          "id": "A",
+          "text": "1/4: coalesced transactions are 128 B while strided transactions are 32 B; the ratio 128/32 = 4 gives the throughput penalty."
+        },
+        {
+          "id": "B",
+          "text": "1/32: because Kernel B touches 32 sectors, its effective bandwidth is 1/32 of Kernel A's; the number of distinct sectors touched is the direct multiplier."
+        },
+        {
+          "id": "C",
+          "text": "1: the L2 cache absorbs the extra transactions transparently and delivers the same useful bandwidth for both patterns on A100."
+        },
+        {
+          "id": "D",
+          "text": "1/8: Kernel B moves 8× the bytes per warp for the same useful payload, so at HBM saturation it delivers 1/8 the useful throughput."
+        }
+      ],
+      "assumptions": [
+        "Sector size at L2 is 32 B (typical for recent NVIDIA GPUs) and there is no cache line coalescing across the 32 accesses in Kernel B.",
+        "HBM is the bottleneck; kernels are wide enough to saturate it if traffic were coalesced.",
+        "One-shot access, no reuse from L2."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-CPUGPU-027",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "CPU vs GPU execution model contrasts",
+      "learningObjective": "Compare CPU and GPU execution models on branch prediction, out-of-order execution, register file, and cache hierarchy design.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "modern OoO CPU + SIMT GPU",
+        "device": "generic",
+        "requiredFeatures": [
+          "branch predictor (CPU)",
+          "large register file (GPU)"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements correctly contrast the CPU and GPU execution models? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "CPUs devote substantial die area to branch prediction, out-of-order scheduling and large caches per core; GPUs devote proportionally more area to compute units and register files, using massive thread-level parallelism to hide memory latency instead."
+        },
+        {
+          "id": "B",
+          "text": "GPUs typically have a much larger register file per SM than a CPU core has per core, because switching between many warps requires their register state to remain resident for zero-cost context switching."
+        },
+        {
+          "id": "C",
+          "text": "CPU L1 caches are typically per-core and larger per thread than GPU L1/shared memory per thread, reflecting the CPU's reliance on temporal locality within a single thread."
+        },
+        {
+          "id": "D",
+          "text": "GPUs do not use caches at all; latency hiding via warp switching removes any need for a cache hierarchy."
+        }
+      ],
+      "assumptions": [
+        "Standard modern CPU (Intel/AMD OoO) vs data-center GPU (NVIDIA Ampere/Hopper) comparison.",
+        "Rough die-area allocations and per-thread capacities as documented in whitepapers and PMPP4."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-DIVERG-021",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "Warp divergence performance impact",
+      "learningObjective": "Estimate the throughput impact of warp divergence and identify when divergence does not degrade throughput.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "warp size 32",
+          "SIMT divergence handling"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A CUDA kernel executes an if/else branch that produces two disjoint code paths of similar cost (T_A ≈ T_B ≈ T). Which of the following statements about divergence within a warp are correct? (Select all that apply.)",
+      "codeSnippet": "// Kernel dispatched with 1024 threads/block; each thread computes a per-lane path.\n__global__ void div_kernel(const float* __restrict__ x, float* __restrict__ y) {\n    int tid = blockIdx.x * blockDim.x + threadIdx.x;\n    float v = x[tid];\n    if (v > 0.0f) {\n        y[tid] = expensive_path_a(v);   // takes T_A cycles\n    } else {\n        y[tid] = expensive_path_b(v);   // takes T_B cycles\n    }\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Post-Volta independent thread scheduling changes the SIMT semantics so that both branches now truly execute in parallel within a warp with no serialization cost, eliminating warp divergence entirely."
+        },
+        {
+          "id": "B",
+          "text": "If all 32 threads in a warp take the same side of the branch, no divergence penalty is incurred; the branch behaves like a single-path warp."
+        },
+        {
+          "id": "C",
+          "text": "If the warp splits (some threads take path A, others path B), the two subsets execute serially and total warp time is approximately T_A + T_B (both paths are covered under mask), not max(T_A, T_B)."
+        },
+        {
+          "id": "D",
+          "text": "Divergence is per-block, not per-warp; as long as the block executes both branches somewhere, the compiler predicates the whole block uniformly."
+        }
+      ],
+      "assumptions": [
+        "Both branch paths have similar cost T_A ≈ T_B and neither is trivially compiled to predicated math.",
+        "Compiler does not automatically predicate the branch away (i.e., real control divergence occurs)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-ENERGY-016",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "Energy per operation / power constraints",
+      "learningObjective": "Reason about the relative energy costs of on-chip compute vs off-chip memory access and their implications for DNN accelerator design.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic modern accelerator (~ 45nm/16nm survey figures)",
+        "device": "generic",
+        "requiredFeatures": [
+          "off-chip DRAM",
+          "on-chip SRAM"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Survey figures (Sze et al., cited widely from Horowitz's ISSCC 2014 numbers) place DRAM access energy roughly 2–3 orders of magnitude above an on-chip multiply-add. Which of the following implications are correct for accelerator/DNN energy analysis? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Reducing DRAM accesses (via on-chip data reuse, tiling, buffer sharing) is often the largest lever for energy efficiency in DNN inference, even when compute FLOPs stay constant."
+        },
+        {
+          "id": "B",
+          "text": "Quantization can reduce energy per operation on hardware that supports the lower-precision path, both by reducing bytes moved from DRAM and by reducing compute energy per MAC."
+        },
+        {
+          "id": "C",
+          "text": "Because logic is 'free', minimizing FLOPs is the primary energy lever regardless of memory access patterns."
+        },
+        {
+          "id": "D",
+          "text": "Since on-chip SRAM energy is orders of magnitude lower than DRAM, using more shared memory always reduces total energy without further conditions."
+        }
+      ],
+      "assumptions": [
+        "Standard survey-scale relative energy figures (DRAM access ≫ SRAM access ≫ MAC).",
+        "Kernel-level accounting: energy per op includes both compute and data movement."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-HIER-020",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "Memory hierarchy ordering (latency, bandwidth, capacity)",
+      "learningObjective": "Order the tiers of a modern GPU memory hierarchy by latency, bandwidth and capacity, and identify design consequences.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper (sm_80+)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "register file",
+          "shared memory (L1)",
+          "L2 cache",
+          "HBM"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about the NVIDIA GPU memory hierarchy (Ampere/Hopper) are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because L2 has higher bandwidth than HBM, an inference kernel that fits in L2 sees roughly HBM-tier throughput; L2 acts only as a latency shield, not a bandwidth multiplier."
+        },
+        {
+          "id": "B",
+          "text": "Latency ordering (fastest to slowest): registers → shared memory / L1 → L2 → HBM. Latency grows by roughly an order of magnitude across the last two boundaries."
+        },
+        {
+          "id": "C",
+          "text": "Capacity ordering (largest to smallest): HBM → L2 → shared memory (per SM) → register file (per SM). HBM dwarfs on-chip storage by several orders of magnitude."
+        },
+        {
+          "id": "D",
+          "text": "Aggregate bandwidth ordering, summed across all SMs, is: register file ≫ shared memory ≫ L2 ≫ HBM. On-chip tiers close to compute are the widest."
+        }
+      ],
+      "assumptions": [
+        "Modern NVIDIA GPU (Ampere/Hopper) with the standard R/S/L2/HBM hierarchy.",
+        "Aggregate bandwidth is measured summed across all SMs where applicable."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-ILP-030",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "Little's Law / ILP + MLP requirements for latency hiding",
+      "learningObjective": "Apply Little's Law at the instruction/memory level to reason about the concurrency required to fully hide arithmetic and memory latency.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "warp scheduler",
+          "outstanding memory requests per SM"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Consider a memory-bound GPU kernel. Which of the following statements correctly apply Little's Law to reasoning about latency hiding? (Select all that apply.)",
+      "profileData": "Kernel X (memory-bound, single outstanding load per warp): occupancy 100%, HBM throughput 40% of peak. Kernel Y (memory-bound, 8 outstanding loads per warp): occupancy 25%, HBM throughput 90% of peak. Both target A100, N=32M elements.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Low occupancy can still saturate HBM if each active warp issues many in-flight loads simultaneously (high memory-level parallelism per warp), because Little's Law counts total outstanding requests, not warp count."
+        },
+        {
+          "id": "B",
+          "text": "Once occupancy reaches 100%, latency hiding is guaranteed regardless of per-thread memory-level parallelism."
+        },
+        {
+          "id": "C",
+          "text": "For compute latency (arithmetic pipeline), Little's Law analogously requires enough independent instructions in flight per warp scheduler; ILP within a warp complements TLP across warps to hide compute-pipeline latency."
+        },
+        {
+          "id": "D",
+          "text": "To fully hide DRAM latency, the SM must maintain enough outstanding memory requests such that Little's Law (concurrency = bandwidth × latency) is satisfied; this is why kernels need many warps and each warp needs multiple outstanding loads."
+        }
+      ],
+      "assumptions": [
+        "Kernel is bandwidth or latency limited on either memory or arithmetic pipelines.",
+        "Warp scheduler can issue independent instructions from a warp when ready."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-INTENSE-019",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Batch effect on arithmetic intensity",
+      "learningObjective": "Quantify how batch size increases arithmetic intensity from GEMV to GEMM regime for weight-shared linear layers.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "generic modern GPU",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            4096
+          ],
+          [
+            4096,
+            4096
+          ],
+          [
+            "B",
+            4096
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ]
+      },
+      "stem": "A transformer linear layer Y = X · W with W ∈ ℝ^{4096×4096} FP16 has an effective batch dimension B (e.g., #tokens in a step). Weight W is streamed once from HBM per launch; X and Y are proportional to B. Ignoring caching outside of W's single-pass streaming, how does arithmetic intensity (FLOP / bytes) scale with B?",
+      "options": [
+        {
+          "id": "A",
+          "text": "AI is inversely proportional to B because larger batches move more X/Y data through HBM, diluting the FLOP density."
+        },
+        {
+          "id": "B",
+          "text": "AI is approximately linear in B: at B=1 (decode step) AI ≈ 1 FLOP/byte (GEMV regime); at B ≈ 128 (prefill), AI is roughly 100+ FLOP/byte and typically enters compute-bound territory on FP16 Tensor-Core GPUs."
+        },
+        {
+          "id": "C",
+          "text": "AI is independent of B because the number of FLOPs and bytes both grow linearly with B, so the ratio is invariant."
+        },
+        {
+          "id": "D",
+          "text": "AI grows quadratically with B because each token performs B multiplications with each weight."
+        }
+      ],
+      "assumptions": [
+        "Weight is streamed once from HBM per kernel launch (no persistence).",
+        "AI is measured against HBM bytes moved, not L2/SMEM.",
+        "K = N = 4096 FP16."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-LAUNCH-015",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "Kernel launch overhead / short-kernel Amdahl",
+      "learningObjective": "Reason about when kernel launch overhead dominates and what mitigations exist.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere/Hopper CUDA runtime",
+        "device": "GPU",
+        "requiredFeatures": [
+          "CUDA driver launch cost ~ 5–10 μs per kernel"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA runtime",
+        "stability": "stable_principle"
+      },
+      "stem": "Kernel launch overhead is typically ~5–10 μs on NVIDIA GPUs. Consider a training/inference loop dispatching many small kernels. Which of the following statements are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Kernel launch overhead is fully hidden by cudaStreamSynchronize because the CPU launch API is asynchronous; therefore small kernels do not suffer from launch overhead in practice."
+        },
+        {
+          "id": "B",
+          "text": "Kernel fusion reduces per-op launch cost by combining multiple element-wise kernels into a single kernel, trading potential register pressure for a lower total launch count."
+        },
+        {
+          "id": "C",
+          "text": "If a kernel executes for 2 μs and launch overhead is 5 μs, launch overhead dominates the wall time even at 100% GPU utilization; the effective GPU throughput is well below the kernel's peak."
+        },
+        {
+          "id": "D",
+          "text": "CUDA Graphs capture a sequence of kernel launches once and replay them with a single API call, amortizing launch overhead across many small kernels."
+        }
+      ],
+      "assumptions": [
+        "Launch overhead ~5–10 μs per kernel is representative of recent CUDA driver stacks; small variations occur across versions.",
+        "The workload has a large number of short kernels (typical of decode-time transformer inference)."
       ],
       "version": 1
     },
@@ -162,11 +836,11 @@
       "options": [
         {
           "id": "A",
-          "text": "≈ 6,250 in-flight 128-byte loads (BW × L = 2×10¹² × 400×10⁻⁹ = 800 KB; /128 = 6,250)."
+          "text": "≈ 32 concurrent loads — one per warp scheduler on a single SM — because Little's Law counts per-scheduler concurrency, not aggregate outstanding requests across all SMs."
         },
         {
           "id": "B",
-          "text": "≈ 32 concurrent loads — one per warp scheduler on a single SM — because Little's Law counts per-scheduler concurrency, not aggregate outstanding requests across all SMs."
+          "text": "≈ 6,250 in-flight 128-byte loads (BW × L = 2×10¹² × 400×10⁻⁹ = 800 KB; /128 = 6,250)."
         },
         {
           "id": "C",
@@ -208,24 +882,71 @@
       "options": [
         {
           "id": "A",
-          "text": "The per-SM register file (65,536 × 32-bit ≈ 256 KB) is larger than the per-SM configurable L1/shared-memory partition (up to 192 KB total on A100)."
-        },
-        {
-          "id": "B",
           "text": "Aggregate global-memory (HBM2e) bandwidth on the A100 board is higher than the aggregate on-chip shared-memory bandwidth summed across all SMs, since HBM stacks scale linearly with pin count and channels."
         },
         {
-          "id": "C",
+          "id": "B",
           "text": "Shared memory is bank-organized: warp threads accessing distinct addresses in the same bank serialize (bank conflict); global memory has no banks but obeys coalescing rules on 32/64/128 B transactions."
         },
         {
-          "id": "D",
+          "id": "C",
           "text": "Constant memory accesses in which all threads of a warp read the same address are broadcast, avoiding a per-thread memory transaction and delivering the value in one cycle to the whole warp."
+        },
+        {
+          "id": "D",
+          "text": "The per-SM register file (65,536 × 32-bit ≈ 256 KB) is larger than the per-SM configurable L1/shared-memory partition (up to 192 KB total on A100)."
         }
       ],
       "assumptions": [
         "sm_80 (A100) compute capability configuration.",
         "Shared-memory bank width = 32-bit (4 bytes) per bank."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-NVLINK-014",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "NVLink vs PCIe / inter-GPU collectives",
+      "learningObjective": "Compare NVLink and PCIe bandwidth for inter-GPU communication and reason about ring-AllReduce throughput.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "H100 SXM5 with NVLink 4.0 fabric",
+        "device": "GPU",
+        "requiredFeatures": [
+          "NVLink 4.0 per-GPU ~900 GB/s bidirectional"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "You have two 8-GPU setups: (i) H100 SXM5 with NVLink 4.0 (per-GPU aggregate ≈ 900 GB/s bidirectional) and (ii) H100 PCIe cards on PCIe Gen4 x16 (≈ 25 GB/s per-direction between neighbors, no NVLink). You run ring-AllReduce on a 1 GiB FP16 tensor. Which comparison is closest to correct in the bandwidth-bound regime?",
+      "profileData": "Ring-AllReduce of a 1 GiB FP16 tensor across 8 H100 SXM5 nodes fully connected by NVLink 4.0. Same experiment across 8 H100 PCIe cards on PCIe Gen4 x16.",
+      "options": [
+        {
+          "id": "A",
+          "text": "NVLink is roughly 1–2 orders of magnitude faster than PCIe here because ring-AllReduce is limited by the slowest inter-GPU link; NVLink's ~900 GB/s bidirectional per GPU vs PCIe's ~25 GB/s per direction dominates the collective time."
+        },
+        {
+          "id": "B",
+          "text": "Both complete in the same time because ring-AllReduce total bytes are dominated by the sum, independent of link technology."
+        },
+        {
+          "id": "C",
+          "text": "PCIe is faster because CPU-mediated routing bypasses the NVLink handshake overhead, giving lower latency for tensors above 512 MiB."
+        },
+        {
+          "id": "D",
+          "text": "NVLink and PCIe give the same throughput per direction; only bidirectional aggregate differs and AllReduce uses one direction at a time."
+        }
+      ],
+      "assumptions": [
+        "Ring-AllReduce in the bandwidth-bound regime (tensor large enough that latency terms are negligible).",
+        "PCIe topology has no NVLink or NVSwitch fabric between GPUs.",
+        "NVLink 4.0 per-GPU aggregate ~ 900 GB/s bidirectional (H100 SXM5 typical published number)."
       ],
       "version": 1
     },
@@ -260,7 +981,7 @@
         },
         {
           "id": "B",
-          "text": "100%; A100's register file is large enough to accommodate 8 concurrent blocks of 256 threads at 96 registers per thread, so occupancy hits the SM's maximum of 64 warps."
+          "text": "25%; 96 × 256 = 24,576 regs/block, ⌊65536/24576⌋ = 2 blocks/SM, 512 threads = 16/64 warps."
         },
         {
           "id": "C",
@@ -268,12 +989,526 @@
         },
         {
           "id": "D",
-          "text": "25%; 96 × 256 = 24,576 regs/block, ⌊65536/24576⌋ = 2 blocks/SM, 512 threads = 16/64 warps."
+          "text": "100%; A100's register file is large enough to accommodate 8 concurrent blocks of 256 threads at 96 registers per thread, so occupancy hits the SM's maximum of 64 warps."
         }
       ],
       "assumptions": [
         "Shared memory usage per block is small enough to not further limit occupancy.",
         "Grid dimension is large enough to fully populate the SMs (not launch-limited)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-PARA-024",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "Parallelism taxonomy (ILP / DLP / TLP)",
+      "learningObjective": "Distinguish instruction-level, data-level and thread-level parallelism, and identify architectural mechanisms exposing each form.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "modern out-of-order CPU + SIMT GPU",
+        "device": "generic",
+        "requiredFeatures": [
+          "OoO issue window (ILP)",
+          "SIMD lanes (DLP)",
+          "multi-core / multi-thread (TLP)"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following statements correctly connect a parallelism level (ILP / DLP / TLP) to an architectural mechanism? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "DLP (data-level parallelism) is exposed by SIMD/SIMT execution: the same operation is applied across many data elements simultaneously by vector lanes or warp threads."
+        },
+        {
+          "id": "B",
+          "text": "TLP (thread-level parallelism) is exposed by multi-core CPUs, SMT/hyperthreading, and GPU warps: multiple independent control streams run in parallel."
+        },
+        {
+          "id": "C",
+          "text": "ILP, DLP and TLP are mutually exclusive: a program can exhibit only one of the three at a time, so architectures must choose which one to exploit at compile time."
+        },
+        {
+          "id": "D",
+          "text": "ILP (instruction-level parallelism) is exposed by out-of-order execution, register renaming, and superscalar issue: independent instructions overlap in the pipeline of one core."
+        }
+      ],
+      "assumptions": [
+        "Comparison of general-purpose parallel architectures (CPU OoO cores, GPUs)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-PCIE-013",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "PCIe transfer / host-device data movement",
+      "learningObjective": "Estimate host-to-device PCIe transfer time and reason about overlap with kernel execution.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "PCIe Gen4 x16 host-GPU link",
+        "device": "GPU",
+        "requiredFeatures": [
+          "PCIe Gen4 x16 ~ 32 GB/s unidirectional practical"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A host-to-device H2D transfer of a pinned 4 GiB buffer is issued to a GPU connected via PCIe Gen4 x16 (practical unidirectional ≈ 25 GB/s in production, 32 GB/s theoretical). Ignoring driver setup overheads, roughly how long is the H2D transfer alone, and what is the implication for overlapping with a kernel that runs 40 ms on the same buffer?",
+      "options": [
+        {
+          "id": "A",
+          "text": "H2D ≈ 170 ms at 25 GB/s. Because the transfer is ~4× longer than the kernel, even perfect overlap using cudaMemcpyAsync + separate streams cannot hide the H2D behind the kernel; end-to-end time is dominated by PCIe."
+        },
+        {
+          "id": "B",
+          "text": "H2D ≈ 170 ms at 25 GB/s, but overlapping cudaMemcpyAsync with the kernel in separate streams reduces the end-to-end time to the maximum of transfer and kernel (40 ms) since the two operations execute in parallel."
+        },
+        {
+          "id": "C",
+          "text": "H2D ≈ 40 ms because PCIe Gen4 x16 practical bandwidth is ~ 100 GB/s; the kernel and transfer can each finish in 40 ms."
+        },
+        {
+          "id": "D",
+          "text": "H2D ≈ 1.7 s because PCIe transfers of pinned memory are throttled to ~ 2.5 GB/s by the OS DMA engine on typical systems."
+        }
+      ],
+      "assumptions": [
+        "Pinned host memory so DMA runs at PCIe-limited rate.",
+        "Practical PCIe Gen4 x16 unidirectional bandwidth ~ 25 GB/s (below the 32 GB/s theoretical due to protocol overhead).",
+        "Transfer size 4 GiB = 4.294 × 10^9 bytes."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-PEAK-018",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Theoretical peak vs sustained throughput",
+      "learningObjective": "Diagnose why a measured GEMM throughput falls significantly below the theoretical peak and identify the most plausible cause.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100 SXM)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP16 Tensor Cores",
+          "312 TFLOP/s FP16 peak"
+        ]
+      },
+      "softwareContext": {
+        "compiler": "cuBLAS",
+        "stability": "stable_principle"
+      },
+      "stem": "You measure 220 TFLOP/s on a cuBLAS FP16 GEMM (M=N=K=8192) on an A100 SXM, versus a theoretical peak of 312 TFLOP/s. Nsight Compute shows 78% Tensor Core utilization and HBM is not saturated. Which explanation is most consistent with the data?",
+      "profileData": "cuBLAS FP16 GEMM (M=N=K=8192): measured throughput 220 TFLOP/s; theoretical peak 312 TFLOP/s (dense FP16 Tensor Core, A100 SXM). Nsight Compute reports 78% Tensor Core utilization and no HBM saturation.",
+      "options": [
+        {
+          "id": "A",
+          "text": "cuBLAS is memory-bound on this size, so achieved throughput is HBM × AI; the ridge point is above the achieved value."
+        },
+        {
+          "id": "B",
+          "text": "Tensor Cores are not fully occupied every cycle (78% Tensor Core utilization); typical causes include tile boundary effects, epilogue/prologue, imperfect scheduling, and warp scheduler stalls, producing the gap from the 312 TFLOP/s ceiling."
+        },
+        {
+          "id": "C",
+          "text": "Kernel launch overhead dominates; the 30% gap is CPU-side launch overhead not overlapping with compute."
+        },
+        {
+          "id": "D",
+          "text": "The A100 SXM ridge point is 78 FLOP/byte and this GEMM sits exactly on the ridge, so the measured value equals the ceiling."
+        }
+      ],
+      "assumptions": [
+        "Single-kernel steady-state GEMM measurement; not a batch-of-tiny-kernels regime.",
+        "cuBLAS handle, FP16 inputs and outputs, no exotic epilogue fusion."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-POWER-029",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Power / thermal throttling",
+      "learningObjective": "Diagnose sustained-vs-burst GPU throughput given TDP constraints and identify power capping as a mechanism.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "generic data-center GPU with TDP power cap",
+        "device": "GPU",
+        "requiredFeatures": [
+          "dynamic voltage/frequency scaling",
+          "TDP cap"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Nsight Systems shows a data-center GPU reaching 300 TFLOP/s in a short FP16 GEMM burst, but sustained throughput over 30 s stabilizes at 240 TFLOP/s. GPU telemetry reports a TDP cap of 400 W and a performance-state drop from P0 to P2. Which explanation best fits the data?",
+      "profileData": "Burst FP16 GEMM (first 100 ms): 300 TFLOP/s. Sustained FP16 GEMM (steady state after 30 s): 240 TFLOP/s. GPU reports Power Limit = 400 W and Perf State drop from P0 to P2 during the sustained run.",
+      "options": [
+        {
+          "id": "A",
+          "text": "PCIe bandwidth reduction under thermal load caps GPU compute; sustained throughput drops because the PCIe link cannot deliver enough data."
+        },
+        {
+          "id": "B",
+          "text": "HBM bandwidth increases during the burst and decreases at steady state, so the gap is memory-bandwidth-related rather than power-related."
+        },
+        {
+          "id": "C",
+          "text": "Nsight Systems mismeasures the burst throughput by 20% due to profiler overhead; the sustained figure is the true value at both phases."
+        },
+        {
+          "id": "D",
+          "text": "Sustained power/thermal constraints throttle SM clock frequency to keep total power at or below TDP; short bursts can exceed sustained power via thermal headroom, but the long-run steady state respects the cap, reducing achievable throughput."
+        }
+      ],
+      "assumptions": [
+        "Kernel is compute-bound (large square GEMM) so throughput tracks compute frequency.",
+        "GPU exposes DVFS-based power management to stay at or under TDP.",
+        "Ambient cooling is fixed; only the die/board thermal headroom changes over the run."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-REGSPILL-025",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Register spill / local memory penalty",
+      "learningObjective": "Diagnose the performance impact of register spilling on GPU kernels and identify why 'local memory' spills traverse HBM.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "per-thread local memory backed by global memory"
+        ]
+      },
+      "softwareContext": {
+        "compiler": "nvcc / ptxas",
+        "stability": "stable_principle"
+      },
+      "stem": "You compile a CUDA kernel and ptxas reports `128 bytes spill stores, 128 bytes spill loads`. Which statement about GPU register spills is correct?",
+      "profileData": "ptxas info: Used 255 registers, 0 bytes cmem[0], 128 bytes stack frame, 128 bytes spill stores, 128 bytes spill loads.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Spills go to shared memory automatically; the ptxas 'spill' counters report shared-memory bytes rather than HBM bytes."
+        },
+        {
+          "id": "B",
+          "text": "Spills go to a dedicated on-chip spill buffer separate from HBM and L1/L2, so spill traffic does not consume DRAM bandwidth."
+        },
+        {
+          "id": "C",
+          "text": "Spill loads/stores traverse per-thread 'local memory', which physically resides in HBM (cached in L1/L2). Each spilled access can add hundreds of cycles of latency and adds HBM bandwidth pressure, especially if L1/L2 do not absorb the traffic."
+        },
+        {
+          "id": "D",
+          "text": "Spills are always harmless because L1 hits them; the compiler only spills if it has proven the access will hit cache on the next reload."
+        }
+      ],
+      "assumptions": [
+        "ptxas reports spill counters when register pressure exceeds a threshold controlled by --maxrregcount or -Xptxas -O.",
+        "Local memory is caching per NVIDIA's memory model (L1/L2 involvement)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-RIDGE-007",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Ridge point / precision-dependent Roofline",
+      "learningObjective": "Compute a GPU's Roofline ridge point from published peak throughput and memory bandwidth, and reason about how the ridge shifts across precisions.",
+      "archetype": "formula_performance",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Hopper (sm_90, H100 SXM5)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM3",
+          "Tensor Cores FP16",
+          "Tensor Cores FP8"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "H100 SXM5 published peaks (dense, non-sparse): FP16 Tensor Core ≈ 989 TFLOP/s, FP8 Tensor Core ≈ 1979 TFLOP/s, HBM3 bandwidth ≈ 3.35 TB/s. Which statement about ridge points on this GPU is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "FP16 ridge ≈ 295 FLOP/byte; FP8 ridge ≈ 590 FLOP/byte; lowering precision reduces the compute peak and hence the ridge point."
+        },
+        {
+          "id": "B",
+          "text": "FP16 ridge ≈ 295 FLOP/byte; FP8 ridge ≈ 590 FLOP/byte; halving the operand precision doubles the ridge point (bytes per operand halve while compute doubles)."
+        },
+        {
+          "id": "C",
+          "text": "Both ridges collapse to the same value because ridge point is a hardware invariant defined by HBM alone, independent of the math throughput reported for a specific precision."
+        },
+        {
+          "id": "D",
+          "text": "FP8 ridge ≈ 148 FLOP/byte, half of FP16's, because FP8 operands only need 1 byte and thus each byte can serve twice as many FLOPs at the same bandwidth."
+        }
+      ],
+      "assumptions": [
+        "Dense (non-sparse) Tensor Core peaks are used.",
+        "HBM3 bandwidth is the memory-side reference for ridge, not L2 or SMEM."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-SIMT-011",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "SIMD vs SIMT execution model",
+      "learningObjective": "Contrast CPU SIMD lane execution with GPU SIMT warp execution, identifying differences in divergence handling, thread identity and programming model.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper (SIMT); modern x86 AVX-512 (SIMD)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "warp of 32 threads (NVIDIA SIMT)",
+          "AVX-512 512-bit lanes (SIMD)"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following statements distinguishing CPU SIMD (e.g., AVX-512) from NVIDIA GPU SIMT (warp-based) execution are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "SIMT presents each warp lane as an independently addressable thread with its own program counter view (post-Volta), while SIMD lanes share one architectural instruction pointer and are handled explicitly by the programmer or compiler as vector data."
+        },
+        {
+          "id": "B",
+          "text": "In SIMT, control-flow divergence within a warp is resolved by hardware serialization of taken/not-taken paths, whereas SIMD lanes rely on programmer-written masking (predication) to emulate divergent control."
+        },
+        {
+          "id": "C",
+          "text": "SIMD guarantees higher peak throughput than SIMT on the same silicon area because SIMT wastes ~30% of area on per-thread state."
+        },
+        {
+          "id": "D",
+          "text": "SIMT and SIMD are the same execution model with different names; the choice of terminology is purely marketing."
+        }
+      ],
+      "assumptions": [
+        "GPU baseline is Volta+ NVIDIA SIMT with independent thread scheduling.",
+        "CPU SIMD baseline is AVX-512 or similar wide-vector ISA with mask registers."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-STREAM-026",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "CUDA streams / H2D-kernel-D2H overlap",
+      "learningObjective": "Estimate the ideal wall time of a 3-stage H2D → kernel → D2H pipeline using multi-stream chunking, and identify the resource limits.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere with 2 DMA copy engines",
+        "device": "GPU",
+        "requiredFeatures": [
+          "separate H2D and D2H copy engines",
+          "async streams"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA runtime",
+        "stability": "stable_principle"
+      },
+      "stem": "You process N chunks of equal size. Each chunk requires 10 ms H2D, 20 ms kernel, and 10 ms D2H. The GPU has two DMA copy engines (one H2D, one D2H), one kernel engine, and you use N ≥ 3 CUDA streams so H2D of chunk i+1, kernel of chunk i, and D2H of chunk i−1 can overlap. What is the approximate steady-state wall time per chunk, and what limits it?",
+      "options": [
+        {
+          "id": "A",
+          "text": "≈ 30 ms per chunk: H2D and D2H must share a single copy engine, so their times add (10 + 10) and run in parallel with the kernel; max(20, 20) = 20 ms but plus a 10 ms merge overhead per stage."
+        },
+        {
+          "id": "B",
+          "text": "≈ 40 ms per chunk: the three stages serialize into 10+20+10 ms because CUDA streams do not truly overlap H2D and D2H on the same GPU."
+        },
+        {
+          "id": "C",
+          "text": "≈ 10 ms per chunk: overlapping N streams with N ≥ 3 divides the total time by 3, so the effective per-chunk cost drops below the kernel time."
+        },
+        {
+          "id": "D",
+          "text": "≈ 20 ms per chunk: the kernel stage (longest) sets the pipeline period; H2D and D2H run in parallel on separate copy engines, and kernel throughput is the bottleneck."
+        }
+      ],
+      "assumptions": [
+        "Ampere+ data-center GPU with separate H2D and D2H copy engines.",
+        "Enough pinned memory and independent streams to keep the pipeline filled.",
+        "No dependencies between chunks other than pipeline ordering."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-TC-023",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Tensor Core density vs FP32 SIMT",
+      "learningObjective": "Compare the arithmetic density (FLOP per cycle per SM) of NVIDIA Tensor Core FP16 vs FP32 SIMT paths, and reason about when each dominates.",
+      "archetype": "formula_performance",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100 SXM)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Tensor Cores FP16",
+          "FP32 CUDA cores"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A100 SXM published peaks: FP32 CUDA-core ≈ 19.5 TFLOP/s; FP16 Tensor Core ≈ 312 TFLOP/s (dense). A GEMM kernel with sufficient AI can, in principle, choose between the two paths. Which statement about the Tensor Core vs CUDA-core throughput ratio is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The paths are equal in throughput; the 312 TFLOP/s figure counts sparse Tensor Core throughput, which reduces to ~19.5 TFLOP/s once sparsity is disabled."
+        },
+        {
+          "id": "B",
+          "text": "The FP16 Tensor Core path is roughly 2× denser than FP32 CUDA cores because Tensor Cores process 2 operands per lane in one instruction; the ratio 312 / 19.5 must be a benchmark artifact."
+        },
+        {
+          "id": "C",
+          "text": "The FP16 Tensor Core path halves throughput compared to FP32 CUDA cores because reduced precision requires additional accumulation steps."
+        },
+        {
+          "id": "D",
+          "text": "The FP16 Tensor Core path is roughly 16× more FLOP-dense than the FP32 CUDA-core path on A100; using FP16 tensor cores (when the workload tolerates FP16 precision) yields up to a 16× ideal speedup for compute-bound kernels."
+        }
+      ],
+      "assumptions": [
+        "A100 SXM dense FP16 Tensor Core peak = 312 TFLOP/s; FP32 CUDA-core peak = 19.5 TFLOP/s (NVIDIA published).",
+        "Comparison is compute peak vs compute peak, not achievable throughput on any particular kernel."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-THROUGH-017",
+      "type": "multiple",
+      "module": "arch_perf_model",
+      "subtopic": "Latency vs throughput",
+      "learningObjective": "Distinguish latency from throughput and identify architectural strategies that optimize one at the expense of the other.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic parallel processor",
+        "device": "generic",
+        "requiredFeatures": [
+          "pipelined execution",
+          "many parallel workers"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following correctly distinguish latency from throughput in an architectural context? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Latency and throughput are reciprocals of each other, so improving one automatically improves the other by the same factor."
+        },
+        {
+          "id": "B",
+          "text": "A workload's latency floor is at least the longest sequential dependency chain; increasing parallelism reduces throughput bottlenecks but cannot shrink an unavoidable data dependency's contribution to latency."
+        },
+        {
+          "id": "C",
+          "text": "Latency is the time to complete one unit of work end-to-end; throughput is the rate of completed work per unit time. On pipelined or heavily parallel systems, throughput can be high while individual latency remains long."
+        },
+        {
+          "id": "D",
+          "text": "GPU architectures optimize primarily for throughput via massive parallelism and latency hiding through overlapping many warps, at the cost of higher per-op latency than a CPU on isolated operations."
+        }
+      ],
+      "assumptions": [
+        "Comparison of GPUs and CPUs as throughput- vs latency-oriented, respectively, per architectural design goals.",
+        "The workload can be pipelined or parallelized; a purely sequential critical-path workload is not the general case."
+      ],
+      "version": 1
+    },
+    {
+      "id": "A-WARP-012",
+      "type": "single",
+      "module": "arch_perf_model",
+      "subtopic": "Warp / Block / Grid semantics",
+      "learningObjective": "Explain the semantics of warps, blocks and grids in CUDA and the resources they share.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "compute capability 8.0",
+          "warp size 32"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement correctly describes the relationship among threads, warps, blocks and grids on NVIDIA GPUs (compute capability 8.0)?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A warp is a group of 32 threads that share a warp scheduler and are always drawn from the same block; a block is assigned to a single SM and its threads share shared memory and __syncthreads() barrier; a grid spans many blocks that may run on different SMs and cannot rely on cross-block barriers without cooperative-groups grid sync."
+        },
+        {
+          "id": "B",
+          "text": "A warp of 32 threads is scheduled independently and may be composed of threads from different thread blocks to improve occupancy when a single block cannot fill an SM."
+        },
+        {
+          "id": "C",
+          "text": "All blocks in a grid share a single shared-memory bank because shared memory is L1-cached across SMs, providing a form of grid-level synchronization."
+        },
+        {
+          "id": "D",
+          "text": "Grid-level synchronization is implicit at every kernel launch boundary; __syncthreads() therefore synchronizes all threads across the entire grid."
+        }
+      ],
+      "assumptions": [
+        "NVIDIA Ampere or later; warp size 32.",
+        "Standard (non-cooperative) kernel launch semantics for the __syncthreads() claim."
       ],
       "version": 1
     }

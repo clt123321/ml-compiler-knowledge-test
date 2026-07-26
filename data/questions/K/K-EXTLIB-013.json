@@ -40,7 +40,7 @@
     "B",
     "C"
   ],
-  "explanation": "A is correct: vendor libraries ship per-architecture hand-tuned kernels and typically beat compiler-generated GEMM/Conv for stand-alone calls. B is correct: compiler advantage appears exactly when it fuses ops adjacent to a matmul (bias, activation, quant/dequant) that the external library cannot see. C is wrong: external libraries do not replace the runtime's allocator; they typically request workspace from it. D is wrong: cuBLAS/cuDNN version updates can change algorithm selection and numerical results in the low bits; bitwise reproducibility is not guaranteed across versions.",
+  "explanation": "Correct: B, C.  A: Wrong: numerical results can drift across cuBLAS/cuDNN versions. B: Correct: standard vendor-lib advantage. C: Correct: compiler advantage lies in fusion boundaries. D: Wrong: external libraries request workspace but do not replace the allocator.",
   "optionExplanations": {
     "A": "Wrong: numerical results can drift across cuBLAS/cuDNN versions.",
     "B": "Correct: standard vendor-lib advantage.",

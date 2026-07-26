@@ -1,0 +1,445 @@
+{
+  "module": "paper_design",
+  "code": "N",
+  "label": "论文设计、系统权衡与研究判断",
+  "generatedAt": "2026-07-26",
+  "count": 10,
+  "questions": [
+    {
+      "id": "N-ANSOR-003",
+      "type": "multiple",
+      "module": "paper_design",
+      "subtopic": "Ansor task scheduler design intent",
+      "learningObjective": "Explain the design intent of Ansor's task scheduler for allocating autotuning budget across subgraphs.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "GPU / CPU targets",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "Ansor / TVM MetaSchedule",
+        "stability": "stable_principle"
+      },
+      "stem": "The Ansor paper introduces a 'task scheduler' that allocates autotuning budget across the subgraphs of a full model. Which TWO of the following statements correctly describe the task scheduler's design intent, as argued in the paper?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The task scheduler distributes budget non-uniformly, favouring subgraphs whose expected marginal improvement × contribution to end-to-end latency is largest, because end-to-end wall-clock time is the objective rather than per-task speedup in isolation."
+        },
+        {
+          "id": "B",
+          "text": "The task scheduler's motivation is that a uniform-budget baseline (equal time per subgraph) wastes effort on already-optimal or low-contribution subgraphs; the scheduler exists to fix this."
+        },
+        {
+          "id": "C",
+          "text": "The task scheduler is a runtime scheduler that decides which kernel to launch at inference time; it has nothing to do with autotuning search budget."
+        },
+        {
+          "id": "D",
+          "text": "The task scheduler enforces that every task must receive at least 10% of the tuning budget so that no task is ever under-tuned."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with Ansor paper §5.",
+        "'Task' means a subgraph carved out for scheduling in Ansor."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-FLASH-006",
+      "type": "multiple",
+      "module": "paper_design",
+      "subtopic": "FlashAttention: IO-awareness, exactness, scope of speedup",
+      "learningObjective": "Explain FlashAttention's core IO-aware optimization, the mechanism (tiling + online softmax + recomputation), and identify when the speedup is largest.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "GPU with on-chip SRAM (e.g. A100, H100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "large enough SRAM per SM to hold attention block tiles"
+        ]
+      },
+      "softwareContext": {
+        "framework": "FlashAttention (v1)",
+        "stability": "stable_principle"
+      },
+      "stem": "Which THREE of the following statements about FlashAttention (v1) are correct, per the paper?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The speedup versus a naive attention kernel is largest in the memory-bound regime (long sequences where HBM traffic dominates) and can be smaller for very short sequences where the naive kernel is compute-bound on the SM."
+        },
+        {
+          "id": "B",
+          "text": "FlashAttention's backward pass reuses the N×N attention matrix stored during the forward pass; storing this matrix is what makes the backward efficient."
+        },
+        {
+          "id": "C",
+          "text": "FlashAttention computes attention block-by-block in on-chip SRAM using an online (numerically stable) softmax and never materializes the full N×N attention matrix in HBM; total HBM traffic drops from Θ(N²) to Θ(N²·d/M), where M is the SRAM budget."
+        },
+        {
+          "id": "D",
+          "text": "FlashAttention produces exact attention outputs (up to floating-point ordering); it does not approximate the softmax or drop entries."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with FlashAttention paper §3–§5.",
+        "SRAM refers to on-chip shared memory / L1 that holds a tile of Q/K/V and running statistics."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-GSPMD-008",
+      "type": "multiple",
+      "module": "paper_design",
+      "subtopic": "Peak vs geomean; paper-scope discipline",
+      "learningObjective": "Distinguish peak (best-case) speedup from geometric-mean speedup and understand the scope-limits of reported paper numbers such as those in GSPMD.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A colleague summarizes GSPMD as 'partitioning gives 2× speedup end-to-end', citing a peak result from one model in the paper. Which TWO statements about interpreting such paper speedups are correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Any speedup reported in a systems paper is a property of the technique alone and is independent of the baseline; comparing against an older framework version is equivalent to comparing against its current version."
+        },
+        {
+          "id": "B",
+          "text": "A paper's 'peak' speedup is the best-case observation on one (workload, hardware) pair; the geometric-mean speedup across the paper's full workload suite is typically smaller, so summarizing the paper by the peak overstates typical benefits."
+        },
+        {
+          "id": "C",
+          "text": "Reported speedups are conditioned on that paper's hardware, software stack, workload set and baseline; treating them as a general property of the technique that transfers to arbitrary settings requires additional justification."
+        },
+        {
+          "id": "D",
+          "text": "Peak and geometric-mean speedup are the same metric computed differently and can be used interchangeably as long as the workload set is identical."
+        }
+      ],
+      "assumptions": [
+        "The reader understands geometric mean as (∏ speedup_i)^(1/N).",
+        "The comparison is across a multi-workload benchmark suite."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-HALIDE-001",
+      "type": "single",
+      "module": "paper_design",
+      "subtopic": "Halide: algorithm/schedule separation",
+      "learningObjective": "Explain why the Halide paper separates the algorithm (what to compute) from the schedule (how to compute) and identify the design intent behind this separation.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The Halide paper is best known for separating the algorithm (what to compute) from the schedule (how to compute). Which statement best captures the design intent argued in the paper?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The separation exists so that the compiler can hide the algorithm behind an opaque API; users interact only with schedules."
+        },
+        {
+          "id": "B",
+          "text": "The separation is required for correctness: only by moving loop order out of the algorithm can Halide guarantee that per-pixel updates remain race-free on multi-core CPUs."
+        },
+        {
+          "id": "C",
+          "text": "The separation lets a single, portable algorithm be re-scheduled (tiled, vectorized, parallelized, fused, recomputed) without changing its semantics, so many performance-relevant strategies can be explored on each target without rewriting the pipeline."
+        },
+        {
+          "id": "D",
+          "text": "The separation is a legacy artifact from Halide's origins as a C++ template library; in modern implementations the two parts are merged and the design contribution is largely obsolete."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with Halide paper Sections 1–3.",
+        "Understanding that a 'schedule' in Halide covers loop order, tiling, storage, parallel/vector directives, and produce-consume relations."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-MLIR-004",
+      "type": "single",
+      "module": "paper_design",
+      "subtopic": "MLIR: multi-level lowering rationale",
+      "learningObjective": "Explain the design intent behind MLIR's multi-level lowering and dialect ecosystem.",
+      "archetype": "paper_design_intent",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The MLIR paper motivates a design with many co-existing dialects at different abstraction levels rather than a single universal IR. Which statement best captures the design intent argued in the paper?",
+      "options": [
+        {
+          "id": "A",
+          "text": "MLIR argues that a single universal IR is optimal; the multiple dialects are transient artifacts that are collapsed into one representation before any optimization runs."
+        },
+        {
+          "id": "B",
+          "text": "MLIR's design goal is to be a runtime system that dispatches operations across hardware at execution time; the dialects correspond to different runtimes."
+        },
+        {
+          "id": "C",
+          "text": "MLIR is designed so each optimization can be expressed at the abstraction level where it is most natural (e.g. tensor-level fusion at a high dialect, tiling at Linalg, code emission at LLVM), with progressive lowering between dialects; the payoff is shared compiler infrastructure reused across domains."
+        },
+        {
+          "id": "D",
+          "text": "MLIR replaces LLVM as the compilation backend; projects using MLIR no longer emit LLVM IR at any point."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with MLIR paper §1–§3 and the general pipeline pattern."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-PYT2-009",
+      "type": "single",
+      "module": "paper_design",
+      "subtopic": "End-to-end vs kernel-level speedup interpretation",
+      "learningObjective": "Distinguish end-to-end model speedup from kernel-level speedup when interpreting the PyTorch 2 paper's `torch.compile` results.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "GPU (evaluation targets in the paper)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch 2 / torch.compile / TorchInductor",
+        "frameworkVersionScope": "PyTorch 2.x as reported in the paper",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The PyTorch 2 paper reports end-to-end speedups under `torch.compile` on TorchBench-style benchmarks. A reader sees an Inductor-generated Triton kernel that is 3× faster than the eager kernel and infers 'the whole model runs 3× faster'. Which statement most accurately characterizes the reasoning error?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The reader's error is that Triton kernels never provide speedup over eager on GPUs; the observed 3× must be a measurement artifact and should be discarded."
+        },
+        {
+          "id": "B",
+          "text": "The reader correctly identifies end-to-end speedup; kernel-level speedup and model-level speedup are always identical when the same benchmark suite is used."
+        },
+        {
+          "id": "C",
+          "text": "The reader conflates kernel-level and end-to-end speedup. Amdahl's law limits the end-to-end benefit to the fraction of runtime spent in the accelerated kernel; host-side overhead, graph breaks, and non-compiled subgraphs cap the observable end-to-end speedup below the per-kernel factor."
+        },
+        {
+          "id": "D",
+          "text": "The reader confuses forward and backward pass; end-to-end speedup is defined only for backward-pass time, not the whole model."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with the PyTorch 2 paper's evaluation methodology.",
+        "Amdahl's law understanding."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-QUANT-010",
+      "type": "multiple",
+      "module": "paper_design",
+      "subtopic": "Scope limits of single-paper quantization claims",
+      "learningObjective": "Recognise the scope limits and common overclaims around single-paper quantization results (SmoothQuant, GPTQ, AWQ).",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A colleague summarizes recent quantization work by combining results from SmoothQuant, GPTQ and AWQ into universal claims. Which THREE of the following statements about interpreting these papers are correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "An ablation study (e.g. SmoothQuant's migration-factor α) supports the specific mechanism it isolates but does not by itself establish head-to-head superiority over other quantization methods at every setting."
+        },
+        {
+          "id": "B",
+          "text": "Because all three papers report memory footprint reductions when quantizing to 4-bit, one can conclude that 4-bit quantization always yields ≥3× end-to-end latency speedup regardless of hardware and kernel implementation."
+        },
+        {
+          "id": "C",
+          "text": "The papers' accuracy results are conditioned on specific model families, sizes, tasks and calibration sets; extending them to 'LLMs in general' (including smaller models, code/math tasks and long-tail benchmarks) requires additional evaluation."
+        },
+        {
+          "id": "D",
+          "text": "Reported wall-clock speedups depend on the availability of an efficient dequantized-GEMM kernel for the given precision/granularity on the target hardware; the same scheme can be faster on one GPU generation and no faster (or slower) on another."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with SmoothQuant, GPTQ, AWQ evaluation sections.",
+        "Distinction between memory footprint and wall-clock latency."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-TRITON-005",
+      "type": "single",
+      "module": "paper_design",
+      "subtopic": "Triton: tile-level IR abstraction",
+      "learningObjective": "Explain why the Triton paper introduces a tile-level IR, positioned between CUDA-thread and pure tensor abstractions.",
+      "archetype": "paper_design_intent",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "GPU (CUDA-capable)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "stability": "stable_principle"
+      },
+      "stem": "The Triton paper positions its programming abstraction at the 'tile' (block-of-elements) level rather than at the CUDA thread level. What is the primary design intent argued in the paper?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Triton targets CPUs and TPUs but not GPUs; the tile IR was designed to hide vendor-specific GPU details that the paper explicitly declines to support."
+        },
+        {
+          "id": "B",
+          "text": "Triton is a strict superset of CUDA where every CUDA program is also a valid Triton program; the tile abstraction only adds convenience macros without changing what the programmer must reason about."
+        },
+        {
+          "id": "C",
+          "text": "Triton is a runtime library that dispatches PyTorch operators to hand-written CUDA kernels; the 'tile' terminology refers to caching policies inside the dispatcher."
+        },
+        {
+          "id": "D",
+          "text": "Programmers write kernels over blocks of elements; the compiler translates tile-level ops into per-thread PTX with coalescing, shared-memory staging and register tiling handled automatically, so users focus on block shapes and memory access patterns rather than per-thread indexing."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with Triton paper §2–§3."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-TVM-002",
+      "type": "single",
+      "module": "paper_design",
+      "subtopic": "TVM: real measurement vs analytical cost model",
+      "learningObjective": "Explain why TVM (and its Ansor/AutoTVM descendants) rely on real hardware measurement rather than a pure analytical cost model to select schedules.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Modern GPU / CPU",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "TVM's schedule search relies on on-device measurement (feeding a learned cost model) rather than a pure analytical performance model. Which statement best captures the design rationale argued in the TVM paper?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Analytical models cannot express any form of loop tiling, so measurement is the only way to compare tiled schedules; without measurement TVM would be forced to emit only untiled code."
+        },
+        {
+          "id": "B",
+          "text": "On modern accelerators, effective performance depends on hard-to-model factors (cache/coalescing, register pressure, instruction mix, compiler back-end choices) that closed-form models fail to rank reliably at fine granularity, so a measurement-driven (and learned) cost model is used to guide the search."
+        },
+        {
+          "id": "C",
+          "text": "Measurement is used purely for reproducibility: since analytical models depend on constants that vary by driver version, TVM re-measures every kernel on every deployment to remove that dependency."
+        },
+        {
+          "id": "D",
+          "text": "The paper argues that a sufficiently detailed analytical model is always superior; measurement is included only as a compatibility path for hardware without a published architecture manual."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with the TVM paper's autotuning pipeline."
+      ],
+      "version": 1
+    },
+    {
+      "id": "N-VLLM-007",
+      "type": "single",
+      "module": "paper_design",
+      "subtopic": "vLLM PagedAttention: motivation",
+      "learningObjective": "Explain vLLM's PagedAttention design intent: the KV-cache memory-fragmentation problem it targets.",
+      "archetype": "paper_design_intent",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "GPU serving transformer inference",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM",
+        "stability": "stable_principle"
+      },
+      "stem": "The vLLM paper introduces PagedAttention. What problem, as stated in the paper, is PagedAttention primarily designed to solve?",
+      "options": [
+        {
+          "id": "A",
+          "text": "It targets KV-cache memory inefficiency: reserving one contiguous buffer per sequence sized to a worst-case length causes internal fragmentation (unused reserved slots) and external fragmentation (holes between sequences); paging KV in fixed-size blocks with a page table lets the serving system fit more concurrent sequences on the same GPU."
+        },
+        {
+          "id": "B",
+          "text": "It reduces attention FLOPs by paging out cold key/value entries and reloading them only when needed, cutting per-token compute for long sequences."
+        },
+        {
+          "id": "C",
+          "text": "It eliminates the KV cache entirely by recomputing K and V on demand each decode step, trading extra compute for HBM savings."
+        },
+        {
+          "id": "D",
+          "text": "It replaces attention with a paged Mixture-of-Experts routing scheme in which each expert operates on one memory page at a time."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with vLLM paper §3.",
+        "Reader understands 'internal fragmentation' (unused slots inside a reservation) vs 'external fragmentation' (gaps between reservations)."
+      ],
+      "version": 1
+    }
+  ]
+}

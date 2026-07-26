@@ -40,7 +40,7 @@
     "A",
     "B"
   ],
-  "explanation": "A: subgraph partitioning + inserted transfers is the standard technique (ONNX Runtime execution providers, OpenVINO plugins). D: NPU-style accelerators support a subset of ops; the compiler must route unsupported ops elsewhere. C is wrong: heterogeneous execution works fine on discrete GPUs without hardware cache coherence, via explicit transfers. B is wrong: PCIe/NVLink transfers are far from free (microseconds to milliseconds for large tensors) and per-op transfer plus synchronization cost is a first-order concern in the partition cost model.",
+  "explanation": "Correct: A, B.  A: Correct: NPU op-coverage asymmetry is a real constraint. B: Correct: standard subgraph partitioning approach. C: Wrong: cross-device transfer and synchronization cost is significant and cannot be ignored. D: Wrong: cache coherence is not required; explicit transfer suffices.",
   "optionExplanations": {
     "A": "Correct: NPU op-coverage asymmetry is a real constraint.",
     "B": "Correct: standard subgraph partitioning approach.",

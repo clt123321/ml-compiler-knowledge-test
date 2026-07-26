@@ -1,0 +1,188 @@
+{
+  "module": "runtime_deploy",
+  "code": "K",
+  "reviewer": "primary-review-3",
+  "reviewedAt": "2026-07-27",
+  "answers": [
+    {
+      "id": "K-ABI-005",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Standard practice: expose a plain C ABI (extern \"C\", POD structs, opaque handles). C++ name mangling differs across GCC/Clang/MSVC, C++ ABIs (Itanium vs MSVC) differ, STL types (std::string, std::vector) have compiler/version-specific layouts, and C++ exception ABIs are not interoperable. A is nonsense (loaders don't rewrite mangled symbols). B is a common misconception (STL types are NOT layout-compatible across compilers). D is wrong (dynamic libs are widely used; ABI concerns arise precisely at the load boundary)."
+    },
+    {
+      "id": "K-ALLOC-008",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "cudaMalloc/cudaFree are synchronous with respect to all streams and take microseconds to milliseconds. Calling them per tensor allocation would serialize streams and dominate latency in a hot training/decoding loop. Caching allocator pools freed blocks by size class and reuses without driver calls. A (1024 allocation limit) is fabricated. B (uninitialized memory kernel arguments) is nonsense. D (eliminates fragmentation entirely) is false — caching allocators actually can suffer from fragmentation, just less than raw cudaMalloc."
+    },
+    {
+      "id": "K-AOT-004",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Canonical distinction: AOT compiles ahead of first invocation (no first-call latency, artifact shippable independently) but generally requires known shapes/dtypes at build time. JIT compiles lazily on first call (absorbs warmup cost) with more shape/dtype flexibility. A (JIT always faster) is wrong. B (identical binaries) is nonsense. C (AOT requires source at runtime) is wrong — the whole point of AOT is a standalone artifact."
+    },
+    {
+      "id": "K-AOTI-022",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "PyTorch 2.3~2.5 AOTInductor: ahead-of-time compiles an exported PyTorch model into a self-contained .so + kernel files, loadable/invocable from C++ without Python interpreter or Inductor compiler at runtime. JIT torch.compile is on-first-call and requires Python + Inductor available. B, C, D all misdescribe."
+    },
+    {
+      "id": "K-AOTIRT-023",
+      "independentAnswer": ["B", "D"],
+      "confidence": "high",
+      "rationale": "B: The AOTInductor artifact exposes a C-ABI entry function (aoti_torch_* calls) with device pointers + shape/stride metadata — callable without Python. D: Generated Triton/CUDA kernels needed to execute are bundled and loaded via the shared library. A is misleading/incorrect: the artifact requires a small AOT runtime shim (libaoti or libtorch parts) but NOT the full PyTorch binary distribution; the claim 'requires the full PyTorch binary distribution' is too strong. C is wrong: Inductor is NOT required at runtime — that is the whole point of AOTInductor (avoids the JIT compiler dependency)."
+    },
+    {
+      "id": "K-BOUND-001",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Canonical compiler/runtime split: compiler emits target-specific kernels + a lowered artifact with fixed scheduling, buffer plan, kernel selection. Runtime dispatches kernels, manages memory/streams, handles shape-dependent branches within the pre-planned strategy. B (both same, re-lower on each input) contradicts the concept. C (compiler owns runtime allocation) is inverted. D (all optimizations in runtime) is inverted."
+    },
+    {
+      "id": "K-COLD-030",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: AOT-compiled artifacts (TRT plan, AOTI .so) skip the JIT compile at cold start; only process init and weight load remain. C: Cold-start has distinct phases (init, model load, compile, warmup) each with its own mitigation. D: Compilation caches keyed by (source, shape/dtype/device, compiler version) turn multi-minute torch.compile cold starts into ms/s cache hits. B is wrong: compilation caches do NOT guarantee bit-exact match between cached and fresh (autotuning may pick different tactics if the cache stores the CHOICE but tunes differ, and even different runs can pick different tactics). Small numerical differences are common and acceptable."
+    },
+    {
+      "id": "K-CROSS-028",
+      "independentAnswer": ["A", "B", "C"],
+      "confidence": "high",
+      "rationale": "A: Emitting portable IR (PTX, SPIR-V, LLVM bitcode) and deferring final lowering to the target driver at load is a standard cross-compilation strategy (CUDA fatbinaries with PTX embedded, ONNX runtime approach). B: Correct definition. C: Autotuning that requires target measurement cannot run without target device; cross-compilation uses static cost models, previously measured latency tables, or conservative heuristics. D: Wrong — cross-compilation IS possible; nvcc can compile for sm_80 while running on sm_75, PTX exists precisely to defer final assembly."
+    },
+    {
+      "id": "K-CUSTOM-012",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Canonical custom op registration: (i) op schema/signature for type/shape check by compiler, (ii) kernel implementation for each device/dtype registered into runtime, (iii) backward or functional counterpart if it appears in autograd graph. Runtime does NOT auto-differentiate unknown ops or infer schema. A (auto-infer from Python signature) is wrong. B (introspect .cu source) is fantasy. C (recompile Python source each start) is wrong."
+    },
+    {
+      "id": "K-DISPATCH-002",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Dispatcher's primary role: given (op, device, dtype, layout, autograd key) tuple, route to the registered concrete kernel implementation. That's PyTorch ATen dispatcher's core design. A (sync between kernels) is wrong. C (allocation) is the allocator's job, not dispatcher. D (compile-time fusion) is the compiler's job."
+    },
+    {
+      "id": "K-EXTLIB-013",
+      "independentAnswer": ["B", "C"],
+      "confidence": "high",
+      "rationale": "B: cuBLAS/cuDNN/CUTLASS ship hand-tuned tile shapes and algorithm variants per architecture — often outperforms compiler-generated kernels for standard patterns. C: Compiler-emitted fused kernels can win precisely by fusing producer/epilogue ops into a matmul that the external library cannot fuse across its API boundary. A is wrong: cuBLAS/cuDNN update tactics and heuristics across versions; bitwise-reproducible outputs across major versions are NOT guaranteed. D is wrong: calling external libs does not replace the caching allocator."
+    },
+    {
+      "id": "K-FALLBACK-011",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Standard CPU fallback path: copy inputs D2H, run CPU implementation, copy result H2D. Each fallback op adds an H2D/D2H round-trip that can dominate its execution cost — a well-known deployment pitfall. A (double-execute for comparison) is fantasy. B (GPU driver emulates CPU on GPU) is nonsense. C (silently drop) is wrong (would produce wrong outputs)."
+    },
+    {
+      "id": "K-HET-029",
+      "independentAnswer": ["A", "B"],
+      "confidence": "high",
+      "rationale": "A: NPUs have restricted op coverage; partitioning must model per-op cost asymmetry and fallback overhead. B: Standard heterogeneous partitioning groups ops into per-device subgraphs and inserts explicit transfers between them (ONNX RT, OpenVINO, IREE all do this). C is wrong: cross-device transfers are NOT free even on modern interconnects — PCIe 4.0 x16 is ~32 GB/s, NVLink ~600 GB/s, but both are much less than HBM (~2 TB/s), so transfers can dominate. D is wrong: CXL is not required for heterogeneous execution; explicit transfers work fine."
+    },
+    {
+      "id": "K-IREE-025",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Canonical IREE description: MLIR-based pipeline lowering StableHLO/TOSA to a target-specific VM module + binary kernels; runtime = bytecode VM + Hardware Abstraction Layer (HAL) over Vulkan/CUDA/ROCm/CPU/WebGPU. A (Python interpreter) is wrong. C (cuDNN wrapper) is wrong. D (JAX-tracing training framework) is wrong."
+    },
+    {
+      "id": "K-ONNX-014",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "ONNX is a serialization format for a graph of standardized operators with a versioned opset; different runtimes (ONNX Runtime, TensorRT importer, etc.) consume it. Performance depends entirely on the runtime that executes it. A (ONNX ships GPU kernels) is wrong. C (JIT compiler to Triton) is wrong. D (Microsoft proprietary) is wrong."
+    },
+    {
+      "id": "K-ONNXSHAPE-016",
+      "independentAnswer": ["A", "C"],
+      "confidence": "high",
+      "rationale": "A: Static shape inference results are useful for downstream compilers (TRT, ORT) for buffer planning, fusion, kernel selection. C: ONNX shape inference is static per-op via each op's schema; propagates shapes but can leave symbolic dims when they depend on runtime tensors. B is wrong (ONNX files can store shape metadata for intermediates). D is wrong (symbolic dims like 'batch' can remain unresolved at export time — that's the whole point of dynamic axes)."
+    },
+    {
+      "id": "K-ONNXVER-017",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "IR version = file/graph format (ModelProto/GraphProto/NodeProto layout). Opset version = operator semantics/schemas. Load-time incompatibility can come from either. Diagnostic requires inspecting both model.ir_version and model.opset_import. A (synonyms) is wrong. C (opset = IR + 1) is fabrication. D (IR used only for training checkpoints) is wrong."
+    },
+    {
+      "id": "K-OPSET-015",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Opset version encodes the version of each op's schema (signatures, attribute defaults, semantics) in the specified domain. A runtime claiming to support opset ≥ 17 must execute those ops with those semantics; older runtimes may lack ops introduced in later opsets. A (ORT binary version) is wrong. B (weight file format) is wrong. D (framework version) is wrong."
+    },
+    {
+      "id": "K-PKG-027",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Complete deployment package: (i) graph/program, (ii) weights with dtype/shape/layout metadata, (iii) input/output signatures, (iv) preprocessing/postprocessing metadata (tokenizer config, normalization stats, quant calibration scales), plus (v) schema/archive version tag. A (only weights) is incomplete. B (only source, random weights) is nonsense. D (URL only) breaks reproducibility and offline operation."
+    },
+    {
+      "id": "K-PLACE-007",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: Placement should minimize host↔device transitions on the critical path — canonical device-placement heuristic. B: Standard placement pass inserts explicit MemcpyToHost/MemcpyToDevice ops and bakes them into the plan. D: Alternating CPU/GPU in a hot loop is a well-known deployment anti-pattern that PCIe/NVLink cannot absorb. C is wrong: CPU-only kernels cannot be 'automatically promoted' to GPU — a GPU kernel must be written/registered."
+    },
+    {
+      "id": "K-REGISTRY-006",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Kernel registry: mapping from (op name, device, dtype, layout, …) to a concrete function pointer or callable. Consulted at run time by the dispatcher to route to the correct backend implementation. B (compiled-kernel cache keyed by pointer addresses) is nonsense. C (profiling database) is a different thing. D (hardware descriptor) is a different thing."
+    },
+    {
+      "id": "K-SHAPE-026",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "B: Bucketing (pre-compile a small set of shape classes) is a standard trade-off used by TRT (optimization profiles) and vLLM (bucketed batch sizes). C: Shape runtimes maintain symbolic dim descriptors evaluated at runtime; downstream kernels can be parameterized on symbols or specialized. D: Compilers declare shape ranges (min/opt/max in TRT, ranges in AOTInductor); out-of-range inputs trigger fallback/recompile/error. A is wrong: fully-dynamic shape codegen has real overhead (extra bounds checks, no compile-time tile constants, no autotuning for the actual shape) compared to specialized."
+    },
+    {
+      "id": "K-STHLO-018",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "StableHLO is a versioned, stable operator set specified as an MLIR dialect, serving as a portable IR between frameworks (JAX, TF, PyTorch export) and compilers (XLA, IREE). Provides forward/backward compat guarantees. A (runtime engine) is wrong. B (LLVM-level IR) is wrong. D (Python DSL) is wrong."
+    },
+    {
+      "id": "K-STREAM-009",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "CUDA stream = in-order queue on the device (same-stream work executes in order, cross-stream may run concurrently). CUDA event = synchronization marker recorded on a stream that other streams (or host) can wait on. A (physical hardware queue with SM binding) is wrong. B (mutable shared buffer + memory fence) is wrong. D (streams/events only for profiling) is wrong."
+    },
+    {
+      "id": "K-SYNC-010",
+      "independentAnswer": ["B", "C"],
+      "confidence": "high",
+      "rationale": "B: cudaStreamSynchronize(stream) blocks host until that stream's work drains; other streams unaffected. C: cudaDeviceSynchronize() drains all streams on the device; overuse defeats overlap. A is wrong: under legacy default-stream semantics, blocking cudaMemcpy (on default stream) DOES synchronize with all other streams — it does not 'always return immediately' independent of ongoing kernels. D is wrong: cudaMemcpyAsync overlap with kernels on other streams requires PINNED host memory AND appropriate ordering; 'guaranteed to be fully overlapped even without pinned memory' is false."
+    },
+    {
+      "id": "K-TRT-019",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Standard TRT flow: builder ← network description (parsed ONNX or TRT network API), runs optimizations (fusion, kernel selection, precision calibration), produces serialized engine (plan file); runtime deserializes plan on target device, creates execution context, runs inference. A (builder = runtime, re-optimize each call) is wrong. B (all on CPU) is wrong. C (engine is text) is wrong (plan is binary)."
+    },
+    {
+      "id": "K-TRTBUILD-021",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "8 min is the TRT builder's engine-build cost (offline, one-time). Fair comparison against PyTorch eager is per-inference latency of the DESERIALIZED engine, not build time. Build cost and inference latency should NEVER be added for deployment comparisons. B (build every call) is wrong. C (missing synchronize) is unrelated. D (TRT always slower) is wrong."
+    },
+    {
+      "id": "K-TRTPLAN-020",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: Dynamic input shape ranges (optimization profiles) are baked in at build; out-of-range shapes can't run without rebuild. C: A plan built for sm_80 (A100) is not guaranteed to run on sm_90 (H100) — must rebuild for target compute capability. D: Plan serialization is NOT backward/forward compatible across TRT major versions (well-documented). B is wrong: the plan file is self-contained; deleting the source ONNX has NO effect (runtime does not re-parse ONNX)."
+    },
+    {
+      "id": "K-TVMRT-024",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "TVM Relax VM (Unity, 2024): executes compiled Relax programs by interpreting bytecode that invokes precompiled PackedFunc kernels, allocates tensors via runtime allocator, dispatches to devices via device contexts, and handles dynamic shape branches. B (Python REPL for authoring) is wrong. C (autograd replacement) is wrong. D (fusion pass during construction) is wrong."
+    },
+    {
+      "id": "K-VM-003",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "VM design motivation: express host-side control flow (if/while, dynamic shape branches, allocator calls, external function invocation) around precompiled kernels, decoupling model control flow from any single native ABI. A (VM faster than native) is wrong. B (eliminates allocator) is wrong. C (VM required for GPU) is wrong."
+    }
+  ]
+}
