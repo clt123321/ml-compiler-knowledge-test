@@ -1,0 +1,59 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Build & dist
+dist/
+build/
+.next/
+.nuxt/
+out/
+
+# Env & credentials
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+credentials/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Worktrees (created dynamically by orchestrator)
+.worktrees/
+
+# Local logs & tmp
+*.log
+tmp/
+.cache/
+
+# Exports intermediate (final exports/ is committed)
+exports/*.tmp
+exports/*.working
+
+# Never commit private materials
+private/
+internal/
+proprietary/

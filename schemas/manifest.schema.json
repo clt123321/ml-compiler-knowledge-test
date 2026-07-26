@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "manifest.schema.json",
+  "title": "ML Compiler Knowledge Test — Module Manifest",
+  "type": "object",
+  "required": ["module", "code", "expectedCount", "questions"],
+  "properties": {
+    "module": { "type": "string" },
+    "code": { "enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"] },
+    "expectedCount": { "type": "integer" },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "file", "reviewStatus"],
+        "properties": {
+          "id": { "type": "string" },
+          "file": { "type": "string" },
+          "reviewStatus": {
+            "enum": ["draft", "agent_reviewed", "human_reviewed", "deprecated"]
+          },
+          "contentCardFile": { "type": "string" },
+          "version": { "type": "integer" },
+          "contentHash": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

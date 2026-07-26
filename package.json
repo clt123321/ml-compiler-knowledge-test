@@ -1,0 +1,18 @@
+{
+  "name": "ml-compiler-knowledge-test",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ML Compiler Knowledge Test — question bank, content cards, audit pipeline",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "validate:questions": "node scripts/validate-questions.mjs",
+    "audit:questions": "node scripts/audit-questions.mjs",
+    "blind:build": "node scripts/build-blind-package.mjs",
+    "export:questions": "node scripts/export-questions.mjs",
+    "check": "npm run validate:questions && npm run audit:questions"
+  }
+}

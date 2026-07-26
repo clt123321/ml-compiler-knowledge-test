@@ -1,0 +1,76 @@
+version: 1
+
+# 全库目标分布
+question_types:
+  single: 0.65
+  multiple: 0.35
+
+difficulty:
+  L1: 0.15
+  L2: 0.30
+  L3: 0.30
+  L4: 0.20
+  L5: 0.05
+
+archetypes:
+  precise_definition: 0.15
+  concept_boundary: 0.15
+  formula_performance: 0.10
+  ir_transformation: 0.12
+  code_implementation: 0.18
+  performance_diagnosis: 0.18
+  systems_dataflow: 0.07
+  paper_design_intent: 0.05
+
+depth:
+  textbook: 0.30
+  implementation: 0.40
+  systems: 0.20
+  research: 0.10
+
+# 模块配额
+module_quotas:
+  A: 30
+  B: 25
+  C: 30
+  D: 35
+  E: 30
+  F: 40
+  G: 30
+  H: 35
+  I: 30
+  J: 30
+  K: 30
+  L: 30
+  M: 15
+  N: 10
+
+# 硬性要求（下限）
+minimums:
+  A_quantitative_questions: 8
+  C_ir_snippet_questions: 5
+  D_pytorch_code_or_log_questions: 10
+  F_cuda_triton_code_questions: 12
+  H_hardware_kernel_memory_questions: 8
+  I_kernel_dataflow_questions: 6
+  J_llm_system_diagnosis_questions: 10
+  L_profiler_or_benchmark_questions: 10
+
+# 多选正确项数量分布
+multiple_correct_option_counts:
+  "2": 0.5
+  "3": 0.5
+
+# 内容卡强制
+content_card:
+  min_canonical_claims: 1
+  min_misconceptions: 3
+  require_source_mapping: true
+
+# 严禁事项
+forbidden:
+  - meta_statement_options            # 不使用元陈述凑选项
+  - vacuous_disclaimer_options        # 不使用"视情况而定"
+  - kernel_speedup_as_end_to_end
+  - smaller_model_therefore_faster
+  - unversioned_framework_claims

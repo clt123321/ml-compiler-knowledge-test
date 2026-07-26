@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "review.schema.json",
+  "title": "ML Compiler Knowledge Test — Review Record",
+  "type": "object",
+  "required": [
+    "id",
+    "reviewer",
+    "independentAnswer",
+    "officialAnswer",
+    "answerAgreement",
+    "sourceSupported",
+    "hardwareConditionsSufficient",
+    "versionScopeSufficient",
+    "issues",
+    "overallResult"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "reviewer": { "type": "string" },
+    "round": { "enum": ["round1", "round2", "global"] },
+    "independentAnswer": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "officialAnswer": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "answerAgreement": { "type": "boolean" },
+    "uniqueAnswerConfidence": {
+      "enum": ["high", "medium", "low"]
+    },
+    "uniqueAnswer": { "type": "boolean" },
+    "sourceSupported": { "type": "boolean" },
+    "hardwareConditionsSufficient": { "type": "boolean" },
+    "versionScopeSufficient": { "type": "boolean" },
+    "openBlocker": { "type": "boolean" },
+    "openMajor": { "type": "boolean" },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["level", "type", "note"],
+        "properties": {
+          "level": { "enum": ["BLOCKER", "MAJOR", "MINOR"] },
+          "type": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "overallResult": {
+      "enum": ["PASS", "MINOR", "MAJOR", "BLOCKER"]
+    },
+    "verificationResult": {
+      "enum": ["PASS", "MINOR", "MAJOR", "BLOCKER"]
+    }
+  },
+  "additionalProperties": false
+}

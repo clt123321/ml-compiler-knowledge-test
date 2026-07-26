@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "content-card.schema.json",
+  "title": "ML Compiler Knowledge Test — Content Card",
+  "type": "object",
+  "required": [
+    "questionId",
+    "learningObjective",
+    "canonicalClaims",
+    "misconceptions",
+    "versionSensitivity"
+  ],
+  "properties": {
+    "questionId": {
+      "type": "string",
+      "pattern": "^[A-N]-[A-Z0-9_]+-[0-9]{3}$"
+    },
+    "learningObjective": { "type": "string", "minLength": 10 },
+    "canonicalClaims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["claim", "conditions", "nonImplications", "sourceMappings"],
+        "properties": {
+          "claim": { "type": "string", "minLength": 10 },
+          "conditions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "nonImplications": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "sourceMappings": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["ref"],
+              "properties": {
+                "ref": { "type": "string" },
+                "locator": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "misconceptions": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["claim", "errorType", "whyWrong"],
+        "properties": {
+          "claim": { "type": "string", "minLength": 10 },
+          "errorType": {
+            "enum": [
+              "definition_confusion",
+              "scope_error",
+              "wrong_causal_direction",
+              "wrong_condition",
+              "overgeneralization",
+              "version_leak",
+              "hardware_leak",
+              "benchmark_leak",
+              "performance_confusion",
+              "kernel_vs_e2e_confusion"
+            ]
+          },
+          "whyWrong": { "type": "string", "minLength": 5 },
+          "sourceOrEvidence": { "type": "string" }
+        }
+      }
+    },
+    "implementationFacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "performanceScenarios": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "versionSensitivity": {
+      "enum": ["stable_principle", "version_sensitive", "experimental"]
+    }
+  },
+  "additionalProperties": false
+}

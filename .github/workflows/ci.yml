@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate question bank
+        run: node scripts/validate-questions.mjs
+      - name: Audit question bank
+        run: node scripts/audit-questions.mjs
+      - name: Build blind package
+        run: node scripts/build-blind-package.mjs
+      - name: Export
+        run: node scripts/export-questions.mjs
+      - name: Archive exports
+        uses: actions/upload-artifact@v4
+        with:
+          name: exports
+          path: exports/
+          if-no-files-found: warn

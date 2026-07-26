@@ -1,0 +1,82 @@
+version: 1
+
+# 金丝雀门禁
+canary:
+  blocker_max: 0
+  major_max: 3
+  independent_answer_disagreement_max: 2
+  unsupported_source_max: 0
+  meta_statement_options_max: 0
+  pass_min: 15
+  systematic_template_across_questions: false
+
+# 全库审计门禁
+audit_gates:
+  duplicate_stems: 0
+  duplicate_option_sets: 0
+  meta_statement_options: 0
+  missing_correct_option_source: 0
+  missing_content_cards: 0
+  missing_subtopic_misconceptions: 0
+  max_correct_longest_ratio: 0.25         # 正确项在同题中最长者的比例上限
+  max_correct_wrong_average_length_gap: 0.15
+  answer_position_bias_max: 0.35          # 单选正确项在 A/B/C/D 的最大偏差
+  min_options_per_question: 4
+
+# BLOCKER 分类
+blocker_categories:
+  - official_answer_wrong
+  - cannot_uniquely_answer
+  - multiple_correct_missing
+  - formula_wrong
+  - ir_semantics_wrong
+  - cuda_triton_behavior_wrong
+  - source_does_not_support
+  - performance_missing_decisive_condition
+  - benchmark_methodology_wrong
+  - explanation_conflicts_answer
+
+# MAJOR 分类
+major_categories:
+  - weak_distractor
+  - style_leak
+  - version_sensitive_not_scoped
+  - paper_result_over_generalized
+  - shape_dtype_hardware_missing
+  - kernel_speedup_written_as_e2e
+  - difficulty_inflated
+  - explanation_missing_boundary
+
+# 认知题型至少覆盖模块（模块 x 认知题型 x 至少 x 题）
+coverage_min:
+  A:
+    formula_performance: 4
+    performance_diagnosis: 4
+  C:
+    ir_transformation: 5
+  D:
+    code_implementation: 6
+    performance_diagnosis: 4
+  F:
+    code_implementation: 12
+  H:
+    performance_diagnosis: 4
+    concept_boundary: 4
+  I:
+    systems_dataflow: 4
+  J:
+    performance_diagnosis: 6
+    systems_dataflow: 3
+  L:
+    performance_diagnosis: 8
+  N:
+    paper_design_intent: 6
+
+# 升级条件（升到 agent_reviewed）
+promotion:
+  require_round1_pass: true
+  require_round2_pass: true
+  require_source_supported: true
+  require_hardware_conditions_sufficient: true
+  require_version_scope_sufficient: true
+  auto_promote_to_human_reviewed: false     # 严禁

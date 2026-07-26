@@ -1,0 +1,51 @@
+version: 1
+
+tiers:
+  tier1:
+    label: "官方规范 / 正式教材 / 官方设计文档"
+    examples:
+      - "PyTorch official docs"
+      - "CUDA Programming Guide"
+      - "MLIR Language Reference"
+      - "OpenXLA / StableHLO 规范"
+      - "TVM 官方文档 (Relax / TensorIR)"
+      - "vLLM 官方文档"
+      - "TensorRT-LLM 官方文档"
+      - "《Engineering a Compiler》"
+      - "《Computer Architecture: A Quantitative Approach》"
+      - "《Programming Massively Parallel Processors》"
+      - "《Efficient Processing of Deep Neural Networks》"
+    can_be_sole_authoritative_source: true
+
+  tier2:
+    label: "原始论文 / 顶级会议论文 / 官方代码 / 官方教程"
+    examples:
+      - "Halide 论文"
+      - "TVM 论文"
+      - "Ansor 论文"
+      - "MLIR 论文"
+      - "Triton 论文"
+      - "FlashAttention 论文"
+      - "PagedAttention / vLLM 论文"
+      - "SmoothQuant / GPTQ / AWQ 论文"
+      - "GSPMD 论文"
+    can_be_sole_authoritative_source: true
+
+  tier3:
+    label: "高质量课程 / 综述 / 工程博客 / 开发者讨论"
+    examples:
+      - "CMU 15-418 / 15-462 course notes"
+      - "Karpathy blog posts"
+      - "PyTorch dev-discuss"
+    can_be_sole_authoritative_source: false   # 只可补充，不可单独支撑唯一答案
+
+version_sensitive:
+  require_scope: true
+  require_verified_at: true
+  fallback_on_missing_verification: "keep_draft_needs_source_verification"
+
+forbid:
+  - "downloading full copyrighted books"
+  - "committing whole book PDFs"
+  - "committing private benchmark data"
+  - "committing tokens or credentials"
