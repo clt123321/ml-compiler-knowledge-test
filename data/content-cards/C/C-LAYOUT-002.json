@@ -1,0 +1,57 @@
+{
+  "questionId": "C-LAYOUT-002",
+  "learningObjective": "Determine whether converting between two strided tensor layouts is achievable as a pure view or requires data movement, based on stride patterns of the source and target.",
+  "canonicalClaims": [
+    {
+      "claim": "A view (metadata-only transformation) can rewrite the shape and strides of a tensor over the same storage only if the target strides are consistent with some ordering of that storage's byte positions; when the two stride patterns encode different physical element orderings, a physical copy is required.",
+      "conditions": [
+        "The source and target both describe the same logical tensor content.",
+        "The source storage is contiguous or has a well-defined stride pattern (not broadcast/expanded)."
+      ],
+      "nonImplications": [
+        "Does not imply that every stride change requires a copy; permutations that preserve byte positions (e.g., certain transpose patterns) are views.",
+        "Does not imply that the copy is expensive in absolute terms; small tensors move quickly regardless."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Memory layout and data structure representation" },
+        { "ref": "DOC:mlir-langref", "locator": "MemRef stride description" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any stride pattern can be expressed as a view because 'strides are just metadata'.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Strides describe how a logical coordinate maps to a linear byte offset; they are not free parameters — they must be consistent with the underlying byte layout.",
+      "sourceOrEvidence": "MLIR MemRef spec"
+    },
+    {
+      "claim": "`channels_last` in PyTorch is equivalent to reshaping the tensor to NHWC.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`channels_last` keeps the tensor's logical shape as NCHW; only strides change so that the C dimension has stride 1. NHWC is a shape change that would break most user code that indexes by [N, C, H, W].",
+      "sourceOrEvidence": "PyTorch memory format docs"
+    },
+    {
+      "claim": "Converting NCHW-contiguous to channels_last is always a no-op because both describe the same physical memory.",
+      "errorType": "wrong_condition",
+      "whyWrong": "They are physically different orderings of the same data; conversion requires a memory copy (a materialization pass) unless the tensor is empty or already in the target format.",
+      "sourceOrEvidence": "PyTorch source: `TensorImpl::empty_memory_format`"
+    },
+    {
+      "claim": "Transposing a 4-D NCHW tensor by permuting dim indices to NHWC is always a view.",
+      "errorType": "overgeneralization",
+      "whyWrong": "`x.permute(0,2,3,1)` is a view, but doing so does not produce channels_last strides on the original NCHW shape — it produces an NHWC-shaped view. If a channels_last NCHW tensor is required (e.g., for cuDNN NHWC-optimized kernels while keeping NCHW indexing), a copy is generally needed.",
+      "sourceOrEvidence": "PyTorch memory format docs"
+    }
+  ],
+  "implementationFacts": [
+    "NCHW-contiguous strides: [C*H*W, H*W, W, 1]",
+    "channels_last strides (NCHW logical shape): [C*H*W, 1, W*C, C]",
+    "A view requires: linear_offset(indices) = sum(indices[i] * strides[i]) is consistent with the underlying storage byte layout for every valid indices vector."
+  ],
+  "performanceScenarios": [
+    "cuDNN convolution routines on Ampere often prefer NHWC memory layout; PyTorch's `channels_last` provides that at the strided-tensor level, enabling the fast kernel path without changing indexing semantics.",
+    "The one-time copy cost of `.contiguous(memory_format=torch.channels_last)` is amortized over many forward/backward passes on the same tensor."
+  ],
+  "versionSensitivity": "stable_principle"
+}

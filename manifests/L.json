@@ -1,0 +1,42 @@
+{
+  "module": "profiling_debug",
+  "code": "L",
+  "expectedCount": 30,
+  "questions": [
+    {
+      "id": "L-LAUNCH-001",
+      "file": "data/questions/L/L-LAUNCH-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/L/L-LAUNCH-001.json",
+      "version": 1
+    },
+    {
+      "id": "L-TIMING-002",
+      "file": "data/questions/L/L-TIMING-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/L/L-TIMING-002.json",
+      "version": 1
+    },
+    {
+      "id": "L-TOL-003",
+      "file": "data/questions/L/L-TOL-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/L/L-TOL-003.json",
+      "version": 1
+    },
+    {
+      "id": "L-NCU-004",
+      "file": "data/questions/L/L-NCU-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/L/L-NCU-004.json",
+      "version": 1
+    },
+    {
+      "id": "L-WARMUP-005",
+      "file": "data/questions/L/L-WARMUP-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/L/L-WARMUP-005.json",
+      "version": 1
+    }
+  ]
+}

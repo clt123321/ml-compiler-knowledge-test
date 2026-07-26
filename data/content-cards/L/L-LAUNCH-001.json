@@ -1,0 +1,56 @@
+{
+  "questionId": "L-LAUNCH-001",
+  "learningObjective": "Diagnose a launch-overhead-limited workload from an Nsight Systems timeline showing many small kernels with large CPU-side gaps.",
+  "canonicalClaims": [
+    {
+      "claim": "When wall-time analysis shows short kernel durations (comparable to or less than the CPU-side gap between launches) and no other stalls (I/O, PCIe), the workload is launch-overhead limited; mitigations reduce launch count (fusion, torch.compile), amortize per-launch cost (CUDA Graphs), or increase per-kernel work.",
+      "conditions": [
+        "The Nsight timeline attributes the wall-time gap to CPU-side dispatch rather than synchronization waits.",
+        "No large tensor transfers or dataloader stalls appear in the same interval."
+      ],
+      "nonImplications": [
+        "Does not imply that CUDA Graphs are always applicable; workloads with variable shapes or Python control flow may not translate cleanly.",
+        "Does not imply that fusion always speeds a workload up; over-fusion can increase register pressure or hurt occupancy."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:nsys", "locator": "Nsight Systems timeline patterns" },
+        { "ref": "DOC:cuda-best", "locator": "Launch overhead and CUDA Graphs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any workload with GPU utilization < 100% is memory-bandwidth-bound.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Sub-100% GPU utilization can be caused by launch overhead, PCIe transfers, dataloader stalls, or synchronization; not exclusively HBM saturation.",
+      "sourceOrEvidence": "Nsight Systems documentation"
+    },
+    {
+      "claim": "Adding math to each kernel (increasing arithmetic intensity) resolves launch-overhead-limited workloads.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Adding math per kernel does not shrink the number of launches; only fusion, CUDA Graphs, or larger batches reduce launch overhead.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "Quantization reduces launch overhead because smaller tensors dispatch faster.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Quantization reduces memory footprint per kernel; the CPU-side dispatch cost per launch is largely independent of tensor size.",
+      "sourceOrEvidence": "CUDA driver overhead model"
+    },
+    {
+      "claim": "The dataloader is always the primary cause of GPU idle time.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Dataloader stalls are one of several possible causes; Nsight timelines usually distinguish CPU-side dispatch gaps from CPU-side dataloader waits.",
+      "sourceOrEvidence": "Nsight Systems documentation"
+    }
+  ],
+  "implementationFacts": [
+    "Typical CUDA launch overhead: 5-20 µs on host-side, higher with additional synchronization",
+    "CUDA Graphs replay a captured sequence with a single dispatch, amortizing per-launch cost",
+    "torch.compile via TorchInductor typically reduces launch count by fusing pointwise chains"
+  ],
+  "performanceScenarios": [
+    "Small-batch training or single-batch inference on modern GPUs often exposes launch overhead; the same model at large batch size becomes compute-bound instead."
+  ],
+  "versionSensitivity": "stable_principle"
+}

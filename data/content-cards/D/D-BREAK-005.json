@@ -1,0 +1,56 @@
+{
+  "questionId": "D-BREAK-005",
+  "learningObjective": "Diagnose a graph break caused by data-dependent control flow on tensor values and identify a Dynamo-tracable rewrite.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchDynamo cannot trace a Python `if` whose condition is a runtime tensor value (0-D tensor `__bool__`); the trace breaks and the branch runs in eager. Idiomatic tracable rewrites are `torch.where` (data-parallel selection where both arms are cheap to compute) or `torch.cond` (structured conditional that keeps only one arm live).",
+      "conditions": [
+        "The condition is a tensor value, not a Python int/bool derived at trace time.",
+        "`torch.where` requires both arms to have compatible shape/dtype and to be computable without observable side effects."
+      ],
+      "nonImplications": [
+        "Does not imply `torch.where` is always preferable to `torch.cond`; when arms differ substantially in cost or size, `torch.cond` is more efficient.",
+        "Does not imply Dynamo blocks all Python control flow; Python-level branches on Python scalars are fine."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-dynamo", "locator": "Data-dependent control flow / higher-order ops" },
+        { "ref": "DOC:torch-compile", "locator": "Common graph break patterns and rewrites" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Wrapping the condition with `bool(...)` forces Dynamo to specialize on a compile-time constant.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`bool(tensor)` still evaluates at runtime and is exactly the operation Dynamo cannot trace; it does not create a compile-time constant.",
+      "sourceOrEvidence": "TorchDynamo Python-semantics docs"
+    },
+    {
+      "claim": "The graph break is caused by `x.sum()`, not by the `if`; replacing `sum` with `mean` avoids it.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Reductions themselves trace fine; the break is at the Python `if` on the resulting tensor.",
+      "sourceOrEvidence": "TorchDynamo graph_breaks log format"
+    },
+    {
+      "claim": "`fullgraph=False` disables graph breaks entirely; any log entry mentioning a break is stale.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`fullgraph=False` permits breaks (default); `fullgraph=True` errors on them.",
+      "sourceOrEvidence": "torch.compile API doc"
+    },
+    {
+      "claim": "`torch.where` is always the correct rewrite because it eliminates the branch.",
+      "errorType": "overgeneralization",
+      "whyWrong": "`torch.where` computes both arms unconditionally; for expensive arms, `torch.cond` is preferable to preserve the branch semantics.",
+      "sourceOrEvidence": "torch.cond documentation"
+    }
+  ],
+  "implementationFacts": [
+    "Common Dynamo graph-break triggers: data-dependent branches, Python side effects, unsupported ops",
+    "`torch.where(cond, a, b)`: data-parallel selection; both arms computed",
+    "`torch.cond(pred, true_fn, false_fn, operands)`: structured conditional; only one arm executes at runtime"
+  ],
+  "performanceScenarios": [
+    "For gating operations (`if x has any positives`), rewriting as `torch.where` inside a compiled region enables end-to-end fusion; the redundant work in the un-taken arm is often cheaper than a graph break."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

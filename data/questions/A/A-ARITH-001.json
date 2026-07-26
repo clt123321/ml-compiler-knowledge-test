@@ -1,0 +1,68 @@
+{
+  "id": "A-ARITH-001",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Roofline / Arithmetic Intensity / GEMV",
+  "learningObjective": "Apply the Roofline model to classify a batch-1 GEMV as compute- or memory-bound on a specific GPU and derive the achievable throughput ceiling from arithmetic intensity times HBM bandwidth.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100 SXM)",
+    "device": "GPU",
+    "requiredFeatures": ["HBM2e", "Tensor Cores FP16"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [[4096, 4096], [4096], [4096]],
+    "dtypes": ["float16", "float16", "float16"],
+    "layouts": ["row_major", "contiguous", "contiguous"]
+  },
+  "stem": "On A100 SXM (peak FP16 Tensor-Core throughput ≈ 312 TFLOP/s, HBM2e bandwidth ≈ 2.0 TB/s), consider a batch-1 GEMV y = W x with W ∈ ℝ^{4096×4096} FP16, x ∈ ℝ^{4096} FP16, y ∈ ℝ^{4096} FP16 (all resident in HBM, weights streamed once, negligible reuse). Assuming steady state and ignoring launch overhead, which Roofline characterization is correct?",
+  "options": [
+    { "id": "A", "text": "Compute-bound; the achievable ceiling is approximately the FP16 Tensor-Core peak of about 312 TFLOP/s, since Tensor Cores are the dispatched math path for FP16 GEMV kernels on A100." },
+    { "id": "B", "text": "Compute-bound; the operational intensity for this GEMV is ≈ 2 FLOP/byte, comfortably above the A100 FP32 ridge point (~ 9.75 FLOP/byte), so the SMs saturate at the FP32 peak of 19.5 TFLOP/s." },
+    { "id": "C", "text": "Memory-bound; AI ≈ 1 FLOP/byte is far below A100's FP16 ridge point (~ 153 FLOP/byte), so the ceiling is HBM × AI ≈ 2 TFLOP/s." },
+    { "id": "D", "text": "Memory-bound, but the binding ceiling is set by on-chip shared-memory (SRAM) bandwidth rather than HBM, because Tensor-Core GEMV routes each weight through SMEM staging before consumption." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "GEMV traffic is dominated by streaming the weight matrix: bytes ≈ 4096·4096·2 (W) + 4096·2 (x) + 4096·2 (y) ≈ 33.6 MB; FLOPs ≈ 2·4096·4096 ≈ 33.6 M. Arithmetic intensity ≈ 1 FLOP/byte. Ridge point for FP16 Tensor Cores on A100 is 312e12 / 2.0e12 ≈ 153 FLOP/byte. Since AI (1) << ridge (153), the operation is deeply memory-bound and the ceiling is AI × HBM BW ≈ 2 TFLOP/s.",
+  "optionExplanations": {
+    "A": "Wrong: batch-1 GEMV cannot approach the compute peak; the weight matrix must be streamed once from HBM and offers essentially no data reuse.",
+    "B": "Wrong: the AI is ≈ 1, not 2, FLOP/byte; comparing against the FP32 ridge point is also inconsistent with FP16 Tensor-Core execution.",
+    "C": "Correct: operational intensity is well below the FP16 ridge point; the HBM bandwidth × AI product gives the correct ceiling.",
+    "D": "Wrong: shared-memory bandwidth is not the constraint here because each weight is loaded from HBM exactly once and does not linger in SRAM long enough to matter for the bandwidth ceiling."
+  },
+  "assumptions": [
+    "Weights resident in HBM, no persistent-kernel weight caching.",
+    "Launch and kernel-overhead time excluded from steady-state analysis."
+  ],
+  "nonImplications": [
+    "The result does not imply that a batched GEMM with the same K would be memory-bound.",
+    "The result does not imply that lowering weight precision to INT8 always maintains bandwidth-boundedness (it depends on the ratio to the new ridge point)."
+  ],
+  "misconceptionTags": ["compute_bound_confusion", "wrong_ridge_point", "sram_vs_hbm_confusion"],
+  "distractorRationales": {
+    "A": "Confuses compute peak with achievable throughput for a bandwidth-limited op.",
+    "B": "Miscomputes arithmetic intensity and mixes precision regimes.",
+    "D": "Confuses on-chip and off-chip memory tiers."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:pmpp4", "locator": "Ch. 5 & Ch. 6, Roofline and Arithmetic Intensity", "supports": ["C"] },
+    { "ref": "BOOK:hp6", "locator": "Ch. 4 (DLP) — memory-bandwidth-limited kernels", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "A100 SXM, FP16 GEMV, batch=1, K=N=4096",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-ARITH-001.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

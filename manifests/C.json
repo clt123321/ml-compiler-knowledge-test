@@ -1,0 +1,42 @@
+{
+  "module": "graph_tensor_ir",
+  "code": "C",
+  "expectedCount": 30,
+  "questions": [
+    {
+      "id": "C-LICM-001",
+      "file": "data/questions/C/C-LICM-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/C/C-LICM-001.json",
+      "version": 1
+    },
+    {
+      "id": "C-LAYOUT-002",
+      "file": "data/questions/C/C-LAYOUT-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/C/C-LAYOUT-002.json",
+      "version": 1
+    },
+    {
+      "id": "C-SSA-003",
+      "file": "data/questions/C/C-SSA-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/C/C-SSA-003.json",
+      "version": 1
+    },
+    {
+      "id": "C-SHAPE-004",
+      "file": "data/questions/C/C-SHAPE-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/C/C-SHAPE-004.json",
+      "version": 1
+    },
+    {
+      "id": "C-IRLEVEL-005",
+      "file": "data/questions/C/C-IRLEVEL-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/C/C-IRLEVEL-005.json",
+      "version": 1
+    }
+  ]
+}

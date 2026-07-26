@@ -47,7 +47,13 @@ function parseYamlLite(txt) {
   return out;
 }
 function parseScalar(v) {
-  const t = v.trim();
+  // 处理行尾 # 内联注释；如果是 quoted string，则完整保留引号内内容
+  let raw = v;
+  const quoted = raw.match(/^(['"])(.*)\1\s*(#.*)?$/);
+  if (quoted) return quoted[2];
+  const hashAt = raw.indexOf("#");
+  if (hashAt >= 0) raw = raw.slice(0, hashAt);
+  const t = raw.trim();
   if (/^-?\d+$/.test(t)) return parseInt(t, 10);
   if (/^-?\d*\.\d+$/.test(t)) return parseFloat(t);
   if (t === "true") return true;

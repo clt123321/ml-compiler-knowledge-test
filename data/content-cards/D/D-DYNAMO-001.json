@@ -1,0 +1,56 @@
+{
+  "questionId": "D-DYNAMO-001",
+  "learningObjective": "Diagnose a TorchDynamo graph break caused by a Python-object side effect and describe the resulting graph-split behavior.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchDynamo produces a graph break when it encounters Python bytecode whose faithful tracing would require modeling arbitrary side effects on non-tensor objects; it splits the compiled function around the offending bytecode and runs that step in eager Python.",
+      "conditions": [
+        "`fullgraph=False` (graph breaks allowed).",
+        "The mutated object is a user-defined Python class, not a specially-handled type (tensor, nn.Module, etc.)."
+      ],
+      "nonImplications": [
+        "Does not imply that the surrounding compiled subgraphs are invalidated; they still run compiled.",
+        "Does not imply that removing the print/attribute-set fixes performance in every case; graph-break cost depends on frequency."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-dynamo", "locator": "TorchDynamo overview — supported Python semantics and graph breaks" },
+        { "ref": "PAPER:pytorch2", "locator": "PyTorch 2 ASPLOS 2024 — bytecode transformation and side effects" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`+=` on a Python integer attribute triggers a graph break because the operator itself is unsupported; rewriting as `x = x + 1` avoids it.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`+=` desugars to LOAD_ATTR / BINARY_ADD / STORE_ATTR; STORE_ATTR on a non-tensor Python object is the root cause, and the manual rewrite emits the same bytecode.",
+      "sourceOrEvidence": "CPython bytecode reference"
+    },
+    {
+      "claim": "`fullgraph=False` disables all graph breaks; the log must be from a stale build.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`fullgraph=False` permits graph breaks (defaults to allowing them); `fullgraph=True` raises when a break would occur.",
+      "sourceOrEvidence": "torch.compile documentation"
+    },
+    {
+      "claim": "Graph breaks only occur for data-dependent control flow on tensors; Python side effects never cause them.",
+      "errorType": "scope_error",
+      "whyWrong": "Python side effects (list.append on external lists, prints, attribute mutation) are a well-known category of graph-break triggers.",
+      "sourceOrEvidence": "TorchDynamo docs — 'Common causes of graph breaks'"
+    },
+    {
+      "claim": "`torch.relu` is not supported under `fullgraph=False`; the graph break originates from that op.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`torch.relu` is a first-class supported op; the graph break location is dictated by the STORE_ATTR bytecode.",
+      "sourceOrEvidence": "PyTorch aten op registry"
+    }
+  ],
+  "implementationFacts": [
+    "TorchDynamo captures Python bytecode; graph breaks split the frame at the offending bytecode",
+    "`fullgraph=True` converts what would be a graph break into an error",
+    "Common graph-break triggers: Python side effects, data-dependent control flow, unsupported ops, custom operators without meta implementations"
+  ],
+  "performanceScenarios": [
+    "Frequent graph breaks per iteration inflate CPU-side dispatch cost and prevent long fused kernels; identifying and removing them is a common torch.compile tuning task."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

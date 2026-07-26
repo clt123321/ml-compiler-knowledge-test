@@ -1,0 +1,64 @@
+{
+  "id": "A-LITTLE-004",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Little's Law / Memory-level parallelism",
+  "learningObjective": "Apply Little's Law to compute the number of in-flight memory loads required to saturate a GPU's HBM bandwidth given a target latency.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": ["HBM2e"]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Little's Law states Concurrency = Bandwidth × Latency. Suppose an A100 has peak HBM bandwidth ≈ 2 TB/s and average DRAM load latency ≈ 400 ns, and each in-flight load fetches a 128-byte sector. Approximately how many 128-byte loads must be simultaneously in flight (aggregated across all SMs) to saturate HBM bandwidth?",
+  "options": [
+    { "id": "A", "text": "≈ 6,250 in-flight 128-byte loads (BW × L = 2×10¹² × 400×10⁻⁹ = 800 KB; /128 = 6,250)." },
+    { "id": "B", "text": "≈ 32 concurrent loads — one per warp scheduler on a single SM — because Little's Law counts per-scheduler concurrency, not aggregate outstanding requests across all SMs." },
+    { "id": "C", "text": "≈ 400 loads (roughly one per SM times four schedulers, since A100 has ~ 108 SMs and each SM has four warp schedulers dispatching one load at a time in steady state)." },
+    { "id": "D", "text": "The number is independent of latency; only bandwidth determines the required concurrency, since bandwidth by itself already characterizes the memory system's throughput ceiling." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Little's Law in byte units: bytes-in-flight = BW × latency = 2×10¹² B/s × 400×10⁻⁹ s = 8×10⁵ = 800,000 bytes. Each request is 128 bytes, so required outstanding requests = 800,000 / 128 = 6,250. This is why GPUs need many warps × loads-per-warp to saturate HBM.",
+  "optionExplanations": {
+    "A": "Correct: applies Little's Law and divides by request size.",
+    "B": "Wrong: 32 requests is orders of magnitude too small; a warp scheduler dispatches many outstanding loads over the latency period.",
+    "C": "Wrong: even 400 outstanding 128-byte loads only covers 51,200 bytes-in-flight, far below the 800 KB needed.",
+    "D": "Wrong: latency is central to Little's Law; concurrency scales linearly with latency for fixed bandwidth."
+  },
+  "assumptions": [
+    "DRAM latency and bandwidth are steady-state, aggregate figures for the GPU.",
+    "Each load request completes in ~ 400 ns on average.",
+    "Requests are for 128-byte sectors (typical L2 sector granularity for coalesced accesses)."
+  ],
+  "nonImplications": [
+    "Does not imply that a single warp can issue 6,250 outstanding loads; the concurrency is provided by many warps × many outstanding loads per warp.",
+    "Does not imply latency-hiding is achievable on all kernels; kernels with low memory-level parallelism can bottleneck at DRAM latency."
+  ],
+  "misconceptionTags": ["little_law_ignoring_latency", "memory_level_parallelism"],
+  "distractorRationales": {
+    "B": "Confuses schedulers on one SM with aggregate concurrency.",
+    "C": "Uses SM count as concurrency proxy, ignoring in-flight requests per SM.",
+    "D": "Removes latency from Little's Law altogether."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:hp6", "locator": "Little's Law and memory-level parallelism", "supports": ["A"] },
+    { "ref": "BOOK:pmpp4", "locator": "Memory bandwidth and latency hiding via MLP", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "A100 HBM saturation via Little's Law, order-of-magnitude estimate",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-LITTLE-004.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "F-TRITON-001",
+  "learningObjective": "Reason about how Triton's tl.load/tl.store mask semantics handle out-of-bounds lanes at the tail of a block-tiled kernel.",
+  "canonicalClaims": [
+    {
+      "claim": "In Triton, `tl.load(ptr, mask, other)` suppresses reads for lanes where `mask == False` and substitutes the `other` value; `tl.store(ptr, val, mask)` similarly suppresses writes. This lets tiled kernels safely process a tail that does not evenly divide the block size.",
+      "conditions": [
+        "The mask expression evaluates to False for OOB lanes.",
+        "The underlying pointer address is only dereferenced through the masked load/store."
+      ],
+      "nonImplications": [
+        "Does not imply that masked lanes have no execution cost; predicated lanes still consume warp slots.",
+        "Does not imply that dereferencing an unmasked OOB pointer is safe."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "tl.load, tl.store, masked memory access semantics" },
+        { "ref": "PAPER:triton", "locator": "Triton MAPL 2019 — masked ops" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Triton performs implicit bounds checking on `tl.load`; the `mask` argument is only advisory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Without `mask`, `tl.load` performs the read at the given address; if the address is out of bounds, behavior is undefined.",
+      "sourceOrEvidence": "Triton language reference"
+    },
+    {
+      "claim": "The `mask` argument to `tl.store` is optional; masking only matters for `tl.load`.",
+      "errorType": "scope_error",
+      "whyWrong": "Unmasked OOB stores are also unsafe; both loads and stores need masks at tile boundaries.",
+      "sourceOrEvidence": "Triton language reference"
+    },
+    {
+      "claim": "Because `BLOCK` is a `tl.constexpr`, the mask is optimized away and OOB lanes still touch memory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`BLOCK` being `constexpr` enables shape specialization at compile time, but the runtime `mask` value is still honored via predication.",
+      "sourceOrEvidence": "Triton codegen (predicated loads/stores)"
+    },
+    {
+      "claim": "The `other` value in `tl.load` is written back to memory for masked lanes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`other` only sets the register value for masked-out lanes at load time; it is not stored to memory.",
+      "sourceOrEvidence": "Triton language reference"
+    }
+  ],
+  "implementationFacts": [
+    "Tail-block pattern: `offsets = pid * BLOCK + tl.arange(0, BLOCK)`; `mask = offsets < N`",
+    "`tl.load(ptr + offsets, mask=mask, other=0.0)` is the canonical safe read",
+    "`tl.store(ptr + offsets, val, mask=mask)` is the canonical safe write"
+  ],
+  "performanceScenarios": [
+    "Choosing BLOCK to be a power of two >= max expected N-per-program is fine when tail masks skip surplus lanes; there's no need to launch a partial-block or split-tail kernel."
+  ],
+  "versionSensitivity": "stable_principle"
+}

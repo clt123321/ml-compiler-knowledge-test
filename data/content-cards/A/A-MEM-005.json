@@ -1,0 +1,75 @@
+{
+  "questionId": "A-MEM-005",
+  "learningObjective": "Distinguish structural and access-pattern properties of NVIDIA GPU memory tiers (register file, shared memory, constant memory, global memory).",
+  "canonicalClaims": [
+    {
+      "claim": "On sm_80, the per-SM register file (256 KB) is larger than the per-SM configurable L1/SMEM partition (up to 192 KB).",
+      "conditions": ["Compute capability 8.0, i.e., A100."],
+      "nonImplications": [
+        "Does not imply that program-visible SMEM per block is 192 KB; the block-level cap is smaller.",
+        "Does not imply this ordering holds on other architectures (e.g., Hopper differs)."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Compute Capability 8.0 hardware table" },
+        { "ref": "BOOK:pmpp4", "locator": "GPU memory hierarchy" }
+      ]
+    },
+    {
+      "claim": "Bank conflicts affect shared memory access when a warp's threads target different addresses within the same bank; global memory has no bank concept, but does have coalescing rules for cross-warp access patterns.",
+      "conditions": ["Standard 32-bit-per-bank shared-memory configuration."],
+      "nonImplications": [
+        "Broadcast (all threads access same address in shared memory) is not a conflict.",
+        "A single 128-byte coalesced global-memory transaction is not analogous to a bank conflict."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Shared memory and coalescing chapters" }
+      ]
+    },
+    {
+      "claim": "Constant memory is optimized for broadcast: when all threads of a warp read the same address, a single access serves the entire warp.",
+      "conditions": ["Address is uniform across the warp; otherwise accesses serialize."],
+      "nonImplications": [
+        "Non-uniform reads of constant memory can be slower than shared or L1 accesses.",
+        "Constant memory has size limits (~ 64 KB), so it is not a substitute for SMEM at scale."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Constant memory chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "HBM aggregate bandwidth exceeds the aggregate shared-memory bandwidth across all SMs.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Shared memory (SRAM) delivers far higher aggregate per-second bandwidth than HBM; that's why on-chip data reuse is a fundamental optimization.",
+      "sourceOrEvidence": "CUDA Best Practices Guide; PMPP4"
+    },
+    {
+      "claim": "Global memory has banks and can bank-conflict just like shared memory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Global memory uses coalescing rules on 32/64/128-byte transactions; it is not bank-partitioned like SMEM.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Constant memory automatically speeds up any read of the same variable across threads; even non-uniform access is broadcast.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The broadcast optimization applies only when all threads read the same address; non-uniform accesses serialize.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, constant memory section"
+    },
+    {
+      "claim": "Register file per SM is smaller than SMEM per SM on A100; therefore SMEM is preferable for scratchpads.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Register file is 256 KB per SM on A100, larger than the 192 KB L1/SMEM partition; also, registers are per-thread private, so their aggregate capacity is very different from SMEM's block-shared capacity.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "sm_80 register file: 65,536 × 32-bit = 256 KB per SM",
+    "sm_80 L1/SMEM: up to 192 KB per SM (configurable), max 163 KB shared per block",
+    "sm_80 constant memory: 64 KB total, cached with broadcast optimization"
+  ],
+  "performanceScenarios": [
+    "Data reuse patterns (blocked GEMM, stencils) exploit SMEM/registers to avoid HBM traffic; kernel design should map data to the appropriate tier."
+  ],
+  "versionSensitivity": "stable_principle"
+}

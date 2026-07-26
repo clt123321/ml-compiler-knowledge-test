@@ -1,0 +1,42 @@
+{
+  "module": "arch_perf_model",
+  "code": "A",
+  "expectedCount": 30,
+  "questions": [
+    {
+      "id": "A-ARITH-001",
+      "file": "data/questions/A/A-ARITH-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-ARITH-001.json",
+      "version": 1
+    },
+    {
+      "id": "A-ARITH-002",
+      "file": "data/questions/A/A-ARITH-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-ARITH-002.json",
+      "version": 1
+    },
+    {
+      "id": "A-OCC-003",
+      "file": "data/questions/A/A-OCC-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-OCC-003.json",
+      "version": 1
+    },
+    {
+      "id": "A-LITTLE-004",
+      "file": "data/questions/A/A-LITTLE-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-LITTLE-004.json",
+      "version": 1
+    },
+    {
+      "id": "A-MEM-005",
+      "file": "data/questions/A/A-MEM-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/A/A-MEM-005.json",
+      "version": 1
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "generatedAt": "2026-07-26",
+  "gates": {
+    "duplicate_stems": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "duplicate_option_sets": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "meta_statement_options": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "missing_content_cards": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "missing_subtopic_misconceptions": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "correct_longest_ratio": {
+      "value": 0,
+      "max": 0.25,
+      "pass": true
+    },
+    "correct_wrong_length_gap": {
+      "value": -0.192,
+      "max": 0.15,
+      "pass": true
+    },
+    "answer_position_bias": {
+      "value": 0.091,
+      "max": 0.35,
+      "pass": true
+    },
+    "tier3_only_sources": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    }
+  },
+  "stats": {
+    "total": 25,
+    "bySingleAnswerPosition": {
+      "A": 6,
+      "B": 5,
+      "C": 6,
+      "D": 5
+    },
+    "correctLongestCount": 0,
+    "avgCorrectLen": 166.03,
+    "avgWrongLen": 205.49
+  },
+  "issues": [
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module A archetype formula_performance: 3 < required 4"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module A archetype performance_diagnosis: 1 < required 4"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module C archetype ir_transformation: 4 < required 5"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module D archetype code_implementation: 4 < required 6"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module D archetype performance_diagnosis: 1 < required 4"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module F archetype code_implementation: 5 < required 12"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module H archetype performance_diagnosis: 0 < required 4"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module H archetype concept_boundary: 0 < required 4"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module I archetype systems_dataflow: 0 < required 4"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module J archetype performance_diagnosis: 0 < required 6"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module J archetype systems_dataflow: 0 < required 3"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module L archetype performance_diagnosis: 5 < required 8"
+    },
+    {
+      "level": "MAJOR",
+      "category": "coverage_shortfall",
+      "msg": "Module N archetype paper_design_intent: 0 < required 6"
+    }
+  ]
+}

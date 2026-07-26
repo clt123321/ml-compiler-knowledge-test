@@ -1,0 +1,56 @@
+{
+  "questionId": "D-DYNAMIC-002",
+  "learningObjective": "Read a torch.compile recompilation log, identify the guard that failed, and choose the right knob (dynamic shapes) to prevent shape-triggered recompilation.",
+  "canonicalClaims": [
+    {
+      "claim": "By default in current PyTorch 2.x releases (2.3-2.5), torch.compile installs shape guards on tensor dimensions; a shape not matching an existing guard triggers a fresh compilation. Passing `dynamic=True` (or activating symbolic-shape compilation) generates a single compiled graph that services multiple shapes.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 (behavior may shift as automatic dynamic promotion evolves).",
+        "The compile cache is warm within a single process."
+      ],
+      "nonImplications": [
+        "Does not imply `dynamic=True` always outperforms specialization; symbolic-shape kernels may pay a small runtime overhead.",
+        "Does not imply that all shape mismatches recompile; if automatic dynamic promotion kicks in after N recompiles, subsequent calls reuse a symbolic-shape graph."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Dynamic shapes and recompilation" },
+        { "ref": "DOC:torch-dynamo", "locator": "Guards and recompilation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "torch.compile default treats all tensor shapes as dynamic; recompilation only happens when dtype changes.",
+      "errorType": "version_leak",
+      "whyWrong": "The default behavior in 2.3-2.5 specializes on shapes; automatic dynamic activation is version- and configuration-dependent.",
+      "sourceOrEvidence": "torch.compile documentation"
+    },
+    {
+      "claim": "Guard failures indicate a graph break; the log entry is misclassified.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TORCH_LOGS distinguishes recompiles (guard failures) from graph breaks (untraceable bytecode); they are separate signals.",
+      "sourceOrEvidence": "TorchDynamo docs — TORCH_LOGS reference"
+    },
+    {
+      "claim": "Setting `dynamic=True` is always the correct fix regardless of workload.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Dynamic-shape compilation can miss shape-specific optimizations (tile sizes, template choices); for a small number of distinct shapes, specialization can be preferable.",
+      "sourceOrEvidence": "TorchInductor / dynamic shape trade-offs"
+    },
+    {
+      "claim": "Only strides trigger guards, not shapes; the log shows shape guards, so it must be a bug.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both shapes and strides can trigger guards; shape guards are the most common source of recompilation reports.",
+      "sourceOrEvidence": "TorchDynamo guards internals"
+    }
+  ],
+  "implementationFacts": [
+    "TORCH_LOGS=\"recompiles\" prints the failing guard for each recompile event",
+    "`dynamic=True` requests symbolic-shape tracing at compile time",
+    "Automatic dynamic promotion: after N recompiles on the same axis, later PyTorch versions promote it to symbolic"
+  ],
+  "performanceScenarios": [
+    "Serving code that sees a bounded number of batch sizes (e.g., 1, 8, 32) may prefer specialization; workloads with a wide input distribution benefit from symbolic-shape compilation despite the per-op overhead."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

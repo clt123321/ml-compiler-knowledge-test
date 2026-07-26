@@ -1,0 +1,66 @@
+{
+  "id": "D-AOT-004",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "AOTAutograd / Functionalization of in-place ops",
+  "learningObjective": "Describe how AOTAutograd's functionalization pass transforms in-place tensor mutations before TorchInductor lowering, and how external mutation semantics are preserved.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Consider the compiled function below with an in-place op on an input tensor `x`. Which of the following best describes how AOTAutograd/functionalization treats `x.add_(1.0)` before Inductor codegen?",
+  "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    x.add_(1.0)      # in-place mutation on input\n    return x * 2.0\n\nx = torch.randn(4, device=\"cuda\", requires_grad=True)\ny = f(x)\n# After the call, the caller expects x to reflect the +1 mutation as well.",
+  "options": [
+    { "id": "A", "text": "Inductor emits two kernels: one for `add_` (mutating the buffer in place) and one for the multiply; functionalization is applied only to reductions rather than to elementwise mutations, so this in-place op survives to codegen." },
+    { "id": "B", "text": "In-place operations are always rejected by AOTAutograd and raise a runtime error at trace time when the compiled region attempts to trace any mutating aten op such as `add_`." },
+    { "id": "C", "text": "Functionalization rewrites `x.add_(1.0)` into a non-mutating `x_new = x + 1.0` in the graph; the compiled region returns the extra mutated tensor so the runtime can write it back to preserve external mutation semantics." },
+    { "id": "D", "text": "In-place operations bypass the compilation stack entirely; the compiled `f` calls the eager `torch.add_` at runtime and skips AOTAutograd for that op while the rest of the graph is still traced through Inductor." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "AOTAutograd runs functionalization before lowering to Inductor. The pass rewrites in-place ops into their non-mutating equivalents (`x_new = x + 1`) so the resulting graph is SSA-friendly and safely re-orderable. To preserve outward-visible mutation semantics (the caller expects `x` to reflect the +1 after `f` returns), the compiled graph returns the extra mutated tensor(s), and the runtime wrapper writes them back onto the corresponding input tensor after the compiled region exits.",
+  "optionExplanations": {
+    "A": "Wrong: functionalization applies to any mutating op, not only reductions; and the Inductor codegen does not typically emit an explicit 'in-place add' kernel — it fuses into the same generated Triton kernel.",
+    "B": "Wrong: AOTAutograd handles many in-place ops; it does not reject them outright.",
+    "C": "Correct: describes functionalization plus the boundary-copy / runtime write-back mechanism used to preserve external mutation semantics.",
+    "D": "Wrong: the compiled function does not selectively bypass; the whole region goes through AOTAutograd + Inductor."
+  },
+  "assumptions": [
+    "`x` is an input to the compiled region (its mutation is externally observable).",
+    "AOTAutograd successfully traces the function into an FX graph."
+  ],
+  "nonImplications": [
+    "Does not imply that the emitted CUDA kernel is not in-place; Inductor's bufferization may still write to the input buffer under the hood after proving safety.",
+    "Does not imply functionalization eliminates all copies; boundary handling adds bookkeeping when mutated tensors escape the region."
+  ],
+  "misconceptionTags": ["functionalization_rejects_mutation", "inplace_bypasses_compiler"],
+  "distractorRationales": {
+    "A": "Overly narrow scope of functionalization.",
+    "B": "Wrong about rejection.",
+    "D": "Wrong about bypass behavior."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:pytorch2", "locator": "AOTAutograd and functionalization sections", "supports": ["C"] },
+    { "ref": "DOC:torch-compile", "locator": "AOTAutograd overview and mutation handling", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-AOT-004.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

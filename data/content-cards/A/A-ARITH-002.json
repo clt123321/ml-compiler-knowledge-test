@@ -1,0 +1,64 @@
+{
+  "questionId": "A-ARITH-002",
+  "learningObjective": "Given an elementwise kernel's per-element FLOP and byte cost, compute the arithmetic intensity and classify the kernel against a specific GPU's FP32 ridge point.",
+  "canonicalClaims": [
+    {
+      "claim": "For an elementwise kernel that reads and writes one tensor, arithmetic intensity equals per-element FLOPs divided by the sum of read bytes plus write bytes.",
+      "conditions": [
+        "No cache reuse between elements (streaming access).",
+        "No fusion with adjacent ops that could reduce bytes moved."
+      ],
+      "nonImplications": [
+        "Does not imply that increasing FLOPs per element (without changing bytes) will speed up the kernel unless AI crosses the ridge point.",
+        "Does not imply that switching to a lower-precision dtype always keeps the kernel memory-bound."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Roofline chapter; elementwise/reduction examples" },
+        { "ref": "DOC:cuda-best", "locator": "Memory optimizations section" }
+      ]
+    },
+    {
+      "claim": "An elementwise kernel with AI below the ridge point is memory-bound; the achievable ceiling is AI × HBM peak bandwidth.",
+      "conditions": ["Ridge point = peak compute / peak HBM bandwidth for the given precision."],
+      "nonImplications": ["Does not imply the actual throughput will match the ceiling; kernel implementation quality also matters."],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Roofline model" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Increasing the number of FLOPs per element (e.g., adding more polynomial terms) will make an elementwise kernel compute-bound.",
+      "errorType": "wrong_condition",
+      "whyWrong": "AI must cross the ridge point; going from 3 to 10 FLOPs per element only moves AI from ~0.4 to ~1.25 FLOP/byte, still well below A100's FP32 ridge of ~9.75 FLOP/byte.",
+      "sourceOrEvidence": "PMPP4 Roofline"
+    },
+    {
+      "claim": "Arithmetic intensity should count only input bytes read (not output bytes written), because writes are asynchronous.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Writes consume HBM bandwidth on the write path; ignoring them undercounts memory traffic and overestimates AI.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "Elementwise kernels always saturate the SM math pipelines because they have perfect data-parallelism.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Data-parallelism enables occupancy, but throughput is capped by whichever roof (compute or memory) the AI intersects.",
+      "sourceOrEvidence": "PMPP4"
+    },
+    {
+      "claim": "Softplus is expensive enough per element that the FP16 version is compute-bound on A100.",
+      "errorType": "hardware_leak",
+      "whyWrong": "FP16 halves bytes per element but keeps FLOPs; AI doubles. Even at AI ≈ 2.5, we are still far below the FP16 Tensor-Core ridge point (~ 153 FLOP/byte) and below the FP16 non-TC ridge.",
+      "sourceOrEvidence": "PMPP4; CUDA C++ Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "AI (elementwise) = FLOPs_per_elem / (bytes_read + bytes_written)_per_elem",
+    "A100 FP32 ridge point ≈ 9.75 FLOP/byte",
+    "A100 FP16 Tensor-Core ridge point ≈ 153 FLOP/byte"
+  ],
+  "performanceScenarios": [
+    "Activation functions (ReLU, softplus, GELU) applied outside of fusion boundaries are HBM-bound; fusion into a producing op is the main optimization lever."
+  ],
+  "versionSensitivity": "stable_principle"
+}

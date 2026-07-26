@@ -1,0 +1,66 @@
+{
+  "id": "A-OCC-003",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Occupancy / Register pressure",
+  "learningObjective": "From ptxas register report and launch configuration, derive the register-file-limited theoretical occupancy on a given GPU architecture.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": ["compute capability 8.0"]
+  },
+  "softwareContext": {
+    "compiler": "nvcc / ptxas",
+    "stability": "stable_principle"
+  },
+  "stem": "A CUDA kernel targeting sm_80 is compiled with `nvcc -arch=sm_80 --ptxas-options=-v` and prints `ptxas info : Used 96 registers, 384 bytes cmem[0]`. The launch config is `<<<gridDim, 256>>>`. A100 provides 65,536 32-bit registers per SM, a max of 2,048 threads (64 warps) per SM, and up to 32 concurrent blocks per SM. Ignoring shared-memory and block-count limits, what is the register-limited theoretical occupancy?",
+  "codeSnippet": "// Compilation command:\n//   nvcc -arch=sm_80 --ptxas-options=-v kernel.cu\n// ptxas info    : Compiling entry function '_Z10my_kernelPfS_'\n// ptxas info    : Function properties for _Z10my_kernelPfS_\n// ptxas info    : Used 96 registers, 384 bytes cmem[0]\n//\n// Launch:\n//   my_kernel<<<gridDim, /*blockDim=*/256>>>(...);",
+  "profileData": "Used 96 registers, 384 bytes cmem[0]; block size = 256; per-SM: 65536 regs, max 2048 threads (64 warps), max 32 blocks",
+  "options": [
+    { "id": "A", "text": "50% (32 of 64 warps active per SM); 96 registers per thread and 256 threads per block allow 4 concurrent blocks per SM under the register-file budget." },
+    { "id": "B", "text": "100%; A100's register file is large enough to accommodate 8 concurrent blocks of 256 threads at 96 registers per thread, so occupancy hits the SM's maximum of 64 warps." },
+    { "id": "C", "text": "12.5%; the effective limit is 8 concurrent blocks per SM regardless of register usage, since Ampere caps blocks-per-SM at 8 rather than 32 in practice." },
+    { "id": "D", "text": "25%; 96 × 256 = 24,576 regs/block, ⌊65536/24576⌋ = 2 blocks/SM, 512 threads = 16/64 warps." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "Registers per block = 96 × 256 = 24,576. Blocks limited by register file = ⌊65,536 / 24,576⌋ = 2. Threads per SM = 2 × 256 = 512. Warps per SM = 512 / 32 = 16. Occupancy = 16 / 64 = 25%.",
+  "optionExplanations": {
+    "A": "Wrong: 4 blocks × 24,576 registers/block = 98,304 registers, exceeding the 65,536 register file per SM.",
+    "B": "Wrong: 8 blocks would require 196,608 registers, three times the available register file.",
+    "C": "Wrong: 8 blocks/SM is not a hard limit on sm_80 (max is 32); and register pressure — not block count — is what constrains this kernel.",
+    "D": "Correct: the register file caps blocks at 2, yielding 512 active threads = 16 warps = 25% occupancy on sm_80."
+  },
+  "assumptions": [
+    "Shared memory usage per block is small enough to not further limit occupancy.",
+    "Grid dimension is large enough to fully populate the SMs (not launch-limited)."
+  ],
+  "nonImplications": [
+    "Does not imply that 25% occupancy is 'bad'; many memory-bound kernels achieve near-peak throughput at low occupancy.",
+    "Does not imply that lowering register usage always improves performance; register spills to local memory can be worse."
+  ],
+  "misconceptionTags": ["occupancy_ignoring_registers", "occupancy_equals_performance"],
+  "distractorRationales": {
+    "A": "Occupancy math without checking register file capacity.",
+    "B": "Misreads the register file size relative to per-block demand.",
+    "C": "Confuses block-count limit with register limit."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "Compute Capability 8.0 table; register file and warp/thread limits per SM", "supports": ["D"] },
+    { "ref": "BOOK:pmpp4", "locator": "Occupancy chapter", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "sm_80 A100, register-limited occupancy calculation",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-OCC-003.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

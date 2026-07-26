@@ -1,0 +1,42 @@
+{
+  "module": "cuda_triton_kernel",
+  "code": "F",
+  "expectedCount": 40,
+  "questions": [
+    {
+      "id": "F-TRITON-001",
+      "file": "data/questions/F/F-TRITON-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/F/F-TRITON-001.json",
+      "version": 1
+    },
+    {
+      "id": "F-COALESCE-002",
+      "file": "data/questions/F/F-COALESCE-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/F/F-COALESCE-002.json",
+      "version": 1
+    },
+    {
+      "id": "F-BANK-003",
+      "file": "data/questions/F/F-BANK-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/F/F-BANK-003.json",
+      "version": 1
+    },
+    {
+      "id": "F-DOTPROD-004",
+      "file": "data/questions/F/F-DOTPROD-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/F/F-DOTPROD-004.json",
+      "version": 1
+    },
+    {
+      "id": "F-RMS-005",
+      "file": "data/questions/F/F-RMS-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/F/F-RMS-005.json",
+      "version": 1
+    }
+  ]
+}

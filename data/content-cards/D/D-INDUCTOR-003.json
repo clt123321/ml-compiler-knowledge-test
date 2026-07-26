@@ -1,0 +1,57 @@
+{
+  "questionId": "D-INDUCTOR-003",
+  "learningObjective": "Predict how TorchInductor fuses a chain of pointwise ops on CUDA and how many kernels the compiled function produces.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchInductor's scheduler fuses pointwise producer-consumer chains that share an iteration space into a single generated Triton kernel on CUDA, so intermediate tensors are not materialized in HBM.",
+      "conditions": [
+        "All ops in the chain are pointwise with the same shape and layout.",
+        "There is no reduction, side-effecting op, unsupported op, or explicit `torch._dynamo.disable` in the chain.",
+        "Inputs live on the same CUDA device."
+      ],
+      "nonImplications": [
+        "Does not imply that reductions never fuse — Inductor also fuses many reduction patterns with pointwise producers/epilogues, but only single-pass shapes.",
+        "Does not imply that the resulting kernel is optimal; the fused kernel is still memory-bound and won't approach compute peak."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Scheduler and fusion overview" },
+        { "ref": "PAPER:pytorch2", "locator": "PyTorch 2 ASPLOS: Inductor design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Pointwise ops with different scalar constants (e.g., `x*2` vs `x+1`) cannot be fused by TorchInductor.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Scalars are constants in the generated Triton code and do not affect the ability to share an iteration space.",
+      "sourceOrEvidence": "TorchInductor scheduler docs"
+    },
+    {
+      "claim": "TorchInductor lowers CUDA tensors to CPU C++ code when in default mode.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Inductor selects a device-appropriate backend: Triton for CUDA, C++ for CPU.",
+      "sourceOrEvidence": "TorchInductor documentation"
+    },
+    {
+      "claim": "Every torch.compile call produces exactly one kernel per user-visible op.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The whole point of Inductor is to fuse; producing one kernel per op would defeat the compile step.",
+      "sourceOrEvidence": "TorchInductor design"
+    },
+    {
+      "claim": "A dedicated materialization kernel is emitted at the end of every fused chain to place the result into the output tensor.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The fused kernel writes directly to the output buffer; no separate materialization launch is required.",
+      "sourceOrEvidence": "TorchInductor codegen"
+    }
+  ],
+  "implementationFacts": [
+    "Inductor supports Triton codegen (CUDA) and C++ codegen (CPU)",
+    "Pointwise fusion is the most common Inductor pattern; producer-consumer with matching iteration space fuses by default",
+    "Reduction fusion requires that the reduction fits the fusion pattern (single reduction dim, matching output shape)"
+  ],
+  "performanceScenarios": [
+    "Fusing a chain of pointwise activations avoids intermediate HBM traffic, which is the dominant win for memory-bound kernels."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

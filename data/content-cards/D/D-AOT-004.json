@@ -1,0 +1,56 @@
+{
+  "questionId": "D-AOT-004",
+  "learningObjective": "Describe how AOTAutograd's functionalization pass transforms in-place tensor mutations before TorchInductor lowering, and how external mutation semantics are preserved.",
+  "canonicalClaims": [
+    {
+      "claim": "AOTAutograd's functionalization pass rewrites in-place ATen ops into non-mutating equivalents so the resulting FX graph is analyzable as pure dataflow; external mutation semantics are preserved by returning the extra mutated tensors from the compiled region and writing them back onto the corresponding input tensors after the call.",
+      "conditions": [
+        "The mutating op targets a tensor that lives beyond the compiled region (input or previously-created tensor).",
+        "The op is a supported ATen mutating op with a known non-mutating equivalent."
+      ],
+      "nonImplications": [
+        "Does not imply that the emitted low-level kernel avoids in-place writes; bufferization can restore in-place semantics after analysis.",
+        "Does not imply zero overhead — the boundary write-back adds a small runtime step."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:pytorch2", "locator": "PyTorch 2 ASPLOS: functionalization" },
+        { "ref": "DOC:torch-compile", "locator": "AOTAutograd overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "In-place ops are always rejected by AOTAutograd; the user must rewrite them to non-mutating equivalents by hand.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AOTAutograd's functionalization pass handles this automatically; the user's code does not have to change.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Functionalization is only applied to reduction ops.",
+      "errorType": "scope_error",
+      "whyWrong": "It applies to all mutating aten ops that participate in the traced graph.",
+      "sourceOrEvidence": "AOTAutograd source"
+    },
+    {
+      "claim": "In-place ops bypass the compilation stack; the compiled function calls eager torch.add_ at runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The compiled region does not selectively skip ops; the whole region is functionalized and lowered.",
+      "sourceOrEvidence": "PyTorch 2 paper"
+    },
+    {
+      "claim": "Functionalization forces every mutation into a full tensor copy at runtime.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Functionalization is an IR-level rewrite; runtime buffer reuse is decided by Inductor's bufferization pass, which can eliminate the copy.",
+      "sourceOrEvidence": "TorchInductor bufferization"
+    }
+  ],
+  "implementationFacts": [
+    "AOTAutograd runs the joint forward+backward through functionalization before handing to Inductor",
+    "Mutation boundary handling: mutated inputs are returned as additional outputs; the compiled wrapper writes them back",
+    "In practice, many in-place ops become in-place writes at codegen after safety proof"
+  ],
+  "performanceScenarios": [
+    "In-place activation updates (e.g., `x.relu_()`) inside a compiled model are handled transparently; the fused kernel may write to the same buffer as its input tensor."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "C-SSA-003",
+  "learningObjective": "Explain why compiler passes over tensor IRs commonly functionalize in-place operations into non-mutating SSA-like forms.",
+  "canonicalClaims": [
+    {
+      "claim": "Functionalization rewrites in-place tensor ops into non-mutating equivalents, restoring single-assignment so that downstream passes (CSE, DCE, fusion, alias-free scheduling, autograd) can analyze the graph as pure dataflow.",
+      "conditions": [
+        "The IR distinguishes mutating and non-mutating operator variants (as in ATen).",
+        "External mutation contracts (tensors that escape the compiled region) are honored via boundary copies where needed."
+      ],
+      "nonImplications": [
+        "Does not imply that the emitted machine code cannot use in-place stores; the codegen may reintroduce mutation when analysis proves safety.",
+        "Does not imply that functionalization is always cheap; boundary handling for aliased/exported tensors adds bookkeeping."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "SSA construction; benefits for dataflow analysis" },
+        { "ref": "PAPER:pytorch2", "locator": "Functionalization / AOTAutograd stack" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Functional (non-mutating) tensor operations execute faster at runtime than in-place ones.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Functionalization is an IR-level rewrite; runtime speed is determined by the emitted kernel, which can be in-place after analysis.",
+      "sourceOrEvidence": "PyTorch 2 paper, ASPLOS 2024"
+    },
+    {
+      "claim": "In-place operations cannot be expressed in FX Graph or any tensor IR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "IRs can represent mutation; the issue is that mutation makes analysis harder. Functionalization is a convenience transformation, not a correctness necessity for representability.",
+      "sourceOrEvidence": "PyTorch FX docs"
+    },
+    {
+      "claim": "Functionalization is only needed for autograd tracing; a pure inference compiler does not need it.",
+      "errorType": "scope_error",
+      "whyWrong": "Even for inference, fusion and scheduling passes benefit from SSA form; alias-free reasoning enables correct pattern rewriting.",
+      "sourceOrEvidence": "MLIR pass philosophy"
+    },
+    {
+      "claim": "Functionalization always introduces additional runtime copies.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The IR pass renames values; codegen decides whether copies are needed. In many cases, the fused kernel writes to the same buffer as the input, avoiding copies.",
+      "sourceOrEvidence": "TorchInductor lowering; MLIR bufferization"
+    }
+  ],
+  "implementationFacts": [
+    "SSA: each name has exactly one static definition",
+    "Functionalization renames every mutating op result to a new SSA value",
+    "PyTorch AOTAutograd applies functionalization before Inductor lowering"
+  ],
+  "performanceScenarios": [
+    "Fusion across an in-place op requires proving the mutation does not alias any other live tensor; functionalization sidesteps this by making the pattern pure and letting bufferization/codegen decide storage reuse."
+  ],
+  "versionSensitivity": "stable_principle"
+}

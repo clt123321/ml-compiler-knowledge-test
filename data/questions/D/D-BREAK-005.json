@@ -1,0 +1,66 @@
+{
+  "id": "D-BREAK-005",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Data-dependent control flow / Graph break rewrite",
+  "learningObjective": "Diagnose a graph break caused by data-dependent control flow on tensor values and identify a Dynamo-tracable rewrite.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "The following function produces a graph-break log when compiled. Which option both correctly identifies the cause and gives a valid Dynamo-tracable rewrite?",
+  "codeSnippet": "import torch\n\n@torch.compile(fullgraph=False)\ndef f(x):\n    if x.sum() > 0:\n        return x * 2.0\n    else:\n        return x * 3.0\n\n# TORCH_LOGS=\"graph_breaks\" (excerpt):\n#   Graph break in user code at .../f\n#   Reason: Data-dependent branching on tensor value\n#            (implicit .__bool__() on a 0-D tensor produced by comparison).\n#   Consider replacing with torch.where(cond, a, b) or torch.cond(cond, fn_true, fn_false).",
+  "options": [
+    { "id": "A", "text": "The issue is that `x.sum()` is not supported by Dynamo; replacing it with `x.mean()` avoids the graph break because mean is treated as a supported reduction while sum is a fallback op." },
+    { "id": "B", "text": "The branch condition `x.sum() > 0` yields a tensor whose `__bool__` is runtime-dependent; rewrite with `torch.where(x.sum() > 0, x*2.0, x*3.0)` to keep both arms in one graph." },
+    { "id": "C", "text": "`fullgraph=False` disables all graph breaks; the log must be stale and can be ignored, since with graph breaks disabled Dynamo produces a single fused trace for the entire function regardless of the branch." },
+    { "id": "D", "text": "Using `bool()` explicitly (e.g., `if bool(x.sum() > 0):`) forces Dynamo to specialize the condition to a compile-time constant, eliminating the graph break by informing the tracer that the value is a Python scalar." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "TorchDynamo cannot trace across a branch whose condition is a data-dependent tensor value: evaluating `if <tensor>` invokes `__bool__` on a 0-D tensor and the outcome is unknown at trace time. The pragmatic rewrites are (i) `torch.where` for a purely functional selection when both arms can be computed cheaply, or (ii) `torch.cond` for a genuine data-dependent branch that still needs to be captured. `torch.where` is correct here because both arms are cheap and share the same shape.",
+  "optionExplanations": {
+    "A": "Wrong: `x.sum()` is a supported ATen op; the cause is the `if` on the tensor, not the reduction.",
+    "B": "Correct: identifies the data-dependent branch as the cause and offers `torch.where` as a tracable rewrite.",
+    "C": "Wrong: `fullgraph=False` permits graph breaks; it doesn't hide or invalidate them.",
+    "D": "Wrong: `bool(tensor)` still requires runtime evaluation and does not turn the value into a compile-time constant."
+  },
+  "assumptions": [
+    "Both arms of the branch have the same output shape and dtype (needed for `torch.where`).",
+    "The user cares primarily about eliminating the graph break, not preserving lazy evaluation of the un-taken arm."
+  ],
+  "nonImplications": [
+    "Does not imply `torch.where` is always the correct rewrite; if the two arms have very different cost or side effects, `torch.cond` is preferred.",
+    "Does not imply that Dynamo cannot ever handle Python `if`; branches on Python integers/booleans (not tensors) are fine."
+  ],
+  "misconceptionTags": ["data_dep_branch_confusion", "bool_forces_specialization"],
+  "distractorRationales": {
+    "A": "Blames the reduction instead of the branch.",
+    "C": "Misunderstands `fullgraph=False`.",
+    "D": "False claim about `bool()`."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-dynamo", "locator": "Data-dependent control flow section; torch.cond and torch.where guidance", "supports": ["B"] },
+    { "ref": "DOC:torch-compile", "locator": "Common graph-break causes and rewrites", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-BREAK-005.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

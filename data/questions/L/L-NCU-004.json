@@ -1,0 +1,70 @@
+{
+  "id": "L-NCU-004",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Nsight Compute / Memory-bound diagnosis",
+  "learningObjective": "Interpret Nsight Compute metrics (SM utilization, achieved occupancy, DRAM throughput, L1 hit rate) to conclude that an elementwise kernel is DRAM-bandwidth bound and choose the right mitigation.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": ["HBM2e"]
+  },
+  "softwareContext": {
+    "framework": "Nsight Compute",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [[16777216], [16777216]],
+    "dtypes": ["float32", "float32"],
+    "layouts": ["contiguous", "contiguous"]
+  },
+  "stem": "Nsight Compute reports the following metrics for an FP32 elementwise kernel `out[i] = sqrt(in[i])` on A100. Which is the best-supported diagnosis and mitigation?",
+  "profileData": "Kernel: fp32_elementwise_sqrt\n  SM Utilization           : 12 %\n  Achieved Occupancy       : 0.85\n  DRAM Throughput          : 92 % of peak\n  L1 Cache Hit Rate        : 40 %\n  L2 Cache Hit Rate        : 8 %\n  Warp Stall Reason (top-1): Long Scoreboard (memory latency)",
+  "options": [
+    { "id": "A", "text": "SM utilization is 12%; increasing block size until SMs reach 100% utilization will improve performance proportionally, since more warps per SM directly translates to higher throughput on any streaming kernel." },
+    { "id": "B", "text": "DRAM-bandwidth bound: 92% DRAM throughput near peak, low SM utilization from memory stalls; occupancy and math cannot help — reduce bytes moved (fusion, lower dtype)." },
+    { "id": "C", "text": "L1 hit rate (40%) is the primary bottleneck; increasing per-block shared-memory usage will lift the L1 hit rate and speed up the kernel by satisfying more accesses from on-chip cache instead of HBM." },
+    { "id": "D", "text": "Achieved occupancy 0.85 is too low; further reducing register usage per thread will raise it to 1.0 and unlock roughly 20% speedup by allowing more warps to reside per SM and hide latency more thoroughly." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "The signature of a memory-bound kernel is: high DRAM throughput (near peak), low SM utilization (SMs stall waiting for memory), decent occupancy (not the bottleneck), and long scoreboard stalls (memory latency). Elementwise sqrt streams data through HBM with no reuse; increasing occupancy or adding math to each element cannot exceed AI × BW. The lever is to reduce HBM traffic — usually via fusion into a producing op, kernel elision, or a lower-precision dtype if hardware supports it.",
+  "optionExplanations": {
+    "A": "Wrong: low SM utilization is a symptom of memory-bound streaming, not an occupancy problem; raising occupancy does not increase HBM bandwidth.",
+    "B": "Correct: matches the memory-bound Nsight signature and lists the correct mitigations.",
+    "C": "Wrong: an elementwise streaming kernel with each element read once has no meaningful reuse; L1 hit rate is naturally low and not the bottleneck.",
+    "D": "Wrong: 0.85 achieved occupancy is high; raising it further will not add throughput because the kernel is already HBM-limited."
+  },
+  "assumptions": [
+    "A100 with HBM2e ≈ 2.0 TB/s peak; 92% of peak ≈ 1.84 TB/s.",
+    "The kernel touches each element exactly once for read and once for write (no reuse)."
+  ],
+  "nonImplications": [
+    "Does not imply that FP16 sqrt is always faster; the fused pipeline or downstream op determines whether reducing bytes moved helps.",
+    "Does not imply that fusion is always feasible; boundary conditions (custom ops, unsupported dtypes) can block it."
+  ],
+  "misconceptionTags": ["sm_utilization_confusion", "occupancy_equals_perf"],
+  "distractorRationales": {
+    "A": "Confuses SM utilization signal with occupancy fix.",
+    "C": "Wrong root-cause attribution to L1.",
+    "D": "Overstates occupancy impact."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:ncu", "locator": "Nsight Compute memory workload analysis / speed-of-light metrics", "supports": ["B"] },
+    { "ref": "BOOK:pmpp4", "locator": "Memory-bound kernel identification and mitigation", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "FP32 elementwise sqrt streaming kernel on A100 with DRAM near saturation",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/L/L-NCU-004.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

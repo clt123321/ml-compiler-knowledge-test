@@ -1,0 +1,71 @@
+{
+  "id": "F-TRITON-001",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Triton / Mask and boundary handling",
+  "learningObjective": "Reason about how Triton's tl.load/tl.store mask semantics handle out-of-bounds lanes at the tail of a block-tiled kernel.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer (sm_80+)",
+    "device": "GPU",
+    "requiredFeatures": ["Triton runtime with LLVM/PTX backend"]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [[1000000], [1000000], [1000000]],
+    "dtypes": ["float32", "float32", "float32"],
+    "layouts": ["contiguous", "contiguous", "contiguous"]
+  },
+  "stem": "Consider the Triton vector-add kernel below launched with grid = (triton.cdiv(N, BLOCK),), BLOCK=1024, N=1_000_000, and 1-D contiguous FP32 CUDA inputs `x`, `y`, `out` of length N. Which statement about the last program (pid = 976) is correct?",
+  "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef add_kernel(x_ptr, y_ptr, out_ptr, N, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    x = tl.load(x_ptr + offsets, mask=mask, other=0.0)\n    y = tl.load(y_ptr + offsets, mask=mask, other=0.0)\n    tl.store(out_ptr + offsets, x + y, mask=mask)\n\n# Launch: grid = (triton.cdiv(N, BLOCK),), BLOCK = 1024, N = 1_000_000\n# For pid = 976: base = 976 * 1024 = 999_424; offsets = 999_424 .. 1_000_447\n# Valid lanes: offsets 999_424 .. 999_999 (576 lanes); OOB: 1_000_000 .. 1_000_447 (448 lanes)",
+  "options": [
+    { "id": "A", "text": "Tail lanes with `offsets >= N` (448 lanes here) skip the load (using `other=0.0`) and skip the store thanks to `mask`; no OOB access occurs and those lanes are no-ops." },
+    { "id": "B", "text": "The last program reads 448 out-of-bounds addresses which produce undefined values, but even without a mask `tl.load` would remain safe because Triton performs implicit bounds checking on every load operation before dereferencing." },
+    { "id": "C", "text": "The `mask` argument affects only the store; the load always performs 1024 contiguous global-memory transactions and will read past the end of the tensor whenever `pid * BLOCK + BLOCK > N` on the last program." },
+    { "id": "D", "text": "Because `BLOCK` is a `tl.constexpr`, the mask is fully constant-folded at compile time and lanes with `offsets >= N` still incur memory traffic identical to the non-tail programs, so tail masking provides no bandwidth savings." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "In Triton, `tl.load(ptr, mask=..., other=...)` skips masked-off lanes and substitutes `other` (default 0). `tl.store(ptr, val, mask=...)` similarly suppresses masked-off writes. In the last program, 448 tail lanes fail the `offsets < N` predicate; they neither read nor write, and their contribution to `x + y` is defined by `other=0.0` (which is anyway not stored). No OOB access happens.",
+  "optionExplanations": {
+    "A": "Correct: matches Triton's documented `mask`/`other` semantics for both load and store.",
+    "B": "Wrong: Triton has no implicit bounds checking; without a mask, `tl.load` on an OOB address is undefined behavior.",
+    "C": "Wrong: `mask` applies to both loads and stores.",
+    "D": "Wrong: even if `BLOCK` is constexpr, `mask` is a runtime value dependent on `N` and `offsets`; masked lanes are suppressed at the hardware predication level."
+  },
+  "assumptions": [
+    "The pointers `x_ptr`, `y_ptr`, `out_ptr` correspond to tensors of length exactly N (no padding beyond).",
+    "Triton version implements `mask`/`other` as documented in the language reference."
+  ],
+  "nonImplications": [
+    "Does not imply that masked lanes have zero cost; they still participate in warp execution but with predicated off memory ops.",
+    "Does not imply that masking eliminates all boundary logic; complex 2-D tiling still requires per-dim masks."
+  ],
+  "misconceptionTags": ["mask_only_for_store", "triton_bounds_checking_myth"],
+  "distractorRationales": {
+    "B": "Fabricates implicit bounds checking.",
+    "C": "Misclaims that mask is store-only.",
+    "D": "Misunderstands the difference between compile-time BLOCK and runtime mask value."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:triton", "locator": "tl.load / tl.store mask and other semantics", "supports": ["A"] },
+    { "ref": "PAPER:triton", "locator": "Triton language: masked memory operations", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-TRITON-001.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

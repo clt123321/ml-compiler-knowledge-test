@@ -1,0 +1,42 @@
+{
+  "module": "pytorch_compiler",
+  "code": "D",
+  "expectedCount": 35,
+  "questions": [
+    {
+      "id": "D-DYNAMO-001",
+      "file": "data/questions/D/D-DYNAMO-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-DYNAMO-001.json",
+      "version": 1
+    },
+    {
+      "id": "D-DYNAMIC-002",
+      "file": "data/questions/D/D-DYNAMIC-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-DYNAMIC-002.json",
+      "version": 1
+    },
+    {
+      "id": "D-INDUCTOR-003",
+      "file": "data/questions/D/D-INDUCTOR-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-INDUCTOR-003.json",
+      "version": 1
+    },
+    {
+      "id": "D-AOT-004",
+      "file": "data/questions/D/D-AOT-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-AOT-004.json",
+      "version": 1
+    },
+    {
+      "id": "D-BREAK-005",
+      "file": "data/questions/D/D-BREAK-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/D/D-BREAK-005.json",
+      "version": 1
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "questionId": "C-SHAPE-004",
+  "learningObjective": "Reason about the trade-offs of static shape specialization versus symbolic-shape (dynamic) compilation at the graph-IR level.",
+  "canonicalClaims": [
+    {
+      "claim": "Specializing a symbolic-shape IR function to concrete shapes narrows its accepted input domain but exposes shape-derived constants and enables shape-specific downstream optimizations (tile sizes, kernel templates, memory planning).",
+      "conditions": [
+        "Downstream passes actually consume static shape info (tiling, autoscheduler, kernel selector).",
+        "Verifier / type system enforces the specialized shape at the function boundary."
+      ],
+      "nonImplications": [
+        "Does not imply that specialization is always beneficial; if input shapes vary at runtime, specialization inflates compile cache and warm-up cost.",
+        "Does not imply that symbolic-shape compilation is always slower; a symbolic-shape kernel can approach a specialized one for shape-insensitive ops."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "Static and symbolic shape handling in Relax / TensorIR" },
+        { "ref": "PAPER:pytorch2", "locator": "Symbolic shapes and specialization trade-offs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A specialized function is a superset of the symbolic version and can replace it in every call site.",
+      "errorType": "scope_error",
+      "whyWrong": "Specialization narrows the input domain; substituting it where shapes differ is a shape/type violation.",
+      "sourceOrEvidence": "MLIR verifier semantics"
+    },
+    {
+      "claim": "Static shape specialization is purely a naming/annotation change; the emitted kernel is unaffected.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Shape-dependent tile-size selection, kernel templates, and index constant folding all use static shape information; emitted code differs.",
+      "sourceOrEvidence": "TVM / TensorIR autoscheduler; TorchInductor"
+    },
+    {
+      "claim": "Specialized versions gracefully accept mismatched shapes and just run slower.",
+      "errorType": "wrong_condition",
+      "whyWrong": "A shape mismatch at the specialized function boundary produces a verifier error or runtime abort, not a slow fallback.",
+      "sourceOrEvidence": "MLIR verification"
+    },
+    {
+      "claim": "Compiling with symbolic shapes never sacrifices kernel quality if the tile size is 'right' for all shapes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Some tile-size selections are only optimal for a narrow shape range; a symbolic-shape kernel usually pays a small overhead compared to a well-tuned specialization.",
+      "sourceOrEvidence": "TVM autoscheduler literature; Ansor paper"
+    }
+  ],
+  "implementationFacts": [
+    "Static specialization enables: constant folding of shape-derived integer expressions, tile-size selection tied to specific dims, and elimination of shape checks.",
+    "Trade-off: N distinct shape configurations produce up to N specialized kernels (compile-cache growth)."
+  ],
+  "performanceScenarios": [
+    "Serving systems that see many input shapes often adopt bucketed specialization (e.g., specialize for power-of-two batch sizes) to bound cache growth while retaining most of the speedup."
+  ],
+  "versionSensitivity": "stable_principle"
+}

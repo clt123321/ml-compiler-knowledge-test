@@ -1,0 +1,56 @@
+{
+  "questionId": "F-BANK-003",
+  "learningObjective": "Analyze a shared-memory transpose kernel and identify which access pattern causes a 32-way bank conflict; know the padding-based mitigation.",
+  "canonicalClaims": [
+    {
+      "claim": "In a `__shared__ float tile[32][32]` arrangement on sm_80 (32 banks × 4-byte width), a warp accessing a column of the tile (fixed inner index, varying outer index across threads) causes a 32-way bank conflict; padding the inner dimension to 33 shifts the column stride off the bank period and eliminates the conflict.",
+      "conditions": [
+        "Default 4-byte bank width configuration.",
+        "The compiler does not reorder accesses to change the mapping."
+      ],
+      "nonImplications": [
+        "Does not imply that padding is always the right fix; SMEM-swizzle patterns can achieve the same without wasted SMEM.",
+        "Does not imply that the row-store side of a naive transpose conflicts (it does not)."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Shared memory bank conflicts section" },
+        { "ref": "BOOK:pmpp4", "locator": "Shared memory chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Both the row write and the transposed read are conflict-free because CUDA hardware supports multicast for arbitrary addresses.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Shared memory supports broadcast (all threads read the same address) but not multicast (distinct addresses within the same bank). Distinct-address bank conflicts serialize.",
+      "sourceOrEvidence": "CUDA C++ Best Practices Guide"
+    },
+    {
+      "claim": "The write causes the bank conflict; the read is fine because it uses the transposed pattern.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Row writes are stride-1 across banks and conflict-free; column reads hit the same bank across all warp lanes.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "nvcc automatically inserts SMEM padding when it detects bank conflicts.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The compiler cannot change user-declared SMEM layout; the fix must be source-level.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Bank conflicts are a global-memory phenomenon.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Bank conflicts are strictly a shared-memory phenomenon; global memory has coalescing rules instead.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "sm_80 shared memory: 32 banks, 4-byte-wide interleaving",
+    "`tile[r][c]` maps to bank `c mod 32` for float type",
+    "Padding `tile[32][33]` breaks 32-way conflict on column reads"
+  ],
+  "performanceScenarios": [
+    "Transpose, GEMM SMEM tiling, and reduction tree kernels all rely on conflict-free SMEM access patterns; padding, swizzling, or asymmetric shapes are the standard mitigations."
+  ],
+  "versionSensitivity": "stable_principle"
+}

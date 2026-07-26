@@ -1,0 +1,56 @@
+{
+  "questionId": "A-LITTLE-004",
+  "learningObjective": "Apply Little's Law to compute the number of in-flight memory loads required to saturate a GPU's HBM bandwidth given a target latency.",
+  "canonicalClaims": [
+    {
+      "claim": "Little's Law relates concurrency, bandwidth, and latency: to saturate a bandwidth B with latency L, one must sustain B × L bytes in flight; dividing by the transaction size gives the required outstanding request count.",
+      "conditions": [
+        "The system is in steady state (arrivals match departures).",
+        "Bandwidth is the throughput ceiling; latency is per-request round-trip."
+      ],
+      "nonImplications": [
+        "Does not imply that a single thread or warp can generate this concurrency; concurrency is aggregated across all warps × outstanding loads per warp.",
+        "Does not imply this concurrency is achievable — kernels with poor memory-level parallelism may fall short."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Little's Law and memory hierarchy chapter" },
+        { "ref": "BOOK:pmpp4", "locator": "Memory-level parallelism / latency hiding" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Little's Law's concurrency requirement depends only on bandwidth, not on latency.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Little's Law is Concurrency = Bandwidth × Latency; removing latency violates the law.",
+      "sourceOrEvidence": "H&P Ch. 4"
+    },
+    {
+      "claim": "One in-flight load per SM (108 total on A100) is enough to saturate HBM bandwidth.",
+      "errorType": "scope_error",
+      "whyWrong": "108 × 128 B = 13,824 B in flight — two orders of magnitude below the 800 KB needed at 400 ns latency and 2 TB/s.",
+      "sourceOrEvidence": "PMPP4"
+    },
+    {
+      "claim": "Warps hide latency for free; therefore memory-level parallelism has no upper bound.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Each warp can only have a bounded number of outstanding loads (MSHR entries, register-file backing for in-flight results); MLP is bounded per SM and per warp.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide (memory system limits)"
+    },
+    {
+      "claim": "The number of in-flight loads needed to saturate bandwidth is fixed at 32 (matches warp size).",
+      "errorType": "definition_confusion",
+      "whyWrong": "Warp size determines SIMT lanes, not outstanding-request concurrency.",
+      "sourceOrEvidence": "CUDA Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "Little's Law (memory form): outstanding_requests = (BW × latency) / request_size",
+    "Typical DRAM latency on modern HBM: 300-600 ns from SM to HBM and back",
+    "128-byte sector is the granularity of L2 access on Ampere/Hopper coalesced loads"
+  ],
+  "performanceScenarios": [
+    "A kernel that issues few outstanding loads per warp (long dependency chain, small block size, low occupancy) will be latency-limited even when HBM has spare bandwidth."
+  ],
+  "versionSensitivity": "stable_principle"
+}

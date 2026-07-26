@@ -1,0 +1,64 @@
+{
+  "id": "C-SHAPE-004",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Static shape specialization / Dynamic vs. symbolic shape",
+  "learningObjective": "Reason about the trade-offs of static shape specialization versus symbolic-shape (dynamic) compilation at the graph-IR level.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM Relax / TorchInductor / general graph IR",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider the following graph-level IR transformation where a symbolic-shape function is specialized to concrete shapes at compile time:\n\nBEFORE (symbolic):\n```\nfunc f(x : Tensor[N, K, f16], w : Tensor[K, M, f16]) -> Tensor[N, M, f16]:\n    return matmul(x, w)\n```\nAFTER (specialized to N=32, K=4096, M=4096):\n```\nfunc f_32x4096x4096(x : Tensor[32, 4096, f16], w : Tensor[4096, 4096, f16]) -> Tensor[32, 4096, f16]:\n    return matmul(x, w)\n```\nWhich statement about this specialization is correct?",
+  "irSnippet": "// BEFORE (symbolic shape)\nfunc.func @f(%x : tensor<?x?xf16>, %w : tensor<?x?xf16>) -> tensor<?x?xf16> {\n  %0 = \"custom.matmul\"(%x, %w) : (tensor<?x?xf16>, tensor<?x?xf16>) -> tensor<?x?xf16>\n  return %0 : tensor<?x?xf16>\n}\n\n// AFTER (shape-specialized)\nfunc.func @f_32x4096x4096(%x : tensor<32x4096xf16>, %w : tensor<4096x4096xf16>) -> tensor<32x4096xf16> {\n  %0 = \"custom.matmul\"(%x, %w) : (tensor<32x4096xf16>, tensor<4096x4096xf16>) -> tensor<32x4096xf16>\n  return %0 : tensor<32x4096xf16>\n}",
+  "options": [
+    { "id": "A", "text": "Because the specialized function has concrete shapes, it is a strict semantic superset of the symbolic version and can substitute for `f` in every call site, since concrete shape info can always be relaxed back to symbolic at will." },
+    { "id": "B", "text": "Static-shape specialization is a naming convenience only; it does not affect emitted kernel selection or downstream optimizations, because tiling and vectorization operate on abstract loop nests that ignore the concrete shape metadata." },
+    { "id": "C", "text": "After specialization, calling `f_32x4096x4096` on inputs with shape `[64, 4096]` silently returns correct but slower results because the compiler installs a runtime dispatch to the symbolic implementation." },
+    { "id": "D", "text": "Shape specialization enables downstream passes (tiling, kernel selection, constant folding of shape-derived quantities) to produce a more efficient kernel at the cost of covering only one input-shape configuration." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "Shape specialization narrows the input domain (the specialized version accepts only one shape configuration) in exchange for compile-time knowledge that enables tile-size selection, static memory planning, constant-folded index arithmetic, and shape-specific kernel dispatch. The trade-off is compilation cost and possible cache blow-up if many shape configurations need coverage.",
+  "optionExplanations": {
+    "A": "Wrong: specialization narrows the domain (subset), not a superset. Substituting for `f` in general call sites where shapes differ would be a type/shape error.",
+    "B": "Wrong: downstream passes make shape-dependent choices (tiling factors, kernel templates, vectorization width). Removing symbolic dimensions materially changes emitted code.",
+    "C": "Wrong: shape mismatch at the specialized function's boundary produces an error or verifier failure, not a silent slower path.",
+    "D": "Correct: this captures both the benefit and the cost of specialization accurately."
+  },
+  "assumptions": [
+    "The graph IR verifier enforces static shape compatibility at boundaries.",
+    "There is a downstream tiling/kernel-selection pass that uses static shape information."
+  ],
+  "nonImplications": [
+    "Does not imply that dynamic shape support is inferior in general; symbolic shapes reduce compile cache size and warm-up time.",
+    "Does not imply that a specialized kernel is always faster; if the specialization mismatches actual runtime shapes and forces re-compilation, throughput can be worse."
+  ],
+  "misconceptionTags": ["specialization_superset_confusion", "shape_specialization_free_lunch"],
+  "distractorRationales": {
+    "A": "Reverses subset/superset relation.",
+    "B": "Understates the downstream impact.",
+    "C": "Fabricates a silent-fallback behavior."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:tvm-relax", "locator": "Shape specialization / TensorIR discussion", "supports": ["D"] },
+    { "ref": "PAPER:pytorch2", "locator": "Symbolic shapes vs. specialization discussion", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-SHAPE-004.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}
