@@ -1,0 +1,117 @@
+{
+  "id": "F-BANK-003",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Shared memory bank conflicts / Matrix transpose",
+  "learningObjective": "Analyze a shared-memory transpose kernel and identify which access pattern causes a 32-way bank conflict; know the padding-based mitigation.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "32 shared-memory banks, 4-byte bank width"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "N",
+        "N"
+      ],
+      [
+        "N",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major"
+    ]
+  },
+  "stem": "Consider the following CUDA matrix-transpose kernel using shared memory, launched with `blockDim = (32, 32)` and `gridDim = (N/32, N/32)` on sm_80. Which statement about shared-memory bank conflicts is correct?",
+  "codeSnippet": "// CUDA C++, sm_80 (A100)\n__global__ void transpose(const float* __restrict__ A, float* __restrict__ B, int N) {\n    __shared__ float tile[32][32];    // 32 x 32 floats, 4 B each; 32 SMEM banks of 4 B\n    int x = blockIdx.x * 32 + threadIdx.x;\n    int y = blockIdx.y * 32 + threadIdx.y;\n\n    tile[threadIdx.y][threadIdx.x] = A[y * N + x];       // (W1) write\n    __syncthreads();\n\n    int tx = blockIdx.y * 32 + threadIdx.x;\n    int ty = blockIdx.x * 32 + threadIdx.y;\n    B[ty * N + tx] = tile[threadIdx.x][threadIdx.y];     // (R1) transposed read\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "Both the write (W1) and the transposed read (R1) are conflict-free because sm_80 supports 32-way multicast for shared memory across distinct addresses within the same bank, effectively eliminating serialization."
+    },
+    {
+      "id": "B",
+      "text": "Write (W1) is conflict-free (row stride-1 across banks); transposed read (R1) causes a 32-way bank conflict since all 32 warp lanes hit one bank; padding to `tile[32][33]` breaks the alignment."
+    },
+    {
+      "id": "C",
+      "text": "The write (W1) causes a 32-way conflict because 32 threads target the same bank while writing a row; the transposed read (R1) is conflict-free because column accesses spread evenly across banks."
+    },
+    {
+      "id": "D",
+      "text": "Bank conflicts are automatically eliminated by the CUDA compiler via a promotion pass that pads shared-memory arrays whose access patterns match a canonical conflict template, so no source-level change is required for correctness or performance."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "sm_80 shared memory has 32 banks with 4-byte-wide bank interleaving. In `tile[32][32]`, element `tile[r][c]` maps to bank `c mod 32`. Row write (W1): fix `threadIdx.y`, varying `threadIdx.x` \u2192 each thread hits a different bank \u2192 conflict-free. Column read (R1): fix `threadIdx.y`, varying `threadIdx.x` on the first index (rows) with fixed column `threadIdx.y` \u2192 all 32 threads read column `threadIdx.y`, i.e., addresses `4*(r*32 + threadIdx.y)`; each bank is `addr / 4 mod 32` = `(r*32 + threadIdx.y) mod 32` = `threadIdx.y mod 32` \u2014 same bank for all 32 threads \u2192 32-way conflict. Padding to `tile[32][33]` breaks the bank alignment.",
+  "optionExplanations": {
+    "A": "Wrong: sm_80 supports broadcast (same address across all threads \u2192 1 access) but not multicast for distinct addresses in the same bank.",
+    "C": "Wrong: the row write is not the conflict; the transposed read is.",
+    "B": "Correct: identifies the conflict location and the classic padding fix.",
+    "D": "Wrong: the CUDA compiler does not automatically eliminate SMEM bank conflicts."
+  },
+  "assumptions": [
+    "Default 4-byte shared-memory bank width on sm_80.",
+    "The kernel is intended to transpose an N \u00d7 N matrix with N a multiple of 32."
+  ],
+  "nonImplications": [
+    "Does not imply that padded tiles are always faster; padding wastes SMEM capacity, which can lower occupancy.",
+    "Does not imply that transpose kernels always need this fix; some architectures or SMEM-swizzle configurations differ."
+  ],
+  "misconceptionTags": [
+    "bank_conflict_direction",
+    "compiler_auto_pad_myth"
+  ],
+  "distractorRationales": {
+    "A": "Confuses broadcast with multicast.",
+    "C": "Swaps which side conflicts.",
+    "D": "Wrong claim about compiler behavior."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Shared memory / bank conflicts chapter",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Shared memory bank conflicts chapter",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "sm_80 shared-memory matrix transpose",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-BANK-003.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

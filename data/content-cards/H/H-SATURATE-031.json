@@ -1,0 +1,55 @@
+{
+  "questionId": "H-SATURATE-031",
+  "learningObjective": "Explain the difference between saturation and wrap-around handling of out-of-range values in integer quantization.",
+  "canonicalClaims": [
+    {
+      "claim": "Saturation clamps out-of-range values to the nearest representable extreme (preserving ordinal semantics); wrap-around applies modular arithmetic (destroying signal semantics via unexpected sign flips). Quantization frameworks universally use saturation.",
+      "conditions": [
+        "The context is DNN quantization (not bit-level modular arithmetic)."
+      ],
+      "nonImplications": [
+        "Does not imply saturation is cost-free — repeated saturation indicates a scale mismatch.",
+        "Does not imply wrap-around is never useful — some use cases (checksums, cryptography) require it."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "TensorRT INT8 saturation" },
+        { "ref": "BOOK:sze-eff", "locator": "Saturation in DNN quantization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Saturation and wrap-around are equivalent modulo a sign flip.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Saturation preserves monotonicity; wrap-around introduces discontinuities at range boundaries.",
+      "sourceOrEvidence": "Integer arithmetic semantics"
+    },
+    {
+      "claim": "Wrap-around is preferred because it preserves the exact bit count of the value.",
+      "errorType": "scope_error",
+      "whyWrong": "Bit-count preservation is not the goal of quantization; signal preservation is.",
+      "sourceOrEvidence": "Quantization theory"
+    },
+    {
+      "claim": "Weights use saturation while activations use wrap-around because CUDA integer instructions default to wrap.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both weights and activations use saturation in quantization frameworks; kernel implementations explicitly apply saturation via `min/max` or intrinsics.",
+      "sourceOrEvidence": "TensorRT / PyTorch quantization implementation"
+    },
+    {
+      "claim": "Saturation is a training-time behavior that has no runtime performance impact.",
+      "errorType": "scope_error",
+      "whyWrong": "Saturation is applied at inference; the branch or `min/max` op is emitted in generated kernels.",
+      "sourceOrEvidence": "Generated INT8 kernel assembly"
+    }
+  ],
+  "implementationFacts": [
+    "ONNX QuantizeLinear op saturates by definition.",
+    "CUDA supplies `__saturatef` and integer saturation intrinsics.",
+    "cuBLAS / cuDNN INT8 kernels saturate at write-out."
+  ],
+  "performanceScenarios": [
+    "Excessive saturation is a symptom of a too-tight quantization range; recalibrating with a higher percentile threshold helps."
+  ],
+  "versionSensitivity": "stable_principle"
+}

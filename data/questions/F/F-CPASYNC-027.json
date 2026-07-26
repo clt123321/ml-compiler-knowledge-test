@@ -1,0 +1,96 @@
+{
+  "id": "F-CPASYNC-027",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / cp.async and asynchronous global-to-shared copies",
+  "learningObjective": "Understand cp.async: what it does, on which architectures, and how it enables software pipelining of GMEM\u2192SMEM copies with compute.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80) or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "cp.async instruction (PTX)"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++ / inline PTX / Triton",
+    "compiler": "nvcc",
+    "compilerVersionScope": "CUDA 11+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement about `cp.async` (introduced in Ampere / sm_80) is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "`cp.async` issues an asynchronous copy from global memory directly to shared memory that does not pass through registers; the copy proceeds in the background while the thread continues executing, and the completion is synchronized with `cp.async.commit_group` + `cp.async.wait_group` (or higher-level barriers). This enables software-pipelined GEMM tile loads."
+    },
+    {
+      "id": "B",
+      "text": "`cp.async` is a synchronous copy that goes through registers just like a normal load-then-store; the 'async' name refers only to being callable inside asynchronous streams."
+    },
+    {
+      "id": "C",
+      "text": "`cp.async` is a Hopper-only instruction; on Ampere, all GMEM\u2192SMEM copies must go through registers."
+    },
+    {
+      "id": "D",
+      "text": "`cp.async` copies from shared memory to global memory (the reverse direction) and is used to flush computed tiles back to HBM without blocking."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "`cp.async` is a PTX instruction introduced with Ampere (sm_80) that copies data from global memory directly to shared memory, bypassing registers. This frees registers, reduces instruction count, and (crucially) allows compute to overlap with the copy \u2014 the copy runs asynchronously and the thread proceeds. `cp.async.commit_group` groups pending copies; `cp.async.wait_group N` waits until at most N outstanding groups remain. This is the mechanism behind Ampere-era software-pipelined GEMM kernels (e.g., CUTLASS multi-stage). Hopper adds TMA (Tensor Memory Accelerator) which extends this asynchronous-copy model.",
+  "optionExplanations": {
+    "A": "Correct: async GMEM\u2192SMEM without registers; enables SW pipelining.",
+    "B": "Wrong: `cp.async` is genuinely asynchronous and bypasses registers.",
+    "C": "Wrong: cp.async is Ampere+; Hopper adds TMA on top.",
+    "D": "Wrong: direction is GMEM \u2192 SMEM."
+  },
+  "assumptions": [
+    "PTX ISA as of CUDA 11+; sm_80+ hardware."
+  ],
+  "nonImplications": [
+    "Does not imply cp.async replaces regular loads for all use cases; small copies are still often direct.",
+    "Does not imply completion is automatic; explicit `wait_group` or barrier is required."
+  ],
+  "misconceptionTags": [
+    "cpasync_synchronous_myth",
+    "cpasync_hopper_only_myth"
+  ],
+  "distractorRationales": {
+    "B": "Confuses async name with async semantics.",
+    "C": "Wrong architecture generation.",
+    "D": "Wrong copy direction."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "PTX cp.async instruction; sm_80 async copy",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Asynchronous copy for software pipelining",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-CPASYNC-027.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

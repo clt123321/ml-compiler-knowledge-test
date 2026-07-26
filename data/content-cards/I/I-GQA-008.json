@@ -1,0 +1,61 @@
+{
+  "questionId": "I-GQA-008",
+  "learningObjective": "Distinguish how MQA/GQA affect KV memory, decode compute, and quality relative to MHA.",
+  "canonicalClaims": [
+    {
+      "claim": "GQA reduces per-token KV cache proportionally to H/G (where G is the number of KV groups), typically 4-8x smaller than MHA, while preserving model quality better than MQA at some KV overhead.",
+      "conditions": [
+        "H is divisible by G; each group of H/G query heads shares one K/V head.",
+        "Discussion is inference decode."
+      ],
+      "nonImplications": [
+        "Does not reduce total attention FLOPs.",
+        "Does not require training from scratch: uptraining from MHA to GQA works."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Attention variants" },
+        { "ref": "PAPER:flashattn", "locator": "Related work" }
+      ]
+    },
+    {
+      "claim": "Empirically GQA offers a favorable quality-vs-memory point between MQA and MHA and is the standard choice for large open LLMs.",
+      "conditions": [
+        "Model is trained (or uptrained) with GQA end-to-end."
+      ],
+      "nonImplications": [
+        "Does not imply GQA matches MHA quality in all evaluations."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Attention variants — quality/quantity trade-off" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GQA reduces attention FLOPs proportional to H/G.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "FLOPs per query head are unchanged; only KV storage and read bandwidth are reduced.",
+      "sourceOrEvidence": "GQA original paper"
+    },
+    {
+      "claim": "Converting an MHA model to GQA requires full retraining from random init.",
+      "errorType": "overgeneralization",
+      "whyWrong": "'Uptraining' averages/replicates existing KV projections and finetunes briefly.",
+      "sourceOrEvidence": "GQA uptraining procedure"
+    },
+    {
+      "claim": "GQA always preserves MHA quality exactly.",
+      "errorType": "overgeneralization",
+      "whyWrong": "GQA is a compromise; small quality gaps are typical though usually small.",
+      "sourceOrEvidence": "GQA empirical results"
+    }
+  ],
+  "implementationFacts": [
+    "Llama 2 70B and Llama 3 70B use GQA with 8 KV heads.",
+    "GQA is straightforward to implement: replicate/index into KV heads when computing attention per Q head."
+  ],
+  "performanceScenarios": [
+    "GQA is the main enabler of longer contexts within a fixed KV cache budget."
+  ],
+  "versionSensitivity": "stable_principle"
+}

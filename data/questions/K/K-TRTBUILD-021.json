@@ -1,0 +1,84 @@
+{
+  "id": "K-TRTBUILD-021",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "TensorRT build cost vs runtime cost",
+  "learningObjective": "Reason about the split between one-time build cost and per-inference runtime cost in TensorRT, and identify a common misdiagnosis when comparing to eager PyTorch.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any TensorRT-supported",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TensorRT",
+    "stability": "stable_principle"
+  },
+  "stem": "A team benchmarks their model as follows: 'TensorRT 8 min, PyTorch eager 0.2 s'. What is the most likely source of confusion in this comparison?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The 8 minutes is the TensorRT engine build cost, which is a one-time offline compilation of the model; the correct comparison against PyTorch eager is per-inference latency of the deserialized engine, not build time. Build cost and inference latency should never be added together for the deployment comparison."
+    },
+    {
+      "id": "B",
+      "text": "TensorRT's build step must be repeated on every inference call, whereas PyTorch eager amortizes it via warmup, which is why the 8-minute number is a per-call cost that dominates end-to-end latency."
+    },
+    {
+      "id": "C",
+      "text": "PyTorch eager is missing calls to `torch.cuda.synchronize()`, so the 0.2 s is entirely CPU-side dispatch cost; TensorRT does not require synchronization, so its 8 minutes is a true GPU-side execution time."
+    },
+    {
+      "id": "D",
+      "text": "TensorRT is always slower than PyTorch eager for BERT-sized models on modern GPUs; the 0.2 s PyTorch number reflects steady-state kernel launches, whereas TensorRT's kernel selection heuristics never converge to a competitive plan for transformer workloads."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "TensorRT's builder can spend minutes or more selecting tactics, calibrating precision and running optimization passes; this is a one-time offline cost. The relevant comparison for deployment is per-inference latency of the deserialized engine (typically milliseconds or less). Conflating build cost with inference cost is a common miscommunication in benchmarks.",
+  "optionExplanations": {
+    "A": "Correct: the standard build-vs-runtime split.",
+    "B": "Wrong: build is one-time offline, not per-call.",
+    "C": "Wrong: fabricates PyTorch measurement error.",
+    "D": "Wrong: TensorRT commonly outperforms PyTorch eager on transformers."
+  },
+  "assumptions": [
+    "The 8-minute number is the reported TensorRT build time, not an inference latency."
+  ],
+  "nonImplications": [
+    "Does not imply build time is irrelevant; long build times matter for iterative development and canary deploys.",
+    "Does not imply eager PyTorch is always slower at inference; small models with tiny kernels may favor eager."
+  ],
+  "misconceptionTags": [
+    "build_vs_inference_confusion"
+  ],
+  "distractorRationales": {
+    "B": "Wrong split of one-time vs per-call.",
+    "C": "Fabricates methodology issue.",
+    "D": "Sweeping performance claim."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:trt",
+      "locator": "Builder cost vs. runtime cost; engine deserialization",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "TensorRT build time (one-time offline) vs per-inference latency (deployment metric)",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-TRTBUILD-021.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

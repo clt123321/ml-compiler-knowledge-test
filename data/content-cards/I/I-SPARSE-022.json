@@ -1,0 +1,63 @@
+{
+  "questionId": "I-SPARSE-022",
+  "learningObjective": "Identify when unstructured or structured sparsity actually reduces wall-clock time on GPU, vs when it only reduces FLOP count.",
+  "canonicalClaims": [
+    {
+      "claim": "Unstructured sparsity typically requires very low density (well below 10%) before its FLOP savings overcome irregular indexing and imbalance overhead on GPU tensor-core hardware.",
+      "conditions": [
+        "Target hardware is modern NVIDIA GPU with tensor cores.",
+        "Unstructured means arbitrary zero pattern requiring index metadata."
+      ],
+      "nonImplications": [
+        "Does not imply sparsity is useless; structured sparsity works.",
+        "Does not imply the break-even density is fixed; it depends on dtype and kernel."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Sparsity in DNN accelerators" },
+        { "ref": "DOC:cuda-best", "locator": "cuSPARSELt / sparse tensor cores" }
+      ]
+    },
+    {
+      "claim": "For LLM decode (bandwidth-bound), sparse weight formats that reduce HBM traffic can give wall-clock speedup, but only if a matching sparse kernel exists for the dtype.",
+      "conditions": [
+        "Decode is memory-bandwidth bound.",
+        "A sparse kernel supporting the format and dtype is available."
+      ],
+      "nonImplications": [
+        "Does not imply FLOP-only savings translate to speedup.",
+        "Does not imply all sparse formats have kernels."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Sparsity and bandwidth in inference" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any sparsity >50% gives proportional speedup on modern GPUs.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Only structured sparsity (e.g., 2:4) has hardware-native support; unstructured requires software indexing overhead.",
+      "sourceOrEvidence": "cuSPARSELt spec"
+    },
+    {
+      "claim": "Hardware transparently skips zero tiles for any sparsity pattern.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Sparse tensor cores require the 2:4 structure metadata.",
+      "sourceOrEvidence": "Ampere sparse tensor-core spec"
+    },
+    {
+      "claim": "FLOP reduction directly translates to latency reduction on decode.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Decode is bandwidth-bound; FLOP savings alone do not shorten wall time.",
+      "sourceOrEvidence": "Roofline analysis for decode"
+    }
+  ],
+  "implementationFacts": [
+    "2:4 sparsity: within every group of 4 consecutive elements, at most 2 are nonzero; hardware performs the compressed multiply.",
+    "Block sparsity (16x16 or 32x32 blocks) is another practical format with corresponding kernels."
+  ],
+  "performanceScenarios": [
+    "Weight-only quantization achieves bandwidth savings comparable to structured sparsity and is often easier to deploy."
+  ],
+  "versionSensitivity": "stable_principle"
+}

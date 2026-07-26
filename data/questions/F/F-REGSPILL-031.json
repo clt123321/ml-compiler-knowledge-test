@@ -1,0 +1,95 @@
+{
+  "id": "F-REGSPILL-031",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Register spill and local memory",
+  "learningObjective": "Understand what CUDA 'local memory' actually is and when register spilling occurs.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any current NVIDIA architecture",
+    "device": "GPU",
+    "requiredFeatures": [
+      "per-thread local memory (backed by L1/L2/DRAM)"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "In CUDA, when nvcc reports register spilling to 'local memory', which statement is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "'Local memory' in CUDA is per-thread private storage that lives in global memory (backed by L1 / L2 / DRAM), not on-chip; spilled registers therefore incur high-latency accesses through the memory hierarchy, and heavy spilling typically kills performance."
+    },
+    {
+      "id": "B",
+      "text": "'Local memory' is a small dedicated on-chip cache (~4 KB per thread) that is faster than shared memory; register spills into it are essentially free and do not affect kernel throughput."
+    },
+    {
+      "id": "C",
+      "text": "'Local memory' is the same physical memory as shared memory; the compiler decides at build time which lanes get 'local' vs 'shared' slots, and spilling only affects certain warps."
+    },
+    {
+      "id": "D",
+      "text": "Register spilling never happens because nvcc emits a compile error whenever a kernel would exceed the per-thread register budget; kernels only compile when the register file is sufficient."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "CUDA 'local memory' is a misleading name: it is thread-private storage that lives in the same physical memory (GDDR/HBM) as global memory, going through the L1/L2 caches. Register spills are stores/loads of scalar values to/from this local memory. Because DRAM latency is high, heavy spilling severely hurts performance. `nvcc -Xptxas -v` reports spill stores/loads; profilers report local-memory traffic. Local memory is not shared memory (choice C), nor a special fast cache (choice B), nor a build error (choice D).",
+  "optionExplanations": {
+    "A": "Correct: local memory = per-thread private slice of global memory (cached).",
+    "B": "Wrong: not a fast on-chip cache.",
+    "C": "Wrong: local and shared are distinct memory spaces.",
+    "D": "Wrong: nvcc silently spills; it does not error."
+  },
+  "assumptions": [
+    "Standard CUDA memory model as documented since CUDA 1.0."
+  ],
+  "nonImplications": [
+    "Does not imply all local memory accesses are slow; L1 caches many spilled accesses.",
+    "Does not imply spilling is always fatal; small amounts may be acceptable, especially for cold paths."
+  ],
+  "misconceptionTags": [
+    "local_mem_onchip_myth",
+    "local_eq_shared_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates a fast on-chip local memory.",
+    "C": "Confuses local with shared.",
+    "D": "Wrong claim that spilling errors out."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Memory Hierarchy \u2014 local memory (per-thread) description",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Register spilling and local memory usage",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Register spill latency impact via local memory (DRAM-backed)",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-REGSPILL-031.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

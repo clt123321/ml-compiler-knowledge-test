@@ -1,0 +1,49 @@
+{
+  "questionId": "F-AUTOTUNE-008",
+  "learningObjective": "Understand triton.autotune: key-based caching, Config parameters, and the limits of the search.",
+  "canonicalClaims": [
+    {
+      "claim": "`triton.autotune` measures each user-listed Config once per distinct `key` tuple, caches the winner, and reuses it for future launches with the same key. Configs bundle tile-size constants plus `num_warps` and `num_stages`.",
+      "conditions": ["Standard Triton autotune usage."],
+      "nonImplications": [
+        "Does not imply the search is exhaustive over all possible configs.",
+        "Does not imply the cache is persistent across processes by default."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "triton.autotune / Config docs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Autotune exhaustively searches all possible (BM, BN, BK, num_warps, num_stages).",
+      "errorType": "overgeneralization",
+      "whyWrong": "It only tests the user-provided list.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "Autotune runs only at compile time.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is invoked on first launch of each new key tuple, at runtime.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "`num_warps` is a free-form runtime argument the caller passes at each launch.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is fixed per Config in the autotune list.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "Autotune guarantees optimal selection under noise.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Measurement variance can pick a suboptimal config.",
+      "sourceOrEvidence": "Triton docs / general benchmark practice"
+    }
+  ],
+  "implementationFacts": [
+    "`key=['M','N','K']` re-tunes when any of these change value.",
+    "In-memory cache; TRITON_CACHE_DIR can persist compiled kernels but not autotune choices by default."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

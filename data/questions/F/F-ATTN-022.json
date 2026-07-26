@@ -1,0 +1,129 @@
+{
+  "id": "F-ATTN-022",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Attention \u2014 naive scaled dot-product vs materialized attention matrix",
+  "learningObjective": "Reason about the memory-traffic footprint of naive attention and identify the main bottleneck for long sequences.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100) or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "HBM bandwidth constraint"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA / Triton",
+    "frameworkVersionScope": "N/A (algorithmic)",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "B",
+        "H",
+        "S",
+        "D"
+      ],
+      [
+        "B",
+        "H",
+        "S",
+        "D"
+      ],
+      [
+        "B",
+        "H",
+        "S",
+        "D"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "In a naive scaled-dot-product attention `O = softmax(Q K^T / sqrt(d)) V` implemented as three separate kernels (compute S = QK^T, materialize P = softmax(S), compute O = PV), Q/K/V/O are FP16 with shape `[B, H, S, D]`. Which statement about memory traffic on A100 is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Because Q, K, V are FP16, all intermediate tensors including P and S are automatically kept in registers by the CUDA compiler; there is no HBM traffic for the S \u00d7 S intermediates regardless of S."
+    },
+    {
+      "id": "B",
+      "text": "The naive path is limited by the D\u00d7D dot product's compute cost, not memory; the S\u00d7S intermediate is only S*S/32 elements after warp-level reduction and never materialized in HBM."
+    },
+    {
+      "id": "C",
+      "text": "Attention is compute-bound at all sequence lengths on A100 because FP16 matmul throughput is far higher than HBM bandwidth; the O(S^2) memory issue is a theoretical concern with no practical impact."
+    },
+    {
+      "id": "D",
+      "text": "For each (batch, head), the naive path allocates and stores the `S \u00d7 S` intermediate P (and S) in HBM: `2 * S^2 * sizeof(FP16)` bytes per (batch, head). For `S = 8192`, that is ~256 MB per (B,H) \u2014 the O(S^2) memory footprint is the dominant cost and grows quadratically with sequence length, making it infeasible for long sequences."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "In naive three-kernel attention, the intermediate scores `S = QK^T` (shape [S, S] per head) and the softmax output `P = softmax(S)` (same shape) must be written to and read from HBM between kernels because register/SMEM is insufficient. The size is O(S^2 * sizeof) per (batch, head). For B=1, H=1, S=8192, FP16 that is 8192*8192*2 = ~128 MB for S plus another ~128 MB for P; with many batches/heads this dominates HBM traffic and quickly becomes infeasible. This is precisely the problem FlashAttention solves via tiled online-softmax computation that never materializes S/P.",
+  "optionExplanations": {
+    "A": "Wrong: FP16 doesn't imply register residency of S\u00d7S intermediates.",
+    "B": "Wrong: intermediates are per-thread partial values and cannot avoid being materialized in HBM without a tiled algorithm.",
+    "C": "Wrong: at large S, HBM traffic for S\u00d7S dominates.",
+    "D": "Correct: naive attention has O(S^2) HBM footprint per (B,H)."
+  },
+  "assumptions": [
+    "Three-kernel naive implementation without tiled online-softmax.",
+    "FP16 storage of Q/K/V/O and intermediates."
+  ],
+  "nonImplications": [
+    "Does not imply naive attention is always slower than FlashAttention; for very small S it can be comparable.",
+    "Does not imply FP16 intermediates are numerically fine; some intermediates need FP32 for stability."
+  ],
+  "misconceptionTags": [
+    "attention_compute_bound_myth",
+    "fp16_register_intermediate_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim about automatic register residency.",
+    "B": "Ignores intermediate materialization in HBM.",
+    "C": "Denies the O(S^2) memory problem."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "FlashAttention paper \u2014 problem statement, Sect. 2",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Memory bandwidth limits",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Naive attention HBM footprint at S=8192 FP16 on A100",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-ATTN-022.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

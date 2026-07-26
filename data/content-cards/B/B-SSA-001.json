@@ -1,0 +1,51 @@
+{
+  "questionId": "B-SSA-001",
+  "learningObjective": "Precisely characterize the defining property of SSA (Static Single Assignment) form and distinguish it from related notions.",
+  "canonicalClaims": [
+    {
+      "claim": "SSA is a syntactic IR property: each variable name has exactly one textual definition, and φ-functions at control-flow join points merge reaching definitions from predecessor blocks.",
+      "conditions": [
+        "The IR admits a well-formed CFG.",
+        "Loops introduce φ-functions at loop headers to merge initial and backedge values."
+      ],
+      "nonImplications": [
+        "Does not imply φ-functions have runtime cost.",
+        "Does not imply loops must be unrolled to satisfy SSA."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "SSA chapter (§9)" },
+        { "ref": "BOOK:appel", "locator": "SSA chapter" },
+        { "ref": "DOC:llvm-langref", "locator": "LLVM SSA form" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "SSA prohibits loops because a variable would be written on each iteration.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SSA is a textual property; a loop header uses a single φ-function to merge the initial value and the backedge value.",
+      "sourceOrEvidence": "EAC3 SSA chapter"
+    },
+    {
+      "claim": "SSA is a memory-layout property enforced by the register allocator.",
+      "errorType": "scope_error",
+      "whyWrong": "SSA is an IR-level syntactic property; register allocation typically operates after out-of-SSA translation.",
+      "sourceOrEvidence": "Appel, register allocation chapters"
+    },
+    {
+      "claim": "SSA variables must be compile-time constants.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Single assignment refers to a single textual definition; the assigned expression can be a runtime-computed value.",
+      "sourceOrEvidence": "EAC3 SSA definitions"
+    }
+  ],
+  "implementationFacts": [
+    "Cytron et al. algorithm places φ-functions using dominance frontiers.",
+    "Out-of-SSA translation inserts copies at predecessor blocks to eliminate φ-functions.",
+    "LLVM, MLIR, and modern compilers use SSA-based IRs."
+  ],
+  "performanceScenarios": [
+    "SSA simplifies constant propagation, dead-code elimination, and value numbering by making def-use relationships explicit."
+  ],
+  "versionSensitivity": "stable_principle"
+}

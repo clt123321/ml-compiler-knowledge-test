@@ -1,0 +1,47 @@
+{
+  "questionId": "L-SHAPECOV-012",
+  "learningObjective": "Design a shape-coverage matrix for testing a GPU kernel so that the test suite covers boundary shapes, tile-boundary shapes, and typical production shapes.",
+  "canonicalClaims": [
+    {
+      "claim": "A shape-coverage matrix should include empty shapes, singletons, tile-boundary sizes (tile, tile+1, tile-1), a few large production sizes, and a random-shape fuzz set to catch masked-load boundary bugs and rare corner cases.",
+      "conditions": [
+        "The kernel has a compile-time tile size or fixed vector width.",
+        "The kernel uses masked loads/stores at partial tiles."
+      ],
+      "nonImplications": [
+        "Does not imply exhaustive testing of every shape.",
+        "Does not imply fuzz shapes replace named boundary shapes."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Boundary handling in GPU kernels" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Power-of-two shapes are sufficient for coverage.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Boundary bugs live at non-power-of-two sizes and near tile boundaries.",
+      "sourceOrEvidence": "Standard kernel testing methodology"
+    },
+    {
+      "claim": "Only large shapes need testing.",
+      "errorType": "scope_error",
+      "whyWrong": "Empty and singleton shapes catch degenerate-case bugs.",
+      "sourceOrEvidence": "PyTorch testing practice"
+    },
+    {
+      "claim": "Only current production shapes need testing.",
+      "errorType": "scope_error",
+      "whyWrong": "Overfits tests to today's workload; future shape changes will silently break.",
+      "sourceOrEvidence": "Software testing methodology"
+    },
+    {
+      "claim": "Fuzz-only shape coverage replaces named boundary shapes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Fuzz is probabilistic; named boundaries provide guaranteed coverage of known edge cases.",
+      "sourceOrEvidence": "Property-based testing literature"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

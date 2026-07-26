@@ -1,0 +1,94 @@
+{
+  "id": "J-TTFT-002",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "TTFT / Metric definition and diagnosis",
+  "learningObjective": "Define TTFT precisely and use timeline data to diagnose which phase drives it.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 2,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic (vLLM / TRT-LLM / SGLang)",
+    "stability": "stable_principle"
+  },
+  "stem": "The latency budget for one request is broken down in the timeline below. Which choice correctly identifies TTFT and its dominant contributor for this request?",
+  "profileData": "Per-request timeline (single request, batch size 1):\n  T0: request arrives at server\n  T0 → T0 + 5 ms  : queueing (server busy with other requests)\n  T0 + 5 ms  → T0 + 8 ms  : tokenization + input transfer\n  T0 + 8 ms  → T0 + 190 ms: prefill of a 1024-token prompt on a single GPU\n  T0 + 190 ms → T0 + 210 ms: first token generation (decode step 1) + detokenize + response send\n  T0 + 210 ms → T0 + 500 ms: subsequent 30 decode steps (average 9.7 ms/token)",
+  "options": [
+    {
+      "id": "A",
+      "text": "TTFT is the total decode time (about 310 ms in this trace); the dominant factor is the per-step decode latency, so mitigation should focus on speeding up decode via KV cache quantization or speculative decoding."
+    },
+    {
+      "id": "B",
+      "text": "TTFT is only the queueing time (5 ms here); the prefill and decode contribute to throughput but not TTFT because those computations happen 'inside' the model and are amortized across all output tokens."
+    },
+    {
+      "id": "C",
+      "text": "TTFT = time from request arrival to when the first output token is available (~210 ms here). It is dominated by the 182 ms prefill of the 1024-token prompt; mitigation focuses on prefill (chunked prefill, prefix caching, tensor parallelism)."
+    },
+    {
+      "id": "D",
+      "text": "TTFT is the average inter-token latency of subsequent decode steps (~9.7 ms/token in this trace); it excludes the prefill, which is a separate metric usually called 'time-to-prefill-complete'."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "TTFT (Time To First Token) is the wall-clock time from when the request arrives at the server to when the first output token is delivered. In this trace: 5 ms queue + 3 ms tokenize/transfer + 182 ms prefill + ~20 ms first-token generation/response = ~210 ms. The dominant component is the 182 ms prefill of the 1024-token prompt. Mitigations targeting TTFT focus on prefill: chunked prefill (overlap with decode of other requests), prefix caching (skip prefill for cache-hit prefixes), and tensor parallelism (parallelize prefill compute).",
+  "optionExplanations": {
+    "A": "Wrong: this describes total generation latency, not TTFT.",
+    "B": "Wrong: TTFT includes all wall-clock time until the first token, not just queueing.",
+    "C": "Correct: TTFT definition and its prefill-dominated composition here.",
+    "D": "Wrong: that is TPOT (Time Per Output Token) / inter-token latency, not TTFT."
+  },
+  "assumptions": [
+    "'First token' is delivered as soon as it is available (streaming).",
+    "Tokenization and detokenize are minor components and included in TTFT bookkeeping."
+  ],
+  "nonImplications": [
+    "Does not imply that reducing prefill always reduces TTFT proportionally; other components (queueing under load) may become dominant.",
+    "Does not imply that TTFT is the only or most important metric; TPOT and throughput matter too."
+  ],
+  "misconceptionTags": [
+    "ttft_decode_confusion",
+    "ttft_queue_only"
+  ],
+  "distractorRationales": {
+    "A": "Confuses TTFT with total generation time.",
+    "B": "Reduces TTFT to queue time only.",
+    "D": "Confuses TTFT with TPOT."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:vllm",
+      "locator": "Serving metrics — TTFT / TPOT definitions",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:trtllm",
+      "locator": "TensorRT-LLM performance metrics",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "TTFT definition and its contributor breakdown in a batch-1 request",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/J/J-TTFT-002.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

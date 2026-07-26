@@ -1,0 +1,56 @@
+{
+  "questionId": "D-COND-027",
+  "learningObjective": "Distinguish `torch.cond` from `torch.where` and identify when each is the appropriate rewrite for a data-dependent branch.",
+  "canonicalClaims": [
+    {
+      "claim": "`torch.where(cond, a, b)` evaluates both arms and selects per element; `torch.cond(cond, fn_true, fn_false, operands)` captures each arm as a subgraph and only one arm runs at execution time. Both are compile-friendly (Inductor lowers `torch.where` to pointwise select; `torch.cond` is preserved as a control-flow op through torch.export).",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 with torch.cond support.",
+        "Arms produce shape-compatible outputs."
+      ],
+      "nonImplications": [
+        "Does not imply one is universally faster; the trade-off depends on arm cost.",
+        "Does not imply torch.cond avoids all guards / specialization."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-dynamo", "locator": "torch.cond / torch.where" },
+        { "ref": "DOC:torch-export", "locator": "torch.cond via export" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "torch.where is semantically incorrect for data-dependent selection.",
+      "errorType": "definition_confusion",
+      "whyWrong": "torch.where selects per element with a well-defined semantics; it is a valid rewrite when both arms are cheap.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "torch.cond is deprecated in favor of torch.where.",
+      "errorType": "version_leak",
+      "whyWrong": "torch.cond is a current API for control-flow capture.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "torch.where captures each arm as a subgraph and only one runs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "torch.where evaluates both arms; only torch.cond captures separate subgraphs.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "Neither is compatible with torch.compile.",
+      "errorType": "scope_error",
+      "whyWrong": "Both are supported.",
+      "sourceOrEvidence": "torch.compile docs"
+    }
+  ],
+  "implementationFacts": [
+    "torch.where lowers to pointwise select in Inductor",
+    "torch.cond captures each arm as an FX subgraph",
+    "torch.cond is preserved through torch.export (as a HigherOrderOp)"
+  ],
+  "performanceScenarios": [
+    "For very cheap arms, torch.where is often faster (fully parallel); for expensive/asymmetric arms, torch.cond avoids wasted work."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

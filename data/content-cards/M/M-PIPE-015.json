@@ -1,0 +1,40 @@
+{
+  "questionId": "M-PIPE-015",
+  "learningObjective": "Explain the pipeline-parallel bubble and how microbatching reduces it.",
+  "canonicalClaims": [
+    {
+      "claim": "In pipeline parallelism with P stages and M microbatches, the classical GPipe-style schedule has a bubble fraction of (P-1)/(P + M - 1) of the total time; increasing M reduces the fraction of time spent in the bubble.",
+      "conditions": [
+        "All microbatches have equal per-stage cost.",
+        "Forward and backward are pipelined identically (or the schedule accounts for the split).",
+        "Communication between stages is overlapped or negligible relative to compute."
+      ],
+      "nonImplications": [
+        "Does not imply the bubble ever reaches zero — with a finite M there is always a fill/drain period of P-1 stages.",
+        "Does not imply that M can be increased without limit; larger M means more activations to keep alive (or recomputation), raising memory pressure."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 discussion of pipeline parallelism and utilization" },
+        { "ref": "PAPER:gspmd", "locator": "§ discussion of pipelining vs SPMD partitioning" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The pipeline bubble is a property of the compiler, not the schedule; a smart compiler can eliminate it entirely for any P and M.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The bubble is inherent to fill/drain of a P-stage pipeline with finite microbatches; better schedules (1F1B, interleaved) can hide but not eliminate it below a fundamental floor."
+    },
+    {
+      "claim": "Increasing the number of microbatches M has no effect on memory usage; only P matters.",
+      "errorType": "scope_error",
+      "whyWrong": "In GPipe, all M microbatches keep activations alive until backward; memory scales with M. Recomputation or 1F1B mitigates but does not eliminate this trade-off."
+    },
+    {
+      "claim": "Pipeline parallelism reduces the wall-clock time of a single microbatch's forward+backward compared to running the whole model on one device.",
+      "errorType": "definition_confusion",
+      "whyWrong": "For a single microbatch, pipeline adds inter-stage communication and does not shorten critical-path compute. Pipelining amortizes across many microbatches to raise throughput."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

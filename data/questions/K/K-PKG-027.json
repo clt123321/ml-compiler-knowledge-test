@@ -1,0 +1,91 @@
+{
+  "id": "K-PKG-027",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "Model packaging and serialization",
+  "learningObjective": "Describe what typically goes into a model deployment package (weights + graph + metadata) and why the packaging boundary matters for reproducibility.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic (SavedModel, TorchScript, ONNX, GGUF, safetensors)",
+    "stability": "stable_principle"
+  },
+  "stem": "Which is the most complete description of what a well-packaged inference model artifact typically contains?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Only the weight tensors serialized as a single binary blob; graph structure and signatures are inferred by the runtime at load time by tracing the model on a synthetic input tensor of zeros."
+    },
+    {
+      "id": "B",
+      "text": "Only the Python source code of the model; runtime re-instantiates and initializes weights from a random seed at deployment because random weights are close enough to the trained ones for inference."
+    },
+    {
+      "id": "C",
+      "text": "(i) The graph structure or compiled program; (ii) the weight tensors with dtype/shape/layout metadata; (iii) input/output signatures (names, dtypes, shape specs); (iv) preprocessing/postprocessing metadata (tokenizer config, normalization stats, calibration scales for quantized models) — plus a version tag identifying the schema of the archive itself."
+    },
+    {
+      "id": "D",
+      "text": "Only a URL pointing to the model in the training framework's registry; the runtime downloads weights and code fresh on every process start to guarantee freshness of the artifact."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "A robust deployment artifact contains structure (graph or compiled program), weights (with metadata), signatures, and preprocessing/postprocessing metadata, plus an archive version. Options A/B/D describe non-viable packaging schemes: shipping only weights would leave graph and pre/postprocessing undefined; shipping only source and random-initializing weights is nonsensical; downloading on every start couples deployment to network availability and defeats reproducibility.",
+  "optionExplanations": {
+    "A": "Wrong: weights alone are insufficient.",
+    "B": "Wrong: random init is not equivalent to trained weights.",
+    "C": "Correct: matches standard packaging (SavedModel, TorchScript, ONNX, safetensors + config).",
+    "D": "Wrong: network-dependent deployment breaks reproducibility."
+  },
+  "assumptions": [
+    "Production deployment where reproducibility, portability and offline operation matter."
+  ],
+  "nonImplications": [
+    "Does not imply a single format fits every use case; the LLM community often uses safetensors + tokenizer config + generation config as multiple files rather than one bundle.",
+    "Does not imply preprocessing metadata is always separable from the model; some vendors embed it in the compiled artifact."
+  ],
+  "misconceptionTags": [
+    "weights_only_myth",
+    "on_demand_download_myth"
+  ],
+  "distractorRationales": {
+    "A": "Insufficient content.",
+    "B": "Broken assumption about random weights.",
+    "D": "Wrong deployment discipline."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-export",
+      "locator": "torch.export package contents",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:onnx",
+      "locator": "ModelProto structure: graph + initializers + metadata",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-PKG-027.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

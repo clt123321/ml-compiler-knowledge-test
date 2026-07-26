@@ -1,0 +1,93 @@
+{
+  "id": "C-LOOPIR-023",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Loop-level IR: affine analysis and loop reordering",
+  "learningObjective": "Reason about when two nested loops in a loop-level IR can be safely interchanged based on the affine access patterns of the loop body.",
+  "archetype": "ir_transformation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "MLIR affine / general loop IR",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider the loop nest below (loop-level IR). The pass wants to interchange the `i` and `j` loops. Which condition is required for the swap to preserve semantics?",
+  "irSnippet": "// BEFORE\naffine.for %i = 0 to M {\n  affine.for %j = 0 to N {\n    %v = affine.load %B[%i, %j] : memref<MxNxf32>\n    affine.store %v, %C[%i, %j] : memref<MxNxf32>\n  }\n}\n\n// AFTER (proposed)\naffine.for %j = 0 to N {\n  affine.for %i = 0 to M {\n    %v = affine.load %B[%i, %j] : memref<MxNxf32>\n    affine.store %v, %C[%i, %j] : memref<MxNxf32>\n  }\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "Interchange requires the compiler to first fully unroll one of the loops; loop interchange on rolled loops is not a supported transformation in affine IR. Under this account, interchange in an affine IR must be preceded by fully unrolling the outer loop into straight-line code; the interchange transformation is defined only on unrolled loop bodies where the induction variable has been specialized to concrete values."
+    },
+    {
+      "id": "B",
+      "text": "The swap is always safe because loop bounds are constant integers and the loop body is purely elementwise; interchange is a syntactic transformation that never changes semantics."
+    },
+    {
+      "id": "C",
+      "text": "Interchange is unsafe here because `M` and `N` may differ; only square loop nests (`M == N`) can be interchanged, so a runtime check is required. In this description, only square loop nests where the loop bounds are equal integer constants can be interchanged safely; rectangular nests such as `M != N` require a preliminary padding pass to align the iteration domains before the swap."
+    },
+    {
+      "id": "D",
+      "text": "Interchange preserves semantics iff no dependence in the original loop nest is violated by the reordering — for pure elementwise stores that read and write disjoint per-iteration locations (no loop-carried dependence), interchange is safe."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Loop interchange preserves semantics iff every dependence direction vector in the original nest remains legal after the swap. For an elementwise nest that reads B[i,j] and writes C[i,j] with disjoint iterations (no loop-carried dependence), any permutation of loops is safe. In general, dependence-vector analysis is required: a dependence with a `< , >` direction pair becomes `> , <` after interchange, which is illegal. Loop bounds and shape equalities are irrelevant to legality; unrolling is not a prerequisite.",
+  "optionExplanations": {
+    "A": "Wrong: interchange operates on rolled loops directly.",
+    "B": "Wrong: interchange is not always safe; loop-carried dependences can be violated.",
+    "C": "Wrong: legality does not depend on equality of the loop trip counts.",
+    "D": "Correct: standard dependence-based legality rule for loop interchange."
+  },
+  "assumptions": [
+    "The IR is affine (indices are affine functions of loop induction variables) so dependence analysis is tractable.",
+    "The two loops iterate independently within their bounds."
+  ],
+  "nonImplications": [
+    "Does not imply that legal interchange always improves performance; cache access pattern matters.",
+    "Does not imply interchange is the only reordering: skewing and tiling are related but distinct."
+  ],
+  "misconceptionTags": [
+    "loop_interchange_always_safe",
+    "interchange_requires_square"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim about unrolling.",
+    "B": "Ignores dependence analysis.",
+    "C": "Wrong condition on trip counts."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Loop transformations and dependence testing",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "affine dialect and loop transformations",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-LOOPIR-023.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

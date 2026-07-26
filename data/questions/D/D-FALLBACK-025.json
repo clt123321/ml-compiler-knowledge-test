@@ -1,0 +1,95 @@
+{
+  "id": "D-FALLBACK-025",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Eager fallback / ATen fallback for unsupported ops",
+  "learningObjective": "Explain how TorchInductor handles an op that has no direct lowering (falls back to the ATen implementation) and what that means for kernel structure.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "In the following compiled function, `weird_op` has no Inductor lowering but has a CUDA implementation in ATen. Which statement best describes what appears in the emitted code?",
+  "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    a = x * 2.0\n    b = torch.ops.aten.weird_op(a)   # no Inductor lowering; ATen CUDA impl exists\n    c = b + 1.0\n    return c\n\n# Inductor generates: pointwise Triton kernel for (x * 2.0), an ATen call for weird_op,\n# then another pointwise Triton kernel for (+ 1.0).",
+  "options": [
+    {
+      "id": "A",
+      "text": "Because `weird_op` has no Inductor lowering, the entire compiled function silently falls back to eager mode; no Triton kernel is generated even for `x*2` or `b+1`. In this framing, because `weird_op` has no Inductor lowering, the entire compiled function silently falls back to eager mode for every call; no Triton kernel is generated even for the pointwise ops (`x*2` and `b+1`) that surround the opaque op."
+    },
+    {
+      "id": "B",
+      "text": "TorchInductor emits an ATen op fallback (a call to the existing CUDA kernel via the wrapper code) at the position of `weird_op`, splitting the fused Triton chain into two pointwise kernels around the fallback. This preserves correctness with a fusion boundary imposed by the opaque op."
+    },
+    {
+      "id": "C",
+      "text": "TorchInductor recompiles `weird_op` from its CUDA source into Triton at trace time using a source-to-source translator; the whole chain becomes one fused Triton kernel. Under this reading, TorchInductor recompiles `weird_op` from its CUDA source into a Triton equivalent at trace time using a built-in source-to-source translator; the whole chain therefore becomes a single fused Triton kernel with no fusion boundary at the opaque op."
+    },
+    {
+      "id": "D",
+      "text": "The presence of an ATen-only op forces TorchInductor to inline the CUDA kernel's PTX inside a single Triton kernel, achieving full fusion by concatenating PTX sections. In this account, the presence of an ATen-only op forces TorchInductor to inline the CUDA kernel's PTX inside a single Triton kernel, achieving full fusion by concatenating PTX sections generated from the surrounding Triton codegen and the ATen kernel's device code."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "When TorchInductor encounters an op with no lowering but with an ATen implementation, it inserts an ATen fallback call at that position in the generated wrapper code. Ops before and after are still compiled to Triton pointwise kernels, but the opaque op forms a fusion boundary, so the resulting code launches a Triton kernel, then the ATen kernel, then another Triton kernel. The rest of the function is not thrown to eager mode, and no PTX inlining happens.",
+  "optionExplanations": {
+    "A": "Wrong: only the opaque op falls back; surrounding ops still compile.",
+    "B": "Correct: standard ATen-fallback + fusion-boundary behavior.",
+    "C": "Wrong: no source-to-source CUDA-to-Triton translation happens.",
+    "D": "Wrong: no PTX inlining."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 default Inductor behavior.",
+    "`weird_op` has a valid ATen CUDA implementation and meta impl."
+  ],
+  "nonImplications": [
+    "Does not imply that ATen fallbacks are always slow; well-tuned ATen kernels can outperform Triton fallbacks in some cases.",
+    "Does not imply that fusion never continues across ATen fallbacks; sometimes users can eliminate the fallback by supplying a decomposition."
+  ],
+  "misconceptionTags": [
+    "fallback_kills_all_fusion",
+    "cuda_to_triton_transpiler"
+  ],
+  "distractorRationales": {
+    "A": "Overstates the fallback scope.",
+    "C": "Fabricates a nonexistent translator.",
+    "D": "Fabricates a nonexistent PTX inline mechanism."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Fallback to ATen ops; fusion boundaries",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Inductor lowering coverage and fallbacks",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-FALLBACK-025.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,57 @@
+{
+  "questionId": "H-GRAN-011",
+  "learningObjective": "Distinguish per-tensor, per-channel, and per-group quantization by scale/zero-point count and hardware/kernel implications.",
+  "canonicalClaims": [
+    {
+      "claim": "Quantization granularity ranges from one (scale, zero-point) per tensor to one per (channel, group) tile: per-tensor is cheapest but least accurate; per-channel adds negligible epilogue cost with better fit; per-group (typical group_size 128) is standard for W4A16 kernels balancing accuracy and metadata.",
+      "conditions": [
+        "The kernel is designed for the chosen granularity (per-tensor kernels cannot consume per-group scales).",
+        "Metadata storage is accounted for in the memory budget."
+      ],
+      "nonImplications": [
+        "Does not imply finer granularity is always better; smaller groups add metadata that can offset accuracy gains.",
+        "Does not imply the same granularity must be used for weights and activations."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:awq", "locator": "Per-group scale rationale" },
+        { "ref": "PAPER:gptq", "locator": "Per-group W4A16 quantization" },
+        { "ref": "BOOK:sze-eff", "locator": "Quantization granularity" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Per-tensor quantization is strictly more accurate than per-channel because Tensor Cores run at peak with a single scale.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Per-tensor forces one scale for heterogeneous channels, degrading accuracy; per-channel adds epilogue math but is not throughput-limited by scale handling.",
+      "sourceOrEvidence": "TensorRT per-channel quant analysis"
+    },
+    {
+      "claim": "Per-group quantization is illegal because a dot product cannot mix multiple scales.",
+      "errorType": "wrong_condition",
+      "whyWrong": "W4A16 kernels perform grouped partial accumulation: accumulate within a group, apply group scale, then combine — a standard pattern in GPTQ/AWQ kernels.",
+      "sourceOrEvidence": "GPTQ / AWQ kernel implementations (e.g., ExLlama, Marlin)"
+    },
+    {
+      "claim": "Per-channel scales must always be per-input-channel (columns of W).",
+      "errorType": "definition_confusion",
+      "whyWrong": "For a `[out, in]` weight, per-output-channel (per-row) is more common because it allows fused into the epilogue; per-input-channel would require per-K-step handling.",
+      "sourceOrEvidence": "TensorRT default per-channel"
+    },
+    {
+      "claim": "Group size is arbitrary and does not affect kernel design.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Group size must divide the K-axis tile of the GEMM kernel; typical values are 32, 64, 128 aligned with kernel tile sizes.",
+      "sourceOrEvidence": "AWQ / GPTQ kernel documentation"
+    }
+  ],
+  "implementationFacts": [
+    "AWQ uses group_size = 128 as its default.",
+    "TensorRT default weight quantization: symmetric per-channel INT8.",
+    "Per-group INT4 GEMMs on GPU: Marlin, ExLlama, gptq_gemm variants."
+  ],
+  "performanceScenarios": [
+    "For a 4096×4096 weight matrix, per-tensor uses 2 scalars; per-channel uses 4096; per-group (128) uses 4096×32 = 131072 scalars — still tiny compared to the weight itself."
+  ],
+  "versionSensitivity": "stable_principle"
+}

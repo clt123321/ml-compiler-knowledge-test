@@ -1,0 +1,57 @@
+{
+  "questionId": "G-RECOMP-016",
+  "learningObjective": "Distinguish the situations in which recomputation (activation checkpointing) is a net win from those where it is not.",
+  "canonicalClaims": [
+    {
+      "claim": "Recomputation is a net win when the memory it frees enables larger batches or longer contexts whose throughput gain exceeds the added recompute FLOPs, and it is most favorable for ops with high activation-memory-per-FLOPs ratios (e.g., elementwise activations).",
+      "conditions": [
+        "The forward function is deterministic under the training precision.",
+        "The activation tensor being freed is on the critical memory path (not already fitting into free memory)."
+      ],
+      "nonImplications": [
+        "Does not imply recomputation always improves throughput; when memory is not the binding constraint, it only adds FLOPs.",
+        "Does not imply recomputation changes mathematical results — it is exact."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:halide", "locator": "Recomputation vs. storage schedule primitives" },
+        { "ref": "BOOK:sze-eff", "locator": "Activation-memory trade-off in DNN training" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Recomputation changes the mathematical output of the forward/backward pass because the reruns are approximate.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Recomputation reruns the exact forward function; output is bitwise identical modulo unavoidable hardware nondeterminism.",
+      "sourceOrEvidence": "PyTorch checkpoint documentation"
+    },
+    {
+      "claim": "Recomputing heavy compute-bound ops with small activations is favorable because it adds ILP.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Reverses the memory-per-FLOPs criterion; heavy ops with small activations are precisely those you want to cache, not recompute.",
+      "sourceOrEvidence": "Selective checkpointing literature"
+    },
+    {
+      "claim": "Recomputation is unnecessary if you have a caching allocator; the allocator will manage activation memory.",
+      "errorType": "scope_error",
+      "whyWrong": "Caching allocators reuse freed blocks but cannot free tensors still needed for backward; recomputation is precisely about which tensors need to be kept live.",
+      "sourceOrEvidence": "PyTorch CUDA caching allocator docs"
+    },
+    {
+      "claim": "Recomputation always doubles the total FLOPs of training.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Only the recomputed portion adds FLOPs; end-to-end overhead is typically 20-30% for selective checkpointing.",
+      "sourceOrEvidence": "Activation checkpointing empirical studies"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch's `torch.utils.checkpoint.checkpoint` recomputes activations on backward.",
+    "Selective recomputation (Megatron-LM, DeepSpeed) chooses per-op based on memory-per-FLOPs ratios.",
+    "Some ops (dropout with random state) require careful RNG bookkeeping to recompute correctly."
+  ],
+  "performanceScenarios": [
+    "LLM training: recomputing GELU and dropout activations saves ~30% memory with <10% throughput cost.",
+    "Small-batch inference: recomputation offers no benefit; caching is preferred."
+  ],
+  "versionSensitivity": "stable_principle"
+}

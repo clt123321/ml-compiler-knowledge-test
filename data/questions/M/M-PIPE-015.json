@@ -1,0 +1,92 @@
+{
+  "id": "M-PIPE-015",
+  "type": "single",
+  "module": "distributed",
+  "subtopic": "Pipeline parallel bubble and microbatching",
+  "learningObjective": "Explain the pipeline-parallel bubble and how microbatching reduces it.",
+  "archetype": "systems_dataflow",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "Multi-GPU pipeline with P stages",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A model is split across P=8 pipeline stages, one per GPU. A training step consists of M microbatches processed in a GPipe-style schedule. Which statement about the pipeline bubble is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The bubble is exactly 1/P of total time regardless of M; it can only be removed by reducing P, which defeats the purpose of pipeline parallelism."
+    },
+    {
+      "id": "B",
+      "text": "The bubble fraction is approximately (P-1)/(P + M - 1) of total time; increasing M shrinks this fraction, at the cost of holding activations for more in-flight microbatches (or paying recomputation)."
+    },
+    {
+      "id": "C",
+      "text": "Pipeline parallelism reduces the wall-clock time of a single microbatch's forward+backward pass by a factor of P relative to single-GPU execution, so the bubble is a negligible overhead in practice."
+    },
+    {
+      "id": "D",
+      "text": "The bubble is a compiler artifact; an optimizing compiler can eliminate it completely for any P and M by fusing stages into a single kernel."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "In GPipe, the pipeline needs P-1 steps to fill and P-1 to drain, giving a total time of (P-1) + M + (P-1) = P + M - 1 stage-times for M microbatches, of which (P-1) is spent doing useful work per stage and (P-1) is fill/drain — hence bubble fraction (P-1)/(P + M - 1). Larger M dilutes the bubble but keeps more activations alive (memory cost). Pipelining does not shorten a single microbatch's latency — it raises throughput.",
+  "optionExplanations": {
+    "A": "Wrong: bubble fraction depends on M, not just P.",
+    "B": "Correct: canonical GPipe bubble fraction, plus the memory trade-off.",
+    "C": "Wrong: pipeline parallelism raises throughput, not single-microbatch latency.",
+    "D": "Wrong: bubble is intrinsic to fill/drain, not a compiler artifact."
+  },
+  "assumptions": [
+    "Stages have equal cost.",
+    "Communication is overlapped or negligible relative to stage compute."
+  ],
+  "nonImplications": [
+    "Does not imply that 1F1B or interleaved pipelines have the same bubble; they change the constant but not the fundamental fill/drain requirement.",
+    "Does not imply larger M is always better; memory pressure eventually forces recomputation or activation offloading."
+  ],
+  "misconceptionTags": [
+    "bubble_constant",
+    "pipeline_reduces_single_microbatch_latency"
+  ],
+  "distractorRationales": {
+    "A": "Ignores M dependence.",
+    "C": "Confuses throughput with latency.",
+    "D": "Denies fill/drain requirement."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 6 pipeline utilization and bubble",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§ discussion of pipelining vs SPMD partitioning trade-offs",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GPipe-style schedule bubble analysis",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-PIPE-015.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,123 @@
+{
+  "id": "F-RMS-005",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Triton RMSNorm / Launch configuration and register pressure",
+  "learningObjective": "Reason about the register/SMEM footprint of a row-parallel Triton RMSNorm kernel and how BLOCK sizing affects occupancy.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100) or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "shared memory / register file for row-parallel reductions"
+    ]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "N"
+      ],
+      [
+        "N"
+      ],
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "Consider the Triton row-parallel RMSNorm kernel below launched with `grid = (M,)` (one program per row), BLOCK=4096, N=4096. Which assessment is correct?",
+  "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef rms_norm(x_ptr, out_ptr, weight_ptr,\n             N: tl.constexpr, eps: tl.constexpr, BLOCK: tl.constexpr):\n    row = tl.program_id(0)\n    cols = tl.arange(0, BLOCK)\n    mask = cols < N\n    x = tl.load(x_ptr + row * N + cols, mask=mask, other=0.0)\n    var = tl.sum(x * x, axis=0) / N\n    rstd = 1.0 / tl.sqrt(var + eps)\n    w = tl.load(weight_ptr + cols, mask=mask, other=0.0)\n    y = x * rstd * w\n    tl.store(out_ptr + row * N + cols, y, mask=mask)\n\n# Launch: grid = (M,), BLOCK = 4096\n# x, out : FP32 contiguous, shape [M, N]; weight : FP32 shape [N]; N = 4096",
+  "options": [
+    {
+      "id": "A",
+      "text": "The kernel is incorrect because `tl.sum(x * x, axis=0)` requires its own explicit `mask` argument to zero out invalid lanes; without it, tail lanes contribute stale register values and bias the computed variance upwards."
+    },
+    {
+      "id": "B",
+      "text": "Each program handles one row by loading all `N=4096` FP32 elements into registers/SRAM (~16 KB); this constrains occupancy since the full row lives in one program's tile."
+    },
+    {
+      "id": "C",
+      "text": "With `BLOCK = N = 4096` the mask is always True, so removing `other=0.0` improves performance by roughly 20% by skipping a redundant predicate check that Triton would otherwise emit on every lane of the load."
+    },
+    {
+      "id": "D",
+      "text": "`1.0 / tl.sqrt(var + eps)` is guaranteed to be lowered to a `rcpsqrt` PTX instruction that produces bit-identical FP32 results across all NVIDIA architectures, since PTX reciprocal-square-root is an IEEE-strict operation."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "The kernel is row-parallel: one program per row, loading all N elements at once. The per-program working set is roughly N \u00d7 4 B = 16 KB for FP32, held in registers or SRAM depending on Triton's lowering. This footprint constrains how many programs can be resident per SM (occupancy). The masked load with `other=0.0` correctly zeros tail lanes, so `tl.sum(x*x)` on masked-off lanes contributes 0 (no extra `mask` argument needed on the reduction). Removing `other=0.0` does not deliver a 20% speedup, and `tl.sqrt` reciprocal lowering is not bit-identical across architectures.",
+  "optionExplanations": {
+    "A": "Wrong: `other=0.0` in the load makes tail lanes contribute 0 to `x * x`, so `tl.sum` is correct without an explicit mask argument.",
+    "B": "Correct: this is the row-parallel design pattern for LN/RMSNorm; the per-program footprint sets the practical block-size ceiling.",
+    "C": "Wrong: the 20% claim is fabricated; whether `other` is present when the mask is always True has negligible perf impact.",
+    "D": "Wrong: `1.0 / tl.sqrt(x)` may or may not lower to `rcpsqrt` depending on version/target, and PTX `rsqrt.approx` is not bit-identical across architectures or vs. IEEE-compliant `1/sqrt`."
+  },
+  "assumptions": [
+    "N=4096 fits within one program's tile; larger N would require a two-pass reduction or online-softmax-style algorithm.",
+    "FP32 accumulation of `x * x` is used; FP16 inputs would motivate an FP32 upcast."
+  ],
+  "nonImplications": [
+    "Does not imply that this kernel is optimal for very long rows; when N >> 4096, an online (two-pass) RMSNorm avoids the register/SMEM ceiling.",
+    "Does not imply that row-parallel kernels always beat sequence-parallel ones; batch dimensions and warp-per-row layouts change the trade-off."
+  ],
+  "misconceptionTags": [
+    "tl_sum_mask_myth",
+    "rcpsqrt_bit_identical_myth"
+  ],
+  "distractorRationales": {
+    "A": "Confuses `mask` argument on `tl.load` with a separate mask argument on `tl.sum`.",
+    "C": "Fabricates a precise perf number.",
+    "D": "Wrong claim about bit-identical numerics."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:triton",
+      "locator": "tl.load / tl.sum / tl.sqrt reference and RMSNorm tutorial",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "PTX rsqrt.approx numerical behavior",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Row-parallel Triton RMSNorm with BLOCK = 4096, FP32",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-RMS-005.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

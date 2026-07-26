@@ -1,0 +1,50 @@
+{
+  "questionId": "J-EP-014",
+  "learningObjective": "Distinguish expert parallelism (EP) and sequence parallelism (SP) from TP/PP and identify their communication primitives.",
+  "canonicalClaims": [
+    {
+      "claim": "EP places different MoE experts on different devices; routing uses all-to-all to shuffle tokens to experts and again to bring results back. SP shards intermediate activations along the sequence axis inside a TP region; it uses AllGather / ReduceScatter to bridge the TP and SP regions, primarily to reduce activation memory.",
+      "conditions": [
+        "MoE model for EP; TP-parallel model for SP.",
+        "Communication library supports all-to-all / AllGather / ReduceScatter."
+      ],
+      "nonImplications": [
+        "Does not imply EP and SP are equivalent.",
+        "Does not imply SP reduces KV cache; SP addresses activation memory during forward."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "EP/SP implementation notes" },
+        { "ref": "DOC:vllm", "locator": "EP" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "EP and SP both use a single AllReduce like TP.",
+      "errorType": "definition_confusion",
+      "whyWrong": "EP uses all-to-all; SP uses AllGather/ReduceScatter.",
+      "sourceOrEvidence": "GShard / Megatron papers"
+    },
+    {
+      "claim": "SP reduces KV cache size by sharding along the sequence axis.",
+      "errorType": "scope_error",
+      "whyWrong": "SP addresses activation memory; KV cache is a separate resource.",
+      "sourceOrEvidence": "Megatron-LM SP paper"
+    },
+    {
+      "claim": "EP is a training-only technique.",
+      "errorType": "overgeneralization",
+      "whyWrong": "vLLM, TRT-LLM, and DeepSpeed all support EP in inference.",
+      "sourceOrEvidence": "Inference framework docs"
+    }
+  ],
+  "implementationFacts": [
+    "EP is often combined with TP within a node (TP for attention/MLP inside expert, EP across experts).",
+    "SP is a 'free' memory reduction with modest AllGather overhead in Megatron-LM's design."
+  ],
+  "performanceScenarios": [
+    "EP scales MoE inference across nodes because it distributes the parameter footprint.",
+    "SP is most useful in long-context training where activation memory dominates."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,92 @@
+{
+  "id": "H-SYMM-010",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "Symmetric vs. asymmetric quantization",
+  "learningObjective": "Compare symmetric and asymmetric quantization formulas, and identify why symmetric is preferred for weights but asymmetric can help for activations.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic INT8 GEMM",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "codeSnippet": "# Symmetric per-tensor quantization to INT8\ndef quantize_sym(x: torch.Tensor) -> tuple[torch.Tensor, float]:\n    s = x.abs().max().item() / 127.0     # z = 0\n    q = torch.round(x / s).clamp(-127, 127).to(torch.int8)\n    return q, s\n\n# Asymmetric per-tensor quantization to UINT8\ndef quantize_asym(x: torch.Tensor) -> tuple[torch.Tensor, float, int]:\n    x_min, x_max = x.min().item(), x.max().item()\n    s = (x_max - x_min) / 255.0\n    z = round(-x_min / s)                # zero-point pinned to represent x=0\n    q = torch.round(x / s + z).clamp(0, 255).to(torch.uint8)\n    return q, s, z",
+  "stem": "The two quantizers above map an FP32 tensor to INT8 (symmetric) or UINT8 (asymmetric). Which comparison is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Symmetric and asymmetric quantization produce identical accuracy on all distributions; the choice is aesthetic."
+    },
+    {
+      "id": "B",
+      "text": "Symmetric quantization has z=0, so the dequantized value is `q * s` \u2014 this simplifies INT8 GEMM because there is no zero-point cross-term to compute. Asymmetric quantization uses the full [0, 255] range and captures skewed distributions (e.g., post-ReLU activations) better, at the cost of an extra bias term in the GEMM."
+    },
+    {
+      "id": "C",
+      "text": "Asymmetric quantization to UINT8 has a larger representable range than symmetric INT8, so it is always more accurate."
+    },
+    {
+      "id": "D",
+      "text": "Symmetric quantization is illegal for negative values because unsigned integers cannot represent them; only asymmetric works for signed distributions."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): symmetric and asymmetric can differ substantially on skewed distributions. B (Correct): standard trade-off analysis between symmetric and asymmetric. C (Wrong): representable levels differ by 1; accuracy depends on distribution. D (Wrong): symmetric INT8 IS signed. General context: Symmetric quantization (z=0) simplifies the GEMM: `sum_k (a_q * s_a) * (b_q * s_b) = s_a * s_b * sum_k (a_q * b_q)` \u2014 no zero-point cross-terms. Asymmetric quantization gives a better fit to skewed distributions (e.g., post-ReLU activations that are always non-negative) but introduces cross-terms of the form `sum_k a_q * z_b` and `sum_k z_a * b_q`. signed 8-bit's 255 (symmetric convention) \u2014 this is a small quantization-level count difference, not a systematic accuracy edge.",
+  "optionExplanations": {
+    "A": "Wrong: symmetric and asymmetric can differ substantially on skewed distributions.",
+    "B": "Correct: standard trade-off analysis between symmetric and asymmetric.",
+    "C": "Wrong: representable levels differ by 1; accuracy depends on distribution.",
+    "D": "Wrong: symmetric INT8 IS signed."
+  },
+  "assumptions": [
+    "Both quantizers target 8-bit integers with standard rounding.",
+    "The subsequent GEMM implementation matches the quantization convention."
+  ],
+  "nonImplications": [
+    "Does not imply asymmetric is always more accurate \u2014 for symmetric weight distributions, symmetric is optimal.",
+    "Does not imply the extra bias term makes asymmetric GEMM prohibitively slow \u2014 cuBLAS supports asymmetric INT8 with a manageable overhead."
+  ],
+  "misconceptionTags": [
+    "sym_asym_no_difference",
+    "sym_only_positive"
+  ],
+  "distractorRationales": {
+    "A": "Denies real accuracy differences.",
+    "C": "Overgeneralizes 'wider range = more accurate'.",
+    "D": "Confuses signed/unsigned with symmetric/asymmetric."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Symmetric vs. asymmetric quantization trade-off",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "cuBLAS INT8 GEMM zero-point handling",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-SYMM-010.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

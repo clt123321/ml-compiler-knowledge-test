@@ -1,0 +1,55 @@
+{
+  "questionId": "D-GUARDEXPR-034",
+  "learningObjective": "Interpret a symbolic-shape guard involving a relation between dims and identify the correct fix or diagnosis.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchDynamo's symbolic-shape tracing derives constraints from operations (e.g., `.view(-1, 8)` implies divisibility by 8); when a call violates the constraint, the guard fails and the compiled path either specializes (recompiles) or errors, depending on config. Fixes address the constraint itself (padding, reshaping, handling the tail).",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 with symbolic-shape tracing (`dynamic=True` or auto-promoted)."
+      ],
+      "nonImplications": [
+        "Does not imply all such constraints are avoidable; they can be intrinsic to the op semantics.",
+        "Does not imply padding is free; extra memory and compute apply."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-dynamo", "locator": "Symbolic shape assertions" },
+        { "ref": "DOC:torch-compile", "locator": "Dynamic shape guidance" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "dynamic=True accepts any size unconditionally.",
+      "errorType": "scope_error",
+      "whyWrong": "Constraints derived from ops still apply.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "The guard came from `sum(dim=-1)` on a non-power-of-two length.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "sum supports non-power-of-two lengths; the constraint came from .view.",
+      "sourceOrEvidence": "torch.sum docs"
+    },
+    {
+      "claim": "dynamic=False bypasses shape constraints of ops in a single call.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It only specializes per size; each call still needs a compatible shape for that op.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Symbolic-shape guards can never involve inter-dim relations.",
+      "errorType": "scope_error",
+      "whyWrong": "Divisibility, equality, and other inter-dim relations are common.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    }
+  ],
+  "implementationFacts": [
+    "`.view` derives shape-compatibility constraints on symbolic dims",
+    "TORCH_LOGS=dynamic reports derived constraints and guard failures",
+    "Padding + masking is a common workaround for divisibility constraints"
+  ],
+  "performanceScenarios": [
+    "Understanding op-derived constraints saves users from unexplained recompiles when using dynamic shapes."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

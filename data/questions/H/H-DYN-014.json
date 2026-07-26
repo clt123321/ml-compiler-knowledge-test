@@ -1,0 +1,90 @@
+{
+  "id": "H-DYN-014",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "Dynamic vs. static quantization",
+  "learningObjective": "Distinguish dynamic and static activation quantization by scale computation and runtime cost.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "'Dynamic quantization' and 'static quantization' of activations differ in a specific way. Which statement is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Dynamic quantization uses a different integer format (INT4) than static quantization (INT8); the term refers to the format's dynamic range."
+    },
+    {
+      "id": "B",
+      "text": "Dynamic quantization is a synonym for QAT; static quantization is a synonym for PTQ."
+    },
+    {
+      "id": "C",
+      "text": "Dynamic quantization computes the activation scale (and zero-point) from the tensor's own statistics at each forward pass (per-tensor min/max or absmax); static quantization computes and freezes the scales offline via a calibration pass over representative inputs, so the scales are constants at runtime."
+    },
+    {
+      "id": "D",
+      "text": "Static quantization computes scales from the tensor's own statistics at each forward pass; dynamic quantization freezes them offline."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Dynamic quantization: at each forward pass, compute activation statistics (typically absmax or min/max) from the runtime tensor and derive the quant params on the fly. Static quantization: run a calibration pass on representative inputs offline, freeze the derived scales, and use those constants at runtime. Dynamic adds per-tensor reduction cost at inference; static needs a calibration corpus but avoids runtime scale calculation. Option B conflates orthogonal concepts (dynamic/static is about scale timing; PTQ/QAT is about training-time involvement). Option C invents a format-dependent meaning. Option D is the direct reverse.",
+  "optionExplanations": {
+    "A": "Wrong: format has nothing to do with dynamic vs static.",
+    "B": "Wrong: dynamic/static and PTQ/QAT are orthogonal.",
+    "C": "Correct: standard definition used across TensorRT, PyTorch, TF-Lite.",
+    "D": "Wrong: reverses the definitions."
+  },
+  "assumptions": [
+    "Standard framework terminology (TensorRT / PyTorch / TF-Lite)."
+  ],
+  "nonImplications": [
+    "Does not imply dynamic quantization is always slower \u2014 for small per-tensor reductions the cost is negligible.",
+    "Does not imply static quantization always yields lower accuracy \u2014 often it is more stable because scales don't drift with input distribution."
+  ],
+  "misconceptionTags": [
+    "dynamic_qat_synonym",
+    "static_ptq_synonym"
+  ],
+  "distractorRationales": {
+    "A": "Format irrelevant.",
+    "B": "Cross-conflates two orthogonal axes.",
+    "D": "Definition reversed."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Dynamic vs static quantization definitions",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "TensorRT static/dynamic quantization workflows",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-DYN-014.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

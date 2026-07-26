@@ -1,0 +1,47 @@
+{
+  "questionId": "L-GOLDEN-009",
+  "learningObjective": "Design a golden test for a custom kernel by choosing an appropriate reference implementation, deterministic inputs, and tolerance schema.",
+  "canonicalClaims": [
+    {
+      "claim": "A robust golden test uses (a) an independent, high-precision reference implementation, (b) deterministic inputs (fixed seed) to make failures reproducible, and (c) tolerance schedules matched to the numeric dtype of the implementation under test.",
+      "conditions": [
+        "The kernel implementation is being validated for correctness.",
+        "The test runs in CI where reproducibility is required."
+      ],
+      "nonImplications": [
+        "Does not imply CPU/FP64 references are always feasible.",
+        "Does not imply random-input differential testing is bad; it complements golden tests."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-profiler", "locator": "torch.testing.assert_close methodology" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Using an older version of the same kernel as reference is best.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Same-family references can share bugs; independent references are stronger correctness signals.",
+      "sourceOrEvidence": "Software testing methodology"
+    },
+    {
+      "claim": "Golden tests should always use strict FP32 tolerance regardless of the dtype under test.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Applying FP32/FP64 tolerance to BF16/FP16 kernels causes false failures without adding correctness signal.",
+      "sourceOrEvidence": "Numerical analysis practice"
+    },
+    {
+      "claim": "Random inputs each run maximize CI value.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Non-deterministic failures are painful to debug; fixed seeds should be used for golden tests.",
+      "sourceOrEvidence": "CI best practices"
+    },
+    {
+      "claim": "End-to-end accuracy replaces per-kernel golden testing.",
+      "errorType": "overgeneralization",
+      "whyWrong": "E2E accuracy is coarse and often insensitive to kernel-level bugs that cancel or mask.",
+      "sourceOrEvidence": "Deep-learning testing methodology"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

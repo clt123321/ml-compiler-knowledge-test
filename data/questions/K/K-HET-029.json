@@ -1,0 +1,93 @@
+{
+  "id": "K-HET-029",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "Heterogeneous execution",
+  "learningObjective": "Reason about executing a single model across heterogeneous devices (CPU + GPU + specialized accelerator) coordinated by a runtime.",
+  "archetype": "systems_dataflow",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "CPU + GPU + optional NPU/accelerator",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic (ONNX Runtime, OpenVINO, IREE)",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about heterogeneous execution (a single model spanning CPU + GPU or CPU + NPU) are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Some accelerators (NPUs) have restricted op coverage; the runtime must decide, on a per-op basis, whether the op runs on the NPU (fast for supported ops) or falls back to CPU/GPU (slower but universal), and the partitioning cost model must model this asymmetry."
+    },
+    {
+      "id": "B",
+      "text": "A partitioning pass typically groups ops into 'subgraphs' assigned to one device each, minimizing cross-device edges; the runtime executes each subgraph on its device and inserts transfer ops between them."
+    },
+    {
+      "id": "C",
+      "text": "Cross-device edges are essentially free on modern PCIe 4.0 and NVLink; therefore the partitioning cost model can ignore transfer cost and choose the fastest device for each op independently, giving a partition that is optimal by construction."
+    },
+    {
+      "id": "D",
+      "text": "Heterogeneous execution requires all devices to share a unified virtual memory space with cache coherence; without hardware support such as CXL, correct execution is impossible on machines with discrete GPUs."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B"
+  ],
+  "explanation": "Correct: A, B.  A: Correct: NPU op-coverage asymmetry is a real constraint. B: Correct: standard subgraph partitioning approach. C: Wrong: cross-device transfer and synchronization cost is significant and cannot be ignored. D: Wrong: cache coherence is not required; explicit transfer suffices.",
+  "optionExplanations": {
+    "A": "Correct: NPU op-coverage asymmetry is a real constraint.",
+    "B": "Correct: standard subgraph partitioning approach.",
+    "C": "Wrong: cross-device transfer and synchronization cost is significant and cannot be ignored.",
+    "D": "Wrong: cache coherence is not required; explicit transfer suffices."
+  },
+  "assumptions": [
+    "The runtime supports partitioning into per-device subgraphs and inserting explicit transfers."
+  ],
+  "nonImplications": [
+    "Does not imply hardware coherence (CXL, unified memory) is never useful; it does reduce programming complexity, but is not required.",
+    "Does not imply the coarsest partition is always best; extreme coarsening may under-utilize a fast device."
+  ],
+  "misconceptionTags": [
+    "coherence_required_myth",
+    "free_transfer_myth"
+  ],
+  "distractorRationales": {
+    "C": "Fabricates transfer-cost negligibility.",
+    "D": "Overstates the hardware requirement for heterogeneous execution."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:onnx",
+      "locator": "ONNX Runtime execution providers and subgraph partitioning",
+      "supports": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:iree",
+      "locator": "IREE HAL heterogeneous execution",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Heterogeneous execution with partitioned subgraphs and explicit device transfers",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/K/K-HET-029.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

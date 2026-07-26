@@ -1,0 +1,55 @@
+{
+  "questionId": "G-REORDER-010",
+  "learningObjective": "Compare two loop orderings of a naive GEMM for their locality behavior and identify which is legal and preferred on a row-major layout.",
+  "canonicalClaims": [
+    {
+      "claim": "For a row-major naive GEMM, the ikj loop ordering achieves unit-stride access to B (row-of-B) and C (row-of-C) in the innermost loop, giving better spatial locality and vectorizability than the ijk ordering, while being semantically equivalent for reduction into C[i,j].",
+      "conditions": [
+        "All three matrices are row-major.",
+        "FP non-associativity is treated as a numerical rather than a correctness constraint for the reduction over K."
+      ],
+      "nonImplications": [
+        "Does not imply ikj is optimal; blocked and vectorized schedules outperform it.",
+        "Does not imply the same ordering is preferred on column-major layouts."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Loop interchange, locality analysis" },
+        { "ref": "BOOK:pmpp4", "locator": "Naive GEMM locality" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Reordering GEMM loops changes numerical output enough to be treated as a semantics-changing transformation.",
+      "errorType": "overgeneralization",
+      "whyWrong": "FP non-associativity is real but GEMM libraries and compilers treat different reduction orders as equivalent for correctness testing (within tolerance).",
+      "sourceOrEvidence": "cuBLAS / BLIS numerical practice"
+    },
+    {
+      "claim": "The ikj ordering introduces a new loop-carried dependence that ijk did not have.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both orderings share the same reduction into C[i,j]; the dependence exists in both.",
+      "sourceOrEvidence": "Compiler textbooks"
+    },
+    {
+      "claim": "Unit-stride writes cost more than unit-stride reads, so ijk (which strides through B) remains preferred on row-major.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Both unit-stride reads and unit-stride writes benefit from cache locality; the read/write asymmetry is small and does not reverse the ordering preference.",
+      "sourceOrEvidence": "PMPP4 GEMM chapter"
+    },
+    {
+      "claim": "Loop reordering is a semantics-preserving transformation regardless of the underlying dependence structure.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Legality requires that no dependence in the loop nest is reversed by the interchange; some reorderings are illegal.",
+      "sourceOrEvidence": "Engineering a Compiler, 3rd ed."
+    }
+  ],
+  "implementationFacts": [
+    "BLAS libraries use blocked/vectorized inner kernels, not naive triple loops.",
+    "MLIR affine loop interchange checks dependences via access maps."
+  ],
+  "performanceScenarios": [
+    "On x86 with SSE/AVX, ikj enables vectorization of the inner j loop over B[k,:] and C[i,:]."
+  ],
+  "versionSensitivity": "stable_principle"
+}

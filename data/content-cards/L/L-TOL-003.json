@@ -1,0 +1,56 @@
+{
+  "questionId": "L-TOL-003",
+  "learningObjective": "Choose realistic tolerance thresholds when validating a custom FP16 GEMM implementation against a reference (e.g., cuBLAS) with a large K reduction.",
+  "canonicalClaims": [
+    {
+      "claim": "FP16 GEMM reductions over moderate-to-large K are not bit-reproducible across implementations because floating-point addition is not associative and different kernels traverse the K dimension in different tile orders; realistic per-element tolerance is on the order of 1e-2 to 1e-3 (relative) for standard Gaussian inputs.",
+      "conditions": [
+        "Both implementations use FP16 storage and roughly comparable accumulation precision (e.g., FP32 accum).",
+        "Inputs are of moderate magnitude and not adversarially conditioned."
+      ],
+      "nonImplications": [
+        "Does not imply that FP16 GEMM is 'wrong'; the numerical difference is inherent to the precision.",
+        "Does not imply that all workloads need such loose tolerances; small-K reductions or FP32 storage tighten the bound."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Floating-point precision and reduction chapter" },
+        { "ref": "DOC:cuda-best", "locator": "Numerical accuracy section" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP32 accumulation makes results less accurate than FP16 accumulation because it introduces extra rounding.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Higher-precision accumulation is more accurate; FP16 accumulation of a K=1024 dot product frequently loses low-order bits and is a common source of numerical instability.",
+      "sourceOrEvidence": "PMPP4; NVIDIA Mixed Precision Training paper"
+    },
+    {
+      "claim": "Two 'correct' FP16 matmul kernels must produce bitwise-identical outputs on the same input.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Reduction order affects the low bits; both kernels can be correct in the numerical sense while differing bit-for-bit.",
+      "sourceOrEvidence": "IEEE 754 non-associativity"
+    },
+    {
+      "claim": "Using `check_dtype=False` in `torch.testing.assert_close` relaxes numerical tolerance.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`check_dtype` only disables the dtype equality check; it does not change atol/rtol.",
+      "sourceOrEvidence": "PyTorch testing documentation"
+    },
+    {
+      "claim": "Tolerances `atol=1e-5, rtol=1e-6` are appropriate for FP16 kernels because they are 'strict' by default.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Those tolerances correspond to FP64 machine epsilon; applying them to FP16 outputs is a category error.",
+      "sourceOrEvidence": "IEEE 754 precision analysis"
+    }
+  ],
+  "implementationFacts": [
+    "FP16 mantissa: 10 bits (machine epsilon ≈ 9.77e-4)",
+    "FP32 mantissa: 23 bits (machine epsilon ≈ 1.19e-7)",
+    "FP16 GEMM with FP32 accum tolerances: ~ 1e-2 to 1e-3 for random Gaussian inputs"
+  ],
+  "performanceScenarios": [
+    "When validating Tensor-Core kernels against reference implementations, choose tolerances that reflect the storage precision (FP16), not the accumulator precision (FP32) — the error surfaces at the FP16 output."
+  ],
+  "versionSensitivity": "stable_principle"
+}

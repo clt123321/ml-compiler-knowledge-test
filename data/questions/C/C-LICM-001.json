@@ -1,0 +1,92 @@
+{
+  "id": "C-LICM-001",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Loop-invariant code motion / Aliasing",
+  "learningObjective": "Identify the aliasing precondition required for loop-invariant code motion to be semantics-preserving in an imperative tensor IR.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Consider the loop before and after loop-invariant code motion (LICM):\n\nBEFORE:\n```\nfor i in 0..N:\n  a[i] = b[i] + (c[0] * d[0])   # (c[0] * d[0]) is loop-invariant\n```\nAFTER:\n```\nt = c[0] * d[0]\nfor i in 0..N:\n  a[i] = b[i] + t\n```\nWhich condition is required for this transformation to be semantics-preserving?",
+  "irSnippet": "// BEFORE (pseudo-IR, imperative)\nfunc @f(%a: memref<N x f32>, %b: memref<N x f32>,\n        %c: memref<1 x f32>, %d: memref<1 x f32>) {\n  scf.for %i = 0 to N step 1 {\n    %inv = arith.mulf (load %c[0]) (load %d[0]) : f32\n    %v   = arith.addf (load %b[%i]) %inv     : f32\n    store %v, %a[%i]\n  }\n}\n\n// AFTER (LICM applied)\nfunc @f(%a, %b, %c, %d) {\n  %t = arith.mulf (load %c[0]) (load %d[0]) : f32\n  scf.for %i = 0 to N step 1 {\n    %v = arith.addf (load %b[%i]) %t : f32\n    store %v, %a[%i]\n  }\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "The loop trip count `N` must be a compile-time constant, because LICM is a strength-reduction transformation whose validity is tied to the compiler's ability to statically bound the number of iterations."
+    },
+    {
+      "id": "B",
+      "text": "`a` must not alias `c[0]` or `d[0]` over the loop; otherwise stores through `a[i]` could modify a hoisted operand."
+    },
+    {
+      "id": "C",
+      "text": "`c` and `d` must have the same element type as `a` and `b`, so that the type of the hoisted temporary `t` is unambiguous and matches the type inference rules of the arithmetic operations in the loop body."
+    },
+    {
+      "id": "D",
+      "text": "The expression `c[0] * d[0]` must involve only integer types; hoisting floating-point invariants is always invalid because it changes the per-iteration rounding order of the reduction."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "LICM hoists a computation out of a loop under the assumption that its inputs are invariant over the loop's iterations. In an imperative IR with pointers/references, if stores in the loop body could alias the memory the invariant reads (here `c[0]` or `d[0]`), then the value can change during the loop and the hoisted single evaluation is incorrect. This is why alias analysis is a standard prerequisite for LICM in classical compilers. Trip count constness, element-type equality, and 'floating point disallowed' are not required conditions.",
+  "optionExplanations": {
+    "A": "Wrong: LICM is valid for symbolic/unknown trip counts as long as no aliasing exists.",
+    "B": "Correct: aliasing between the store target and the invariant's inputs is precisely the safety condition LICM checks.",
+    "C": "Wrong: the transformation does not require type equality across buffers.",
+    "D": "Wrong: hoisting FP invariants does not change per-iteration rounding order (each iteration used the same `c[0]*d[0]` before). Different rounding would appear only if the invariant was recomputed within a reduction chain, which is not the case here."
+  },
+  "assumptions": [
+    "The IR distinguishes memory reads/writes explicitly (imperative memref-like semantics).",
+    "No concurrent mutations from other threads (single-threaded IR)."
+  ],
+  "nonImplications": [
+    "Does not imply that LICM is always beneficial; hoisting can increase register pressure and prolong live ranges.",
+    "Does not imply that aliasing is the only precondition in general LICM (side-effect purity is another)."
+  ],
+  "misconceptionTags": [
+    "licm_ignores_aliasing",
+    "trip_count_constness_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Confuses loop unrolling constraints with LICM.",
+    "C": "Type-equality is not needed.",
+    "D": "Wrong claim about FP rounding under hoisting."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Loop-invariant code motion; alias analysis preconditions",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:dragon2",
+      "locator": "LICM chapter; data-dependence and aliasing",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-LICM-001.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

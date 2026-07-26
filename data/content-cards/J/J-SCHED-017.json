@@ -1,0 +1,49 @@
+{
+  "questionId": "J-SCHED-017",
+  "learningObjective": "Explain how a serving scheduler handles KV cache pressure via preemption / swap-out and its trade-offs.",
+  "canonicalClaims": [
+    {
+      "claim": "Under KV-cache pressure, the scheduler preempts selected in-flight sequences by either evicting (recompute on resume) or swapping their KV to host memory, admits new prefills into freed blocks, and resumes preempted sequences when capacity is available.",
+      "conditions": [
+        "Paged KV cache with per-block allocation.",
+        "Scheduler has visibility into per-request KV footprint."
+      ],
+      "nonImplications": [
+        "Does not imply preemption is free.",
+        "Does not imply every stack picks the same preemption policy."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 4" },
+        { "ref": "PAPER:orca", "locator": "Sec 4" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The scheduler overwrites old KV blocks in place to make room.",
+      "errorType": "definition_confusion",
+      "whyWrong": "This would corrupt those sequences; correct behavior evicts or swaps, then resumes later.",
+      "sourceOrEvidence": "vLLM scheduler code"
+    },
+    {
+      "claim": "The scheduler compacts KV cache to defragment memory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Paged KV eliminates external fragmentation, so compaction is unnecessary.",
+      "sourceOrEvidence": "vLLM paper Sec 3"
+    },
+    {
+      "claim": "The scheduler simply rejects new requests under pressure.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Serving stacks aim to keep utilization high; preemption and admission control are the standard levers.",
+      "sourceOrEvidence": "vLLM/Orca design"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM supports both recompute and swap policies configurable per deployment.",
+    "Swap requires PCIe copies to/from host memory; recompute pays the prefill cost again."
+  ],
+  "performanceScenarios": [
+    "Long prompts favor swap (recompute is expensive); short prompts favor recompute (swap PCIe is comparatively costly)."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

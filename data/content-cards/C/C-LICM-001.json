@@ -1,0 +1,55 @@
+{
+  "questionId": "C-LICM-001",
+  "learningObjective": "Identify the aliasing precondition required for loop-invariant code motion to be semantics-preserving in an imperative tensor IR.",
+  "canonicalClaims": [
+    {
+      "claim": "LICM is only sound when the expression being hoisted has no read that could be modified inside the loop body — this requires alias analysis to prove that in-loop stores do not overlap the invariant's inputs.",
+      "conditions": [
+        "The IR represents memory reads/writes explicitly (not purely functional).",
+        "Alias analysis is available (or a conservative may-alias check is used)."
+      ],
+      "nonImplications": [
+        "Does not imply LICM is unsafe in pure/SSA IRs (there is no aliasing to worry about).",
+        "Does not imply that pass ordering with alias analysis is unique; different pipelines can prove the same fact by different means."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Ch. on loop optimizations; LICM safety" },
+        { "ref": "BOOK:dragon2", "locator": "Loop optimizations chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "LICM is only valid when the loop trip count is a compile-time constant.",
+      "errorType": "wrong_condition",
+      "whyWrong": "LICM validity is about the semantics of the hoisted computation, not the trip count; loops with symbolic bounds can still be transformed.",
+      "sourceOrEvidence": "Engineering a Compiler, LICM"
+    },
+    {
+      "claim": "Floating-point loop-invariant expressions can never be hoisted because it changes rounding order.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Hoisting a single invariant expression evaluates it once; each iteration in the original loop also observed the same value. The rounding order does not change (unlike, say, reordering an accumulation).",
+      "sourceOrEvidence": "Engineering a Compiler; LLVM LangRef (FP flags for reassociation)"
+    },
+    {
+      "claim": "LICM does not need alias analysis in an SSA IR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Pure SSA over scalar values does not need it, but LICM on IRs with load/store operations (memref-like, PyTorch tensors with in-place ops) still needs alias/dependence reasoning.",
+      "sourceOrEvidence": "Engineering a Compiler; MLIR docs"
+    },
+    {
+      "claim": "LICM always improves performance because it reduces work inside the loop.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "LICM can increase register pressure and lengthen live ranges; if it spills, it can slow the code down. It is a heuristic decision, not a strict improvement.",
+      "sourceOrEvidence": "Engineering a Compiler, Ch. Register allocation"
+    }
+  ],
+  "implementationFacts": [
+    "Alias analysis and dependence analysis are prerequisites for LICM on IRs with memory ops.",
+    "LICM is often paired with register-pressure heuristics because hoisted values become longer-lived."
+  ],
+  "performanceScenarios": [
+    "In tensor IRs like MLIR affine or linalg-on-tensors, hoisting shape queries or scalar reductions out of tile loops is a common form of LICM."
+  ],
+  "versionSensitivity": "stable_principle"
+}

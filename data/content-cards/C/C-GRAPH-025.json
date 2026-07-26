@@ -1,0 +1,57 @@
+{
+  "questionId": "C-GRAPH-025",
+  "learningObjective": "Identify the defining properties of a dataflow / computational graph as used by deep learning compilers.",
+  "canonicalClaims": [
+    {
+      "claim": "A deep-learning computational graph is a directed graph where nodes represent operations and edges represent tensor values flowing from a producer to one or more consumers; the graph is typically a DAG within a single forward pass and each edge carries an inferred shape and dtype.",
+      "conditions": [
+        "The graph represents a feedforward computation.",
+        "The framework supports shape/type inference for its ops."
+      ],
+      "nonImplications": [
+        "Does not imply every workload produces a DAG (control flow can require additional constructs).",
+        "Does not imply shape inference always yields fully static shapes."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "Computational graph" },
+        { "ref": "PAPER:mlir", "locator": "Graph-level IR" },
+        { "ref": "DOC:stablehlo", "locator": "Shapes / dtypes on values" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Every edge in the graph must be materialized in memory as an intermediate tensor.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Materialization is a codegen/scheduling decision; fused kernels avoid it.",
+      "sourceOrEvidence": "TorchInductor / TVM fusion docs"
+    },
+    {
+      "claim": "The graph is a general directed graph with cycles by default.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Forward passes typically form DAGs; explicit constructs are used for loops.",
+      "sourceOrEvidence": "Framework docs"
+    },
+    {
+      "claim": "Nodes represent tensor values and edges represent operations.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The mapping is the opposite in standard dataflow graphs.",
+      "sourceOrEvidence": "Standard dataflow-graph definitions"
+    },
+    {
+      "claim": "Shape inference is optional and cannot fail gracefully.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Frameworks provide shape inference as a routine analysis; failures produce diagnostics or dynamic shapes.",
+      "sourceOrEvidence": "ONNX / MLIR / PyTorch shape inference"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch FX graph, TVM Relax, XLA HLO all use directed dataflow representations",
+    "Static shape/dtype inference is a routine graph analysis; dynamic dims may remain symbolic",
+    "Fused kernels do not require additional graph nodes"
+  ],
+  "performanceScenarios": [
+    "Graph-level analyses (fusion, layout, constant folding) exploit DAG structure and shape/dtype annotations."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,93 @@
+{
+  "id": "B-DCE-011",
+  "type": "multiple",
+  "module": "compiler_basics",
+  "subtopic": "Dead Code Elimination boundaries",
+  "learningObjective": "Distinguish dead code elimination from unreachable code elimination and identify soundness conditions.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about Dead Code Elimination (DCE) and its relationship to unreachable code elimination are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "DCE can safely remove any pure computation whose result is unused, even if the computation may throw a floating-point exception, because unused values are always safe to elide."
+    },
+    {
+      "id": "B",
+      "text": "DCE requires SSA to be applicable; non-SSA IRs cannot support DCE because reaching definitions are ambiguous."
+    },
+    {
+      "id": "C",
+      "text": "DCE removes instructions whose results are not used and that have no observable side effects (no memory writes, no I/O, no exceptions). An instruction that writes to memory or calls a function that may have side effects cannot be removed by DCE, even if its return value is unused."
+    },
+    {
+      "id": "D",
+      "text": "Unreachable code elimination removes basic blocks that no execution path can reach from the entry; this is distinct from DCE, which operates on live/dead value analysis within reachable code."
+    }
+  ],
+  "correctAnswers": [
+    "C",
+    "D"
+  ],
+  "explanation": "A: DCE requires (unused value) AND (no observable side effects). Stores, I/O, and possibly-throwing calls remain. B: Unreachable-code elimination is control-flow based; DCE is data-flow based. They can be composed. C is wrong: FP exceptions are observable side effects (if the target environment traps or the language enforces exception semantics); removing a computation that may trap can change observable behavior. D is wrong: DCE works on non-SSA IRs with reaching-definition analysis; SSA simplifies it.",
+  "optionExplanations": {
+    "A": "Wrong: FP exceptions can be observable; naive removal can change semantics under strict FP.",
+    "B": "Wrong: DCE is applicable in non-SSA IRs, though SSA simplifies the analysis.",
+    "C": "Correct: dead value + side-effect-free are the twin conditions.",
+    "D": "Correct: DCE and unreachable code elimination are distinct passes."
+  },
+  "assumptions": [
+    "Program semantics may include observable side effects such as FP exceptions and I/O.",
+    "Standard IR with distinguishable pure vs side-effecting operations."
+  ],
+  "nonImplications": [
+    "Does not imply that all unused loads can be removed; volatile loads are side-effecting.",
+    "Does not imply DCE eliminates all dead code in one pass; iterating with other optimizations often reveals more dead code."
+  ],
+  "misconceptionTags": [
+    "dce_side_effect_confusion",
+    "dce_ssa_prerequisite_myth"
+  ],
+  "distractorRationales": {
+    "A": "Ignores FP-exception side effects.",
+    "B": "Falsely conditions DCE on SSA."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Dead code elimination chapter",
+      "supports": [
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Optimization: DCE and unreachable code chapter",
+      "supports": [
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-DCE-011.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

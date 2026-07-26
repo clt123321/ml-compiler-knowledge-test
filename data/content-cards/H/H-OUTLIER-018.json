@@ -1,0 +1,56 @@
+{
+  "questionId": "H-OUTLIER-018",
+  "learningObjective": "Diagnose why per-tensor MinMax INT8 activation quantization collapses accuracy on a Transformer layer with heavy-tail activation outliers.",
+  "canonicalClaims": [
+    {
+      "claim": "In LLMs, a small subset of activation channels carry very large-magnitude outliers; per-tensor MinMax calibration lets these outliers dominate the scale, starving the bulk distribution of quantization resolution. Mitigations include finer quantization granularity (per-channel/per-token where feasible) or techniques that migrate outlier magnitude to weights (SmoothQuant) or protect salient channels (AWQ).",
+      "conditions": [
+        "The activation distribution has heavy tails concentrated in a small fraction of channels.",
+        "Per-tensor symmetric quantization is applied."
+      ],
+      "nonImplications": [
+        "Does not imply per-channel activation quantization is always feasible.",
+        "Does not imply INT8 is unusable for LLMs — outlier-aware methods restore accuracy."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:smoothquant", "locator": "Outlier characterization" },
+        { "ref": "PAPER:awq", "locator": "Salient-channel analysis" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "INT8 GEMM cannot represent LLM activations; only FP16 works.",
+      "errorType": "overgeneralization",
+      "whyWrong": "With appropriate outlier-aware calibration (SmoothQuant, AWQ, per-token quant), INT8 achieves near-FP16 accuracy on LLMs.",
+      "sourceOrEvidence": "SmoothQuant / AWQ papers"
+    },
+    {
+      "claim": "The failure is a bug in the calibration code; a correct MinMax implementation handles outliers automatically.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Correct MinMax faithfully takes the observed extremes; the method itself is outlier-sensitive by definition.",
+      "sourceOrEvidence": "TensorRT calibration guide"
+    },
+    {
+      "claim": "MinMax is the recommended calibration for LLM activations.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Percentile or outlier-migration methods are recommended for LLMs; MinMax is often the worst choice for outlier-heavy activations.",
+      "sourceOrEvidence": "SmoothQuant paper Section 3"
+    },
+    {
+      "claim": "Per-channel activation quantization solves outlier issues at zero cost.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Per-channel activation quant complicates GEMM (per-channel activation scale requires special kernel support) and is not free; hence the appeal of SmoothQuant, which keeps per-tensor activation quant.",
+      "sourceOrEvidence": "SmoothQuant motivation"
+    }
+  ],
+  "implementationFacts": [
+    "LLM.int8 identifies outlier channels via magnitude threshold and keeps them in FP16.",
+    "SmoothQuant introduces a per-channel diagonal scaling that migrates outlier magnitude from activations to weights.",
+    "AWQ protects the top ~1% salient channels via per-channel scaling and clipping."
+  ],
+  "performanceScenarios": [
+    "GPT-3 175B: naive per-tensor INT8 loses several perplexity points; SmoothQuant recovers within 0.1 perplexity of FP16."
+  ],
+  "versionSensitivity": "stable_principle"
+}

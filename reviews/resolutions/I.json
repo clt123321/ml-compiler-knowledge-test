@@ -1,0 +1,99 @@
+{
+  "module": "I",
+  "generatedAt": "2026-07-26",
+  "agent": "repair-agent-round1",
+  "round": "round1_repair",
+  "entries": [
+    {
+      "id": "I-ATTBACK-025",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "I-EPILOGUE-024",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "I-FLASHPROP-026",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "I-FUSEDPROP-030",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "I-KVDF-029",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "I-MOEPROP-028",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "I-RMSPROP-027",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "I-SPARSE-022",
+      "finding": "MINOR: explanation text referenced pre-shuffle option letters (e.g. \"X is correct/wrong\" where X is now in the opposite category). Answer key correctness unaffected; optionExplanations was already authoritative and label-aligned.",
+      "resolution": "Rewrote top-level explanation using a canonical per-option template synthesized from optionExplanations + correctAnswers, so all letter references match current post-shuffle labels.",
+      "diff": [
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "I-SPARSE-022",
+      "finding": "MAJOR: uniqueness dispute — option C (\"Structured 2:4 sparsity yields real speedup on supported dtypes\") was factually correct as scoped, blurring uniqueness against options B and D. Reviewer flagged multiple defensible answers.",
+      "resolution": "Tightened option C by removing the \"on supported dtypes\" qualifier and adding an over-generalization (\"any dtype and any GEMM shape ... dtype- and shape-agnostic\") so it is now cleanly wrong; extended optionExplanations[\"C\"] to spell out the three scope conditions (dtype, shape, mask) that were previously implicit. correctAnswers unchanged; uniqueness restored.",
+      "diff": [
+        "options[C].text",
+        "optionExplanations[C]"
+      ],
+      "priorVersion": 2,
+      "newVersion": 3
+    }
+  ]
+}

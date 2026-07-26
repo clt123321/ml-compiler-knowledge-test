@@ -1,0 +1,45 @@
+{
+  "questionId": "M-OVERLAP-005",
+  "learningObjective": "Identify the preconditions under which a compiler or DDP-style runtime can overlap gradient AllReduce with the backward compute of earlier layers.",
+  "canonicalClaims": [
+    {
+      "claim": "Overlapping backward compute with gradient AllReduce is possible when (a) the AllReduce is issued as soon as its input tensor is fully produced (no downstream compute in the same layer depends on the reduced result), and (b) the collective runs on a stream that is independent of the compute stream so the accelerator scheduler can execute them concurrently.",
+      "conditions": [
+        "The gradient AllReduce output is not consumed until the optimizer step (or a later synchronization barrier).",
+        "The collective backend supports non-blocking / asynchronous launches (NCCL streams, MPI non-blocking).",
+        "Sufficient link bandwidth or SM headroom exists so the two operations do not fully serialize on a shared resource."
+      ],
+      "nonImplications": [
+        "Does not imply that overlap always yields net speedup; if the collective is short and the compute is long, overlap gains are negligible.",
+        "Does not imply that the compiler must fuse the AllReduce with the producing op; it is enough to schedule them on distinct streams."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 discussion of latency hiding across communication and computation" },
+        { "ref": "PAPER:gspmd", "locator": "§4 discussion of communication/computation overlap for partitioned graphs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Overlap requires the accelerator to have dedicated communication cores; on GPUs without a separate 'communication engine', overlap is impossible.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Modern GPUs achieve overlap through multiple CUDA streams and NIC / NVLink DMA engines that run concurrently with SM compute; no dedicated 'communication core' is required."
+    },
+    {
+      "claim": "For overlap to be beneficial, each layer's gradient must be smaller than a single collective's latency-dominated regime; larger tensors cannot be overlapped.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Larger tensors overlap better because they occupy the link long enough to hide multiple layers of compute. Bucketing exists precisely to grow the effective payload."
+    },
+    {
+      "claim": "The compiler must reorder the backward pass to execute the earliest-layer gradient last, so that all its AllReduces can be batched together.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Backward compute must proceed from output to input (dependence order). Overlap is achieved by launching each layer's AllReduce as soon as that gradient is ready, not by reordering the backward pass."
+    },
+    {
+      "claim": "Overlap is only meaningful for AllReduce; AllGather and ReduceScatter cannot be overlapped with compute because they change tensor shapes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Any non-blocking collective can be overlapped with independent compute; shape changes are known statically and do not block streams."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

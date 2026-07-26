@@ -1,0 +1,90 @@
+{
+  "id": "L-SHAPECOV-012",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Shape coverage in testing",
+  "learningObjective": "Design a shape-coverage matrix for testing a GPU kernel so that the test suite covers boundary shapes, tile-boundary shapes, and typical production shapes.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "You are writing shape-coverage tests for a fused pointwise kernel with a compile-time tile size of 128. Which shape set is most likely to catch bugs before production?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Only power-of-two shapes: 128, 256, 512, 1024, 2048. These are the most common in ML workloads; if the kernel works on power-of-two sizes it will work on all others by symmetry, so covering non-power-of-two is redundant."
+    },
+    {
+      "id": "B",
+      "text": "Only very large shapes (≥ 10⁶ elements) to make sure the kernel utilizes the GPU; small shapes never expose bugs because they finish quickly, and testing them wastes CI time."
+    },
+    {
+      "id": "C",
+      "text": "A matrix that includes: 0 (empty), 1 (singleton), tile-boundary sizes (127, 128, 129, 255, 256, 257), a couple of large production sizes, and a random-shape fuzz set. This covers boundary handling (mask logic), off-tile-multiple handling, and typical inputs."
+    },
+    {
+      "id": "D",
+      "text": "The exact production shape set (e.g., `M=32, N=4096`), because tests should validate the actual deployment path. Covering other shapes wastes CI cycles and is not required if the kernel is only used with fixed shapes at inference time."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Kernel bugs commonly appear at boundaries: empty tensors, singletons, tile-boundary values (n = tile, n = tile+1, n = tile-1), and interactions between mask logic and the last tile. A well-designed shape matrix covers those edge cases plus a fuzz set. Options A/B/D miss important classes of bugs: A ignores mask logic for non-tile-multiples; B fails to exercise the edge cases; D is fragile against future changes to production shapes.",
+  "optionExplanations": {
+    "A": "Wrong: mask logic bugs surface at non-power-of-two shapes.",
+    "B": "Wrong: small shapes exercise edge cases that large shapes may bypass.",
+    "C": "Correct: boundary + production + fuzz coverage is the standard discipline.",
+    "D": "Wrong: production shapes only make the test fragile to workload changes."
+  },
+  "assumptions": [
+    "Kernel has a compile-time tile size and uses masked loads/stores at tile boundaries."
+  ],
+  "nonImplications": [
+    "Does not imply exhaustive shape coverage is needed; a well-chosen boundary set + fuzz is sufficient.",
+    "Does not imply CI time is unlimited; parameterized tests can prune redundant shapes."
+  ],
+  "misconceptionTags": [
+    "poweroftwo_only_myth"
+  ],
+  "distractorRationales": {
+    "A": "Overstates power-of-two coverage.",
+    "B": "Ignores small-shape edge cases.",
+    "D": "Overfits tests to current production."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "Testing methodology and shape parameterization",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Kernel boundary handling and mask logic",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-SHAPECOV-012.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,215 @@
+{
+  "generatedAt": "2026-07-26",
+  "sources": {
+    "BOOK:hp6": {
+      "ref": "BOOK:hp6",
+      "tier": 1,
+      "questions": 24
+    },
+    "BOOK:pmpp4": {
+      "ref": "BOOK:pmpp4",
+      "tier": 1,
+      "questions": 64
+    },
+    "DOC:cuda-best": {
+      "ref": "DOC:cuda-best",
+      "tier": 1,
+      "questions": 46
+    },
+    "DOC:cuda-guide": {
+      "ref": "DOC:cuda-guide",
+      "tier": 1,
+      "questions": 63
+    },
+    "PAPER:vllm": {
+      "ref": "PAPER:vllm",
+      "tier": 2,
+      "questions": 16
+    },
+    "BOOK:sze-eff": {
+      "ref": "BOOK:sze-eff",
+      "tier": 1,
+      "questions": 45
+    },
+    "DOC:ncu": {
+      "ref": "DOC:ncu",
+      "tier": 1,
+      "questions": 8
+    },
+    "BOOK:eac3": {
+      "ref": "BOOK:eac3",
+      "tier": 1,
+      "questions": 41
+    },
+    "BOOK:appel": {
+      "ref": "BOOK:appel",
+      "tier": 1,
+      "questions": 22
+    },
+    "DOC:llvm-langref": {
+      "ref": "DOC:llvm-langref",
+      "tier": 1,
+      "questions": 9
+    },
+    "BOOK:dragon2": {
+      "ref": "BOOK:dragon2",
+      "tier": 1,
+      "questions": 7
+    },
+    "DOC:mlir-langref": {
+      "ref": "DOC:mlir-langref",
+      "tier": 1,
+      "questions": 28
+    },
+    "PAPER:mlir": {
+      "ref": "PAPER:mlir",
+      "tier": 2,
+      "questions": 18
+    },
+    "PAPER:pytorch2": {
+      "ref": "PAPER:pytorch2",
+      "tier": 2,
+      "questions": 27
+    },
+    "PAPER:tvm": {
+      "ref": "PAPER:tvm",
+      "tier": 2,
+      "questions": 19
+    },
+    "DOC:stablehlo": {
+      "ref": "DOC:stablehlo",
+      "tier": 1,
+      "questions": 18
+    },
+    "DOC:mlir-dialect-conversion": {
+      "ref": "DOC:mlir-dialect-conversion",
+      "tier": 1,
+      "questions": 3
+    },
+    "DOC:torch-dynamo": {
+      "ref": "DOC:torch-dynamo",
+      "tier": 1,
+      "questions": 19
+    },
+    "PAPER:halide": {
+      "ref": "PAPER:halide",
+      "tier": 2,
+      "questions": 9
+    },
+    "DOC:tvm-relax": {
+      "ref": "DOC:tvm-relax",
+      "tier": 1,
+      "questions": 22
+    },
+    "DOC:torch-compile": {
+      "ref": "DOC:torch-compile",
+      "tier": 1,
+      "questions": 21
+    },
+    "DOC:torch-aoti": {
+      "ref": "DOC:torch-aoti",
+      "tier": 1,
+      "questions": 8
+    },
+    "DOC:torch-export": {
+      "ref": "DOC:torch-export",
+      "tier": 1,
+      "questions": 8
+    },
+    "DOC:torch-inductor": {
+      "ref": "DOC:torch-inductor",
+      "tier": 1,
+      "questions": 24
+    },
+    "DOC:triton": {
+      "ref": "DOC:triton",
+      "tier": 1,
+      "questions": 17
+    },
+    "DOC:iree": {
+      "ref": "DOC:iree",
+      "tier": 1,
+      "questions": 9
+    },
+    "DOC:onnx": {
+      "ref": "DOC:onnx",
+      "tier": 1,
+      "questions": 15
+    },
+    "PAPER:ansor": {
+      "ref": "PAPER:ansor",
+      "tier": 2,
+      "questions": 12
+    },
+    "PAPER:gspmd": {
+      "ref": "PAPER:gspmd",
+      "tier": 2,
+      "questions": 17
+    },
+    "PAPER:flashattn": {
+      "ref": "PAPER:flashattn",
+      "tier": 2,
+      "questions": 17
+    },
+    "PAPER:triton": {
+      "ref": "PAPER:triton",
+      "tier": 2,
+      "questions": 2
+    },
+    "PAPER:awq": {
+      "ref": "PAPER:awq",
+      "tier": 2,
+      "questions": 9
+    },
+    "PAPER:gptq": {
+      "ref": "PAPER:gptq",
+      "tier": 2,
+      "questions": 6
+    },
+    "DOC:trtllm": {
+      "ref": "DOC:trtllm",
+      "tier": 1,
+      "questions": 16
+    },
+    "PAPER:smoothquant": {
+      "ref": "PAPER:smoothquant",
+      "tier": 2,
+      "questions": 4
+    },
+    "DOC:vllm": {
+      "ref": "DOC:vllm",
+      "tier": 1,
+      "questions": 22
+    },
+    "PAPER:orca": {
+      "ref": "PAPER:orca",
+      "tier": 2,
+      "questions": 7
+    },
+    "DOC:sglang": {
+      "ref": "DOC:sglang",
+      "tier": 1,
+      "questions": 3
+    },
+    "PAPER:specdecode": {
+      "ref": "PAPER:specdecode",
+      "tier": 2,
+      "questions": 3
+    },
+    "DOC:trt": {
+      "ref": "DOC:trt",
+      "tier": 1,
+      "questions": 9
+    },
+    "DOC:torch-profiler": {
+      "ref": "DOC:torch-profiler",
+      "tier": 1,
+      "questions": 13
+    },
+    "DOC:nsys": {
+      "ref": "DOC:nsys",
+      "tier": 1,
+      "questions": 2
+    }
+  }
+}

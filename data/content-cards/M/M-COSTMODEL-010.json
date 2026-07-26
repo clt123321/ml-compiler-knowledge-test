@@ -1,0 +1,39 @@
+{
+  "questionId": "M-COSTMODEL-010",
+  "learningObjective": "Apply the α + βS communication cost model to distinguish latency-dominated from bandwidth-dominated regimes for small vs large collectives.",
+  "canonicalClaims": [
+    {
+      "claim": "The point-to-point cost model T(S) = α + β·S has a latency-dominated regime (α ≫ β·S) for small S and a bandwidth-dominated regime (β·S ≫ α) for large S; the crossover payload is roughly S* = α / β.",
+      "conditions": [
+        "α (fixed launch/latency per message) and β (inverse bandwidth) are non-negative constants for the link.",
+        "The message is a single non-pipelined transfer between two endpoints; collectives compose multiple such terms."
+      ],
+      "nonImplications": [
+        "Does not imply that time is linear in S in the latency regime; the linear component is dominated by α there.",
+        "Does not imply that AllReduce has the same α and β as point-to-point; algorithm-specific factors (like 2(N-1)/N) apply."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 communication cost decomposition into latency and bandwidth" },
+        { "ref": "PAPER:gspmd", "locator": "§3 cost model used by the partitioner" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "For any two payload sizes S1 and S2 with S1 < S2, the cost ratio is exactly S1/S2 because the model is linear.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The model α + β·S is affine, not proportional; when α dominates, doubling S barely changes T. The ratio S1/S2 only holds when α ≪ β·S on both sides."
+    },
+    {
+      "claim": "The latency term α can be ignored on modern high-bandwidth interconnects (NVLink, InfiniBand), so the model reduces to T = β·S.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Small-message α (kernel launch, NIC handshake, driver overhead) remains in the microsecond range even on fast fabrics, dominating below ~100 KB payloads for many stacks."
+    },
+    {
+      "claim": "The crossover S* = α / β is a hardware constant that doesn't depend on the collective algorithm.",
+      "errorType": "overgeneralization",
+      "whyWrong": "α and β for a collective depend on the algorithm (ring, tree, halving/doubling), on the number of ranks, and on the software stack — S* varies accordingly."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

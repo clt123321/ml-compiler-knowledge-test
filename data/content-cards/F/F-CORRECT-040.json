@@ -1,0 +1,51 @@
+{
+  "questionId": "F-CORRECT-040",
+  "learningObjective": "Reason about tolerance choice when comparing an FP16-input FP32-accumulate matmul kernel against an FP32-input reference.",
+  "canonicalClaims": [
+    {
+      "claim": "For an FP16-input, FP32-accumulate GEMM compared to an FP32-input reference, expected relative error at K in the low thousands is on the order of 1e-3, dominated by FP16 input rounding (mantissa ~11 bits, relative epsilon ~9.77e-4). FP32 accumulation reduces but does not eliminate this input-precision loss.",
+      "conditions": [
+        "Random inputs with typical range; no NaN/inf; standard tile schedule."
+      ],
+      "nonImplications": [
+        "Does not imply the tolerance applies to FP8/INT8.",
+        "Does not imply modern GPU matmul is generally non-deterministic."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Mixed-precision numerics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP32 accumulation guarantees bit-identical output to an FP32-input reference.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Input rounding to FP16 is the dominant error source; accumulation precision alone cannot recover it.",
+      "sourceOrEvidence": "IEEE-754"
+    },
+    {
+      "claim": "GPU matmul is generally non-deterministic, so tolerance testing is meaningless.",
+      "errorType": "definition_confusion",
+      "whyWrong": "For fixed algorithm/config, modern GPU matmul is deterministic; tolerance testing works.",
+      "sourceOrEvidence": "cuBLAS / CUTLASS docs"
+    },
+    {
+      "claim": "TF32 default in PyTorch always dominates errors when using `.float()`.",
+      "errorType": "wrong_condition",
+      "whyWrong": "TF32 is used only for `matmul`/`conv` when enabled; and its effect depends on `torch.backends.cuda.matmul.allow_tf32`.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "FP16 accumulation is safe up to K ~ 1e4.",
+      "errorType": "overgeneralization",
+      "whyWrong": "FP16 accum error grows quickly with K; FP32 accum is preferred for K ≥ few hundred.",
+      "sourceOrEvidence": "Numerical analysis / NVIDIA docs"
+    }
+  ],
+  "implementationFacts": [
+    "FP16 relative machine epsilon ~ 9.77e-4.",
+    "Typical `torch.testing.assert_close` for FP16-input GEMM: rtol=1e-3, atol=1e-3."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

@@ -1,0 +1,123 @@
+{
+  "id": "I-GEMM-001",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "GEMM / Tile size and shared-memory reuse",
+  "learningObjective": "Reason about the arithmetic intensity of a tiled GEMM kernel and why larger tiles increase compute-per-byte until register/SMEM pressure caps the design.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80) or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "shared memory",
+      "sufficient register file for M_TILE x N_TILE accumulators"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "K"
+      ],
+      [
+        "K",
+        "N"
+      ],
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float32"
+    ],
+    "layouts": [
+      "row-major",
+      "row-major",
+      "row-major"
+    ]
+  },
+  "stem": "A tiled GEMM kernel uses per-thread-block tiles M_TILE x N_TILE with a K-loop step of K_TILE, staging A and B fragments in shared memory. Which statement about arithmetic intensity is correct?",
+  "codeSnippet": "// Pseudocode — one thread block computes a M_TILE x N_TILE tile of C\n// per iteration of the K-loop, it stages A[m0:m0+M_TILE, k:k+K_TILE]\n// and B[k:k+K_TILE, n0:n0+N_TILE] into shared memory, then multiplies.\n// Flops per K_TILE step:   2 * M_TILE * N_TILE * K_TILE\n// Bytes read per K_TILE step (from HBM): (M_TILE + N_TILE) * K_TILE * sizeof(elt)\n// Arithmetic intensity (per element type of A/B) ≈\n//     (2 * M_TILE * N_TILE) / ((M_TILE + N_TILE) * sizeof(elt))",
+  "options": [
+    {
+      "id": "A",
+      "text": "Arithmetic intensity is independent of M_TILE and N_TILE because each output element ultimately requires exactly 2K flops and 2K element reads regardless of tiling; tile sizing only affects launch grid dimensions, not HBM traffic per output."
+    },
+    {
+      "id": "B",
+      "text": "Arithmetic intensity scales with K_TILE, not with M_TILE/N_TILE, because A and B are streamed along K; therefore choosing K_TILE = K (full K in one step) is always optimal for HBM traffic minimization."
+    },
+    {
+      "id": "C",
+      "text": "Increasing M_TILE and N_TILE raises arithmetic intensity roughly as (M_TILE*N_TILE)/(M_TILE+N_TILE), so larger tiles amortize each fetched A/B row/column over more MACs; the ceiling is set by register/SMEM capacity per SM."
+    },
+    {
+      "id": "D",
+      "text": "Because the C accumulator is written once at the end, HBM write traffic dominates and arithmetic intensity is determined by the M_TILE*N_TILE / (M_TILE*N_TILE*sizeof(C)) ratio, so increasing tile size reduces intensity."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "For a tiled GEMM, each K-step reads (M_TILE + N_TILE) * K_TILE elements from HBM into SMEM and performs 2 * M_TILE * N_TILE * K_TILE flops. Per-element arithmetic intensity therefore scales as (M_TILE * N_TILE) / (M_TILE + N_TILE). Bigger M_TILE/N_TILE means each fetched A row / B column is reused across more output positions, cutting per-flop HBM traffic. The upper bound is imposed by the register file (accumulator tile) and SMEM (staged A/B fragments) per SM.",
+  "optionExplanations": {
+    "A": "Wrong: without tiling, each output would re-fetch A/B rows/columns from HBM; tiling raises reuse and cuts HBM traffic per output.",
+    "B": "Wrong: intensity depends on the reuse of A and B rows/columns across the M and N dimensions; K_TILE = K is usually infeasible and irrelevant to HBM/output intensity.",
+    "C": "Correct: this is the textbook tile-blocking result; the reuse factor is bounded by on-chip storage.",
+    "D": "Wrong: C write traffic is O(M*N), an order below the A*B fetch/compute cost for square-ish problems; larger tiles increase, not decrease, intensity."
+  },
+  "assumptions": [
+    "M, N, K are large enough that boundary effects are negligible.",
+    "A and B are fetched from HBM (no L2 residency guarantees)."
+  ],
+  "nonImplications": [
+    "Does not imply that arbitrarily large tiles are optimal; register spill or reduced occupancy dominates past a threshold.",
+    "Does not imply that tile shape M_TILE = N_TILE is always optimal; imbalanced tiles help skinny GEMMs."
+  ],
+  "misconceptionTags": [
+    "intensity_independent_of_tile",
+    "k_tile_dominance"
+  ],
+  "distractorRationales": {
+    "A": "Denies the well-known blocking benefit.",
+    "B": "Confuses K-loop streaming with intensity source.",
+    "D": "Misattributes traffic to C writes."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Ch. 5 — Tiled matrix multiplication and reuse",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Shared memory / tiling for GEMM",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Analytical intensity formula for tiled GEMM",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-GEMM-001.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "L-NCU-004",
+  "learningObjective": "Interpret Nsight Compute metrics (SM utilization, achieved occupancy, DRAM throughput, L1 hit rate) to conclude that an elementwise kernel is DRAM-bandwidth bound and choose the right mitigation.",
+  "canonicalClaims": [
+    {
+      "claim": "A memory-bound kernel typically shows near-peak DRAM throughput together with low SM utilization and 'long scoreboard' (memory latency) as the top warp-stall reason; adding occupancy or math cannot exceed the AI × BW ceiling — mitigation must reduce bytes moved (fusion, dtype reduction, kernel elision).",
+      "conditions": [
+        "The kernel streams data with no significant reuse (elementwise, single-pass reductions).",
+        "L1/L2 hit rates are naturally low because there is no data reuse to cache."
+      ],
+      "nonImplications": [
+        "Does not imply low SM utilization is always bad; for memory-bound kernels it is expected.",
+        "Does not imply that fusion is always applicable; unsupported ops or dtype boundaries can block it."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:ncu", "locator": "Speed of Light Memory Workload Analysis" },
+        { "ref": "BOOK:pmpp4", "locator": "Memory-bound kernel identification" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Low SM utilization always indicates an occupancy problem that can be fixed by increasing block size.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Low SM utilization can result from memory-latency stalls; the SMs are idle because they are waiting for memory, not because there are too few warps.",
+      "sourceOrEvidence": "Nsight Compute documentation"
+    },
+    {
+      "claim": "L1 cache hit rate should always be maximized; higher hit rates always mean faster kernels.",
+      "errorType": "definition_confusion",
+      "whyWrong": "For a streaming kernel with no data reuse, L1 hit rate is naturally low and does not indicate a problem; increasing SMEM allocation won't create reuse that isn't there.",
+      "sourceOrEvidence": "PMPP4 memory hierarchy chapter"
+    },
+    {
+      "claim": "Achieved occupancy 0.85 is low; reducing register usage to reach 1.0 delivers proportional speedup.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Above ~50% occupancy, additional occupancy has diminishing returns; for memory-bound kernels, occupancy is often not the constraint at all.",
+      "sourceOrEvidence": "CUDA Best Practices Guide, occupancy discussion"
+    },
+    {
+      "claim": "Adding more math per element will shift a memory-bound kernel into a compute-bound regime.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Only if the added math raises AI above the ridge point; a few extra FLOPs per element usually leave AI far below the ridge.",
+      "sourceOrEvidence": "PMPP4 Roofline"
+    }
+  ],
+  "implementationFacts": [
+    "Nsight Compute 'DRAM Throughput' near 100% = memory-bandwidth bound",
+    "'SM Utilization' being high requires the SMs to have work to do; memory stalls lower it",
+    "Warp stall reason 'Long Scoreboard' indicates memory latency"
+  ],
+  "performanceScenarios": [
+    "Elementwise activation kernels are the canonical memory-bound pattern; the standard optimization path is fusing them into the producing GEMM/conv (epilogue fusion) to eliminate the extra memory pass."
+  ],
+  "versionSensitivity": "stable_principle"
+}

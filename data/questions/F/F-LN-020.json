@@ -1,0 +1,128 @@
+{
+  "id": "F-LN-020",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / LayerNorm \u2014 welford / two-pass mean-variance",
+  "learningObjective": "Reason about a two-pass LayerNorm's memory-traffic cost vs a fused single-pass variant.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "FP32 arithmetic; block reduction"
+    ]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "N"
+      ],
+      [
+        "N"
+      ],
+      [
+        "N"
+      ],
+      [
+        "M",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32",
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "row_major",
+      "contiguous",
+      "contiguous",
+      "row_major"
+    ]
+  },
+  "stem": "The Triton LayerNorm kernel below is fused into a single pass per row (mean, variance, and normalization all inside one program). Which statement about this pattern is correct?",
+  "codeSnippet": "@triton.jit\ndef layer_norm(x_ptr, out_ptr, gamma_ptr, beta_ptr,\n               N: tl.constexpr, eps: tl.constexpr, BLOCK: tl.constexpr):\n    row = tl.program_id(0)\n    cols = tl.arange(0, BLOCK)\n    mask = cols < N\n    x = tl.load(x_ptr + row * N + cols, mask=mask, other=0.0)\n    mean = tl.sum(x, axis=0) / N\n    xc = x - mean\n    var = tl.sum(xc * xc, axis=0) / N\n    rstd = 1.0 / tl.sqrt(var + eps)\n    g = tl.load(gamma_ptr + cols, mask=mask, other=0.0)\n    b = tl.load(beta_ptr  + cols, mask=mask, other=0.0)\n    y = xc * rstd * g + b\n    tl.store(out_ptr + row * N + cols, y, mask=mask)\n\n# Launch: grid = (M,), one program per row, BLOCK >= N\n# x, out : FP32 row-major [M, N]",
+  "options": [
+    {
+      "id": "A",
+      "text": "Because `1.0 / tl.sqrt(var + eps)` uses `tl.sqrt`, the kernel is guaranteed to produce bit-identical FP32 results across all NVIDIA GPUs regardless of PTX version."
+    },
+    {
+      "id": "B",
+      "text": "The fused kernel is mathematically incorrect: computing variance as `sum((x - mean)^2) / N` in one program violates the two-pass Welford requirement, and only a Welford accumulator can produce numerically stable variance."
+    },
+    {
+      "id": "C",
+      "text": "The kernel keeps the entire row in registers/SMEM across the mean and variance reductions and the final normalization, so `x` is loaded from HBM only once per row; a naive multi-pass implementation that re-reads `x` from HBM after computing mean would double the memory traffic for large M."
+    },
+    {
+      "id": "D",
+      "text": "Storing `gamma` and `beta` in `__constant__` memory would make this Triton kernel faster because Triton natively places small tensors in constant memory when their size is a `tl.constexpr`."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): rsqrt/tl.sqrt reciprocal is not bit-identical across arches. B (Wrong): two-pass in FP32 is numerically fine for typical shapes. C (Correct): fused single-pass minimizes HBM traffic for x. D (Wrong): Triton has no automatic constant-memory placement. General context: The main performance argument for row-parallel fused LN: `x` (the largest input) is streamed from HBM once per row; the reductions (mean, variance) and the final normalization all reuse the register/SMEM copy. A multi-pass implementation that re-reads `x` for the second reduction doubles HBM traffic for the largest tensor.",
+  "optionExplanations": {
+    "A": "Wrong: rsqrt/tl.sqrt reciprocal is not bit-identical across arches.",
+    "B": "Wrong: two-pass in FP32 is numerically fine for typical shapes.",
+    "C": "Correct: fused single-pass minimizes HBM traffic for x.",
+    "D": "Wrong: Triton has no automatic constant-memory placement."
+  },
+  "assumptions": [
+    "N fits in one program's tile; row-parallel design.",
+    "FP32 arithmetic."
+  ],
+  "nonImplications": [
+    "Does not imply Welford is unnecessary at very large N; for N > 1e6 or ill-conditioned data, Welford is preferred.",
+    "Does not imply this is the only fused pattern; sequence-parallel LN is another approach."
+  ],
+  "misconceptionTags": [
+    "welford_always_required_myth",
+    "constant_memory_auto_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim about rsqrt bit-identity.",
+    "B": "Overstates Welford's necessity.",
+    "D": "Fabricates Triton constant-memory placement."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:triton",
+      "locator": "LayerNorm tutorial and row-parallel design",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Reduction and normalization kernels",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "HBM traffic of row-parallel fused LN vs multi-pass",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-LN-020.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

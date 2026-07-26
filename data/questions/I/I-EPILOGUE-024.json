@@ -1,0 +1,130 @@
+{
+  "id": "I-EPILOGUE-024",
+  "type": "multiple",
+  "module": "core_ops_attention",
+  "subtopic": "GEMM epilogue fusion / Bias + activation + norm",
+  "learningObjective": "Reason about which operations can be fused as a GEMM epilogue and what the HBM-traffic benefit is.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": [
+      "tensor cores"
+    ]
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "B",
+        "N",
+        "D_in"
+      ],
+      [
+        "D_in",
+        "D_out"
+      ],
+      [
+        "D_out"
+      ],
+      [
+        "B",
+        "N",
+        "D_out"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "A GEMM Y = X @ W is followed by (i) bias add, (ii) elementwise activation (GELU), (iii) RMSNorm along the last axis. Select all statements about fusing these into a GEMM epilogue that are correct. (Choose all that apply.)",
+  "codeSnippet": "# Sequence to fuse:\n# Y0 = X @ W                              # GEMM\n# Y1 = Y0 + bias                          # (i) bias add, per-row broadcast\n# Y2 = gelu(Y1)                           # (ii) elementwise activation\n# Y3 = rmsnorm(Y2, gamma)                 # (iii) reduction across last axis + normalize",
+  "options": [
+    {
+      "id": "A",
+      "text": "Fusing the epilogue removes tensor-core benefit because tensor cores can only accumulate into registers, and any epilogue instruction moves the accumulator to shared memory first, forcing a synchronous barrier that undoes the tensor-core throughput advantage."
+    },
+    {
+      "id": "B",
+      "text": "(i) bias add and (ii) elementwise activation fuse naturally as a GEMM epilogue because they are pure elementwise transforms on the accumulator tile before it is written to HBM; the fused kernel avoids the intermediate Y0 and Y1 HBM roundtrips."
+    },
+    {
+      "id": "C",
+      "text": "(iii) RMSNorm fuses as a standard GEMM epilogue in the same way as bias-add and activation, because normalization is elementwise once the running variance is precomputed as a scalar constant of the workload."
+    },
+    {
+      "id": "D",
+      "text": "(iii) RMSNorm requires a reduction along the last axis (i.e., across the D_out output columns of the GEMM tile), which typically cuts across CTAs unless the GEMM is designed with a full-row tile; in mainstream libraries, RMSNorm is left as a separate kernel or fused only with a specialized 'GEMM-with-row-reduction' epilogue."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
+  "explanation": "Options B, D are correct; options A, C are incorrect. A (Wrong): tensor-core epilogues are supported natively; they do not disable the tensor cores. B (Correct): standard bias/activation epilogue. C (Wrong): RMSNorm is per-row, not element-independent. D (Correct): RMSNorm needs row-reduction which conflicts with typical GEMM tile decomposition. General context: They act on the accumulator tile in registers before write-back, saving one HBM roundtrip per intermediate.",
+  "optionExplanations": {
+    "A": "Wrong: tensor-core epilogues are supported natively; they do not disable the tensor cores.",
+    "B": "Correct: standard bias/activation epilogue.",
+    "C": "Wrong: RMSNorm is per-row, not element-independent.",
+    "D": "Correct: RMSNorm needs row-reduction which conflicts with typical GEMM tile decomposition."
+  },
+  "assumptions": [
+    "Standard cuBLASLt / CUTLASS epilogue programming model applies.",
+    "GEMM tile size does not span the full D_out row of the output."
+  ],
+  "nonImplications": [
+    "Does not imply RMSNorm can never be fused with GEMM; specialized implementations exist.",
+    "Does not imply that the bias-add saves compute; it only saves an HBM roundtrip."
+  ],
+  "misconceptionTags": [
+    "rmsnorm_pure_elementwise_myth",
+    "tensorcore_epilogue_myth"
+  ],
+  "distractorRationales": {
+    "A": "Fabricates a hardware limitation.",
+    "C": "Ignores per-row reduction requirement."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "GEMM epilogue and elementwise fusion",
+      "supports": [
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Reduction vs pointwise fusion boundaries",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GEMM epilogue fusion candidates on tensor-core GPUs",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/I/I-EPILOGUE-024.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

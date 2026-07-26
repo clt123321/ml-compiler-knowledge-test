@@ -1,0 +1,56 @@
+{
+  "questionId": "H-GEMM-022",
+  "learningObjective": "Identify scenarios where INT8 GEMM is NOT faster than FP16 GEMM on an Ampere-class GPU.",
+  "canonicalClaims": [
+    {
+      "claim": "INT8 GEMM's ~2× Tensor Core TOPS advantage over FP16 is realized only when the kernel is compute-bound; in bandwidth-bound regimes (e.g., M=1 decode with FP16 weights), the compute peak is idle waiting on weight loads and INT8 activations do not reduce the dominant traffic.",
+      "conditions": [
+        "The GPU has both INT8 and FP16 Tensor Core support (Ampere+).",
+        "The kernel's arithmetic intensity is below the compute-bound threshold on the target hardware."
+      ],
+      "nonImplications": [
+        "Does not imply INT8 GEMM is useless; large-M / compute-bound cases benefit.",
+        "Does not imply W4A16 always fixes the M=1 case — very small K or activation-dominated pipelines may not benefit either."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:awq", "locator": "Bandwidth vs compute analysis" },
+        { "ref": "BOOK:sze-eff", "locator": "Arithmetic intensity" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Higher peak TOPS always yields lower wall-clock time.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Wall-clock is min(compute_time, memory_time); a higher TOPS peak is irrelevant if memory is the bottleneck.",
+      "sourceOrEvidence": "Roofline model (H&P, PMPP4)"
+    },
+    {
+      "claim": "cuBLAS disables INT8 Tensor Cores on A100 by default; the observed same runtime is because both cases actually ran FP16.",
+      "errorType": "hardware_leak",
+      "whyWrong": "INT8 Tensor Cores are enabled on A100 via CUBLAS_COMPUTE_32I / cuBLAS Lt; the observation is a genuine bandwidth-bound result.",
+      "sourceOrEvidence": "cuBLAS documentation"
+    },
+    {
+      "claim": "At M=1, CUDA cannot launch a grid, so the runtimes reflect launch overhead only.",
+      "errorType": "definition_confusion",
+      "whyWrong": "CUDA launches grids of any shape; M=1 just means a small M-axis in the GEMM, launching a normal grid over N and K.",
+      "sourceOrEvidence": "CUDA Programming Guide"
+    },
+    {
+      "claim": "The INT8 kernel is slower due to per-thread quantize/dequantize overhead; removing those ops recovers the speedup.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Quant/dequant is minor compared to weight-loading traffic; the bottleneck is bandwidth, not tiny per-thread ops.",
+      "sourceOrEvidence": "AWQ / SmoothQuant profiling"
+    }
+  ],
+  "implementationFacts": [
+    "A100 FP16 Tensor Core peak: ~312 TFLOPS; INT8 peak: ~624 TOPS.",
+    "A100 HBM2e bandwidth: ~2.0 TB/s.",
+    "Roofline arithmetic-intensity threshold for A100: FP16 ~156 FLOPs/byte, INT8 ~312 OPs/byte."
+  ],
+  "performanceScenarios": [
+    "M=1 decode with 8192-dim weight: activation is 16 KB (FP16) or 8 KB (INT8), weight is 128 MB — activation dtype is <0.1% of traffic."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,50 @@
+{
+  "questionId": "I-EPILOGUE-024",
+  "learningObjective": "Reason about which operations can be fused as a GEMM epilogue and what the HBM-traffic benefit is.",
+  "canonicalClaims": [
+    {
+      "claim": "Bias-add and elementwise activation fuse naturally as GEMM epilogues on tensor-core GPUs, saving one HBM roundtrip per intermediate; RMSNorm/LayerNorm require a per-row reduction that conflicts with typical GEMM tile decomposition and is usually kept as a separate kernel or handled by a specialized row-reduce epilogue.",
+      "conditions": [
+        "GEMM library (CUTLASS, cuBLASLt) supports elementwise epilogue.",
+        "GEMM tile does not span full row for norm fusion."
+      ],
+      "nonImplications": [
+        "Does not imply RMSNorm is never fused; specialized full-row-tile GEMMs can fuse it.",
+        "Does not imply epilogue fusion always reduces total compute; it reduces HBM traffic."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "GEMM epilogue" },
+        { "ref": "DOC:torch-inductor", "locator": "Fusion boundaries" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "RMSNorm is a pure elementwise op that fuses like GELU.",
+      "errorType": "definition_confusion",
+      "whyWrong": "RMSNorm needs the per-row RMS statistic; it is not elementwise.",
+      "sourceOrEvidence": "RMSNorm definition"
+    },
+    {
+      "claim": "Epilogue fusion breaks tensor cores.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Tensor-core outputs are consumed by epilogue instructions in registers/SMEM without a throughput penalty.",
+      "sourceOrEvidence": "CUTLASS design"
+    },
+    {
+      "claim": "All post-GEMM ops can be fused as epilogue.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Ops that need cross-tile reductions or global state (softmax, norms) require special handling.",
+      "sourceOrEvidence": "CUTLASS epilogue catalog"
+    }
+  ],
+  "implementationFacts": [
+    "CUTLASS's epilogue module supports bias, activation, and elementwise scale in a single kernel launch.",
+    "TensorRT-LLM defines fused-kernel plugins for common LLM epilogues."
+  ],
+  "performanceScenarios": [
+    "Bias/activation epilogue is essentially free on tensor-core-driven GEMMs.",
+    "Row-reduce epilogues (LayerNorm/RMSNorm) are supported in specialized libraries but with tile-shape constraints."
+  ],
+  "versionSensitivity": "stable_principle"
+}

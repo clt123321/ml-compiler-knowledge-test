@@ -1,0 +1,95 @@
+{
+  "id": "F-PERSIST-037",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Persistent kernel pattern",
+  "learningObjective": "Understand the persistent-kernel pattern: launch a fixed number of blocks equal to SM count and loop internally over work items.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Volta+ (persistent pattern common in Ampere/Hopper serving)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "work stealing via atomicAdd on a global counter"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about the 'persistent kernel' pattern is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "A persistent kernel launches a fixed number of blocks (typically = SM count \u00d7 blocks-per-SM) and loops internally over work items pulled from a global queue (e.g., via `atomicAdd` on a counter). It avoids repeated kernel launches for many small work items, amortizes tail-effect load imbalance, and gives the kernel authority over scheduling \u2014 at the cost of foregoing the CUDA runtime's dynamic block placement."
+    },
+    {
+      "id": "B",
+      "text": "A persistent kernel launches one block per work item (like a normal kernel) but marks it as `__persistent__` in nvcc so the runtime keeps its context resident between launches for faster subsequent invocations."
+    },
+    {
+      "id": "C",
+      "text": "A persistent kernel runs forever until the host explicitly terminates it via `cudaKillKernel`; it is used for background monitoring and cannot be used for compute pipelines."
+    },
+    {
+      "id": "D",
+      "text": "Persistent kernels require Grace-Hopper CPUs to work; on regular GPU-only nodes they behave like ordinary kernels because they rely on CPU-driven persistent state."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "The persistent-kernel pattern is common in LLM decoding, GEMM libraries, and other systems that need to amortize kernel launch overhead across many similar work items. Launch a fixed number of blocks matched to hardware occupancy; internally each block loops pulling the next work item from a queue (usually `atomicAdd` on a global counter). Benefits: no launch overhead per item, better load balance for uneven work items, single kernel invocation for many items. Cost: manual scheduling logic; missing the runtime's dynamic block placement across kernels.",
+  "optionExplanations": {
+    "A": "Correct: fixed block count \u00d7 internal loop over work items.",
+    "B": "Wrong: no `__persistent__` keyword; not a runtime residency feature.",
+    "C": "Wrong: no `cudaKillKernel` API; kernels self-terminate via exit condition.",
+    "D": "Wrong: no dependence on Grace-Hopper CPUs."
+  },
+  "assumptions": [
+    "Standard CUDA runtime; a hardware-atomic-add counter is available."
+  ],
+  "nonImplications": [
+    "Does not imply persistent kernels always beat many-launch approaches; small work counts do not benefit.",
+    "Does not imply the pattern is standardized in any CUDA API; it is a programming idiom."
+  ],
+  "misconceptionTags": [
+    "persistent_kernel_keyword_myth",
+    "cuda_kill_api_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates a `__persistent__` attribute.",
+    "C": "Fabricates a kill API.",
+    "D": "Fabricates hardware dependency."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Persistent-thread / work-stealing pattern",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Kernel launch overhead and amortization strategies",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Persistent kernel amortization of launch overhead across many work items",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-PERSIST-037.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

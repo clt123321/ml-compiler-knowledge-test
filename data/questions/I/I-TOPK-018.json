@@ -1,0 +1,112 @@
+{
+  "id": "I-TOPK-018",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "Top-k / Sampling primitive on GPU",
+  "learningObjective": "Explain the standard GPU strategy for computing top-k over a large vocabulary and why full sort is not required.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "B",
+        "V"
+      ],
+      [
+        "B",
+        "k"
+      ],
+      [
+        "B",
+        "k"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "int32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "An LLM sampler needs to compute the top-k tokens per batch row over a [B, V] logits tensor, where V is typically 32K-200K and k is small (e.g. 50). Which GPU strategy is most appropriate?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Use a two-stage approach: partition each row into blocks, keep a per-block top-k with a small in-register heap or bitonic-select, then merge the per-block candidates into a single top-k with a final reduction. Total work is O(V log k), well below full-sort."
+    },
+    {
+      "id": "B",
+      "text": "Sort each row in full with a merge sort or radix sort of complexity O(V log V), then take the top k. This is essentially the only correct approach because partial-selection algorithms cannot guarantee stable order among ties."
+    },
+    {
+      "id": "C",
+      "text": "Compute softmax over the entire row and then threshold at 1 / (k * V); this yields top-k without any sort because the probability of the k-th largest logit is bounded above by 1/k in expectation."
+    },
+    {
+      "id": "D",
+      "text": "Top-k is inherently sequential across the V dimension because each selection depends on all previous ones; the only GPU-friendly path is to move top-k to the CPU on a small logits copy over PCIe."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "The standard GPU top-k algorithm partitions the row and keeps a small per-partition candidate set (top-k or top-K' with K' >= k) using a small heap/bitonic selection network in registers/SMEM; a final reduction merges these candidate sets into the global top-k. Total work per row is O(V log k) instead of O(V log V). No full sort is needed. Frameworks like cuDNN, cutlass, and inference engines (TRT-LLM, vLLM) use this pattern. Sampling then usually applies temperature/top-p on the resulting top-k set.",
+  "optionExplanations": {
+    "A": "Correct: the two-stage partitioned top-k is the canonical GPU approach.",
+    "B": "Wrong: full sort is unnecessary and wasteful; log(V/k) work per element is enough.",
+    "C": "Wrong: fabricates a mathematical relation; softmax thresholds do not give top-k.",
+    "D": "Wrong: top-k is highly parallel; the partition+merge pattern is the standard."
+  },
+  "assumptions": [
+    "V is much larger than k so partitioning is beneficial.",
+    "Ties can be resolved with an arbitrary stable rule (e.g., lower index wins)."
+  ],
+  "nonImplications": [
+    "Does not imply that a fully sorted output is available; only the top-k values and indices.",
+    "Does not imply this is the only correct approach; approximate top-k, radix-based top-k, and heap-based top-k all exist."
+  ],
+  "misconceptionTags": [
+    "topk_full_sort_myth",
+    "topk_serial_myth"
+  ],
+  "distractorRationales": {
+    "B": "Overkills the algorithm.",
+    "C": "Fabricates a threshold.",
+    "D": "Denies GPU parallelism of top-k."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Sort and selection primitives on GPU",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GPU top-k for LLM sampling over large vocabulary",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-TOPK-018.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

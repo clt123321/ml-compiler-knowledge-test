@@ -1,0 +1,55 @@
+{
+  "questionId": "C-TE-022",
+  "learningObjective": "Describe what a Tensor Expression (in the Halide/TVM sense) is and how it differs from an imperative loop nest.",
+  "canonicalClaims": [
+    {
+      "claim": "A Tensor Expression is a declarative, functional description of a tensor's output values as a function of coordinates and reduction axes; iteration order, tile sizes, memory placement, and parallelism are specified separately in a schedule.",
+      "conditions": [
+        "The framework follows the compute/schedule separation."
+      ],
+      "nonImplications": [
+        "Does not imply every framework uses TE-style descriptions.",
+        "Does not imply a TE alone yields performance; the schedule matters."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:halide", "locator": "Halide expression syntax" },
+        { "ref": "PAPER:tvm", "locator": "TVM TE description" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TE is an imperative loop nest.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TE is declarative; loops appear only in the resulting schedule.",
+      "sourceOrEvidence": "Halide / TVM docs"
+    },
+    {
+      "claim": "TE is a runtime placeholder for unimplemented ONNX ops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TE is a compute description, not a runtime fallback.",
+      "sourceOrEvidence": "TVM / ONNX docs"
+    },
+    {
+      "claim": "TE is a target-specific low-level (PTX / LLVM) abstraction.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TE is target-independent; the schedule and codegen handle targets.",
+      "sourceOrEvidence": "Halide / TVM docs"
+    },
+    {
+      "claim": "TE eliminates the need for a scheduler.",
+      "errorType": "scope_error",
+      "whyWrong": "TE describes what; scheduling / autotuning still decides how.",
+      "sourceOrEvidence": "Ansor / MetaSchedule docs"
+    }
+  ],
+  "implementationFacts": [
+    "Halide compute expressions with `Func` + `RDom`",
+    "TVM `te.compute` produces a compute description; `Schedule` primitives transform it",
+    "TensorIR is TVM's newer representation of the same idea"
+  ],
+  "performanceScenarios": [
+    "The same TE can produce very different kernels depending on schedule choices; autotuners explore this space."
+  ],
+  "versionSensitivity": "stable_principle"
+}

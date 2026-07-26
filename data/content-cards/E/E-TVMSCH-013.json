@@ -1,0 +1,51 @@
+{
+  "questionId": "E-TVMSCH-013",
+  "learningObjective": "Reason about the effect of TensorIR schedule primitives on loop structure and buffer scoping.",
+  "canonicalClaims": [
+    {
+      "claim": "TensorIR schedule primitives operate on loops and blocks in a semantics-preserving way: `split` divides a loop into an outer/inner pair, `bind` maps a loop to a thread axis, `cache_read`/`cache_write` insert staging buffers at a given storage scope, and `vectorize` marks a loop for target-vectorized codegen when preconditions hold.",
+      "conditions": [
+        "Preconditions of each primitive (e.g., no cross-iteration dependence for `vectorize`) must be met."
+      ],
+      "nonImplications": [
+        "Does not imply every schedule improves performance.",
+        "Does not imply all primitives succeed on every loop."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "TensorIR schedule primitives" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`vectorize` always succeeds by silently downgrading to scalar code when preconditions fail.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The scheduler reports an error at schedule-application time when preconditions are violated.",
+      "sourceOrEvidence": "TensorIR docs"
+    },
+    {
+      "claim": "`bind` requires a prior `split`.",
+      "errorType": "wrong_condition",
+      "whyWrong": "`bind` can be applied to any loop directly; extents just become the thread/block-axis size.",
+      "sourceOrEvidence": "TensorIR docs"
+    },
+    {
+      "claim": "`cache_read` changes the mathematical result by inserting a lossy staging buffer.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`cache_read` is a semantics-preserving staging insertion.",
+      "sourceOrEvidence": "TensorIR docs"
+    },
+    {
+      "claim": "Schedule primitives operate on the buffer graph, not on loops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They operate on the block/loop structure; buffer changes are secondary.",
+      "sourceOrEvidence": "TensorIR docs"
+    }
+  ],
+  "implementationFacts": [
+    "`split(loop, factors=[None, 256])` binds inner factor 256 and outer becomes ceildiv.",
+    "`cache_read(block, index, storage_scope)` supports `\"global\"`, `\"shared\"`, `\"local\"` etc."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "G-INDUCTOR-027",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "TorchInductor scheduler / Fusion decisions",
+  "learningObjective": "Given a TorchInductor scheduler log, explain why two pointwise ops were not fused.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80)",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch TorchInductor",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "profileData": "TORCH_LOGS=+inductor output (excerpt):\n  scheduler: fusing pointwise_add and pointwise_mul into single kernel (ok)\n  scheduler: NOT fusing (pointwise_mul_output) with (reduction_sum):\n      reason = 'consumer produces different output shape and reduces over inner axis;\n                fusing would force reduction to broadcast pointwise input,\n                producing >2\u00d7 the memory traffic'\n  final kernel plan: 2 kernels (fused_pointwise, reduction_sum)",
+  "stem": "The TorchInductor scheduler log above shows a pointwise chain fused but the subsequent reduction not fused with it. Given only this log, what is the most accurate reading of the scheduler's decision?",
+  "options": [
+    {
+      "id": "A",
+      "text": "TorchInductor considered fusing the reduction with the pointwise chain, but the analysis found that fusion would force the reduction inner loop to re-read the pointwise inputs (broadcast), inflating memory traffic; the scheduler applied a heuristic that treats added memory traffic as a fusion cost."
+    },
+    {
+      "id": "B",
+      "text": "TorchInductor cannot fuse pointwise ops with reductions at all; this is a permanent limitation of the scheduler."
+    },
+    {
+      "id": "C",
+      "text": "The scheduler always separates reductions from pointwise ops when the reduction is over the inner axis, because reduction-over-inner-axis is semantically illegal to fuse."
+    },
+    {
+      "id": "D",
+      "text": "The scheduler is memory-optimal by construction; the log demonstrates that any fusion decision it makes must reduce memory traffic."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "The log explicitly states the reason: fusing the reduction with the pointwise chain would force the reduction's inner loop to re-consume the pointwise inputs (a broadcast pattern) and would increase memory traffic by more than 2\u00d7. TorchInductor's scheduler uses heuristics that consider memory traffic as a fusion cost; it declined this fusion accordingly. Option B is false: TorchInductor routinely fuses pointwise with reductions (e.g., LayerNorm). Option C is false: pointwise-into-reduction is legal; the scheduler's decision is a performance heuristic, not a legality issue. Option D over-claims optimality; heuristics are approximations, not proofs of optimality.",
+  "optionExplanations": {
+    "A": "Correct: correctly reads the log and characterizes the heuristic.",
+    "B": "Wrong: pointwise+reduction fusion is well-supported.",
+    "C": "Wrong: legality is not at issue; performance is.",
+    "D": "Wrong: heuristics are approximate."
+  },
+  "assumptions": [
+    "The log is representative of the TorchInductor scheduler's decision process in the specified version range."
+  ],
+  "nonImplications": [
+    "Does not imply the scheduler's decision is always the best choice; a different memory-traffic model could reach a different conclusion.",
+    "Does not imply the same decision would be made in a future PyTorch version \u2014 the scheduler's heuristics evolve."
+  ],
+  "misconceptionTags": [
+    "inductor_no_reduction_fusion",
+    "inductor_optimal"
+  ],
+  "distractorRationales": {
+    "B": "Overstates a limitation.",
+    "C": "Confuses performance heuristic with legality.",
+    "D": "Claims optimality beyond what heuristics guarantee."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Scheduler / fusion policy documentation",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "TorchInductor fusion heuristic behavior in PyTorch 2.3-2.5",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-INDUCTOR-027.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

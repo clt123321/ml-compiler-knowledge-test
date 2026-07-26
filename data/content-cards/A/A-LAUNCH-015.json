@@ -1,0 +1,51 @@
+{
+  "questionId": "A-LAUNCH-015",
+  "learningObjective": "Reason about when kernel launch overhead dominates and what mitigations exist.",
+  "canonicalClaims": [
+    {
+      "claim": "When per-kernel duration is comparable to or smaller than the ~5–10 μs launch overhead, wall time is dominated by CPU-side launches; CUDA Graphs and kernel fusion are the standard mitigations.",
+      "conditions": [
+        "Loop dispatches many short kernels (< 20 μs each).",
+        "Baseline uses one launch per kernel call.",
+        "No implicit graph capture or persistent-kernel scheme."
+      ],
+      "nonImplications": [
+        "Does not imply CUDA Graphs is free; graph construction has its own cost and constraints.",
+        "Does not imply fusion is always beneficial (register pressure, occupancy trade-offs)."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "CUDA Graphs and streams" },
+        { "ref": "DOC:cuda-best", "locator": "Short-kernel launch guidance" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Asynchronous kernel launches eliminate launch overhead.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Async launch decouples CPU wait from kernel completion but the launch API still consumes CPU time (~5–10 μs) and paces the launch stream.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "CUDA Graphs eliminates launch overhead entirely.",
+      "errorType": "overgeneralization",
+      "whyWrong": "CUDA Graphs amortizes per-kernel API overhead across a single graph-launch, but graph instantiation and update have their own costs, and dynamic shapes may force re-capture.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Kernel fusion is always beneficial for performance.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Over-fusion can increase register pressure and reduce occupancy or force spills; fusion is a case-by-case optimization.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "Launch overhead ~ 5–10 μs per cudaLaunchKernel (recent drivers).",
+    "CUDA Graphs replay overhead ~ 1–2 μs per graph launch after capture.",
+    "Kernel fusion also reduces HBM traffic when producer-consumer share operands."
+  ],
+  "performanceScenarios": [
+    "LLM decode dispatches many short kernels per token; CUDA Graphs and fused attention kernels are standard mitigations."
+  ],
+  "versionSensitivity": "stable_principle"
+}

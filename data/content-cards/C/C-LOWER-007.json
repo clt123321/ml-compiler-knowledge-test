@@ -1,0 +1,56 @@
+{
+  "questionId": "C-LOWER-007",
+  "learningObjective": "Understand what 'lowering' means across MLIR abstraction layers, and why lowering typically preserves semantics but changes the vocabulary used to express the computation.",
+  "canonicalClaims": [
+    {
+      "claim": "Progressive lowering in MLIR moves from higher-level (declarative, structural) dialects to lower-level (explicit buffers, loops, memory) dialects, preserving semantics while exposing more structure so that later optimizations and codegen can operate on it.",
+      "conditions": [
+        "The lowering pipeline uses semantically valid conversions (bufferization respects tensor-level dataflow).",
+        "The end goal is executable code or a lower-level dialect."
+      ],
+      "nonImplications": [
+        "Does not imply lowering by itself introduces or removes aliasing hazards.",
+        "Does not imply the lowered form is always the fastest form; later passes make that decision."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:mlir", "locator": "Progressive lowering discussion" },
+        { "ref": "DOC:mlir-langref", "locator": "Dialect layering" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Lowering raises the abstraction level so downstream layers can pattern-match on higher-level ops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Lowering goes in the direction of more explicit / lower-level; raising is the opposite.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "The linalg-on-tensor and scf-on-memref forms are semantically inequivalent because aliasing rules differ.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Bufferization is defined to preserve semantics; it inserts copies or proves non-aliasing when required.",
+      "sourceOrEvidence": "MLIR bufferization docs"
+    },
+    {
+      "claim": "Lowering emits Python source code at each step for user inspection.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Lowering is an internal IR-to-IR transformation, not source generation.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Every compiler must go through exactly linalg -> scf -> memref -> llvm; alternative paths are invalid.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Many production pipelines skip stages or route to Triton/XLA/GPU dialects directly.",
+      "sourceOrEvidence": "MLIR paper; IREE / Torch-MLIR pipelines"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR bufferization converts linalg-on-tensor to linalg-on-memref",
+    "linalg tiling / vectorization typically runs after bufferization or on structured tensor form depending on pipeline",
+    "The final step is usually conversion to LLVM dialect and codegen"
+  ],
+  "performanceScenarios": [
+    "Exposing loop structure allows tiling and vectorization; each level unlocks a different transformation family."
+  ],
+  "versionSensitivity": "stable_principle"
+}

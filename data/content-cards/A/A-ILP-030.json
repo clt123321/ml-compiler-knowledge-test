@@ -1,0 +1,49 @@
+{
+  "questionId": "A-ILP-030",
+  "learningObjective": "Apply Little's Law at the instruction/memory level to reason about the concurrency required to fully hide arithmetic and memory latency.",
+  "canonicalClaims": [
+    {
+      "claim": "GPU latency hiding requires enough outstanding operations (memory requests or independent instructions) to satisfy Little's Law; this concurrency can be provided by TLP (many warps), ILP (independent instructions per warp), or MLP (multiple outstanding loads per warp), and low-occupancy high-MLP kernels can still saturate memory bandwidth.",
+      "conditions": [
+        "The kernel exposes independent operations that the scheduler can issue.",
+        "Sufficient hardware resources (LSU slots, functional units) exist to hold the concurrency."
+      ],
+      "nonImplications": [
+        "Does not imply occupancy alone is sufficient; per-warp MLP/ILP matters.",
+        "Does not imply that any technique alone (TLP, ILP, MLP) works for every kernel; real kernels mix them."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Little's Law chapter" },
+        { "ref": "BOOK:pmpp4", "locator": "Latency hiding and MLP" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "100% occupancy guarantees latency hiding.",
+      "errorType": "overgeneralization",
+      "whyWrong": "If each active warp issues only a single outstanding load, aggregate concurrency may still fall short of BW × latency.",
+      "sourceOrEvidence": "Volkov 'Better Performance at Lower Occupancy' analysis"
+    },
+    {
+      "claim": "Low occupancy always underutilizes the GPU.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Low-occupancy kernels with high per-warp MLP can saturate memory bandwidth; occupancy is only one way to reach the required concurrency.",
+      "sourceOrEvidence": "Volkov analysis; PMPP4 discussion of occupancy nuance"
+    },
+    {
+      "claim": "ILP is irrelevant on GPUs; only TLP matters.",
+      "errorType": "scope_error",
+      "whyWrong": "Warp schedulers issue instructions from a warp when its next instruction is ready; independent instructions within a warp allow issue without waiting on prior results.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, warp scheduler semantics"
+    }
+  ],
+  "implementationFacts": [
+    "Little's Law: N (outstanding) = BW × latency; for A100 HBM ~ 800 KB in flight at 400 ns × 2 TB/s.",
+    "Warp scheduler issues one ready instruction per cycle from a warp; multiple warps + ILP + MLP jointly saturate the machine."
+  ],
+  "performanceScenarios": [
+    "Reduction kernels are ILP-heavy per thread; matrix-transpose kernels are TLP-heavy across warps; MLP is a lever in memory-bound kernels."
+  ],
+  "versionSensitivity": "stable_principle"
+}

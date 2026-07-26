@@ -1,0 +1,96 @@
+{
+  "id": "D-FX-035",
+  "type": "multiple",
+  "module": "pytorch_compiler",
+  "subtopic": "FX Graph structure",
+  "learningObjective": "Identify true properties of the FX Graph produced by TorchDynamo.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which of the following statements about the FX Graph produced by TorchDynamo are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "The FX Graph is emitted as machine code and cannot be inspected from Python; users must attach a native debugger to view it. Under this framing, the FX Graph is emitted as machine code and cannot be inspected from Python at runtime; users who want to view the graph structure must attach a native debugger to the process and read raw compiled artifacts from Inductor's cache directory."
+    },
+    {
+      "id": "B",
+      "text": "The FX Graph is a Python-level intermediate representation with nodes for placeholders (inputs), call_function / call_method / call_module operations, and outputs; each node has an `op`, `target`, `args`, and `kwargs`."
+    },
+    {
+      "id": "C",
+      "text": "The FX Graph after AOTAutograd is typically functionalized (no in-place ops on the primary path) and expressed over ATen ops, ready for the Inductor lowering pipeline."
+    },
+    {
+      "id": "D",
+      "text": "The FX Graph is a DAG for a single forward pass through the traced function; loops present in the original Python source are unrolled or preserved as higher-order ops (e.g., `torch.cond`, `torch._higher_order_ops.while_loop`)."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "A: FX Graph is a Python-level IR with named node kinds. B: after AOTAutograd, the graph is functionalized and expressed over ATen ops. D: it is a DAG for a single traced pass; Python loops are unrolled or captured as higher-order ops for control flow. C is wrong: FX Graphs are readable Python objects with `graph.print_tabular()` and are used in many debugging workflows.",
+  "optionExplanations": {
+    "B": "Correct.",
+    "C": "Correct.",
+    "A": "Wrong: FX Graphs are inspectable.",
+    "D": "Correct."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5.",
+    "The trace succeeded (no unrecoverable graph break)."
+  ],
+  "nonImplications": [
+    "Does not imply all Python constructs can be captured; some data-dependent flow must use higher-order ops.",
+    "Does not imply FX and TorchScript IRs are the same."
+  ],
+  "misconceptionTags": [
+    "fx_is_machine_code"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim about FX being machine code."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "FX Graph node types and structure",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "FX graph in PyTorch 2 compile stack",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-FX-035.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

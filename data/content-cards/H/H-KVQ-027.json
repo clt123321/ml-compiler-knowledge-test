@@ -1,0 +1,56 @@
+{
+  "questionId": "H-KVQ-027",
+  "learningObjective": "Identify the kernel-support requirements for KV cache quantization to be effective for both memory and bandwidth savings.",
+  "canonicalClaims": [
+    {
+      "claim": "KV cache quantization saves memory footprint whenever KVs are stored quantized; to also save memory bandwidth in attention, either the attention kernel must dequant-in-register on the fly (INT8/FP8 KV, FP16 attention math) or natively consume quantized KVs (FP8 attention on Hopper, INT8 attention kernels).",
+      "conditions": [
+        "The framework and attention kernel support the chosen KV precision.",
+        "Per-token / per-head-per-token scale granularity is used to preserve accuracy."
+      ],
+      "nonImplications": [
+        "Does not imply eager dequantization to FP16 before attention preserves bandwidth benefits.",
+        "Does not imply KV precision must equal weight precision."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "KV cache kernel implementation" },
+        { "ref": "PAPER:flashattn", "locator": "FlashAttention data-flow" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "KV cache quantization requires model weights to be quantized to the same precision.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Mixed-precision (FP16 weights + INT8 KV cache, or BF16 weights + FP8 KV) is standard in production stacks.",
+      "sourceOrEvidence": "vLLM / TensorRT-LLM configurations"
+    },
+    {
+      "claim": "Eager dequant to FP16 before attention preserves the bandwidth savings of KV quantization.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Once dequantized to FP16, the same FP16-sized buffer is read by attention — bandwidth savings vanish.",
+      "sourceOrEvidence": "vLLM design docs"
+    },
+    {
+      "claim": "The attention kernel must use a single scale per head across all context positions.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Per-token (or per-block-per-token) scaling is the norm and delivers better accuracy; kernels handle per-token scales via inline loading.",
+      "sourceOrEvidence": "TensorRT-LLM KV quantization spec"
+    },
+    {
+      "claim": "Dequant-in-register overhead makes INT8 KV attention slower than FP16 KV attention.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Dequant adds a small number of ops per KV load; the HBM traffic reduction usually dominates, making INT8 KV attention faster in bandwidth-bound regimes.",
+      "sourceOrEvidence": "vLLM 0.5+ INT8 KV benchmarks"
+    }
+  ],
+  "implementationFacts": [
+    "TensorRT-LLM provides `--kv_cache_dtype int8` and `--kv_cache_dtype fp8` options.",
+    "FlashAttention-3 supports native FP8 attention on Hopper.",
+    "vLLM PagedAttention adapts block sizes to the KV dtype."
+  ],
+  "performanceScenarios": [
+    "LLaMA-70B at 8K context on H100: FP8 KV reduces attention memory bandwidth by ~2× vs FP16, delivering ~1.8× decode speedup at high concurrency."
+  ],
+  "versionSensitivity": "stable_principle"
+}

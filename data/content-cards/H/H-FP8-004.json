@@ -1,0 +1,56 @@
+{
+  "questionId": "H-FP8-004",
+  "learningObjective": "Distinguish the intended uses of FP8 E4M3 and E5M2 formats and their trade-offs.",
+  "canonicalClaims": [
+    {
+      "claim": "E4M3 (4-bit exponent, 3-bit mantissa) offers higher precision at narrower range, typically used for weights/activations; E5M2 (5-bit exponent, 2-bit mantissa) offers wider range at lower precision, typically used for gradients. Both are 8-bit formats requiring per-tensor or per-block scale factors.",
+      "conditions": [
+        "The workload runs on Hopper (sm_90) or later Tensor Cores with FP8 support.",
+        "Frameworks (e.g., Transformer Engine) manage scale factors."
+      ],
+      "nonImplications": [
+        "Does not imply FP8 always matches BF16 accuracy without scale management.",
+        "Does not imply Ampere Tensor Cores support FP8 kernels."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "FP8 Tensor Core documentation" },
+        { "ref": "BOOK:sze-eff", "locator": "Reduced-precision DNN formats" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP8 handles the full training dynamic range without any scaling.",
+      "errorType": "wrong_condition",
+      "whyWrong": "FP8's exponent range is much smaller than FP16 or FP32; scale factors are essential for correct training and inference.",
+      "sourceOrEvidence": "NVIDIA Transformer Engine documentation"
+    },
+    {
+      "claim": "FP8 Tensor Cores are available on Ampere via a driver update.",
+      "errorType": "version_leak",
+      "whyWrong": "FP8 Tensor Cores are Hopper (sm_90) and Ada (sm_89) hardware features; drivers cannot add them to Ampere.",
+      "sourceOrEvidence": "NVIDIA Hopper architecture whitepaper"
+    },
+    {
+      "claim": "E4M3 and E5M2 have different total bit widths.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both are 8-bit total; the difference is in exponent/mantissa split.",
+      "sourceOrEvidence": "FP8 specification"
+    },
+    {
+      "claim": "E4M3 is always preferred over E5M2 because it has more precision.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "For gradients with wide dynamic range, E5M2's wider exponent is essential; E4M3's narrower range can lose values.",
+      "sourceOrEvidence": "Transformer Engine gradient handling"
+    }
+  ],
+  "implementationFacts": [
+    "NVIDIA Transformer Engine automates FP8 scaling with the `DelayedScaling` recipe.",
+    "E4M3 dynamic range: roughly ±448 with subnormals; E5M2: roughly ±57344."
+  ],
+  "performanceScenarios": [
+    "H100 FP8 Tensor Core peak throughput ~2× BF16 peak throughput.",
+    "LLM training with FP8 typically reports 1.5-1.8× wall-clock speedup vs. BF16 baseline."
+  ],
+  "versionSensitivity": "stable_principle"
+}

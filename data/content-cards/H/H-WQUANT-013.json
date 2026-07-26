@@ -1,0 +1,56 @@
+{
+  "questionId": "H-WQUANT-013",
+  "learningObjective": "Distinguish weight-only, W8A8, and W4A16 quantization schemes by their memory-traffic and kernel-support profiles.",
+  "canonicalClaims": [
+    {
+      "claim": "W4A16 targets bandwidth-bound decode by halving weight HBM traffic vs INT8, using dequant-in-register to keep compute in FP16 Tensor Cores; W8A8 targets compute-bound cases by using INT8 Tensor Cores whose peak TOPS exceed FP16 TFLOPS; W8A16 is a lightweight weight-only halving with no activation calibration burden.",
+      "conditions": [
+        "The GPU has FP16 Tensor Cores (Ampere+).",
+        "Appropriate kernels are available (Marlin/ExLlama for W4A16; cuBLAS/CUTLASS INT8 for W8A8)."
+      ],
+      "nonImplications": [
+        "Does not imply W4A16 beats W8A8 for large-batch prefill; compute dominance flips the winner.",
+        "Does not imply weight-only quantization is accuracy-free; RTN/GPTQ/AWQ have different quality profiles."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:awq", "locator": "W4A16 memory-traffic rationale" },
+        { "ref": "PAPER:smoothquant", "locator": "W8A8 activation quantization" },
+        { "ref": "BOOK:sze-eff", "locator": "Weight-only vs weight-activation quantization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "W4A16 requires INT4 Tensor Cores to work.",
+      "errorType": "hardware_leak",
+      "whyWrong": "W4A16 kernels typically dequant INT4 to FP16 in registers and use FP16 Tensor Cores; INT4 Tensor Cores are not required.",
+      "sourceOrEvidence": "Marlin, ExLlama, gptq_gemm kernel designs"
+    },
+    {
+      "claim": "Any quantization scheme is always faster than FP16 because the model is smaller.",
+      "errorType": "performance_confusion",
+      "whyWrong": "'Smaller' does not imply 'faster'; kernel availability, activation calibration, and compute-vs-bandwidth ratio determine wall-clock outcome.",
+      "sourceOrEvidence": "AWQ / SmoothQuant benchmarks"
+    },
+    {
+      "claim": "W8A8 requires no activation calibration; the runtime quantizes activations on-the-fly at no cost.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Dynamic quantization of activations adds per-request scale computation; static quantization requires an offline calibration pass with representative data.",
+      "sourceOrEvidence": "TensorRT INT8 quantization workflow"
+    },
+    {
+      "claim": "For batch-1 decode, W8A8 is faster than W4A16 because INT8 Tensor Cores have higher TOPS.",
+      "errorType": "kernel_vs_e2e_confusion",
+      "whyWrong": "Batch-1 decode is bandwidth-bound on weights; INT8 Tensor Core peak throughput cannot be reached, so W4A16's bandwidth advantage wins.",
+      "sourceOrEvidence": "vLLM / TensorRT-LLM decode benchmarks"
+    }
+  ],
+  "implementationFacts": [
+    "Marlin (INT4 W4A16 kernel) achieves near-FP16-bandwidth-limit throughput on Ampere.",
+    "cuBLAS Lt supports INT8 GEMM with per-channel weight scales and per-tensor activation scales."
+  ],
+  "performanceScenarios": [
+    "LLaMA-70B decode batch=1: W4A16 (AWQ) ~2× faster than FP16, while W8A8 (SmoothQuant) is closer to 1.2× at that batch."
+  ],
+  "versionSensitivity": "stable_principle"
+}

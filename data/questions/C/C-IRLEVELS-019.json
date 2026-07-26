@@ -1,0 +1,100 @@
+{
+  "id": "C-IRLEVELS-019",
+  "type": "multiple",
+  "module": "graph_tensor_ir",
+  "subtopic": "Three-layer IR relationship (Graph / Tensor / Loop)",
+  "learningObjective": "Understand how graph-level, tensor-expression-level, and loop-level IRs collaborate in a typical deep-learning compiler pipeline.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "In a typical deep learning compiler organized around three IR layers — graph-level (e.g., XLA HLO, TVM Relax), tensor-expression-level (e.g., linalg-on-tensor, TensorIR), and loop-level (affine, scf, low-level loop IR) — which statements are correct about their respective roles? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Compilers that use all three levels always require the user to author their program in the loop-level IR first; the graph and tensor layers are derived by structure-recovery passes that undo the loop nesting."
+    },
+    {
+      "id": "B",
+      "text": "Tensor-expression-level IR expresses per-element computation via structured ops (e.g., linalg.generic) or explicit tensor expressions; it is the natural layer for tiling, vectorization decisions, and mapping to hardware intrinsics like tensor cores."
+    },
+    {
+      "id": "C",
+      "text": "Loop-level IR makes iteration variables and memory accesses fully explicit, enabling low-level transformations (unrolling, software pipelining, register allocation) before codegen to LLVM/PTX."
+    },
+    {
+      "id": "D",
+      "text": "Graph-level IR performs coarse-grained optimizations (op fusion, constant folding, layout choices, shape inference) treating ops as atomic; it does not itself expose loop structure."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "The three-layer IR model is: (Graph) coarse-grained ops with shape/dtype; enables graph-level fusion, constant folding, layout, and shape inference. (Tensor) structured ops expressing per-element compute; the layer where tiling and hardware-intrinsic mapping fit naturally. (Loop) explicit loop nests and memory accesses; the layer where unrolling, vectorization, and register scheduling apply. Programs are authored at the graph (or framework) layer and lowered downward — not upward from loops.",
+  "optionExplanations": {
+    "A": "Wrong: authoring is at the graph/framework level; the flow is top-down (graph -> tensor -> loop).",
+    "B": "Correct.",
+    "C": "Correct.",
+    "D": "Correct."
+  },
+  "assumptions": [
+    "The compiler follows a common three-layer decomposition; some frameworks collapse or split further."
+  ],
+  "nonImplications": [
+    "Does not imply every compiler must have exactly three layers; different projects choose different numbers of levels.",
+    "Does not imply that layers are strictly hierarchical without back-edges; some pipelines cross layers for iterative refinement."
+  ],
+  "misconceptionTags": [
+    "ir_layer_flow_reversed"
+  ],
+  "distractorRationales": {
+    "A": "Reverses the direction of lowering."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:tvm",
+      "locator": "TVM: graph-level and tensor-level IR",
+      "supports": [
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "MLIR: dialect layering",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Linalg / Affine / SCF dialects",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-IRLEVELS-019.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

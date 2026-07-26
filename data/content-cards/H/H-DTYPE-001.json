@@ -1,0 +1,55 @@
+{
+  "questionId": "H-DTYPE-001",
+  "learningObjective": "Correctly report the exponent and mantissa widths of FP32, FP16, and BF16.",
+  "canonicalClaims": [
+    {
+      "claim": "FP32 = (1 sign, 8 exponent, 23 mantissa); FP16 = (1, 5, 10); BF16 = (1, 8, 7). BF16's 8-bit exponent matches FP32's dynamic range while sacrificing mantissa precision.",
+      "conditions": [
+        "Standard IEEE 754 single / half definitions.",
+        "Google's BF16 as originally defined for TPU."
+      ],
+      "nonImplications": [
+        "Does not imply BF16 is universally superior; precision vs. range is a workload-specific choice.",
+        "Does not describe FP8 or TF32."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Numerical formats chapter" },
+        { "ref": "BOOK:pmpp4", "locator": "FP formats appendix" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP16 and BF16 have the same bit layout, just different names.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The exponent/mantissa split differs; BF16 has 8/7, FP16 has 5/10.",
+      "sourceOrEvidence": "IEEE 754 / BF16 specifications"
+    },
+    {
+      "claim": "FP32 has 10 exponent bits.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FP32 has 8 exponent bits (bias 127).",
+      "sourceOrEvidence": "IEEE 754 single"
+    },
+    {
+      "claim": "BF16's dynamic range is smaller than FP16's because BF16 uses fewer total bits.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "BF16 and FP16 both use 16 bits; BF16's 8-bit exponent gives it FP32-like dynamic range.",
+      "sourceOrEvidence": "BF16 design rationale"
+    },
+    {
+      "claim": "Choosing BF16 over FP16 is a pure precision improvement.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "BF16 trades mantissa precision (worse) for dynamic range (better); it is not strictly better.",
+      "sourceOrEvidence": "BF16 vs. FP16 numerical studies"
+    }
+  ],
+  "implementationFacts": [
+    "FP16 exponent bias = 15; mantissa is 10 bits with implicit leading 1 (11 bits of precision).",
+    "BF16 exponent bias = 127 (same as FP32); mantissa is 7 bits with implicit leading 1 (8 bits of precision)."
+  ],
+  "performanceScenarios": [
+    "Training LLMs typically prefers BF16 over FP16 due to gradient dynamic range."
+  ],
+  "versionSensitivity": "stable_principle"
+}

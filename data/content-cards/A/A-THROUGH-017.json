@@ -1,0 +1,48 @@
+{
+  "questionId": "A-THROUGH-017",
+  "learningObjective": "Distinguish latency from throughput and identify architectural strategies that optimize one at the expense of the other.",
+  "canonicalClaims": [
+    {
+      "claim": "Latency is per-item completion time; throughput is completed-items-per-unit-time. Pipelining and parallelism can raise throughput without lowering latency, and critical path (sequential dependencies) sets a latency floor.",
+      "conditions": [
+        "The workload has both a critical path and parallelizable structure.",
+        "Comparison is meaningful only when specifying which axis (latency or throughput) is being optimized."
+      ],
+      "nonImplications": [
+        "Does not imply reciprocal relation between latency and throughput.",
+        "Does not imply CPUs always beat GPUs on latency for every task."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Pipelining chapter and design tradeoffs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Throughput = 1 / latency at all times.",
+      "errorType": "definition_confusion",
+      "whyWrong": "In a pipelined system with N stages, throughput can be N/latency; parallelism further decouples the two.",
+      "sourceOrEvidence": "HP6 pipelining"
+    },
+    {
+      "claim": "Increasing parallelism always shrinks latency.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Sequential dependencies (critical path) bound latency regardless of worker count; parallelism helps throughput on independent items.",
+      "sourceOrEvidence": "Amdahl's Law analogue on latency vs throughput"
+    },
+    {
+      "claim": "GPUs have lower per-op latency than CPUs for any workload.",
+      "errorType": "overgeneralization",
+      "whyWrong": "GPUs optimize aggregate throughput; single-op latency (with kernel launch and pipeline depth) can be worse than an in-order CPU running a scalar op.",
+      "sourceOrEvidence": "PMPP4 Ch. 1, GPU design philosophy"
+    }
+  ],
+  "implementationFacts": [
+    "Little's Law: N = X · L (concurrency = throughput · latency).",
+    "Pipelined systems: steady-state throughput ≈ 1 / (slowest stage) once filled."
+  ],
+  "performanceScenarios": [
+    "LLM prefill has high throughput (batched compute) but not necessarily lower TTFT; TPOT and throughput trade off against each other."
+  ],
+  "versionSensitivity": "stable_principle"
+}

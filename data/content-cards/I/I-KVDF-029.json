@@ -1,0 +1,61 @@
+{
+  "questionId": "I-KVDF-029",
+  "learningObjective": "Reason about the KV cache dataflow during a single autoregressive decode step and its interaction with attention kernels.",
+  "canonicalClaims": [
+    {
+      "claim": "One decode step writes one K and one V entry per sequence (size H_kv*d each) and reads the entire KV cache of the sequence (size seq_len * H_kv * d) to compute attention. Reads dominate for typical seq_len.",
+      "conditions": [
+        "Standard autoregressive decode.",
+        "MHA/MQA/GQA structure with H_kv KV heads."
+      ],
+      "nonImplications": [
+        "Does not imply paged vs contiguous storage changes total bytes read.",
+        "Does not include weight-matrix reads."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 3" }
+      ]
+    },
+    {
+      "claim": "In MQA/GQA, the same K/V is used by multiple Q heads; efficient attention kernels stage K/V once in SMEM per token and reuse across query heads, avoiding redundant HBM reads.",
+      "conditions": [
+        "Kernel is designed with per-token or per-tile K/V staging.",
+        "H > H_kv (i.e., grouping exists)."
+      ],
+      "nonImplications": [
+        "Does not imply the reuse eliminates all KV read; only redundant reads across Q heads within a token."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "KV reuse in SMEM" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PagedAttention is strictly slower per attention step than a contiguous KV layout because of pointer indirection.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Paging adds a small indirection cost but avoids fragmentation costs; per-step latency is comparable in practice.",
+      "sourceOrEvidence": "vLLM paper Sec 4 evaluation"
+    },
+    {
+      "claim": "KV cache quantization has no effect on decode latency.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Decode is bandwidth-bound on KV; fewer bytes = lower latency.",
+      "sourceOrEvidence": "KV quant benchmarks"
+    },
+    {
+      "claim": "Decode is compute-bound on the attention softmax.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Attention flops scale with seq_len while KV reads also scale linearly; the memory ratio makes it bandwidth-bound.",
+      "sourceOrEvidence": "Decode roofline analysis"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM PagedAttention stores KV in fixed-size blocks (e.g., 16 tokens) referenced by block tables.",
+    "GQA/MQA cut per-token KV bandwidth by H/H_kv factor."
+  ],
+  "performanceScenarios": [
+    "Long-context decode is essentially KV-read-bound; batch size is limited by KV cache capacity."
+  ],
+  "versionSensitivity": "stable_principle"
+}

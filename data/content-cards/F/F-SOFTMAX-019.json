@@ -1,0 +1,49 @@
+{
+  "questionId": "F-SOFTMAX-019",
+  "learningObjective": "Understand max-subtraction as the standard numerical-stability transform for softmax.",
+  "canonicalClaims": [
+    {
+      "claim": "The numerically stable softmax subtracts the row maximum before exp: `softmax(x)_i = exp(x_i - max) / sum_j exp(x_j - max)`. This is a mathematical identity (both num and denom scale identically) and prevents overflow of FP32 exp (which overflows near x ≈ 88.7).",
+      "conditions": ["FP32/FP16 IEEE arithmetic."],
+      "nonImplications": [
+        "Does not imply subtract-max is the only technique.",
+        "Does not imply BLOCK ≥ N is required in production."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "Softmax tutorial" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`tl.exp` returns undefined values for positive inputs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "exp accepts any real; overflow to +inf near ~88 for FP32 is the concern.",
+      "sourceOrEvidence": "IEEE-754 / FP32 range"
+    },
+    {
+      "claim": "Subtracting max speeds up exp via a fast-path in Triton.",
+      "errorType": "performance_confusion",
+      "whyWrong": "There is no such special fast-path; the transform is for numerical stability.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "`other=-inf` biases the max computation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "-inf is the identity for max; real values dominate it.",
+      "sourceOrEvidence": "Elementary max identity"
+    },
+    {
+      "claim": "The transform loses precision because it subtracts before exp.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "It preserves precision by preventing overflow; small exponent values are handled well by exp.",
+      "sourceOrEvidence": "Numerical analysis"
+    }
+  ],
+  "implementationFacts": [
+    "FP32 expf overflows at x ≈ 88.72 (returns +inf).",
+    "Online softmax (FlashAttention-style) is a two-pass or tiled reformulation."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

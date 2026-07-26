@@ -1,0 +1,1311 @@
+{
+  "module": "runtime_deploy",
+  "code": "K",
+  "label": "Runtime、模型交换与部署",
+  "generatedAt": "2026-07-26",
+  "count": 30,
+  "questions": [
+    {
+      "id": "K-ABI-005",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "Dynamic library / ABI stability",
+      "learningObjective": "Explain why an ML compiler that ships a .so/.dll artifact must define a stable C ABI at the artifact boundary, not a C++ one, and what breaks when the boundary is not stable.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (AOTInductor, TensorRT, IREE)",
+        "stability": "stable_principle"
+      },
+      "stem": "An AOT-compiled artifact (e.g., AOTInductor .so, TensorRT plan loader, IREE HAL module) exposes an entry point that must be loaded by processes built with unknown compiler toolchains. Which ABI-boundary discipline is standard, and why?",
+      "options": [
+        {
+          "id": "A",
+          "text": "ABI stability is unnecessary because dynamic loaders (dlopen/LoadLibrary) automatically rewrite mangled symbols to match the host process's C++ compiler, meaning any C++ boundary works."
+        },
+        {
+          "id": "B",
+          "text": "The artifact exposes a mangled C++ ABI with `std::vector<Tensor>` return types because C++ standard library types are guaranteed to be layout-compatible across all major compilers (GCC, Clang, MSVC) since C++17."
+        },
+        {
+          "id": "C",
+          "text": "The artifact exposes a C ABI (plain `extern \"C\"` functions with POD structs and opaque handles). C++ name mangling, exception ABIs, and STL types differ across compilers/versions and would break linking or crash at library boundaries."
+        },
+        {
+          "id": "D",
+          "text": "The artifact must be statically linked into the host process and cannot use a dynamic library at all; ABI concerns only arise when linking, not when loading precompiled kernels."
+        }
+      ],
+      "assumptions": [
+        "The artifact will be loaded by a process compiled with a different toolchain or C++ standard than the compiler used to build the artifact."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-ALLOC-008",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "Memory allocator / caching pool",
+      "learningObjective": "Explain why deep-learning runtimes use a caching memory allocator (a pool of previously freed device blocks) instead of calling cudaMalloc/cudaFree per tensor.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch caching allocator / TensorRT / TVM",
+        "stability": "stable_principle"
+      },
+      "stem": "Deep-learning runtimes (PyTorch, TensorFlow, TVM) implement a caching memory allocator on the GPU rather than calling `cudaMalloc`/`cudaFree` for each tensor. Which reason is the strongest?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The CUDA driver limits the number of live allocations per process to 1024; a caching allocator sidesteps this by keeping a single large allocation for the lifetime of the process regardless of workload."
+        },
+        {
+          "id": "B",
+          "text": "`cudaMalloc` returns memory that cannot be used as a kernel argument until a `cudaMemcpy` initializes it; a caching allocator writes zeros lazily so kernels can read uninitialized memory safely without additional API calls."
+        },
+        {
+          "id": "C",
+          "text": "`cudaMalloc` and `cudaFree` are synchronous with respect to all CUDA streams and take microseconds to milliseconds; calling them on every tensor allocation would serialize the stream and dominate end-to-end latency. A caching allocator amortizes this by pooling freed blocks and reusing them without touching the driver."
+        },
+        {
+          "id": "D",
+          "text": "A caching allocator eliminates memory fragmentation entirely because it always returns exactly the requested size and rounds up to a multiple of one byte, meaning no wasted padding ever occurs across tensor lifetimes."
+        }
+      ],
+      "assumptions": [
+        "The workload allocates and frees tensors frequently (training steps, iterative decoding), so per-step allocator cost matters."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-AOT-004",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "AOT artifact vs JIT compilation",
+      "learningObjective": "Compare AOT artifact deployment (all lowering done ahead of first invocation) with JIT compilation (lowering triggered on the first suitable call), and identify the trade-offs.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement most accurately contrasts an Ahead-of-Time (AOT) artifact (e.g., AOTInductor .so, TensorRT plan) with a JIT-compiled workflow (e.g., default torch.compile)?",
+      "options": [
+        {
+          "id": "A",
+          "text": "JIT is always faster than AOT at steady state because JIT observes real inputs and re-optimizes on every call; AOT compiles once and cannot adapt, so its steady-state performance is capped below any JIT implementation."
+        },
+        {
+          "id": "B",
+          "text": "AOT and JIT produce identical binaries; the only difference is the file extension, and either mode can be selected transparently at inference time without any change to compilation semantics or shape support."
+        },
+        {
+          "id": "C",
+          "text": "AOT requires the source model be present at run time; the compiler is re-invoked from the artifact each time the runtime restarts, which is what enables cross-target dispatch on ARM and x86 from a single file."
+        },
+        {
+          "id": "D",
+          "text": "The AOT artifact avoids first-call compilation latency and can be shipped independently of the compiler, but generally requires known shapes/dtypes at build time; JIT compiles lazily on first call, absorbing warmup cost in exchange for shape/dtype flexibility."
+        }
+      ],
+      "assumptions": [
+        "Both AOT and JIT stacks emit the same underlying kernels (Triton, cuBLAS, etc.) so we are comparing compilation phase, not code quality."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-AOTI-022",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "AOTInductor artifact",
+      "learningObjective": "Explain what AOTInductor produces (a self-contained shared library that runs a compiled PyTorch model without a Python runtime) and how that differs from torch.compile in JIT mode.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch AOTInductor",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement best describes what AOTInductor produces and how it differs from the default JIT torch.compile flow?",
+      "options": [
+        {
+          "id": "A",
+          "text": "AOTInductor ahead-of-time compiles an exported PyTorch model into a self-contained shared library (plus the generated kernels) that can be loaded and invoked from C++ without a Python interpreter or the Inductor compiler present at runtime; JIT torch.compile compiles on first call and requires Python + Inductor at run time."
+        },
+        {
+          "id": "B",
+          "text": "AOTInductor is a re-implementation of the CUDA driver API; it lets torch.compile bypass cuBLAS and cuDNN by JIT-compiling all matmuls on the fly at each inference call."
+        },
+        {
+          "id": "C",
+          "text": "AOTInductor is a smaller runtime that replaces Python entirely; it JIT-compiles PyTorch models at process start using an embedded MicroPython interpreter, producing the same kernels as torch.compile but launching them from within a compiled binary."
+        },
+        {
+          "id": "D",
+          "text": "AOTInductor produces a Python-only artifact (a `.pyc` file) that still requires Python at runtime; the only difference from JIT torch.compile is that graph capture happens ahead of time while codegen happens on the first call."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with the AOTInductor path (`torch._inductor.aot_compile` / `torch._export.aot_compile`)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-AOTIRT-023",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "AOTInductor runtime characteristics",
+      "learningObjective": "Identify correct statements about executing an AOTInductor-compiled artifact at runtime.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch AOTInductor",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statements about running an AOTInductor-compiled artifact are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The artifact automatically links against `libtorch.so` at runtime and requires the full PyTorch binary distribution to be present on the deployment machine; without libtorch the .so cannot be loaded."
+        },
+        {
+          "id": "B",
+          "text": "The artifact exposes a C-ABI entry function; callers pass input tensors as device-memory pointers with shape/stride metadata and receive output tensors similarly, without requiring the Python runtime."
+        },
+        {
+          "id": "C",
+          "text": "The artifact still requires the Inductor compiler at runtime; on first invocation Inductor is re-invoked to lower the graph, which is what allows the artifact to accept new shapes at inference time."
+        },
+        {
+          "id": "D",
+          "text": "The artifact bundles the generated Triton/CUDA kernels needed to execute the model, and the runtime loads them via the shared library's loader; no separate kernel binaries need to be shipped alongside the .so."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 AOTInductor path.",
+        "The artifact was built for the target GPU architecture."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-BOUND-001",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "Compiler / Runtime boundary",
+      "learningObjective": "Distinguish which decisions belong to compile-time (ahead-of-time lowering, kernel selection, memory planning) and which belong to run-time (dispatch, allocator calls, dynamic shape adaptation).",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement best characterizes the boundary between the compiler and the runtime in a typical ML compilation stack (e.g., IREE, TVM, XLA)?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The compiler emits target-specific kernels and a lowered artifact whose scheduling, buffer plan and kernel selection are fixed; the runtime dispatches kernels, manages memory and streams, and services shape-dependent branches within the pre-planned strategy."
+        },
+        {
+          "id": "B",
+          "text": "The compiler and runtime are the same component; both perform kernel selection, memory allocation and dispatch in a single execution phase where lowering happens each time an input tensor arrives."
+        },
+        {
+          "id": "C",
+          "text": "The compiler owns memory allocation and stream scheduling at run time, while the runtime is a thin wrapper that only records timing events and forwards inputs to precompiled kernels without touching allocation or streams."
+        },
+        {
+          "id": "D",
+          "text": "The compiler performs only front-end parsing (op resolution, type inference); every optimization pass — including fusion, tiling and kernel selection — is deferred to the runtime and re-executed on every invocation."
+        }
+      ],
+      "assumptions": [
+        "A conventional two-phase (compile-then-run) ML system, not a purely interpreter-based one."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-COLD-030",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "Cold start and compilation cache",
+      "learningObjective": "Reason about the sources of cold-start cost (compile, load, warmup) and how compilation caches reduce them across process restarts.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "torch.compile / TensorRT / TVM",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about cold-start cost and compilation caches for compiled ML workloads are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "AOT-compiled artifacts (TensorRT plan, AOTInductor .so) eliminate the JIT compile phase entirely at cold start because compilation happened offline; process init and weight load costs still remain."
+        },
+        {
+          "id": "B",
+          "text": "Compilation caches guarantee that a cached hit produces exactly the same output tensors as a fresh compile; any bitwise difference between cached and fresh outputs is a compiler bug that must be fixed before shipping."
+        },
+        {
+          "id": "C",
+          "text": "Cold-start cost consists of several distinct phases: process init (import framework, load driver), model artifact load (weights, graph), possibly compilation (JIT lowering), and warmup (autotune, cuBLAS handle init, kernel loading). Each has a different mitigation strategy."
+        },
+        {
+          "id": "D",
+          "text": "A compilation cache stores previously compiled kernels or lowered graphs keyed by (source, shape/dtype/device, compiler-version) and hits skip the compile phase on subsequent process starts; a properly warm cache can turn a multi-minute torch.compile cold start into a fraction of that."
+        }
+      ],
+      "assumptions": [
+        "A production system where cold-start latency (SLI/SLO) matters.",
+        "The runtime supports some form of compilation caching."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-CROSS-028",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "Cross compilation",
+      "learningObjective": "Reason about cross compilation in the ML compilation stack: compiling on a host machine for a target device that differs in ISA, GPU architecture, or OS.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about cross compilation for ML deployment are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Emitting portable IR (e.g., PTX, SPIR-V) and deferring final lowering to the target driver at load time is one strategy for handling cross compilation when the exact target architecture is unknown at build time."
+        },
+        {
+          "id": "B",
+          "text": "Cross compilation means building an artifact on one host (e.g., x86 Linux with sm_80 dev box) that runs on a different target (e.g., aarch64 Linux with sm_75) — the compiler must be able to emit code for the target's ISA, GPU architecture, and OS ABI without executing on the target."
+        },
+        {
+          "id": "C",
+          "text": "Autotuning that measures kernel latency on the target device cannot be replaced by pure static cost models; if the target is unavailable, cross compilation typically uses conservative heuristics or previously measured latency tables rather than online measurement."
+        },
+        {
+          "id": "D",
+          "text": "Cross compilation is impossible for GPU code because NVCC (or ROCm) can only emit machine code that has already been JIT-compiled by the target driver at compile time on the target machine itself."
+        }
+      ],
+      "assumptions": [
+        "The developer knows the target ISA, GPU architecture and OS ABI, or at least a range."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-CUSTOM-012",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "Custom operator",
+      "learningObjective": "Describe how a custom operator is registered into a runtime so that both the compiler and the executor recognize it, and what obligations the author takes on.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (ONNX Runtime custom op, TensorRT plugin, torch custom op)",
+        "stability": "stable_principle"
+      },
+      "stem": "When you add a custom operator to a runtime such as ONNX Runtime, TensorRT, or PyTorch, which combination best describes the author's responsibilities?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Only register a Python function of the same name; the runtime automatically infers the op schema from its Python signature and generates GPU kernels for all supported dtypes by tracing example inputs at first call."
+        },
+        {
+          "id": "B",
+          "text": "Only implement the CUDA kernel; runtime frameworks introspect the .cu source to derive the op schema, differentiate the kernel symbolically, and register it into every backend transparently."
+        },
+        {
+          "id": "C",
+          "text": "Ship the model with the op's PyTorch source; the compiler recompiles the source on every process start to derive schema, kernels, and backward pass, so no explicit registration is needed."
+        },
+        {
+          "id": "D",
+          "text": "Provide (i) an op schema/signature so the compiler can type- and shape-check calls, (ii) a kernel implementation for each supported device/dtype registered into the runtime, and (iii) — if the op appears inside an autograd graph — a backward or functional counterpart. The runtime performs no automatic differentiation or shape inference for unknown ops."
+        }
+      ],
+      "assumptions": [
+        "The runtime supports pluggable custom ops (ONNX RT, TRT, PyTorch)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-DISPATCH-002",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "Dispatcher / Executor semantics",
+      "learningObjective": "State the role of an operator dispatcher in an ML runtime (selecting an implementation based on device, dtype, layout) versus the role of an executor (issuing work on the device).",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch / generic",
+        "stability": "stable_principle"
+      },
+      "stem": "In a modern ML runtime such as PyTorch's ATen or an equivalent stack, what is the primary role of an operator dispatcher?",
+      "options": [
+        {
+          "id": "A",
+          "text": "To synchronize CPU and GPU streams before every kernel launch so that the executor can guarantee sequential consistency across otherwise-asynchronous device queues."
+        },
+        {
+          "id": "B",
+          "text": "To decide, based on the (op, device, dtype, layout, autograd key) tuple of a call, which concrete kernel implementation to invoke — i.e., to route from a logical op to a registered backend function."
+        },
+        {
+          "id": "C",
+          "text": "To allocate output buffers on the target device and free intermediate tensors after each op returns, replacing the caching allocator with a per-op allocator."
+        },
+        {
+          "id": "D",
+          "text": "To perform compile-time fusion of ops that share tensor shapes so that the executor only sees fused kernels instead of individual operator calls."
+        }
+      ],
+      "assumptions": [
+        "A typical eager-mode ML framework with a dispatcher-driven op registry."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-EXTLIB-013",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "External library (cuBLAS / cuDNN / cuBLASLt)",
+      "learningObjective": "Reason about the trade-offs of calling external libraries (cuBLAS, cuDNN, cutlass, MKL) from a compiled runtime versus emitting compiler-generated kernels.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere+ (sm_80+)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic runtime + cuBLAS/cuDNN",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about calling into external libraries (cuBLAS, cuDNN, cutlass) from an ML compiler stack are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "External libraries expose stable numerical results across driver and library versions on the same hardware; the compiler can assume bitwise reproducibility of outputs across major versions of cuBLAS or cuDNN."
+        },
+        {
+          "id": "B",
+          "text": "For standard GEMM/Conv patterns, a heavily-tuned vendor library often outperforms a compiler-generated kernel of comparable complexity because it ships hand-tuned tile shapes, algorithmic variants, and Tensor Core paths per architecture."
+        },
+        {
+          "id": "C",
+          "text": "A compiler emitting its own fused kernel can beat an external GEMM library specifically when it fuses producer or epilogue ops into the matmul, because the external library sees only the isolated GEMM and cannot fuse across its boundaries."
+        },
+        {
+          "id": "D",
+          "text": "Calling an external library from a compiled graph always eliminates the need for a caching allocator because the external library manages its own memory pool that the runtime can substitute in for its own allocator."
+        }
+      ],
+      "assumptions": [
+        "The reference stack is CUDA with NVIDIA vendor libraries; analogous points apply on other vendors."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-FALLBACK-011",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "CPU fallback",
+      "learningObjective": "Explain the design and cost of a CPU fallback path when the compiler encounters an op with no GPU implementation.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable + x86 host",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (ONNX Runtime, TensorRT, TVM, torch.compile)",
+        "stability": "stable_principle"
+      },
+      "stem": "A compiled GPU inference graph contains a single op with no GPU kernel; the runtime supports a CPU fallback for that op. Which description most accurately captures what happens at execution time?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The runtime executes the op on both the GPU (using a zero-fill placeholder) and the CPU in parallel, then compares the outputs at run time to decide which to keep; this pattern doubles memory usage but eliminates transfer overhead entirely."
+        },
+        {
+          "id": "B",
+          "text": "The GPU driver internally emulates the CPU op on the GPU by executing the CPU instruction stream on a special 'compatibility SM' with no host↔device transfer, incurring only a constant driver overhead of roughly 1 µs per op regardless of tensor size."
+        },
+        {
+          "id": "C",
+          "text": "The runtime silently drops the op from the graph; the missing computation is lossy but tolerable in practice because most such ops (e.g., control-flow or shape ops) do not affect the model's output tensor values downstream."
+        },
+        {
+          "id": "D",
+          "text": "The runtime copies the op's input tensors from device to host, runs the CPU implementation, then copies the result back to device before the next GPU op resumes. Every fallback op adds a round-trip H2D/D2H transfer that can dominate its execution cost."
+        }
+      ],
+      "assumptions": [
+        "The graph is otherwise GPU-resident; only the one op lacks a GPU kernel."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-HET-029",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "Heterogeneous execution",
+      "learningObjective": "Reason about executing a single model across heterogeneous devices (CPU + GPU + specialized accelerator) coordinated by a runtime.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "CPU + GPU + optional NPU/accelerator",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (ONNX Runtime, OpenVINO, IREE)",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about heterogeneous execution (a single model spanning CPU + GPU or CPU + NPU) are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Some accelerators (NPUs) have restricted op coverage; the runtime must decide, on a per-op basis, whether the op runs on the NPU (fast for supported ops) or falls back to CPU/GPU (slower but universal), and the partitioning cost model must model this asymmetry."
+        },
+        {
+          "id": "B",
+          "text": "A partitioning pass typically groups ops into 'subgraphs' assigned to one device each, minimizing cross-device edges; the runtime executes each subgraph on its device and inserts transfer ops between them."
+        },
+        {
+          "id": "C",
+          "text": "Cross-device edges are essentially free on modern PCIe 4.0 and NVLink; therefore the partitioning cost model can ignore transfer cost and choose the fastest device for each op independently, giving a partition that is optimal by construction."
+        },
+        {
+          "id": "D",
+          "text": "Heterogeneous execution requires all devices to share a unified virtual memory space with cache coherence; without hardware support such as CXL, correct execution is impossible on machines with discrete GPUs."
+        }
+      ],
+      "assumptions": [
+        "The runtime supports partitioning into per-device subgraphs and inserting explicit transfers."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-IREE-025",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "IREE: compiler / runtime separation",
+      "learningObjective": "Describe IREE's design as an MLIR-based end-to-end compilation and runtime stack with an explicit compiler/runtime separation and a hardware abstraction layer (HAL).",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any (Vulkan, CUDA, ROCm, CPU, WebGPU)",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "IREE",
+        "stability": "version_sensitive",
+        "frameworkVersionScope": "IREE 2024+",
+        "verifiedAt": "2026-07-26"
+      },
+      "stem": "Which statement best captures IREE's architecture?",
+      "options": [
+        {
+          "id": "A",
+          "text": "IREE is a Python-based interpreter that JIT-compiles PyTorch models directly to CUDA at each inference call; it does not use MLIR and does not target hardware other than NVIDIA GPUs."
+        },
+        {
+          "id": "B",
+          "text": "IREE is an MLIR-based compilation pipeline that lowers input (e.g., StableHLO, TOSA) to a target-specific VM module plus binary kernels; the IREE runtime consists of a bytecode VM and a Hardware Abstraction Layer (HAL) that abstracts over Vulkan, CUDA, ROCm, CPU and WebGPU backends."
+        },
+        {
+          "id": "C",
+          "text": "IREE is a thin wrapper around cuDNN that exposes an ONNX-compatible API; it has no MLIR pipeline of its own and forwards all ops to cuDNN kernels."
+        },
+        {
+          "id": "D",
+          "text": "IREE is a training framework based on JAX's tracing; it does not provide inference deployment and cannot produce a compiled artifact for embedded targets such as WebGPU or edge accelerators."
+        }
+      ],
+      "assumptions": [
+        "IREE 2024+ mainline design."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-ONNX-014",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "ONNX: interchange format vs runtime",
+      "learningObjective": "Distinguish ONNX as an interchange format from any specific runtime (ONNX Runtime, TensorRT importer) that consumes ONNX.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "ONNX / ONNX Runtime / TensorRT",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement most accurately describes ONNX's role in the deployment stack?",
+      "options": [
+        {
+          "id": "A",
+          "text": "ONNX is a high-performance inference runtime that runs models directly on GPU or CPU; converting to another format such as TensorRT is unnecessary because ONNX already ships GPU kernels for every op."
+        },
+        {
+          "id": "B",
+          "text": "ONNX is a serialization format for a graph of standardized operators (with a versioned opset) that different runtimes and compilers can import; performance depends on the runtime that consumes the model, not on ONNX itself."
+        },
+        {
+          "id": "C",
+          "text": "ONNX is a JIT compiler that lowers PyTorch or TensorFlow models to Triton at load time on the deployment machine; the resulting kernels are cached in the ONNX file for subsequent loads."
+        },
+        {
+          "id": "D",
+          "text": "ONNX is a proprietary format used only by Microsoft's ONNX Runtime; other runtimes cannot import it and must convert through TorchScript or SavedModel first."
+        }
+      ],
+      "assumptions": [
+        "The user is comparing 'the ONNX file' to 'the runtime that loads it'."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-ONNXSHAPE-016",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "ONNX shape inference",
+      "learningObjective": "Identify correct statements about ONNX shape inference and its role in deployment.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "ONNX",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about ONNX shape inference are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Static shape inference results are useful for downstream compilers such as TensorRT or ONNX Runtime's optimizer because they enable buffer planning, fusion decisions and kernel selection without waiting for runtime inputs."
+        },
+        {
+          "id": "B",
+          "text": "Shape inference in ONNX is a runtime-only operation performed by every consumer at load time; the exported ONNX file itself contains no shape metadata whatsoever for intermediate tensors."
+        },
+        {
+          "id": "C",
+          "text": "ONNX shape inference is a static, per-op procedure defined by each operator's schema; it propagates known input shapes and dtypes to output shapes and dtypes but can leave some dimensions symbolic when they depend on runtime tensors."
+        },
+        {
+          "id": "D",
+          "text": "ONNX shape inference always produces fully concrete integer shapes for every intermediate tensor at export time; symbolic dimensions such as `batch` are resolved by the exporter before the model is written."
+        }
+      ],
+      "assumptions": [
+        "The model uses standard ai.onnx opset ops with published schemas."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-ONNXVER-017",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "ONNX IR version vs opset version",
+      "learningObjective": "Distinguish the ONNX IR (file format) version from the operator opset version, and identify a common source of load-time incompatibility.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "ONNX",
+        "stability": "stable_principle"
+      },
+      "stem": "A user tries to load an ONNX file and gets an error about unsupported version. Which distinction between the ONNX **IR version** and the **opset version** best explains the diagnostic they should perform?",
+      "options": [
+        {
+          "id": "A",
+          "text": "IR version and opset version are synonyms in ONNX; the diagnostic is to check `model.ir_version` and upgrade the consumer if it differs by more than 1."
+        },
+        {
+          "id": "B",
+          "text": "The IR version governs the model file/graph format (how ModelProto, GraphProto, NodeProto are laid out); the opset version governs operator semantics. A load-time incompatibility can come from either — the consumer's ONNX library too old to parse the IR, or too old to know the declared opset — so the diagnostic must inspect both fields in `model.ir_version` and `model.opset_import`."
+        },
+        {
+          "id": "C",
+          "text": "The opset version is a lower bound on IR version and always exactly one greater; the diagnostic is therefore to update the opset by +1 and re-export the model, which is guaranteed to resolve any version error."
+        },
+        {
+          "id": "D",
+          "text": "IR version is only used for training checkpoints; inference models omit IR version entirely, so the diagnostic is to check whether the file was accidentally saved as a training checkpoint."
+        }
+      ],
+      "assumptions": [
+        "The file is a well-formed ONNX protobuf."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-OPSET-015",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "ONNX opset version",
+      "learningObjective": "Explain the meaning of the ONNX opset version in a model file and the compatibility contract between opset producers and consumers.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "ONNX",
+        "stability": "stable_principle"
+      },
+      "stem": "An ONNX model advertises `opset_import: [{domain: \"\", version: 17}]` in its metadata. What does the opset version encode, and what compatibility guarantee follows?",
+      "options": [
+        {
+          "id": "A",
+          "text": "It specifies the ONNX Runtime binary version that must be installed to load the model; opset 17 corresponds to ONNX Runtime version 17.x and models built with a mismatched runtime version fail to load."
+        },
+        {
+          "id": "B",
+          "text": "It specifies the version of the model's weight file format; opset changes only affect serialization layout, not operator semantics, so any runtime version can consume the file if it understands protobuf."
+        },
+        {
+          "id": "C",
+          "text": "It specifies the version of each operator's schema used by the model — signatures, attribute defaults, and semantics of ops in the default (ai.onnx) domain at opset 17. A runtime that claims to support opset ≥ 17 must be able to execute those ops with those semantics; older runtimes may lack ops introduced after their supported opset."
+        },
+        {
+          "id": "D",
+          "text": "It specifies the version of the underlying framework that exported the model; a model exported by PyTorch 1.13 must be loaded by an ONNX Runtime linked against PyTorch 1.13 for correctness."
+        }
+      ],
+      "assumptions": [
+        "The empty domain \"\" refers to the standard ai.onnx op set."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-PKG-027",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "Model packaging and serialization",
+      "learningObjective": "Describe what typically goes into a model deployment package (weights + graph + metadata) and why the packaging boundary matters for reproducibility.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (SavedModel, TorchScript, ONNX, GGUF, safetensors)",
+        "stability": "stable_principle"
+      },
+      "stem": "Which is the most complete description of what a well-packaged inference model artifact typically contains?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Only the weight tensors serialized as a single binary blob; graph structure and signatures are inferred by the runtime at load time by tracing the model on a synthetic input tensor of zeros."
+        },
+        {
+          "id": "B",
+          "text": "Only the Python source code of the model; runtime re-instantiates and initializes weights from a random seed at deployment because random weights are close enough to the trained ones for inference."
+        },
+        {
+          "id": "C",
+          "text": "(i) The graph structure or compiled program; (ii) the weight tensors with dtype/shape/layout metadata; (iii) input/output signatures (names, dtypes, shape specs); (iv) preprocessing/postprocessing metadata (tokenizer config, normalization stats, calibration scales for quantized models) — plus a version tag identifying the schema of the archive itself."
+        },
+        {
+          "id": "D",
+          "text": "Only a URL pointing to the model in the training framework's registry; the runtime downloads weights and code fresh on every process start to guarantee freshness of the artifact."
+        }
+      ],
+      "assumptions": [
+        "Production deployment where reproducibility, portability and offline operation matter."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-PLACE-007",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "Device placement",
+      "learningObjective": "Reason about how a runtime decides where to place each op and tensor when the graph mixes CPU-only ops, GPU-native ops, and host↔device transfers.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable + x86 host",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (ONNX Runtime, XLA, IREE)",
+        "stability": "stable_principle"
+      },
+      "stem": "A model graph has some ops with only a CPU implementation and others with only a GPU implementation. Which of the following statements about device placement are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Placement decisions should ideally minimize the total number of host↔device transitions along the critical path, sometimes at the cost of running an op on a slower device — the transfer cost can exceed the op-level savings."
+        },
+        {
+          "id": "B",
+          "text": "A device-placement pass typically inserts explicit host↔device transfer ops (e.g., MemcpyToHost / MemcpyToDevice) at boundaries between differently placed ops, and the emitted plan records those transfers so the runtime does not have to guess them."
+        },
+        {
+          "id": "C",
+          "text": "Placing CPU-only ops on the GPU can be forced by the runtime by 'promoting' the CPU kernel implementation to a GPU kernel automatically; no additional lowering is needed because the runtime treats device tags as advisory hints only."
+        },
+        {
+          "id": "D",
+          "text": "Alternating between CPU and GPU ops in the middle of a hot loop causes host↔device transfer traffic across PCIe/NVLink and can dominate the end-to-end latency, even if each individual kernel is fast."
+        }
+      ],
+      "assumptions": [
+        "The runtime supports mixed CPU/GPU execution (typical of ONNX Runtime, XLA, IREE).",
+        "The graph is executed on a single machine with a distinct host and device memory space."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-REGISTRY-006",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "Kernel registry",
+      "learningObjective": "Describe the role of a kernel registry (a mapping from op signature to concrete implementation) in a runtime that supports multiple backends and dtypes.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (PyTorch, ONNX Runtime, TVM)",
+        "stability": "stable_principle"
+      },
+      "stem": "In an ML runtime, the 'kernel registry' is best described as which of the following?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A mapping from (op name, device, dtype, layout, …) to a concrete function pointer or callable that implements the op; the dispatcher consults it at run time to pick the correct backend implementation."
+        },
+        {
+          "id": "B",
+          "text": "A cache of compiled kernels keyed by input pointer addresses; hits skip recompilation while misses trigger a JIT compile on the current CUDA stream."
+        },
+        {
+          "id": "C",
+          "text": "A profiling database of measured kernel latencies used by the compiler's cost model; it does not affect run-time dispatch decisions and is only consulted during autotuning."
+        },
+        {
+          "id": "D",
+          "text": "A structured hardware descriptor of the physical device (SM count, warp size) that the runtime uses to select launch configurations for kernels declared as `device-agnostic`."
+        }
+      ],
+      "assumptions": [
+        "The runtime supports multiple backends or dtypes and needs to route calls dynamically."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-SHAPE-026",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "Shape runtime and dynamic shapes",
+      "learningObjective": "Reason about how a runtime handles dynamic (unknown-at-compile-time) shapes: symbolic dim tracking, allocator reservation, and specialization vs generalization trade-offs.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic (AOTInductor, TensorRT, TVM, IREE)",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about how modern ML runtimes handle dynamic shapes are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Fully-dynamic shapes and fully-static shapes are equivalent in cost: any modern compiler can generate a single kernel that is as fast on unknown shapes as on known ones, because dynamic-shape codegen has no runtime overhead versus fully specialized codegen."
+        },
+        {
+          "id": "B",
+          "text": "Bucketing (grouping inputs into a small set of pre-compiled shape classes) is a standard practical trade-off: it retains most of the specialization benefit while covering a large range of real workloads, at the cost of build time proportional to the number of buckets."
+        },
+        {
+          "id": "C",
+          "text": "A shape runtime maintains symbolic descriptors for tensor dimensions (batch = N, seq_len = S) and evaluates them at run time based on actual input shapes; downstream kernels can be parameterized on those symbols or specialized."
+        },
+        {
+          "id": "D",
+          "text": "Compilers typically declare a set of shape ranges (min / opt / max, or bucketed shapes) at build time; runtime inputs falling within a supported range use the generalized kernel, while inputs outside the range typically trigger a fallback, recompilation, or error."
+        }
+      ],
+      "assumptions": [
+        "The runtime supports dynamic shapes (most modern stacks do to some degree)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-STHLO-018",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "StableHLO: portability layer",
+      "learningObjective": "Explain the role of StableHLO as a compiler-portability boundary between ML frameworks (JAX, PyTorch export, TF) and compilers (XLA, IREE, others).",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "StableHLO / OpenXLA",
+        "stability": "stable_principle"
+      },
+      "stem": "How is StableHLO positioned in the OpenXLA / IREE ecosystem?",
+      "options": [
+        {
+          "id": "A",
+          "text": "StableHLO is a runtime engine that executes MLIR modules directly on GPU without any additional lowering; it replaces XLA's Runtime and cannot be used with any other backend such as IREE."
+        },
+        {
+          "id": "B",
+          "text": "StableHLO is the low-level LLVM IR that XLA compiles its HLO into during backend code generation; it exposes hardware-specific instructions and is not intended to be portable across accelerators."
+        },
+        {
+          "id": "C",
+          "text": "StableHLO is a versioned, stable operator set (specified as an MLIR dialect) intended to serve as a portable IR between ML frameworks and compilers, providing forward/backward compatibility guarantees so that a producer and a consumer built at different times can still interoperate."
+        },
+        {
+          "id": "D",
+          "text": "StableHLO is a version-agnostic Python DSL layered on top of PyTorch; it converts arbitrary Python control flow into JAX-style pure functions at import time and requires no compiler."
+        }
+      ],
+      "assumptions": [
+        "The ecosystem in question is OpenXLA / IREE / MLIR-based compilers."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-STREAM-009",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "CUDA stream / event",
+      "learningObjective": "State the semantics of a CUDA stream (an in-order queue of device work) and a CUDA event (a synchronization point recordable on a stream), and their role in a runtime.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "CUDA runtime",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement most accurately describes CUDA streams and events in the context of an ML runtime that overlaps kernel execution with data transfers?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A stream represents a physical hardware queue with a fixed one-to-one binding to a specific SM group; events are per-SM performance counters that record occupancy and warp-stall statistics for later Nsight analysis."
+        },
+        {
+          "id": "B",
+          "text": "A stream is a mutable shared buffer that host and device both read/write; events are memory fences that flush the L2 cache to global memory before subsequent kernels begin executing on the same device."
+        },
+        {
+          "id": "C",
+          "text": "A stream is an in-order queue of operations on the device — work enqueued on the same stream executes in order, work on different streams may execute concurrently; events are recorded on streams as synchronization markers that other streams (or the host) can wait on."
+        },
+        {
+          "id": "D",
+          "text": "Streams and events are optional debugging APIs whose only function is to expose timing information to profilers; kernel execution order is instead determined by the CUDA driver's global scheduler regardless of stream assignment."
+        }
+      ],
+      "assumptions": [
+        "A single-device, single-process CUDA context."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-SYNC-010",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "Host/device synchronization",
+      "learningObjective": "Identify correct and incorrect statements about host/device synchronization in a CUDA-based ML runtime.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "CUDA runtime / PyTorch",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about host/device synchronization in a CUDA runtime are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Under legacy default-stream semantics, `cudaMemcpy` (blocking) can be issued while a kernel is executing on a user-created stream and always returns immediately without waiting for that kernel — the two operations proceed independently."
+        },
+        {
+          "id": "B",
+          "text": "`cudaStreamSynchronize(stream)` blocks the calling host thread until all previously enqueued work on `stream` has completed, but does not affect work on other streams."
+        },
+        {
+          "id": "C",
+          "text": "`cudaDeviceSynchronize()` waits for all streams on the current device to drain; overusing it in a hot loop serializes host and device and defeats stream-level overlap."
+        },
+        {
+          "id": "D",
+          "text": "A `cudaMemcpyAsync` on the default stream is guaranteed to be fully overlapped with any kernel executing on another user-created stream, even without explicit event synchronization or the use of pinned host memory."
+        }
+      ],
+      "assumptions": [
+        "CUDA runtime API in its documented behavior; legacy default-stream mode unless otherwise specified.",
+        "Single-process, single-device unless noted."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-TRT-019",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "TensorRT: builder / engine / plan file",
+      "learningObjective": "Describe the TensorRT deployment pipeline: the builder produces an engine (plan file) from a network description; the runtime loads and executes the engine.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any TensorRT-supported",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TensorRT",
+        "stability": "stable_principle"
+      },
+      "stem": "In the TensorRT workflow, which sequence best describes the roles of the builder, engine and runtime?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The builder and the runtime are the same object in TensorRT; every inference call re-optimizes the graph on the currently observed inputs, which is what allows TensorRT to adapt to shape variations at run time without recompilation."
+        },
+        {
+          "id": "B",
+          "text": "TensorRT builds and runs entirely on the CPU; the GPU is only used for peripheral memory transfer, and the actual compute is executed by CUDA-backed CPU kernels that emulate GPU instructions."
+        },
+        {
+          "id": "C",
+          "text": "The engine is a text-format description of the model that the runtime interprets line by line; kernel selection happens on every execution, so plan files are portable across GPUs but slower than a JIT compiler."
+        },
+        {
+          "id": "D",
+          "text": "The builder consumes a network description (e.g., parsed ONNX or the TensorRT network API), runs optimizations (layer fusion, kernel selection, precision calibration) and produces a serialized engine (plan file); the runtime deserializes the engine on the target device and creates an execution context that runs inference."
+        }
+      ],
+      "assumptions": [
+        "The user is running the standard TensorRT flow (not TensorRT-LLM's specialized flow, though it is similar)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-TRTBUILD-021",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "TensorRT build cost vs runtime cost",
+      "learningObjective": "Reason about the split between one-time build cost and per-inference runtime cost in TensorRT, and identify a common misdiagnosis when comparing to eager PyTorch.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any TensorRT-supported",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TensorRT",
+        "stability": "stable_principle"
+      },
+      "stem": "A team benchmarks their model as follows: 'TensorRT 8 min, PyTorch eager 0.2 s'. What is the most likely source of confusion in this comparison?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The 8 minutes is the TensorRT engine build cost, which is a one-time offline compilation of the model; the correct comparison against PyTorch eager is per-inference latency of the deserialized engine, not build time. Build cost and inference latency should never be added together for the deployment comparison."
+        },
+        {
+          "id": "B",
+          "text": "TensorRT's build step must be repeated on every inference call, whereas PyTorch eager amortizes it via warmup, which is why the 8-minute number is a per-call cost that dominates end-to-end latency."
+        },
+        {
+          "id": "C",
+          "text": "PyTorch eager is missing calls to `torch.cuda.synchronize()`, so the 0.2 s is entirely CPU-side dispatch cost; TensorRT does not require synchronization, so its 8 minutes is a true GPU-side execution time."
+        },
+        {
+          "id": "D",
+          "text": "TensorRT is always slower than PyTorch eager for BERT-sized models on modern GPUs; the 0.2 s PyTorch number reflects steady-state kernel launches, whereas TensorRT's kernel selection heuristics never converge to a competitive plan for transformer workloads."
+        }
+      ],
+      "assumptions": [
+        "The 8-minute number is the reported TensorRT build time, not an inference latency."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-TRTPLAN-020",
+      "type": "multiple",
+      "module": "runtime_deploy",
+      "subtopic": "TensorRT engine portability",
+      "learningObjective": "Reason about the portability constraints of a serialized TensorRT engine across GPU architectures, driver versions and TensorRT major versions.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any TensorRT-supported",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TensorRT",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about the portability of a serialized TensorRT engine (plan file) are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Dynamic input shape ranges (optimization profiles) supported by the runtime are baked into the plan at build time; if the runtime feeds a shape outside the built ranges the engine cannot execute it and must be rebuilt."
+        },
+        {
+          "id": "B",
+          "text": "The plan file is a wrapper around the ONNX file it was built from; deleting the ONNX file makes the plan invalid because the runtime re-parses ONNX on deserialization."
+        },
+        {
+          "id": "C",
+          "text": "A plan file built for one GPU compute capability (e.g., sm_80, A100) is not guaranteed to run on a different one (e.g., sm_90, H100); the builder emits kernels for the target architecture used at build time."
+        },
+        {
+          "id": "D",
+          "text": "A plan file built with TensorRT major version X is not generally deserializable by a TensorRT runtime of major version Y ≠ X, because plan serialization is not backward/forward compatible across major versions."
+        }
+      ],
+      "assumptions": [
+        "Standard TensorRT deployment without explicit version-compatibility mode enabled."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-TVMRT-024",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "TVM Relax VM runtime",
+      "learningObjective": "Describe TVM's Relax VM: a bytecode VM that dispatches PackedFunc kernels and manages allocators and streams for a compiled model.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM Relax",
+        "stability": "version_sensitive",
+        "frameworkVersionScope": "TVM Unity (Relax, 2024)",
+        "verifiedAt": "2026-07-26"
+      },
+      "stem": "In TVM's Unity stack, what is the Relax VM (`tvm.relax.VirtualMachine`) primarily responsible for?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Executing a compiled Relax program by interpreting a VM bytecode that invokes precompiled PackedFunc kernels, allocating tensors via a runtime allocator, dispatching to different devices via device contexts, and handling dynamic shape branches."
+        },
+        {
+          "id": "B",
+          "text": "Providing an interactive Python REPL for authoring Relax IR; it does not participate in inference execution, which is instead handled by the CUDA driver directly via nvptx-loaded kernels."
+        },
+        {
+          "id": "C",
+          "text": "Replacing PyTorch's autograd engine so TVM can compute gradients through Relax; it does not run inference and is deprecated in favor of the tvm.te module for actual execution."
+        },
+        {
+          "id": "D",
+          "text": "Performing operator-fusion optimization on the input Relax IR during graph construction; the VM lowers the fused graph to a monolithic C++ function that is JIT-compiled into a shared library at each call site."
+        }
+      ],
+      "assumptions": [
+        "TVM Unity's Relax + VM design as of 2024."
+      ],
+      "version": 1
+    },
+    {
+      "id": "K-VM-003",
+      "type": "single",
+      "module": "runtime_deploy",
+      "subtopic": "Virtual Machine runtime (TVM Relax VM / IREE VM)",
+      "learningObjective": "Explain why deep-learning runtimes such as TVM Relax VM or IREE use a bytecode virtual machine to interpret a compiled program, rather than directly linking a monolithic function.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM Relax VM / IREE VM",
+        "stability": "stable_principle"
+      },
+      "stem": "TVM Relax and IREE both ship 'virtual machine' style runtimes that interpret compiled bytecode rather than emitting a single monolithic native function. Which motivation best explains this design?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Interpreting bytecode is faster than native execution because the VM bypasses the operating-system's process scheduling, letting each op run at higher priority than in a native binary."
+        },
+        {
+          "id": "B",
+          "text": "A VM eliminates the need for a memory allocator by executing every op in a single pre-allocated buffer, which is the reason VM-based runtimes have lower memory footprints than native ones."
+        },
+        {
+          "id": "C",
+          "text": "A VM is mandatory whenever the target is a GPU because GPU code cannot be dispatched from natively compiled host code and must be issued through a bytecode interpreter."
+        },
+        {
+          "id": "D",
+          "text": "A VM lets the runtime express host-side control flow (if/while, dynamic shape branches, allocator calls, external function invocation) around a set of precompiled kernels, decoupling model control flow from any single native ABI."
+        }
+      ],
+      "assumptions": [
+        "The VM in question is a coarse-grained bytecode VM that dispatches kernels, not a fine-grained instruction VM like the JVM."
+      ],
+      "version": 1
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "questionId": "M-SHARD-009",
+  "learningObjective": "Reason about the collectives that a partitioner must insert to reshard a tensor between two different sharding specifications on the same device mesh.",
+  "canonicalClaims": [
+    {
+      "claim": "Resharding from a per-rank-shard layout (each rank holds 1/N along an axis) to a per-rank-replicated layout (each rank holds the full tensor) is implemented by an AllGather along that axis; the reverse, from replicated to sharded, is a local slice with no collective.",
+      "conditions": [
+        "The mesh axis and dimension being resharded are the same on both sides.",
+        "The tensor's element type is preserved through the reshard."
+      ],
+      "nonImplications": [
+        "Does not imply that reshard cost is always AllGather; other pairs (partial → replicated) require AllReduce; (sharded axis X → sharded axis Y) requires All-to-All.",
+        "Does not imply that all reshards are cheap; large tensors resharded via AllGather move (N-1)/N · S per rank."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§3–§4 partitioner emits reshard collectives based on sharding specs" },
+        { "ref": "DOC:stablehlo", "locator": "Sharding specification and reshard semantics" }
+      ]
+    },
+    {
+      "claim": "Resharding from partial-sum (each rank holds a partially-reduced tensor to be summed) to fully replicated requires an AllReduce; to sharded requires a ReduceScatter.",
+      "conditions": [
+        "The upstream op produced a 'partial' sharding annotation (e.g. after a matmul where the contracting axis was sharded)."
+      ],
+      "nonImplications": [
+        "Does not imply that partial-sum tensors are unusable; they are a valid intermediate sharding until the next consumer forces a reshard."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§3 partial-sum handling and consumer-driven reshard" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Resharding from sharded to replicated always requires an AllReduce because every rank must end with the full tensor.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Data was already partitioned (not partially summed); assembly across ranks requires AllGather, not AllReduce."
+    },
+    {
+      "claim": "Resharding between two sharded layouts along different axes (X-sharded → Y-sharded) can always be done as a local view / stride change with no communication.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Different sharding axes place different slices on different ranks; realigning them requires All-to-All (a permutation), not a local view."
+    },
+    {
+      "claim": "The compiler always inserts a single global collective at the graph boundary; individual op-to-op reshards do not exist.",
+      "errorType": "scope_error",
+      "whyWrong": "Partitioners like GSPMD emit reshard collectives at any op boundary where the required input sharding differs from the produced sharding."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

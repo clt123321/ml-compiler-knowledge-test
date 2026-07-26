@@ -1,0 +1,95 @@
+{
+  "id": "D-FULL-028",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "fullgraph=True error on graph break",
+  "learningObjective": "Predict the behavior of `torch.compile(fullgraph=True)` when the traced code triggers a graph break.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "The following compiled function calls `print` inside the region. When compiled with `fullgraph=True`, what happens?",
+  "codeSnippet": "import torch\n\n@torch.compile(fullgraph=True)\ndef f(x):\n    print(\"debug\")            # print is a graph-break trigger\n    return x * 2.0\n\nx = torch.randn(4, device=\"cuda\")\ny = f(x)",
+  "options": [
+    {
+      "id": "A",
+      "text": "The function compiles silently and runs correctly: `fullgraph=True` disables graph breaks, so print is either traced or ignored, and the compiled kernel is emitted normally."
+    },
+    {
+      "id": "B",
+      "text": "TorchDynamo raises an error at call time (typically `torch._dynamo.exc.Unsupported` or a similar exception) reporting the graph break; `fullgraph=True` turns graph breaks into errors instead of splitting the graph."
+    },
+    {
+      "id": "C",
+      "text": "The function compiles into two subgraphs joined by an eager print step; `fullgraph=True` produces the same behavior as `fullgraph=False` but with more verbose logging around the break."
+    },
+    {
+      "id": "D",
+      "text": "The function runs in eager mode fully; `fullgraph=True` acts as a compile flag that requests a fully compiled graph but transparently falls back to eager when a graph break would occur."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "`fullgraph=True` means Dynamo must capture the entire function as a single graph; if any construct would trigger a graph break, Dynamo raises an error rather than splitting the graph. This surfaces graph-break causes to the developer for cleanup. It does not silently disable, silently fallback to eager, or produce split subgraphs — those are `fullgraph=False` behaviors.",
+  "optionExplanations": {
+    "A": "Wrong: fullgraph=True does not silently accept graph breaks.",
+    "B": "Correct.",
+    "C": "Wrong: no split-subgraph behavior under fullgraph=True.",
+    "D": "Wrong: no automatic eager fallback."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 defaults.",
+    "The user has not registered a special hook that suppresses graph-break exceptions."
+  ],
+  "nonImplications": [
+    "Does not imply every fullgraph=True model fails; well-authored models compile without breaks.",
+    "Does not imply that fullgraph=True is a performance flag; it is a correctness/verification flag."
+  ],
+  "misconceptionTags": [
+    "fullgraph_true_disables_breaks",
+    "fullgraph_true_silent_fallback"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim about disabling breaks.",
+    "C": "Wrong claim about split subgraphs.",
+    "D": "Wrong claim about eager fallback."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "fullgraph parameter behavior",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "fullgraph=True raises on graph break",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-FULL-028.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

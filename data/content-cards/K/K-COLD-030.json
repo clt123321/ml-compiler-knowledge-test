@@ -1,0 +1,48 @@
+{
+  "questionId": "K-COLD-030",
+  "learningObjective": "Reason about the sources of cold-start cost (compile, load, warmup) and how compilation caches reduce them across process restarts.",
+  "canonicalClaims": [
+    {
+      "claim": "Cold-start cost decomposes into process init, artifact load, JIT compilation (if any), and warmup (autotune, kernel loading, cuBLAS/cuDNN handle init). Compilation caches skip the JIT compile phase on subsequent starts, and AOT artifacts eliminate JIT entirely; process init and load remain in either case.",
+      "conditions": [
+        "The runtime supports either JIT with a cache or AOT deployment.",
+        "Cache keys correctly capture source, shape, device, compiler version."
+      ],
+      "nonImplications": [
+        "Does not imply cached and fresh compilations produce bitwise-identical outputs.",
+        "Does not imply caches are safe across major version bumps without explicit invalidation."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Inductor compilation cache" },
+        { "ref": "DOC:torch-aoti", "locator": "AOTInductor deployment" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Cache hits are bitwise-identical to fresh compiles.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Autotune caches (cuBLAS/cuDNN) can select different algorithms; low-order bits may differ.",
+      "sourceOrEvidence": "cuBLAS / cuDNN autotune docs"
+    },
+    {
+      "claim": "Compilation cache eliminates all cold-start cost.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Process init and weight load remain even with a hot cache.",
+      "sourceOrEvidence": "torch.compile cache design"
+    },
+    {
+      "claim": "AOT-compiled artifacts still pay a JIT compilation cost at first inference.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AOT means JIT is gone; only process/load/warmup remain.",
+      "sourceOrEvidence": "AOTInductor / TensorRT design"
+    },
+    {
+      "claim": "Warmup is only necessary for JIT; AOT artifacts skip it entirely.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Warmup for cuBLAS handle init, kernel loading, and clock ramp-up still applies to AOT artifacts.",
+      "sourceOrEvidence": "CUDA best practices"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

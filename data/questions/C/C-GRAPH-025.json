@@ -1,0 +1,100 @@
+{
+  "id": "C-GRAPH-025",
+  "type": "multiple",
+  "module": "graph_tensor_ir",
+  "subtopic": "Dataflow graph properties",
+  "learningObjective": "Identify the defining properties of a dataflow / computational graph as used by deep learning compilers.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "In the standard formulation of a deep-learning computational graph (dataflow graph), which of the following are true properties? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Every edge in the graph is required to be materialized in memory as an intermediate tensor; a compiler that fuses ops must add explicit memory nodes on the fused edge."
+    },
+    {
+      "id": "B",
+      "text": "Each node's output shape and dtype are typically inferred (shape inference / type inference) from the node's operator and its input shape/dtype; this is a routine graph-level analysis."
+    },
+    {
+      "id": "C",
+      "text": "Nodes represent operations and edges represent tensor values flowing from a producer to one or more consumers; the graph is a directed graph."
+    },
+    {
+      "id": "D",
+      "text": "The graph is usually acyclic for a single forward pass (a DAG), which makes topological order well-defined and enables straightforward scheduling and dataflow analysis."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): materialization is a scheduling choice, not a property of the graph. B (Correct): shape/dtype inference is routine. C (Correct). D (Correct): DAG structure for forward passes is standard. General context: A dataflow graph is directed (A); a forward pass in a feedforward net is a DAG (B), enabling topological scheduling; and each node's output shape/dtype is normally inferred from operator semantics and input types (D). Fused kernels represent a shared iteration space where intermediates live in registers, not memory — no explicit memory nodes need to be added to the graph.",
+  "optionExplanations": {
+    "A": "Wrong: materialization is a scheduling choice, not a property of the graph.",
+    "B": "Correct: shape/dtype inference is routine.",
+    "C": "Correct.",
+    "D": "Correct: DAG structure for forward passes is standard."
+  },
+  "assumptions": [
+    "The graph represents a single forward pass over a feedforward model; training graphs with backward passes are still DAGs after autograd generates the joint graph.",
+    "The framework provides shape/type inference for its ops."
+  ],
+  "nonImplications": [
+    "Does not imply all deep-learning workloads produce DAGs; graphs with control flow can require additional constructs (control edges, sub-graphs).",
+    "Does not imply shape inference always succeeds; dynamic shapes can leave dims symbolic or unknown."
+  ],
+  "misconceptionTags": [
+    "edge_forces_materialization"
+  ],
+  "distractorRationales": {
+    "A": "Confuses graph edges with runtime memory allocation."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:tvm",
+      "locator": "Computational graph representation",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "Graph-level IR properties",
+      "supports": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "Shapes and dtypes on values",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-GRAPH-025.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

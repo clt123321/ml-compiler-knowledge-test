@@ -1,0 +1,94 @@
+{
+  "id": "D-AOTI-020",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "AOTInductor C++ artifact",
+  "learningObjective": "Explain what AOTInductor produces as an artifact and how it is loaded/executed at deployment.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement most accurately describes what AOTInductor produces and how it is deployed?",
+  "options": [
+    {
+      "id": "A",
+      "text": "AOTInductor is a runtime autotuner that JITs a Triton kernel on the first call inside the Python process; there is no ahead-of-time artifact, and each Python process re-compiles from scratch. In this reading, AOTInductor is a runtime autotuner that JITs a Triton kernel on the first call inside the Python process; there is no ahead-of-time artifact and each fresh Python process re-compiles from scratch when the compiled function is first invoked."
+    },
+    {
+      "id": "B",
+      "text": "AOTInductor takes an ExportedProgram and produces an ahead-of-time compiled shared library (with the model's kernels and a small runtime wrapper) that can be loaded and executed from a native C++/Python runtime without repeating the compile step."
+    },
+    {
+      "id": "C",
+      "text": "AOTInductor produces a Python-only pickle containing the FX graph; loading requires a full PyTorch install and re-runs the entire torch.compile pipeline before the first execution. Under this framing, AOTInductor produces a Python-only pickle containing the FX graph and per-op metadata; loading the pickle requires a full PyTorch install and re-runs the entire torch.compile pipeline (Dynamo + AOTAutograd + Inductor) before the first execution."
+    },
+    {
+      "id": "D",
+      "text": "AOTInductor is a graph optimizer that rewrites the FX graph in place and returns nothing; users must still invoke torch.compile on the rewritten graph to obtain executable code. In this account, AOTInductor is a graph optimizer that rewrites the FX graph in place and returns nothing executable; users must still invoke torch.compile on the rewritten graph to actually obtain a compiled callable, so AOTInductor by itself never produces code."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "AOTInductor takes an ExportedProgram (from torch.export), lowers it through the Inductor compilation stack ahead of time, and produces a shared library (`.so`) containing the compiled kernels plus a small runtime wrapper. This artifact can be loaded and executed from C++ or from Python without re-running torch.compile, enabling reduced startup latency and deployments where Python source is not desired at runtime.",
+  "optionExplanations": {
+    "A": "Wrong: AOTInductor is ahead-of-time, not JIT.",
+    "B": "Correct.",
+    "C": "Wrong: it produces a native artifact, not a Python-only pickle.",
+    "D": "Wrong: AOTInductor produces executable code, not a graph rewrite."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 semantics.",
+    "The user has already produced a valid ExportedProgram."
+  ],
+  "nonImplications": [
+    "Does not imply AOTInductor covers every op that torch.compile does; some ops may not be supported.",
+    "Does not imply the .so is architecture-portable; it targets the compile-time hardware."
+  ],
+  "misconceptionTags": [
+    "aoti_is_jit",
+    "aoti_no_native_artifact"
+  ],
+  "distractorRationales": {
+    "A": "Wrong AOT vs. JIT direction.",
+    "C": "Wrong artifact type.",
+    "D": "Wrong role."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-aoti",
+      "locator": "AOTInductor overview and artifact format",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:torch-export",
+      "locator": "torch.export + AOTInductor deployment flow",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-AOTI-020.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

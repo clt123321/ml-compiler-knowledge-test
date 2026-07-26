@@ -1,0 +1,49 @@
+{
+  "questionId": "J-TPOT-003",
+  "learningObjective": "Define TPOT (Time Per Output Token) and distinguish it from TTFT and throughput.",
+  "canonicalClaims": [
+    {
+      "claim": "TPOT is the average time between successive output tokens (after the first) per request; total request latency = TTFT + (M-1)*TPOT for M output tokens.",
+      "conditions": [
+        "Metric is per-request; server aggregates report percentiles.",
+        "Assumes streaming so per-token times are measurable."
+      ],
+      "nonImplications": [
+        "Does not include TTFT.",
+        "Does not equal throughput per concurrent user."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:vllm", "locator": "Metrics documentation" },
+        { "ref": "DOC:trtllm", "locator": "Performance metrics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TPOT = throughput / concurrent-users.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That is a per-user throughput calculation, not TPOT.",
+      "sourceOrEvidence": "vLLM metrics docs"
+    },
+    {
+      "claim": "TPOT includes TTFT.",
+      "errorType": "scope_error",
+      "whyWrong": "TPOT is defined over decode intervals after the first token.",
+      "sourceOrEvidence": "Standard LLM serving benchmarks"
+    },
+    {
+      "claim": "TPOT is constant across generation steps.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Growing KV cache and batching dynamics can make later tokens slower.",
+      "sourceOrEvidence": "Long-context decode profiles"
+    }
+  ],
+  "implementationFacts": [
+    "TPOT is directly proportional to KV cache read bandwidth per token at batch-1 decode.",
+    "Speculative decoding attempts to lower effective TPOT by producing multiple tokens per verification step."
+  ],
+  "performanceScenarios": [
+    "SLA-driven serving often has a TPOT target (e.g., <50 ms/token) that must be preserved even under load."
+  ],
+  "versionSensitivity": "stable_principle"
+}

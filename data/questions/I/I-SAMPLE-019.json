@@ -1,0 +1,85 @@
+{
+  "id": "I-SAMPLE-019",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "Sampling / Temperature and top-p (nucleus)",
+  "learningObjective": "Explain what temperature and top-p sampling do at the logits/probability level.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Which description of temperature (T) and top-p (nucleus, p) sampling for LLM decoding is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Temperature T scales the logits by exp(T) after softmax; top-p sorts the resulting probabilities in ascending order and keeps the first p fraction of the distribution, then renormalizes."
+    },
+    {
+      "id": "B",
+      "text": "Temperature T divides the logits by T before the softmax (T > 1 flattens the distribution, T < 1 sharpens it); top-p, after softmax, sorts probabilities in descending order and keeps the smallest set whose cumulative probability first exceeds p, then renormalizes over this set before sampling."
+    },
+    {
+      "id": "C",
+      "text": "Temperature T divides the softmax output by T; top-p keeps exactly floor(p * V) tokens by count (not by cumulative probability) to give an upper bound on the sampling set size."
+    },
+    {
+      "id": "D",
+      "text": "Temperature T is applied by clipping logits above the T-th percentile; top-p is a synonym for top-k with p = k / V, so the two are algebraically equivalent under this identification."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Temperature scales logits: p_i = softmax(z / T)_i. T > 1 flattens, T < 1 sharpens, T -> 0 becomes greedy (argmax), T -> inf becomes uniform. Top-p (nucleus sampling) after computing probabilities sorts them descendingly, forms the smallest prefix whose cumulative sum first exceeds p, and samples from this set (renormalized). This lets the effective set size adapt to the distribution's peakedness at each step, unlike top-k which uses a fixed count.",
+  "optionExplanations": {
+    "A": "Wrong: temperature is applied to logits before softmax, not to the softmax output; and top-p uses cumulative-descending, not ascending.",
+    "B": "Correct: canonical definitions of temperature and nucleus sampling.",
+    "C": "Wrong: top-p is by cumulative probability, not by count.",
+    "D": "Wrong: top-p is adaptive and not equivalent to top-k with a fixed fraction."
+  },
+  "assumptions": [
+    "T > 0 (strictly positive).",
+    "0 < p <= 1."
+  ],
+  "nonImplications": [
+    "Does not imply top-p and top-k are mutually exclusive; they are commonly combined.",
+    "Does not imply that temperature preserves relative rank; T -> inf makes the distribution uniform, losing rank information numerically."
+  ],
+  "misconceptionTags": [
+    "temperature_post_softmax",
+    "topp_by_count"
+  ],
+  "distractorRationales": {
+    "A": "Wrong ordering (T after softmax) and wrong top-p direction.",
+    "C": "Confuses top-p with top-k.",
+    "D": "Fabricates an equivalence."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Text generation sampling strategies",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-SAMPLE-019.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

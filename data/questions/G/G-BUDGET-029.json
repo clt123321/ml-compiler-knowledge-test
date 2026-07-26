@@ -1,0 +1,95 @@
+{
+  "id": "G-BUDGET-029",
+  "type": "multiple",
+  "module": "graph_opt_schedule",
+  "subtopic": "Compilation budget / Runtime speedup trade-off",
+  "learningObjective": "Reason about the trade-off between compilation-time budget and end-to-end wall-clock savings across serving scenarios.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A compiler exposes a knob 'tuning budget' (compilation time spent tuning) that trades off against runtime speed. Which statements about the trade-off are TRUE? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "For a one-off ad-hoc experiment (compile, run once, discard), tuning budget must be short; a slow compile that saves runtime only matters if runtime dominates."
+    },
+    {
+      "id": "B",
+      "text": "Recompilation on shape changes (e.g., under `torch.compile` with recompiles enabled) can inflate the effective 'compile budget' well beyond the initial compile; the effective budget is per unique shape combination the runtime sees."
+    },
+    {
+      "id": "C",
+      "text": "Tuning budget only affects the compiler and is orthogonal to serving latency; end-to-end latency is unaffected by tuning budget once the artifact is compiled."
+    },
+    {
+      "id": "D",
+      "text": "For a model served millions of times per day, a longer tuning budget (hours) is easily amortized over serving lifetime; the wall-clock saving per request compounds."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): short-lived usage inverts the trade-off. B (Correct): recompilation is a hidden compile-budget line item. C (Wrong): tuning budget determines the artifact's runtime performance. D (Correct): amortization over serving lifetime. General context: C captures an important practical concern: recompilation costs are hidden 'compile budget' spent per unique shape/config the runtime encounters.",
+  "optionExplanations": {
+    "A": "Correct: short-lived usage inverts the trade-off.",
+    "B": "Correct: recompilation is a hidden compile-budget line item.",
+    "C": "Wrong: tuning budget determines the artifact's runtime performance.",
+    "D": "Correct: amortization over serving lifetime."
+  },
+  "assumptions": [
+    "The tuner and cost model behave as documented (convergent search)."
+  ],
+  "nonImplications": [
+    "Does not imply that longer budgets always improve runtime; measurement noise and cost-model plateaus can cap gains.",
+    "Does not imply short budgets are always sufficient \u2014 some workloads need substantial trials to leave a bad local optimum."
+  ],
+  "misconceptionTags": [
+    "budget_orthogonal_to_runtime",
+    "linear_speedup_from_more_trials"
+  ],
+  "distractorRationales": {
+    "C": "Denies the causal path from tuning to runtime."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Section 6: tuning budget vs. speedup analysis",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Recompilation guard docs",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Tuning-budget-to-runtime-speedup relationship in autotuning",
+    "evidenceType": "paper_result",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/G/G-BUDGET-029.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

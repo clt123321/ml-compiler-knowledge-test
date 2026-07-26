@@ -1,0 +1,56 @@
+{
+  "questionId": "A-OCC-003",
+  "learningObjective": "From ptxas register report and launch configuration, derive the register-file-limited theoretical occupancy on a given GPU architecture.",
+  "canonicalClaims": [
+    {
+      "claim": "Register-limited theoretical occupancy is computed by (⌊register_file_per_SM / (regs_per_thread × threads_per_block)⌋ × threads_per_block) / max_threads_per_SM, expressed as a warp fraction.",
+      "conditions": [
+        "The kernel does not exceed shared-memory-per-SM or block-count-per-SM limits.",
+        "Register allocation is per-thread (not per-warp) and rounded per the architecture's granularity."
+      ],
+      "nonImplications": [
+        "Does not imply that theoretical occupancy equals achieved occupancy at runtime.",
+        "Does not imply that higher occupancy always produces higher throughput."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Compute capability 8.0: register file 65,536, max threads 2,048/SM, max 32 blocks/SM" },
+        { "ref": "BOOK:pmpp4", "locator": "Occupancy chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Occupancy is limited by the number of blocks per SM (fixed at 8 on all GPUs) regardless of register usage.",
+      "errorType": "version_leak",
+      "whyWrong": "Block-count-per-SM depends on compute capability (e.g., 32 on sm_80); and register file often binds much earlier than the block-count cap.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, compute capability tables"
+    },
+    {
+      "claim": "Higher register usage per thread is always bad because it lowers occupancy and therefore lowers throughput.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Higher per-thread register budget can enable more math per thread, reducing memory traffic and total launched threads; occupancy alone doesn't predict throughput.",
+      "sourceOrEvidence": "PMPP4; CUDA C++ Best Practices Guide"
+    },
+    {
+      "claim": "Register file per SM is 32,768 on all Ampere GPUs, so 96 registers × 256 threads permits only one block per SM.",
+      "errorType": "hardware_leak",
+      "whyWrong": "sm_80 (A100) has 65,536 registers per SM, not 32,768; the correct block count is 2.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, sm_80"
+    },
+    {
+      "claim": "Register spills to local memory always improve performance because they free registers for more warps.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Spills touch L1/L2/global memory and are usually costlier than the occupancy gain; the CUDA Best Practices Guide flags spills as a major performance red flag.",
+      "sourceOrEvidence": "CUDA C++ Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "sm_80 register file per SM: 65,536 × 32-bit registers = 256 KB",
+    "sm_80 max threads per SM: 2,048 (64 warps)",
+    "sm_80 max concurrent blocks per SM: 32"
+  ],
+  "performanceScenarios": [
+    "A register-heavy kernel (>= 64 regs/thread) with a large block size often runs at 25-50% occupancy on Ampere; this is not automatically a bottleneck."
+  ],
+  "versionSensitivity": "stable_principle"
+}

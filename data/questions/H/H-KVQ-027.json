@@ -1,0 +1,99 @@
+{
+  "id": "H-KVQ-027",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "KV cache quantization / Attention kernel compatibility",
+  "learningObjective": "Identify the kernel-support requirements for KV cache quantization to be effective for both memory and bandwidth savings.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper",
+    "device": "GPU",
+    "requiredFeatures": [
+      "FP16 or FP8 attention kernel"
+    ]
+  },
+  "softwareContext": {
+    "framework": "vLLM / TensorRT-LLM / FlashAttention",
+    "stability": "stable_principle"
+  },
+  "stem": "For KV cache quantization to deliver both memory-footprint and memory-bandwidth savings in attention, which of the following statements about kernel support are TRUE? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "If the attention kernel is written to consume quantized KVs natively (e.g., FP8 attention on Hopper, or INT8 attention kernels), both storage AND read bandwidth are reduced without dequant overhead."
+    },
+    {
+      "id": "B",
+      "text": "Storing INT8 KVs but transposing them to FP16 in a separate kernel before attention (an eager dequant) eliminates the bandwidth savings \u2014 the same FP16 buffer is then read by the attention kernel."
+    },
+    {
+      "id": "C",
+      "text": "KV cache quantization requires the model weights to also be quantized to the same precision; mixed-precision (FP16 weights + INT8 KV) is not supported by any framework."
+    },
+    {
+      "id": "D",
+      "text": "If the attention kernel expects FP16 KVs and the storage is INT8, the kernel must dequantize INT8 \u2192 FP16 in registers on the fly; this saves KV storage but adds dequant instructions per attention step (still bandwidth-net-positive because HBM traffic drops)."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): native quantized attention benefits. B (Correct): eager dequant defeats bandwidth benefit. C (Wrong): mixed-precision KV+weight is common. D (Correct): dequant-in-register pattern.",
+  "optionExplanations": {
+    "A": "Correct: native quantized attention benefits.",
+    "B": "Correct: eager dequant defeats bandwidth benefit.",
+    "C": "Wrong: mixed-precision KV+weight is common.",
+    "D": "Correct: dequant-in-register pattern."
+  },
+  "assumptions": [
+    "The attention kernel is FlashAttention-family (single-kernel over K and V) or paged-attention.",
+    "The framework supports per-token or per-block-per-token scaling."
+  ],
+  "nonImplications": [
+    "Does not imply FP8 KV is always better than INT8 KV \u2014 depends on hardware and distribution.",
+    "Does not imply dequant-in-register is free \u2014 for very small heads it may become a noticeable fraction of the kernel."
+  ],
+  "misconceptionTags": [
+    "kv_quant_needs_weight_quant",
+    "eager_dequant_saves_bandwidth"
+  ],
+  "distractorRationales": {
+    "C": "Fabricates a coupling between KV and weight precision."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:trtllm",
+      "locator": "INT8 / FP8 KV cache kernel implementation",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "FlashAttention data-flow analysis (KV load pattern)",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "KV cache quantization + attention kernel data-flow interactions",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/H/H-KVQ-027.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

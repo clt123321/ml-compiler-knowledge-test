@@ -1,0 +1,57 @@
+{
+  "questionId": "G-TILE-009",
+  "learningObjective": "Diagnose why an autotuner-chosen tile size regressed on a new shape and identify the trade-off that triggered it.",
+  "canonicalClaims": [
+    {
+      "claim": "A tile size tuned on a large shape can under-utilize a many-SM GPU on a smaller shape because the resulting grid contains too few blocks to fill all SMs; the fix is smaller tiles, split-K, or persistent kernels.",
+      "conditions": [
+        "The GPU has substantially more SMs than the grid block count at the smaller shape.",
+        "Split-K or persistent-kernel strategies are not already enabled."
+      ],
+      "nonImplications": [
+        "Does not imply the smaller tile is universally superior — on the original large shape the larger tile was optimal.",
+        "Does not imply retuning is the only remedy; kernel-side split-K is an alternative."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "Shape-specialized tile search" },
+        { "ref": "DOC:tvm-relax", "locator": "MetaSchedule tile-size search space" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A tuned tile size generalizes across all shapes because it captures the hardware's intrinsic best block dimension.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The best tile size interacts with the total grid count, which is shape-dependent; no single tile is optimal for all shapes.",
+      "sourceOrEvidence": "Ansor paper, tuning results"
+    },
+    {
+      "claim": "Tensor Cores require GEMM dimensions to be exact multiples of the tile block dimension (e.g., 128).",
+      "errorType": "wrong_condition",
+      "whyWrong": "Tensor Cores require multiples of the MMA fragment (e.g., 16); larger tile blocks handle any dimension divisible by the fragment, with masked tail blocks for remainders.",
+      "sourceOrEvidence": "CUTLASS / Tensor Core programming"
+    },
+    {
+      "claim": "Low Tensor-Core utilization on small grids indicates that Nsight Compute is misreporting; the kernel is actually running near peak.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TC utilization is measured across active cycles; if many SMs are idle, aggregate TC utilization is genuinely low.",
+      "sourceOrEvidence": "Nsight Compute metric documentation"
+    },
+    {
+      "claim": "Reducing tile size always improves performance on small shapes because it always increases grid count.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Below some threshold, arithmetic intensity per tile falls below the peak-Tensor-Core requirement and per-tile efficiency drops.",
+      "sourceOrEvidence": "Ansor tuning study"
+    }
+  ],
+  "implementationFacts": [
+    "A100 has 108 SMs; H100 has 132 (or 144 in some variants).",
+    "Split-K adds an extra reduction along K to increase grid block count while keeping large per-tile K-reuse.",
+    "Persistent kernels re-use blocks to iterate over more work per launch."
+  ],
+  "performanceScenarios": [
+    "M=N=K=1024 with 128×128 tile = 64 blocks; on A100 fills ~59% of SMs at best.",
+    "Same shape with 64×64 tile = 256 blocks, oversubscribing 108 SMs by 2.4×."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

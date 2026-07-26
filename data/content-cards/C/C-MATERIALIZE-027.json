@@ -1,0 +1,55 @@
+{
+  "questionId": "C-MATERIALIZE-027",
+  "learningObjective": "Define 'materialization' in a tensor IR context and distinguish it from view creation.",
+  "canonicalClaims": [
+    {
+      "claim": "Materialization is the realization of a tensor value into a concrete backing buffer at physical addresses under the requested layout; it is distinct from view creation, which only rewrites shape/stride metadata over existing storage.",
+      "conditions": [
+        "The IR distinguishes tensor metadata from tensor storage."
+      ],
+      "nonImplications": [
+        "Does not imply materialization is inherently bad; some downstream ops require contiguous materialized buffers.",
+        "Does not imply views are always cheap for consumers."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "MemRef vs. tensor view" },
+        { "ref": "PAPER:tvm", "locator": "Buffer / storage materialization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any metadata write counts as materialization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Metadata-only ops are views.",
+      "sourceOrEvidence": "Tensor-compiler terminology"
+    },
+    {
+      "claim": "Materialization is another word for constant folding.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Constant folding evaluates constant subgraphs; materialization is about allocating storage.",
+      "sourceOrEvidence": "Compiler docs"
+    },
+    {
+      "claim": "Every kernel launch materializes its output.",
+      "errorType": "scope_error",
+      "whyWrong": "A kernel may write into an already-materialized buffer; launch and materialization are separate concepts.",
+      "sourceOrEvidence": "Framework docs"
+    },
+    {
+      "claim": "Materialization is always harmful and should be avoided.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Some downstream ops (e.g., cuDNN with contiguity requirements) require materialized buffers to run.",
+      "sourceOrEvidence": "cuDNN docs"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch `.contiguous()` triggers materialization if the source is non-contiguous",
+    "MLIR bufferization decides where materialization occurs and inserts copies as needed",
+    "Fusion avoids materialization by consuming intermediates in registers"
+  ],
+  "performanceScenarios": [
+    "Reducing materializations lowers memory traffic; adding a materialization can unlock a much faster downstream kernel."
+  ],
+  "versionSensitivity": "stable_principle"
+}

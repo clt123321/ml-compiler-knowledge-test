@@ -1,0 +1,600 @@
+[
+  {
+    "id": "G-ANSOR-024",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-AUTOTUNE-021",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-BUDGET-029",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch",
+        "note": "The `explanation` field contains letter references (e.g. 'X is wrong') that refer to a pre-shuffle option ordering; the current post-shuffle `optionExplanations` map is authoritative and correct. Cosmetic issue; does not affect answer correctness."
+      }
+    ],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-CFCSE-017",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch",
+        "note": "The `explanation` field contains letter references (e.g. 'X is wrong') that refer to a pre-shuffle option ordering; the current post-shuffle `optionExplanations` map is authoritative and correct. Cosmetic issue; does not affect answer correctness."
+      }
+    ],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-COSTMODEL-020",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C"
+    ],
+    "answerAgreement": false,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "weak_distractor",
+        "note": "Option D (warmup, JIT, lazy loading, clock ramp-up) is a legitimate cause of measurement-vs-model divergence in practice, but the official reading treats these as measurement-methodology artifacts (removed by warmup). Reviewer chose D as true; official excludes D. This question had a prior correctAnswers out-of-range bug fix by orchestrator; current [B,C] verified as substantively correct."
+      }
+    ],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-FUSION-001",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-FUSION-002",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-FUSION-003",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "answerAgreement": false,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "weak_distractor",
+        "note": "Option C ('rank/extent mismatch, compiler must decide whether a common loop nest is expressible') describes a legitimate scheduling concern; its wording does not say fusion is illegal. Explanation argues extents are 'routinely fused', which is true, but option phrasing does not contradict that. Borderline distractor."
+      }
+    ],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-FUSION-004",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-FUSION-005",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch",
+        "note": "The `explanation` field contains letter references (e.g. 'X is wrong') that refer to a pre-shuffle option ordering; the current post-shuffle `optionExplanations` map is authoritative and correct. Cosmetic issue; does not affect answer correctness."
+      }
+    ],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-HALIDE-025",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-INDUCTOR-027",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-KERNSEL-019",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-LAYOUT-014",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-LOOPFISS-007",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-LOOPFUSE-006",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-MEMPLAN-015",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-METASCHED-023",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-PARALLEL-013",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-PORTABILITY-026",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch",
+        "note": "The `explanation` field contains letter references (e.g. 'X is wrong') that refer to a pre-shuffle option ordering; the current post-shuffle `optionExplanations` map is authoritative and correct. Cosmetic issue; does not affect answer correctness."
+      }
+    ],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-RECOMP-016",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A",
+      "B",
+      "E"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "E"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-REORDER-010",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-SEARCHSP-022",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "C"
+    ],
+    "officialAnswer": [
+      "C"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-SHAPESPEC-018",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A",
+      "B",
+      "E"
+    ],
+    "officialAnswer": [
+      "A",
+      "B",
+      "E"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-TILE-008",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-TILE-009",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "A"
+    ],
+    "officialAnswer": [
+      "A"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-TRANSFERTUNE-030",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-TVMSCHED-028",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "officialAnswer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch",
+        "note": "The `explanation` field contains letter references (e.g. 'X is wrong') that refer to a pre-shuffle option ordering; the current post-shuffle `optionExplanations` map is authoritative and correct. Cosmetic issue; does not affect answer correctness."
+      }
+    ],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-UNROLL-011",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "D"
+    ],
+    "officialAnswer": [
+      "D"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [
+      {
+        "level": "MINOR",
+        "type": "explanation_label_mismatch",
+        "note": "The `explanation` field contains letter references (e.g. 'X is wrong') that refer to a pre-shuffle option ordering; the current post-shuffle `optionExplanations` map is authoritative and correct. Cosmetic issue; does not affect answer correctness."
+      }
+    ],
+    "overallResult": "PASS"
+  },
+  {
+    "id": "G-VECTOR-012",
+    "reviewer": "primary-review-G",
+    "independentAnswer": [
+      "B"
+    ],
+    "officialAnswer": [
+      "B"
+    ],
+    "answerAgreement": true,
+    "uniqueAnswerConfidence": "high",
+    "sourceSupported": true,
+    "hardwareConditionsSufficient": true,
+    "versionScopeSufficient": true,
+    "issues": [],
+    "overallResult": "PASS"
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "questionId": "I-SOFTMAX-003",
+  "learningObjective": "Explain why row-max subtraction is required for a numerically stable softmax and what happens when it is omitted.",
+  "canonicalClaims": [
+    {
+      "claim": "softmax(x) = softmax(x - c) for any constant c; choosing c = max_j x_j clamps every exponent to (0, 1] and prevents overflow while preserving the exact softmax result.",
+      "conditions": [
+        "Inputs are finite floats.",
+        "The reduction accumulates in sufficient precision (typically FP32)."
+      ],
+      "nonImplications": [
+        "Does not eliminate all rounding differences from summation order.",
+        "Does not remove the need for tiling / online algorithms on very long rows."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Softmax numerical stability" },
+        { "ref": "PAPER:flashattn", "locator": "Sec 3.1 safe softmax" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Naive softmax and safe softmax differ only on integer hardware.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FP hardware also has finite exponent range; exp(90) overflows in FP32 and produces NaN in the ratio.",
+      "sourceOrEvidence": "IEEE-754 float32 range ~1e-38 to ~3.4e38"
+    },
+    {
+      "claim": "IEEE-754 inf/inf cancellation produces the correct softmax without max subtraction.",
+      "errorType": "definition_confusion",
+      "whyWrong": "inf / inf is NaN, not a ratio; overflow poisons the whole vector.",
+      "sourceOrEvidence": "IEEE-754 spec"
+    },
+    {
+      "claim": "Max subtraction shifts softmax outputs by an additive offset absorbed downstream.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "In exact arithmetic softmax(x - c) equals softmax(x); no shift is introduced.",
+      "sourceOrEvidence": "Algebraic identity of softmax"
+    }
+  ],
+  "implementationFacts": [
+    "FP16 exp overflows around x ≈ 11; BF16 around x ≈ 88 (same as FP32).",
+    "Attention logits (Q@K^T / sqrt(d)) can be well over FP16 overflow range for typical d and unnormalized weights."
+  ],
+  "performanceScenarios": [
+    "Long-sequence attention requires online (tiled) softmax that maintains a running max and running denominator (FlashAttention)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

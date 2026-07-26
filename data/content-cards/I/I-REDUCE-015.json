@@ -1,0 +1,49 @@
+{
+  "questionId": "I-REDUCE-015",
+  "learningObjective": "Compare warp-shuffle intra-warp reductions with shared-memory tree reductions for a per-block sum.",
+  "canonicalClaims": [
+    {
+      "claim": "The canonical CUDA block-reduce uses __shfl_down_sync inside each warp, followed by one SMEM write per warp, one __syncthreads(), and one final warp-shuffle reduce over the warp-level partials. This is faster than a pure SMEM tree and much faster than block-wide atomicAdd for dense reductions.",
+      "conditions": [
+        "Block size is a multiple of warpSize.",
+        "Reduction is over a value type supported by __shfl_down_sync (int/float/double via reinterpretation)."
+      ],
+      "nonImplications": [
+        "Does not imply shuffles beat SMEM in every scenario.",
+        "Does not imply atomicAdd is always bad."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Ch. 10 parallel reduction" },
+        { "ref": "DOC:cuda-guide", "locator": "Warp-level primitives" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Shared-memory tree reductions are the fastest option on modern GPUs.",
+      "errorType": "overgeneralization",
+      "whyWrong": "SMEM tree needs multiple __syncthreads() and has higher latency than shuffle-based reductions.",
+      "sourceOrEvidence": "PMPP Ch. 10; CUDA samples"
+    },
+    {
+      "claim": "Block-wide atomicAdd is the fastest way to reduce.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Contention on the atomic target serializes writes and is much slower for dense reductions.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "All reduction strategies produce bit-identical FP32 results.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FP addition is non-associative; different summation orders produce different roundings.",
+      "sourceOrEvidence": "IEEE-754"
+    }
+  ],
+  "implementationFacts": [
+    "__shfl_down_sync has a 32-lane butterfly pattern reaching a warp-level scalar in 5 rounds.",
+    "Modern kernels also use __reduce_add_sync (sm_80+) or cooperative_groups reduce for the same effect."
+  ],
+  "performanceScenarios": [
+    "Softmax, LayerNorm, RMSNorm, and dot products all rely on this pattern for per-row reduction."
+  ],
+  "versionSensitivity": "stable_principle"
+}

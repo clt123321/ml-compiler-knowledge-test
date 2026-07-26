@@ -1,0 +1,48 @@
+{
+  "questionId": "K-AOT-004",
+  "learningObjective": "Compare AOT artifact deployment (all lowering done ahead of first invocation) with JIT compilation (lowering triggered on the first suitable call), and identify the trade-offs.",
+  "canonicalClaims": [
+    {
+      "claim": "AOT compilation produces a deployable artifact whose lowering is complete before run time, avoiding first-call warmup and removing the compiler from the deployment surface; the trade-off is that shape/dtype/hardware assumptions are baked in at build time. JIT compiles lazily on first call, offering shape flexibility at the cost of first-call latency and a compiler dependency at run time.",
+      "conditions": [
+        "Both stacks emit comparable kernels, so we are contrasting compilation phase not codegen quality.",
+        "Deployment target has a well-defined hardware/driver profile."
+      ],
+      "nonImplications": [
+        "Does not imply AOT cannot support dynamic shapes; some stacks support ranges or optimization profiles.",
+        "Does not imply JIT re-optimizes on every call; JIT typically caches compiled artifacts per (shape, dtype, device) key."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-aoti", "locator": "AOTInductor deployment" },
+        { "ref": "DOC:trt", "locator": "TensorRT engine deployment" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "JIT is always faster at steady state because it can re-optimize per call.",
+      "errorType": "performance_confusion",
+      "whyWrong": "JIT does not re-optimize per call; it caches artifacts. At steady state an AOT artifact is typically no slower than the JIT cache hit.",
+      "sourceOrEvidence": "torch.compile caching model"
+    },
+    {
+      "claim": "AOT and JIT are indistinguishable in production.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AOT decouples the compiler from the runtime dependency; JIT requires the compiler at deployment.",
+      "sourceOrEvidence": "AOTInductor deployment story"
+    },
+    {
+      "claim": "AOT requires the source model at run time.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The whole point of AOT is that the runtime only needs the emitted artifact, not the source.",
+      "sourceOrEvidence": "AOTInductor / TensorRT deployment docs"
+    },
+    {
+      "claim": "AOT is incompatible with dynamic shapes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Modern AOT stacks (AOTInductor dynamic dims, TensorRT optimization profiles) support shape ranges within predeclared bounds.",
+      "sourceOrEvidence": "AOTInductor / TensorRT docs"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

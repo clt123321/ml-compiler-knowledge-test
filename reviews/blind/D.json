@@ -1,0 +1,1676 @@
+{
+  "module": "pytorch_compiler",
+  "code": "D",
+  "label": "PyTorch Compiler 与动态图捕获",
+  "generatedAt": "2026-07-26",
+  "count": 35,
+  "questions": [
+    {
+      "id": "D-AOT-004",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "AOTAutograd / Functionalization of in-place ops",
+      "learningObjective": "Describe how AOTAutograd's functionalization pass transforms in-place tensor mutations before TorchInductor lowering, and how external mutation semantics are preserved.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider the compiled function below with an in-place op on an input tensor `x`. Which of the following best describes how AOTAutograd/functionalization treats `x.add_(1.0)` before Inductor codegen?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    x.add_(1.0)      # in-place mutation on input\n    return x * 2.0\n\nx = torch.randn(4, device=\"cuda\", requires_grad=True)\ny = f(x)\n# After the call, the caller expects x to reflect the +1 mutation as well.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Functionalization rewrites `x.add_(1.0)` into a non-mutating `x_new = x + 1.0` in the graph; the compiled region returns the extra mutated tensor so the runtime can write it back to preserve external mutation semantics."
+        },
+        {
+          "id": "B",
+          "text": "In-place operations are always rejected by AOTAutograd and raise a runtime error at trace time when the compiled region attempts to trace any mutating aten op such as `add_`."
+        },
+        {
+          "id": "C",
+          "text": "Inductor emits two kernels: one for `add_` (mutating the buffer in place) and one for the multiply; functionalization is applied only to reductions rather than to elementwise mutations, so this in-place op survives to codegen."
+        },
+        {
+          "id": "D",
+          "text": "In-place operations bypass the compilation stack entirely; the compiled `f` calls the eager `torch.add_` at runtime and skips AOTAutograd for that op while the rest of the graph is still traced through Inductor."
+        }
+      ],
+      "assumptions": [
+        "`x` is an input to the compiled region (its mutation is externally observable).",
+        "AOTAutograd successfully traces the function into an FX graph."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-AOTAG-011",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "AOTAutograd joint forward+backward graph",
+      "learningObjective": "Explain what AOTAutograd captures beyond the forward graph and how the joint (forward+backward) graph is used.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider the compiled model below with backward enabled. Which statement most accurately describes what AOTAutograd captures for this program?",
+      "codeSnippet": "import torch\n\nclass M(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.w = torch.nn.Parameter(torch.randn(64, 64, device=\"cuda\"))\n    def forward(self, x):\n        return (x @ self.w).relu()\n\nmodel = M()\nmodel_c = torch.compile(model)\n\nx = torch.randn(32, 64, device=\"cuda\", requires_grad=True)\ny = model_c(x)\ny.sum().backward()\n\n# Under the hood, AOTAutograd traces a joint forward+backward graph so that the\n# backward can be compiled together with the forward.",
+      "options": [
+        {
+          "id": "A",
+          "text": "AOTAutograd is a runtime scheduler that decides which ops run on GPU vs. CPU; it does not produce any graph and it is orthogonal to torch.compile. Under this reading, AOTAutograd is a runtime scheduler that decides which ops run on GPU vs. CPU based on live device pressure; it does not produce any graph and is orthogonal to torch.compile's own compilation pipeline."
+        },
+        {
+          "id": "B",
+          "text": "AOTAutograd traces only the forward graph; the backward is always executed eagerly through PyTorch's autograd engine op-by-op, and no fused/compiled backward is produced."
+        },
+        {
+          "id": "C",
+          "text": "AOTAutograd captures a joint forward+backward graph by re-running the forward under a tracer that records both directions, then partitions it into forward and backward subgraphs handed to Inductor for compilation. In this framing, AOTAutograd traces only the forward graph; the backward is always executed eagerly through PyTorch's autograd engine op-by-op, and no fused or compiled backward is produced under any torch.compile configuration."
+        },
+        {
+          "id": "D",
+          "text": "AOTAutograd rewrites the model source code by parsing Python AST and inserting `backward()` calls; the resulting model can no longer be used in eager mode without recompilation. In this account, AOTAutograd rewrites the model's Python source code by parsing the AST and inserting `backward()` calls at each aten op; the resulting rewritten model can no longer be used in eager mode without a subsequent recompilation step."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 semantics.",
+        "The compiled function is called in a context where autograd is active."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-AOTI-020",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "AOTInductor C++ artifact",
+      "learningObjective": "Explain what AOTInductor produces as an artifact and how it is loaded/executed at deployment.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement most accurately describes what AOTInductor produces and how it is deployed?",
+      "options": [
+        {
+          "id": "A",
+          "text": "AOTInductor is a runtime autotuner that JITs a Triton kernel on the first call inside the Python process; there is no ahead-of-time artifact, and each Python process re-compiles from scratch. In this reading, AOTInductor is a runtime autotuner that JITs a Triton kernel on the first call inside the Python process; there is no ahead-of-time artifact and each fresh Python process re-compiles from scratch when the compiled function is first invoked."
+        },
+        {
+          "id": "B",
+          "text": "AOTInductor takes an ExportedProgram and produces an ahead-of-time compiled shared library (with the model's kernels and a small runtime wrapper) that can be loaded and executed from a native C++/Python runtime without repeating the compile step."
+        },
+        {
+          "id": "C",
+          "text": "AOTInductor produces a Python-only pickle containing the FX graph; loading requires a full PyTorch install and re-runs the entire torch.compile pipeline before the first execution. Under this framing, AOTInductor produces a Python-only pickle containing the FX graph and per-op metadata; loading the pickle requires a full PyTorch install and re-runs the entire torch.compile pipeline (Dynamo + AOTAutograd + Inductor) before the first execution."
+        },
+        {
+          "id": "D",
+          "text": "AOTInductor is a graph optimizer that rewrites the FX graph in place and returns nothing; users must still invoke torch.compile on the rewritten graph to obtain executable code. In this account, AOTInductor is a graph optimizer that rewrites the FX graph in place and returns nothing executable; users must still invoke torch.compile on the rewritten graph to actually obtain a compiled callable, so AOTInductor by itself never produces code."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 semantics.",
+        "The user has already produced a valid ExportedProgram."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-AOTIRT-021",
+      "type": "multiple",
+      "module": "pytorch_compiler",
+      "subtopic": "AOTInductor runtime behavior on shape mismatch",
+      "learningObjective": "Understand how AOTInductor artifacts behave at runtime with respect to dynamic shapes and shape mismatch.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "An AOTInductor artifact was produced from an ExportedProgram with sequence dim declared dynamic via `Dim(\"seq\", min=1, max=8192)`. Which statements about its runtime behavior are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Loading and running the artifact does not re-invoke torch.compile; the shared library already contains compiled kernels and a small runtime wrapper."
+        },
+        {
+          "id": "B",
+          "text": "Calling the artifact with a sequence length outside the declared `[1, 8192]` range is expected to raise a shape-constraint error at runtime rather than to trigger recompilation."
+        },
+        {
+          "id": "C",
+          "text": "Calling the artifact with a sequence length inside the declared range but with a different device (e.g., CPU when the artifact was compiled for CUDA) transparently migrates execution to the runtime device with a small performance penalty."
+        },
+        {
+          "id": "D",
+          "text": "AOTInductor artifacts require dimensions not declared dynamic to match the export-time example exactly at runtime."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 AOTInductor semantics.",
+        "The user supplied the necessary Dim constraints at export time; other dims stay static."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-AUTODYN-009",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Automatic dynamic shape promotion",
+      "learningObjective": "Interpret a recompile log showing automatic dynamic promotion after repeated shape-triggered recompilations.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A user compiles a function with defaults and calls it with sequence lengths 128, 256, 512, 1024, ...; the recompile log shows several size-specialized recompiles, then a message that a dim was auto-promoted to dynamic and no further recompiles for that dim occur. Which reading is most accurate?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    return x @ x.T\n\nfor n in [128, 256, 512, 1024, 2048]:\n    x = torch.randn(n, 64, device=\"cuda\")\n    f(x)\n\n# TORCH_LOGS=\"recompiles\" (excerpt):\n#   Recompiling ... size 128 ...\n#   Recompiling ... size 256 ...\n#   automatic_dynamic_shapes: dim 0 of L['x'] is marked dynamic after 3 distinct sizes\n#   (subsequent calls with new sizes reuse a symbolic-shape compilation)",
+      "profileData": "3 specialized compiles observed for sizes 128, 256, 512; from size 1024 onwards, a symbolic-shape compile is used and no further recompiles are recorded for dim 0.",
+      "options": [
+        {
+          "id": "A",
+          "text": "The log is a bug: automatic dynamic promotion does not exist. The user must always call `mark_dynamic` manually to avoid per-size recompiles. In this reading, the log excerpt is a bug caused by a stale build: automatic dynamic-shape promotion does not exist in current stable releases, and users must always call `torch._dynamo.mark_dynamic` manually on each varying dim to avoid per-size recompiles."
+        },
+        {
+          "id": "B",
+          "text": "Automatic dynamic promotion is a Dynamo mechanism: after observing enough distinct sizes for a dim, the dim is marked dynamic and re-traced symbolically, so subsequent new sizes hit the symbolic-shape compilation without further recompiles for that dim."
+        },
+        {
+          "id": "C",
+          "text": "Automatic promotion re-traces the function only on failure and then falls back to eager mode for that dim; there is no symbolic-shape compilation involved and the second half of the log indicates eager execution. Under this framing, automatic promotion re-traces the function only on failure and then falls back to eager mode for that dim; there is no symbolic-shape compilation involved, and the second half of the log actually indicates eager execution taking over for that input."
+        },
+        {
+          "id": "D",
+          "text": "Automatic promotion turns the shape into a runtime kernel parameter of the initial specialized kernel; the specialized kernel is reused with a shape argument, bypassing recompilation entirely without any symbolic tracing. In this account, automatic promotion turns the dim into a runtime kernel parameter of the initial specialized kernel; the specialized kernel is reused with a runtime shape argument, bypassing recompilation entirely without invoking any symbolic-shape tracing pipeline."
+        }
+      ],
+      "assumptions": [
+        "Default settings (no explicit `dynamic=True/False` override).",
+        "PyTorch 2.3 ~ 2.5 defaults; earlier or later versions may tune thresholds."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-BREAK-005",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Data-dependent control flow / Graph break rewrite",
+      "learningObjective": "Diagnose a graph break caused by data-dependent control flow on tensor values and identify a Dynamo-tracable rewrite.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The following function produces a graph-break log when compiled. Which option both correctly identifies the cause and gives a valid Dynamo-tracable rewrite?",
+      "codeSnippet": "import torch\n\n@torch.compile(fullgraph=False)\ndef f(x):\n    if x.sum() > 0:\n        return x * 2.0\n    else:\n        return x * 3.0\n\n# TORCH_LOGS=\"graph_breaks\" (excerpt):\n#   Graph break in user code at .../f\n#   Reason: Data-dependent branching on tensor value\n#            (implicit .__bool__() on a 0-D tensor produced by comparison).\n#   Consider replacing with torch.where(cond, a, b) or torch.cond(cond, fn_true, fn_false).",
+      "options": [
+        {
+          "id": "A",
+          "text": "The issue is that `x.sum()` is not supported by Dynamo; replacing it with `x.mean()` avoids the graph break because mean is treated as a supported reduction while sum is a fallback op."
+        },
+        {
+          "id": "B",
+          "text": "`fullgraph=False` disables all graph breaks; the log must be stale and can be ignored, since with graph breaks disabled Dynamo produces a single fused trace for the entire function regardless of the branch."
+        },
+        {
+          "id": "C",
+          "text": "The branch condition `x.sum() > 0` yields a tensor whose `__bool__` is runtime-dependent; rewrite with `torch.where(x.sum() > 0, x*2.0, x*3.0)` to keep both arms in one graph."
+        },
+        {
+          "id": "D",
+          "text": "Using `bool()` explicitly (e.g., `if bool(x.sum() > 0):`) forces Dynamo to specialize the condition to a compile-time constant, eliminating the graph break by informing the tracer that the value is a Python scalar."
+        }
+      ],
+      "assumptions": [
+        "Both arms of the branch have the same output shape and dtype (needed for `torch.where`).",
+        "The user cares primarily about eliminating the graph break, not preserving lazy evaluation of the un-taken arm."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-BWSHAPE-033",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Backward graph shapes / joint graph partitioning",
+      "learningObjective": "Reason about how AOTAutograd's partitioner divides the joint (fw+bw) graph and what activations get materialized between forward and backward.",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider the compiled model below (a linear + activation + linear). Which best describes how AOTAutograd's partitioner typically decides which forward-pass activations to save for the backward and which to recompute?",
+      "codeSnippet": "import torch\n\nclass M(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.a = torch.nn.Linear(64, 128)\n        self.b = torch.nn.Linear(128, 64)\n    def forward(self, x):\n        return self.b(self.a(x).relu())\n\nmodel_c = torch.compile(M())\nx = torch.randn(32, 64, device=\"cuda\", requires_grad=True)\ny = model_c(x).sum()\ny.backward()",
+      "options": [
+        {
+          "id": "A",
+          "text": "The partitioner always saves every intermediate activation produced by the forward, because the backward needs each intermediate; recompute is not supported by AOTAutograd."
+        },
+        {
+          "id": "B",
+          "text": "The partitioner is disabled by default; users must invoke it manually via `torch._functorch.min_cut_partitioner` to obtain a compiled backward. In this framing, the partitioner always saves every intermediate activation produced by the forward pass, because the backward needs each one to compute gradients; recompute is not a feature that AOTAutograd exposes to Inductor in current releases."
+        },
+        {
+          "id": "C",
+          "text": "The partitioner runs a min-cut / heuristic algorithm on the joint FX graph to decide which tensors to save as activations vs. recompute in the backward. Cheap-to-recompute values may be recomputed to reduce activation memory, while expensive-to-recompute values are saved. It is a compile-time decision, not a per-call runtime decision. In this account, the partitioner runs at each call site to observe runtime memory usage and decides on the fly whether to save or recompute each activation; this is why AOTAutograd is documented to introduce variable per-call latency across a training loop."
+        },
+        {
+          "id": "D",
+          "text": "The partitioner runs at each call site to observe runtime memory usage and decides on the fly whether to save or recompute; this is why AOTAutograd introduces variable per-call latency. Under this reading, the partitioner is disabled by default and users must invoke it manually via `torch._functorch.min_cut_partitioner` after `torch.compile` returns, otherwise the compiled backward will be structurally identical to the eager op-by-op backward."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The compiled function is called with autograd active."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-CACHE-024",
+      "type": "multiple",
+      "module": "pytorch_compiler",
+      "subtopic": "torch.compile compilation cache invalidation",
+      "learningObjective": "Identify factors that can invalidate torch.compile's compilation cache and cause re-compilation.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which of the following changes are expected to cause a torch.compile cache miss (and thus a fresh compile) rather than being served from the compilation cache? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Restarting the Python process without any persistent-cache mechanism enabled."
+        },
+        {
+          "id": "B",
+          "text": "Passing a tensor on a different device (e.g., moving from `cuda:0` to `cuda:1`, or from CUDA to CPU)."
+        },
+        {
+          "id": "C",
+          "text": "Changing the input tensor's dtype (e.g., from FP32 to FP16) between calls."
+        },
+        {
+          "id": "D",
+          "text": "Passing a tensor with the same shape, dtype, device, and stride as the previous call."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 defaults.",
+        "No persistent Inductor cache is enabled to survive across process restarts."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-COMPILET-032",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Compile time vs. steady-state performance",
+      "learningObjective": "Reason about the trade-off between torch.compile's compile-time cost and steady-state kernel performance.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A user reports that a short-running script becomes slower under `torch.compile(mode='max-autotune')` than under eager mode, while a long-running training loop with the same model becomes faster with `torch.compile`. Which is the most likely explanation?",
+      "profileData": "Short script: 5 seconds total wall time. Eager: 4.2s. torch.compile(max-autotune): 12s, of which >8s is reported as compile/autotune time; the remaining kernel time is measured at only marginally lower than eager. Long training: 30 minutes; compile/autotune time is a one-time cost early in the run; per-step kernel time is meaningfully lower than eager.",
+      "options": [
+        {
+          "id": "A",
+          "text": "The short script's runtime is dominated by torch.compile's compile-time cost (including max-autotune's kernel-selection search), which is a one-time cost amortized only over enough steps; the long training run amortizes the same cost across many steps and enjoys the steady-state speedup. Under this account, torch.compile's overhead comes from Python's GIL becoming a bottleneck under the compiler's instrumentation of every bytecode; long-running loops eventually release the GIL through checkpointing hooks and thereby amortize the observed slowdown."
+        },
+        {
+          "id": "B",
+          "text": "Max-autotune generates numerically less accurate kernels; the short script exposes this because there is no re-normalization phase, and the long run averages it out to appear faster. Under this framing, torch.compile always adds per-call runtime overhead — several milliseconds per invocation for guard checks and dispatch bookkeeping — so short scripts are guaranteed to be slower; long runs eventually win only because CUDA hardware gets warmer."
+        },
+        {
+          "id": "C",
+          "text": "The short script observes overhead from Python's GIL becoming a bottleneck under torch.compile; long runs release the GIL and thereby become faster. In this reading, max-autotune sacrifices numerical accuracy in the generated Triton kernels to gain speed; the short script exposes this because there is no re-normalization phase to hide the drift, while long training runs average it out and appear faster on aggregate."
+        },
+        {
+          "id": "D",
+          "text": "The short script must be slower because torch.compile always adds runtime overhead per call; long runs are faster only because CUDA gets warmer over time."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The runtime measurement includes compile time in the short-script case."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-COND-027",
+      "type": "multiple",
+      "module": "pytorch_compiler",
+      "subtopic": "torch.cond vs. torch.where",
+      "learningObjective": "Distinguish `torch.cond` from `torch.where` and identify when each is the appropriate rewrite for a data-dependent branch.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "You have a data-dependent branch on a tensor value that causes a graph break. When choosing between `torch.where(cond, a, b)` and `torch.cond(cond, fn_true, fn_false, operands)` as a rewrite inside a compiled region, which statements are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both are compiler-friendly under torch.compile: `torch.where` is expressible in Inductor as pointwise select; `torch.cond` is captured as a control-flow op and preserved through torch.export as well."
+        },
+        {
+          "id": "B",
+          "text": "Only `torch.cond` preserves the correct data-dependent semantics; `torch.where` is semantically incorrect for any data-dependent selection and should never be used to replace an `if` branch."
+        },
+        {
+          "id": "C",
+          "text": "`torch.where` evaluates both branches (elementwise or shape-compatible tensors) and selects per element; it is a good rewrite when both arms are cheap and produce compatible-shape outputs."
+        },
+        {
+          "id": "D",
+          "text": "`torch.cond` captures each arm as a subgraph (only one arm runs at runtime), which is preferable when arms are expensive or have side effects that should not both execute."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with torch.cond support in the export IR.",
+        "The two arms produce shape-compatible outputs."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-CPPBACK-017",
+      "type": "multiple",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchInductor CPU C++ backend",
+      "learningObjective": "Identify true statements about TorchInductor's CPU C++ backend and how it differs from the CUDA Triton backend.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statements about TorchInductor's CPU C++ backend are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Selecting the CPU backend is done automatically based on tensor device; a CPU-tensor input to a compiled function is compiled via the C++ backend, while a CUDA-tensor input goes to the Triton backend."
+        },
+        {
+          "id": "B",
+          "text": "Inductor's CPU backend transparently offloads all reductions to CUDA regardless of the input tensor device; only pointwise ops run on CPU. In this reading, Inductor's CPU backend transparently offloads any reduction op to CUDA regardless of the input tensor's device; only pointwise ops actually execute on CPU, and mixed workloads implicitly cross device boundaries during compilation."
+        },
+        {
+          "id": "C",
+          "text": "Inductor's default CPU backend generates C++ code (using OpenMP for parallel loops and CPU vector intrinsics for vectorization) and compiles it via a system compiler, rather than emitting Triton, which is CUDA/GPU-oriented."
+        },
+        {
+          "id": "D",
+          "text": "The CPU C++ backend and the CUDA Triton backend share the same graph-level IR (FX + Inductor lowerings) but diverge at the codegen stage, targeting different kernel languages."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 defaults.",
+        "The user has not manually forced a backend override."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-CUSTOM-022",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Custom op registration + meta implementation",
+      "learningObjective": "Understand why a custom operator must provide a meta / FakeTensor implementation to be compatible with torch.compile.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A user registers a custom CUDA kernel via `torch.library` and calls it from a `torch.compile`d function. Which statement most accurately explains what the 'meta' (aka FakeTensor) implementation is for?",
+      "codeSnippet": "import torch\nfrom torch import Tensor\nfrom torch.library import Library, impl\n\nmy_lib = Library(\"mylib\", \"DEF\")\nmy_lib.define(\"my_gemm(Tensor a, Tensor b) -> Tensor\")\n\n@impl(my_lib, \"my_gemm\", \"CUDA\")\ndef my_gemm_cuda(a: Tensor, b: Tensor) -> Tensor:\n    # Real GEMM launched here (details omitted)\n    return torch.matmul(a, b)\n\n@impl(my_lib, \"my_gemm\", \"Meta\")\ndef my_gemm_meta(a: Tensor, b: Tensor) -> Tensor:\n    # Returns a fake tensor with the correct output shape/dtype; no data\n    return torch.empty(a.shape[0], b.shape[1], dtype=a.dtype, device=\"meta\")\n\n@torch.compile\ndef f(x, w):\n    return torch.ops.mylib.my_gemm(x, w)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The Meta implementation is required by Inductor to convert the CUDA kernel into Triton code; without it, Inductor recompiles the CUDA implementation into a Triton equivalent from LLVM IR at trace time. In this reading, the Meta implementation is required by Inductor to convert the CUDA kernel into a Triton equivalent; without it, Inductor recompiles the CUDA implementation into a Triton kernel from LLVM IR at trace time using a source-to-source translator."
+        },
+        {
+          "id": "B",
+          "text": "The Meta implementation lets Dynamo / AOTAutograd trace the custom op without actually executing it: it propagates shape, dtype, and device without touching real data, enabling FakeTensor propagation and downstream analysis (shape guards, fusion boundaries)."
+        },
+        {
+          "id": "C",
+          "text": "The Meta implementation only matters for TorchScript export; torch.compile does not use it and instead runs the CUDA kernel eagerly during tracing. Under this framing, the Meta implementation matters only for TorchScript export; torch.compile does not consult it during tracing and instead runs the actual CUDA kernel eagerly to observe the concrete output shape and dtype for each traced call."
+        },
+        {
+          "id": "D",
+          "text": "Meta implementations are deprecated in favor of DispatchKey::CompositeExplicitAutograd; providing one causes torch.compile to skip the CUDA implementation entirely at runtime. In this account, Meta implementations are deprecated in favor of `DispatchKey::CompositeExplicitAutograd`; providing one now causes torch.compile to skip the CUDA implementation entirely at runtime, silently falling back to the composite ATen decomposition."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with torch.library API.",
+        "The custom op is called only through torch.ops.mylib.my_gemm (not via Python-level dispatch that would bypass the meta impl)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-DECOMP-012",
+      "type": "multiple",
+      "module": "pytorch_compiler",
+      "subtopic": "Decomposition of ATen ops in torch.compile",
+      "learningObjective": "Identify the purpose and effect of ATen op decomposition in PyTorch 2's compile stack.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "PyTorch 2's compile stack applies 'decompositions' that rewrite higher-level ATen ops into simpler primitive ops before Inductor codegen. Which statements about this decomposition are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Decomposition is performed in the AOTAutograd/pre-Inductor stage over the traced FX graph, before Inductor's scheduler and codegen phases."
+        },
+        {
+          "id": "B",
+          "text": "Every ATen op is always fully decomposed to elementwise ops; there are no exceptions such as `matmul`, `convolution`, or attention that remain opaque to Inductor."
+        },
+        {
+          "id": "C",
+          "text": "Decomposition rules are user-extensible: users can register a decomposition for a custom op to make it lowerable by Inductor without changing Inductor internals."
+        },
+        {
+          "id": "D",
+          "text": "Decomposition reduces the effective op vocabulary Inductor must generate code for; composite ops (e.g., `nn.functional.layer_norm`) are rewritten into simpler primitives (mul, add, sqrt, mean, etc.)."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 defaults.",
+        "The user has not overridden the decomposition table with an incompatible custom set."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-DYNAMIC-002",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Dynamic shape / Guard failure / Recompilation",
+      "learningObjective": "Read a torch.compile recompilation log, identify the guard that failed, and choose the right knob (dynamic shapes) to prevent shape-triggered recompilation.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A user compiles the following function with the default `torch.compile(...)` and observes the `TORCH_LOGS=\"recompiles\"` output shown. Which diagnosis and fix pair is best supported?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    return x.sin() + x.cos()\n\nfor n in [128, 256, 512, 128, 256, 512]:\n    x = torch.randn(n, device=\"cuda\")\n    f(x)\n\n# TORCH_LOGS=\"recompiles\" (excerpt):\n#   Recompiling function f\n#     triggered by the following guard failure(s):\n#       - L['x'].size()[0] == 128\n#   Recompiling function f\n#     triggered by the following guard failure(s):\n#       - L['x'].size()[0] == 256\n#   (no further recompiles observed after the third distinct size)",
+      "profileData": "Recompile events: 3 distinct compiled variants observed (one per unique input first-dim size); subsequent same-size calls hit the compilation cache.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Recompilation is triggered only when the tensor dtype changes; the shape is treated dynamically by default in current PyTorch releases, so the observed guards on `size()[0]` must be from a bug in the TORCH_LOGS reporting layer."
+        },
+        {
+          "id": "B",
+          "text": "`x.sin() + x.cos()` cannot be traced by Dynamo; the log actually indicates a graph break rather than a recompilation, and the `guard failure` label is a misnomer for the same underlying event."
+        },
+        {
+          "id": "C",
+          "text": "Guards are only inserted on strides, not on shapes, in current PyTorch releases; the recompiles observed here are therefore unexpected and indicate a version incompatibility between the compile cache and the runtime."
+        },
+        {
+          "id": "D",
+          "text": "Default `torch.compile` installs shape guards specializing on leading dims; each new size fails a guard and triggers a fresh compile. `dynamic=True` compiles symbolically so one graph serves multiple sizes."
+        }
+      ],
+      "assumptions": [
+        "The compile-cache is not being cleared between iterations.",
+        "The default torch.compile mode is used (no automatic dynamic promotion overrides changing this behavior in the user's version)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-DYNAMO-001",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchDynamo / Graph break on Python side effect",
+      "learningObjective": "Diagnose a TorchDynamo graph break caused by a Python-object side effect and describe the resulting graph-split behavior.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Given the following code and TorchDynamo log fragment, what is the most accurate description of the direct cause of the graph break and its immediate consequence?",
+      "codeSnippet": "import torch\n\nclass Ctx:\n    def __init__(self):\n        self.count = 0\n\n@torch.compile(fullgraph=False)\ndef f(x, ctx):\n    y = torch.relu(x)\n    ctx.count += 1     # Python attribute mutation on a non-tensor object\n    z = y * y\n    return z\n\n# TORCH_LOGS=\"graph_breaks\" output (excerpt):\n#   Graph break in user code at .../example.py:9\n#   Reason: STORE_ATTR on a Python object with side effects (ctx.count)\n#   Torch-Dynamo cannot trace mutation of arbitrary user objects; splitting graph here.",
+      "profileData": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "The `+=` operator is unsupported on Python integers under Dynamo; rewriting as `ctx.count = ctx.count + 1` avoids the STORE_ATTR pathway and restores full-graph tracing across the offending line."
+        },
+        {
+          "id": "B",
+          "text": "Graph breaks only occur when a tensor-valued Python control-flow branch is data-dependent; a scalar attribute mutation cannot cause a graph break in any current PyTorch release, so the log entry indicates a misconfigured environment."
+        },
+        {
+          "id": "C",
+          "text": "`torch.relu` is not traceable under `fullgraph=False`; the graph break originates from `torch.relu`, not from `ctx.count`, and the log's line-number attribution is misleading due to how Dynamo reports offsets."
+        },
+        {
+          "id": "D",
+          "text": "TorchDynamo cannot trace mutations of Python attributes on arbitrary non-tensor objects; the graph splits at STORE_ATTR, `z = y * y` compiles as a separate FX subgraph, and eager Python runs the attribute update in between."
+        }
+      ],
+      "assumptions": [
+        "The `ctx` object is a regular Python class instance, not a tensor or a compiled module submodule.",
+        "`fullgraph=False` is used, so graph breaks are permitted (with `fullgraph=True`, this would raise an error instead)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-DYNKW-010",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "torch.compile(dynamic=True vs. default)",
+      "learningObjective": "Contrast `torch.compile(dynamic=True)` with the default automatic-dynamic behavior and identify their trade-offs.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which comparison between `torch.compile(dynamic=True)` and the default (`dynamic=None`) behavior is most accurate?",
+      "options": [
+        {
+          "id": "A",
+          "text": "`dynamic=True` disables all compilation and forces eager execution; the default compiles once and never recompiles regardless of input shapes. In this account, `dynamic=True` disables all compilation and forces the wrapped function into eager execution for every call; the default mode compiles the function once on the first call and never recompiles it again regardless of subsequent input shapes."
+        },
+        {
+          "id": "B",
+          "text": "`dynamic=True` is a runtime flag that only affects the compile cache directory; the traced graph is identical to the default in every case, and no symbolic-shape reasoning is performed. Under this framing, `dynamic=True` is a runtime flag that only affects the compile cache's directory path on disk; the traced graph is otherwise identical to the default in every case, and no symbolic-shape reasoning is performed by the tracer under either setting."
+        },
+        {
+          "id": "C",
+          "text": "`dynamic=True` forces the tracer to treat as many dims as possible as symbolic from the very first compile; the default may first specialize on observed shapes and only promote to dynamic after several distinct sizes are seen, saving some early compile cost but risking more early recompiles."
+        },
+        {
+          "id": "D",
+          "text": "`dynamic=True` and the default produce numerically different outputs because symbolic-shape kernels use lower precision to compensate for lost specialization; users must set a tolerance when comparing. Under this reading, `dynamic=True` and the default produce numerically different outputs because symbolic-shape kernels use lower precision to compensate for the lost specialization opportunities; users must therefore set a tolerance when comparing the two modes."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 semantics.",
+        "The user has not set opposite overrides via other flags."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-EXPCONS-019",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "torch.export dynamic dim constraints",
+      "learningObjective": "Read a torch.export call with explicit dynamic-dim constraints and choose the correct interpretation.",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider the export snippet below. Which best describes the exported program's accepted input space along the sequence dim?",
+      "codeSnippet": "import torch\nfrom torch.export import export, Dim\n\ndef f(x, y):\n    return x + y\n\nseq = Dim(\"seq\", min=1, max=8192)\nep = export(\n    f,\n    (torch.randn(4, 128), torch.randn(4, 128)),\n    dynamic_shapes={\n        \"x\": {1: seq},\n        \"y\": {1: seq},   # same `seq` object shared between x and y\n    },\n)\n# ep is an ExportedProgram whose graph is parameterized in a single seq symbol.",
+      "options": [
+        {
+          "id": "A",
+          "text": "The exported program accepts any pair of tensors with shape `[4, N]` and `[4, N]` for the same `N` in the range `[1, 8192]`; sharing the `seq` object across `x` and `y` enforces that both inputs' dim 1 must be equal at runtime. Under this reading, the `Dim` constraint is treated as a compile-time hint that is stripped from the graph at export completion; the exported program is fully specialized to the example shape `[4, 128]` for both inputs, and passing any other size at runtime raises an error."
+        },
+        {
+          "id": "B",
+          "text": "The `Dim` constraint is a compile-time hint that is stripped at export; the exported graph is fully specialized to the example shape `[4, 128]` for both inputs."
+        },
+        {
+          "id": "C",
+          "text": "The exported program accepts any pair of tensors with shape `[4, N1]` and `[4, N2]` independently within `[1, 8192]`; sharing the same `Dim` object is a naming convention only and does not constrain runtime equality."
+        },
+        {
+          "id": "D",
+          "text": "The exported program accepts arbitrary shapes for both inputs regardless of the `Dim` constraints because export ignores dynamic_shapes when both example inputs are provided. In this account, the exported program accepts arbitrary shapes for both inputs regardless of the `Dim` constraints, because `export` ignores its `dynamic_shapes` argument whenever both example inputs are provided as tensors rather than as shape specs."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 export API.",
+        "The Dim object's min/max bounds are consistent with the example inputs."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-EXPORT-018",
+      "type": "multiple",
+      "module": "pytorch_compiler",
+      "subtopic": "torch.export produces an ExportedProgram",
+      "learningObjective": "Identify true properties of `torch.export` and the `ExportedProgram` artifact it produces.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statements about `torch.export` and the `ExportedProgram` it produces are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "`torch.export` supports explicit dynamic shape constraints via `Dim` objects passed through `dynamic_shapes`, allowing the exported graph to accept a range of shapes. In this reading, `torch.export` is a deprecated alias for `torch.jit.trace` retained purely for backward compatibility; the two APIs produce identical `TorchScript` artifacts under the hood, and consumers of the resulting graph cannot distinguish which entry point was called."
+        },
+        {
+          "id": "B",
+          "text": "`torch.export` requires a fully captured graph (no graph breaks) — semantically equivalent to `torch.compile(fullgraph=True)` — and returns an `ExportedProgram` containing the FX graph, parameter/buffer metadata, and the pytree signature."
+        },
+        {
+          "id": "C",
+          "text": "`torch.export` is a deprecated alias for `torch.jit.trace`; the two APIs produce identical `TorchScript` artifacts under the hood."
+        },
+        {
+          "id": "D",
+          "text": "`torch.export` produces a serializable artifact intended to be consumed by downstream compilers/runtimes (e.g., AOTInductor, other backends), independent of the calling Python process."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 defaults.",
+        "The model can be traced without graph breaks (or the user has provided workarounds like `torch.cond`)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-FAKE-026",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "FakeTensor semantics",
+      "learningObjective": "Define what a FakeTensor is in PyTorch 2 and describe its role during tracing.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement most precisely defines a FakeTensor and its role in PyTorch 2?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A FakeTensor is a tensor whose data buffer is entirely on GPU and whose values are randomized at construction; the tracer uses them to sanity-check kernel outputs during tracing. In this account, a FakeTensor is a tensor whose data buffer is entirely allocated on GPU and whose values are randomized at construction; the tracer uses these random values to sanity-check kernel outputs during tracing and compares them against a reference."
+        },
+        {
+          "id": "B",
+          "text": "A FakeTensor is a tensor-like object that carries shape, dtype, device, and stride metadata without a real data buffer; the tracer runs ATen ops symbolically on FakeTensors to propagate metadata through the traced graph without executing real kernels."
+        },
+        {
+          "id": "C",
+          "text": "A FakeTensor is a placeholder inserted by torch.jit.script when it cannot infer a Python type; it is a legacy concept and unrelated to torch.compile. Under this framing, a FakeTensor is a placeholder object inserted by torch.jit.script whenever it cannot infer a concrete Python type for a value; it is a legacy TorchScript concept and is unrelated to torch.compile's tracing pipeline in current releases."
+        },
+        {
+          "id": "D",
+          "text": "A FakeTensor is a tensor stored on the CPU that mirrors a GPU tensor for debugging; TorchDynamo compares real and fake tensor outputs after each op to detect numerical drift. Under this reading, a FakeTensor is a tensor stored on the CPU that mirrors a GPU tensor for debugging; TorchDynamo compares the real GPU output against the fake CPU output after each op to detect numerical drift and flag potentially incorrect kernels."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-FALLBACK-025",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Eager fallback / ATen fallback for unsupported ops",
+      "learningObjective": "Explain how TorchInductor handles an op that has no direct lowering (falls back to the ATen implementation) and what that means for kernel structure.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "In the following compiled function, `weird_op` has no Inductor lowering but has a CUDA implementation in ATen. Which statement best describes what appears in the emitted code?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    a = x * 2.0\n    b = torch.ops.aten.weird_op(a)   # no Inductor lowering; ATen CUDA impl exists\n    c = b + 1.0\n    return c\n\n# Inductor generates: pointwise Triton kernel for (x * 2.0), an ATen call for weird_op,\n# then another pointwise Triton kernel for (+ 1.0).",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because `weird_op` has no Inductor lowering, the entire compiled function silently falls back to eager mode; no Triton kernel is generated even for `x*2` or `b+1`. In this framing, because `weird_op` has no Inductor lowering, the entire compiled function silently falls back to eager mode for every call; no Triton kernel is generated even for the pointwise ops (`x*2` and `b+1`) that surround the opaque op."
+        },
+        {
+          "id": "B",
+          "text": "TorchInductor emits an ATen op fallback (a call to the existing CUDA kernel via the wrapper code) at the position of `weird_op`, splitting the fused Triton chain into two pointwise kernels around the fallback. This preserves correctness with a fusion boundary imposed by the opaque op."
+        },
+        {
+          "id": "C",
+          "text": "TorchInductor recompiles `weird_op` from its CUDA source into Triton at trace time using a source-to-source translator; the whole chain becomes one fused Triton kernel. Under this reading, TorchInductor recompiles `weird_op` from its CUDA source into a Triton equivalent at trace time using a built-in source-to-source translator; the whole chain therefore becomes a single fused Triton kernel with no fusion boundary at the opaque op."
+        },
+        {
+          "id": "D",
+          "text": "The presence of an ATen-only op forces TorchInductor to inline the CUDA kernel's PTX inside a single Triton kernel, achieving full fusion by concatenating PTX sections. In this account, the presence of an ATen-only op forces TorchInductor to inline the CUDA kernel's PTX inside a single Triton kernel, achieving full fusion by concatenating PTX sections generated from the surrounding Triton codegen and the ATen kernel's device code."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 default Inductor behavior.",
+        "`weird_op` has a valid ATen CUDA implementation and meta impl."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-FULL-028",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "fullgraph=True error on graph break",
+      "learningObjective": "Predict the behavior of `torch.compile(fullgraph=True)` when the traced code triggers a graph break.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The following compiled function calls `print` inside the region. When compiled with `fullgraph=True`, what happens?",
+      "codeSnippet": "import torch\n\n@torch.compile(fullgraph=True)\ndef f(x):\n    print(\"debug\")            # print is a graph-break trigger\n    return x * 2.0\n\nx = torch.randn(4, device=\"cuda\")\ny = f(x)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The function compiles silently and runs correctly: `fullgraph=True` disables graph breaks, so print is either traced or ignored, and the compiled kernel is emitted normally."
+        },
+        {
+          "id": "B",
+          "text": "TorchDynamo raises an error at call time (typically `torch._dynamo.exc.Unsupported` or a similar exception) reporting the graph break; `fullgraph=True` turns graph breaks into errors instead of splitting the graph."
+        },
+        {
+          "id": "C",
+          "text": "The function compiles into two subgraphs joined by an eager print step; `fullgraph=True` produces the same behavior as `fullgraph=False` but with more verbose logging around the break."
+        },
+        {
+          "id": "D",
+          "text": "The function runs in eager mode fully; `fullgraph=True` acts as a compile flag that requests a fully compiled graph but transparently falls back to eager when a graph break would occur."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 defaults.",
+        "The user has not registered a special hook that suppresses graph-break exceptions."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-FUNCT-013",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Functionalization of view + mutation",
+      "learningObjective": "Reason about how functionalization treats an in-place update on a view (aliased mutation).",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The compiled function below mutates a view of `x`. Which best describes how functionalization handles the aliased mutation before Inductor codegen?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    # x is a compiled-region input; v is a view aliased with x\n    v = x[:, 0:4]\n    v.add_(1.0)                      # in-place on the view -> mutates the underlying storage of x\n    return x.sum()\n\nx = torch.zeros(8, 8, device=\"cuda\")\ny = f(x)\n# After the call, x reflects the +1 written into columns 0..3.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Functionalization models the view's mutation as an update of the underlying tensor: it produces an SSA value `x_new = torch.ops.aten.select_scatter_or_slice_scatter(x, v_new)` and threads `x_new` through subsequent ops; the compiled region returns the mutated `x` so runtime write-back preserves external semantics."
+        },
+        {
+          "id": "B",
+          "text": "Functionalization pretends the view `v` is an independent tensor, applies `add_` to it, and discards the mutation; downstream ops see the original `x`, so the returned sum reflects the pre-mutation value. Under this reading, functionalization pretends the view `v` is an independent tensor with its own storage, applies `add_` to it in a scratch buffer, and discards the resulting mutation; downstream ops see the original untouched `x`, so the returned sum reflects the pre-mutation value."
+        },
+        {
+          "id": "C",
+          "text": "Functionalization refuses to compile any function that mutates a view of an input tensor; the compile call raises an error at trace time and the user must rewrite to functional form manually. In this account, functionalization refuses to compile any function that mutates a view of an input tensor; the `torch.compile` call raises an exception at trace time, and the user must manually rewrite the pattern into a functional form before compilation succeeds."
+        },
+        {
+          "id": "D",
+          "text": "Functionalization inserts a Python-level lock around the mutation and executes it in eager mode outside the compiled region; the rest of the graph is unaffected but a graph break is reported at the `add_` site. Under this framing, functionalization inserts a Python-level lock around the offending mutation and executes it in eager mode outside the compiled region; the rest of the graph is otherwise unaffected, but a graph break is reported in the log at the site of the `add_` call."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with AOTAutograd functionalization enabled.",
+        "The view is a valid slice with statically analyzable bounds."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-FX-035",
+      "type": "multiple",
+      "module": "pytorch_compiler",
+      "subtopic": "FX Graph structure",
+      "learningObjective": "Identify true properties of the FX Graph produced by TorchDynamo.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which of the following statements about the FX Graph produced by TorchDynamo are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The FX Graph is emitted as machine code and cannot be inspected from Python; users must attach a native debugger to view it. Under this framing, the FX Graph is emitted as machine code and cannot be inspected from Python at runtime; users who want to view the graph structure must attach a native debugger to the process and read raw compiled artifacts from Inductor's cache directory."
+        },
+        {
+          "id": "B",
+          "text": "The FX Graph is a Python-level intermediate representation with nodes for placeholders (inputs), call_function / call_method / call_module operations, and outputs; each node has an `op`, `target`, `args`, and `kwargs`."
+        },
+        {
+          "id": "C",
+          "text": "The FX Graph after AOTAutograd is typically functionalized (no in-place ops on the primary path) and expressed over ATen ops, ready for the Inductor lowering pipeline."
+        },
+        {
+          "id": "D",
+          "text": "The FX Graph is a DAG for a single forward pass through the traced function; loops present in the original Python source are unrolled or preserved as higher-order ops (e.g., `torch.cond`, `torch._higher_order_ops.while_loop`)."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The trace succeeded (no unrecoverable graph break)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-GUARD-006",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchDynamo / Stride guard causing recompilation",
+      "learningObjective": "Diagnose a stride-triggered recompilation in torch.compile by reading a recompile log and identify the correct interpretation.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The user compiles the same shape but sometimes passes a contiguous tensor and sometimes a `.transpose(0,1)` view of it. TORCH_LOGS=\"recompiles\" reports the excerpt shown. What is the most accurate reading?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    return x.sum(dim=-1)\n\nx_c = torch.randn(64, 128, device=\"cuda\")\nx_t = torch.randn(128, 64, device=\"cuda\").transpose(0, 1)  # same logical shape, different strides\n\nf(x_c)  # first compile\nf(x_t)  # triggers recompile\n\n# TORCH_LOGS=\"recompiles\" (excerpt):\n#   Recompiling function f\n#     triggered by the following guard failure(s):\n#       - tensor 'L[\\'x\\']' stride mismatch at index 0: expected 128, actual 1\n#       - tensor 'L[\\'x\\']' stride mismatch at index 1: expected 1, actual 128",
+      "profileData": "Two compiled variants observed: one specialized for contiguous stride pattern (128, 1), another for transposed stride (1, 128). No graph break was reported.",
+      "options": [
+        {
+          "id": "A",
+          "text": "The log is misattributed: a transposed view has the same physical storage as the contiguous tensor, so no stride guard should fire; the recompile must have been caused by an unrelated dtype change."
+        },
+        {
+          "id": "B",
+          "text": "The recompile is triggered by a stride guard, not a shape guard. TorchDynamo installs guards on the observed strides (in addition to shapes); a call with the same shape but different strides fails the guard and produces a new compiled variant. Under this framing, the log is misattributed: a transposed view has the same physical storage as the contiguous tensor, so no stride guard should ever fire in this scenario; the observed recompilation must have been caused by an unrelated dtype change between the calls."
+        },
+        {
+          "id": "C",
+          "text": "Recompilation only occurs on shape changes, so the observed guard failure indicates that the transposed view was silently reshaped by Dynamo before running, invalidating the compile cache. In this account, recompilation only occurs on shape changes in the input tensor, so the observed guard failure indicates that the transposed view was silently reshaped by Dynamo into a fresh tensor before running, invalidating the compile cache and forcing a re-compile."
+        },
+        {
+          "id": "D",
+          "text": "Stride guards do not exist in current PyTorch releases; the log entry is stale from a pre-2.0 debug build and can be ignored. Under this reading, stride guards do not exist in current PyTorch releases; the log entry is stale output from a pre-2.0 debug build, can be safely ignored, and the observed recompile is actually caused by an unrelated cache-key hash collision."
+        }
+      ],
+      "assumptions": [
+        "Default torch.compile mode with no mark_dynamic overrides.",
+        "Compile cache is populated by the first call."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-GUARDEXPR-034",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Guard expression on dim relations",
+      "learningObjective": "Interpret a symbolic-shape guard involving a relation between dims and identify the correct fix or diagnosis.",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The user compiles with `dynamic=True` and observes the guard message shown when they change from a divisible sequence length (64) to a non-divisible one (67). Which best interprets the guard and gives a valid remediation?",
+      "codeSnippet": "import torch\n\n@torch.compile(dynamic=True)\ndef f(x):\n    return x.view(-1, 8).sum(dim=-1)   # requires seq % 8 == 0 for the view\n\nfor n in [64, 67]:\n    x = torch.randn(n, device=\"cuda\")\n    f(x)\n\n# TORCH_LOGS=\"dynamic\" (excerpt):\n#   symbolic shape assertion: s0 % 8 == 0 was derived from `.view(-1, 8)`;\n#   guard failure: L['x'].size(0) = 67, does not satisfy s0 % 8 == 0.\n#   Recompiling with specialization or falling back to concrete-shape trace.",
+      "options": [
+        {
+          "id": "A",
+          "text": "The `.view` is unrelated to the guard; the failure is caused by `sum(dim=-1)` on a non-power-of-two length, which is a known limitation of Inductor's Triton reductions."
+        },
+        {
+          "id": "B",
+          "text": "The tracer derived a divisibility constraint (`s0 % 8 == 0`) from `.view(-1, 8)`; when a size that violates the constraint arrives, the guard fails and PyTorch either specializes on that new size or errors, depending on config. Fixes: pad the input to a multiple of 8, or rewrite the `.view` to a shape-safe form (e.g., use `.reshape` with explicit padding, or handle the tail separately). Under this account, the correct fix is to disable dynamic tracing entirely via `dynamic=False`, which bypasses divisibility constraints because the compiled kernel is specialized per observed size and therefore never derives symbolic constraints from ops like `.view`."
+        },
+        {
+          "id": "C",
+          "text": "The correct fix is to disable dynamic tracing entirely via `dynamic=False` — this bypasses divisibility constraints because the compiled kernel will be specialized to each observed size and thus does not derive symbolic constraints. In this reading, `dynamic=True` should always accept any input size unconditionally; the log line about `s0 % 8 == 0` is spurious output from an internal debugging assertion, can be safely ignored, and no code rewrite is needed to keep the compiled path stable."
+        },
+        {
+          "id": "D",
+          "text": "`dynamic=True` should always accept any size; the log is spurious and can be ignored, and no rewrite is needed. Under this framing, `.view` is unrelated to the guard message; the failure is caused by `sum(dim=-1)` on a non-power-of-two length, which is a known limitation of Inductor's Triton reductions and requires padding the reduction dim to a power of two."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with symbolic-shape tracing.",
+        "The user calls `.view(-1, 8)` on the varying-size input."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-INDUCTOR-003",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchInductor / Pointwise fusion",
+      "learningObjective": "Predict how TorchInductor fuses a chain of pointwise ops on CUDA and how many kernels the compiled function produces.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            1024,
+            1024
+          ],
+          [
+            1024,
+            1024
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the following compiled function. `x` and `y` are CUDA FP32 tensors with identical shape `[1024, 1024]` and contiguous layout. Under standard PyTorch 2.3-2.5 defaults, roughly how many CUDA kernels does the compiled version launch per call, and why?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x, y):\n    a = x * 2.0\n    b = a + y\n    c = b.relu()\n    return c\n\nx = torch.randn(1024, 1024, device=\"cuda\")\ny = torch.randn(1024, 1024, device=\"cuda\")\nout = f(x, y)  # first call warms up compilation",
+      "options": [
+        {
+          "id": "A",
+          "text": "3 kernels — one per pointwise op — because TorchInductor does not fuse pointwise ops that use different scalar constants such as `2.0` in the first mul, since constants participate in guard hashing between fusion candidates."
+        },
+        {
+          "id": "B",
+          "text": "1 kernel: mul, add, relu share an iteration space with no reduction or side effects, so Inductor emits a single fused Triton kernel."
+        },
+        {
+          "id": "C",
+          "text": "0 kernels: TorchInductor lowers pointwise ops to CPU C++ code even for CUDA inputs when they can be evaluated eagerly, and the host-side execution reads back the CUDA tensors for element-wise processing on the CPU."
+        },
+        {
+          "id": "D",
+          "text": "4 kernels: one for each of mul, add, relu, plus a separate materialization kernel to place the fused result into the output tensor because Inductor emits explicit copy kernels for aliasing safety."
+        }
+      ],
+      "assumptions": [
+        "Standard TorchInductor mode (no `mode='reduce-overhead'` CUDA Graph capture that would still emit a single kernel but replay it via graph).",
+        "Inputs are on the same CUDA device and have compatible layouts."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-MARK-007",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "torch._dynamo.mark_dynamic",
+      "learningObjective": "Understand what `torch._dynamo.mark_dynamic` does and how it interacts with recompilation.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider the following code. The intent is to compile once and reuse across several sequence lengths. Which statement best describes the behavior of `torch._dynamo.mark_dynamic`?",
+      "codeSnippet": "import torch\nimport torch._dynamo\n\n@torch.compile\ndef f(x):\n    return x.sin() + x.cos()\n\nfor n in [128, 256, 512]:\n    x = torch.randn(n, 64, device=\"cuda\")\n    torch._dynamo.mark_dynamic(x, 0)   # mark dim 0 as dynamic\n    f(x)\n\n# TORCH_LOGS=\"recompiles\" shows one compile (no recompile on the second or third call).",
+      "options": [
+        {
+          "id": "A",
+          "text": "`mark_dynamic(x, 0)` records that dim 0 of `x` should be treated as symbolic; Dynamo traces with a SymInt for that dim and installs a symbolic-shape guard, allowing multiple sizes to share the same compiled graph."
+        },
+        {
+          "id": "B",
+          "text": "`mark_dynamic(x, 0)` reshapes `x` at trace time by unsqueezing a symbolic dim; the compiled graph accepts a larger rank than the original tensor, requiring the user to also squeeze the output."
+        },
+        {
+          "id": "C",
+          "text": "`mark_dynamic` disables all guards on the tensor and replaces them with runtime shape checks written into the compiled Triton kernel; the compiled function then dynamically dispatches to different kernel variants."
+        },
+        {
+          "id": "D",
+          "text": "`mark_dynamic` is a no-op in current releases and exists only for backward compatibility with an old prototype; dynamic-shape behavior is controlled exclusively by the `dynamic=True` compile flag."
+        }
+      ],
+      "assumptions": [
+        "The user is on PyTorch 2.3 ~ 2.5 with default settings otherwise."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-MINIFIER-029",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Minifier / repro tool for torch.compile bugs",
+      "learningObjective": "Explain the purpose of TorchDynamo's minifier / repro tool.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A user hits a crash inside a compiled function and wants a minimal reproducer. Which statement best describes what TorchDynamo's minifier / repro tool does?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The minifier retries the compile with different random seeds until the crash disappears; the resulting compile config is the reproducer to share with maintainers. Under this framing, the minifier retries the failed compile with different random seeds until the crash disappears; the seed / config pair for which the failure vanished is then the reproducer that users share upstream when filing torch.compile bug reports."
+        },
+        {
+          "id": "B",
+          "text": "The minifier is a static analyzer that reads the user's Python source and highlights lines likely to cause a graph break; it does not produce a runnable reproducer."
+        },
+        {
+          "id": "C",
+          "text": "The minifier takes a failing compiled call, iteratively strips ops from the traced FX graph while checking that the failure persists, and produces a minimal graph plus a runnable script; users share that script as a reproducer for compiler-side bugs."
+        },
+        {
+          "id": "D",
+          "text": "The minifier is a runtime option that disables all compilation and runs eager mode with extra logging; the log itself is called the 'repro'. In this reading, the minifier is a runtime option that disables all compilation and runs the compiled function in eager mode with extra logging enabled; the resulting log file is what the community refers to as the 'repro', and the tool does not emit any script."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The failure is deterministic and reproducible from the traced graph."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-MODE-031",
+      "type": "multiple",
+      "module": "pytorch_compiler",
+      "subtopic": "torch.compile modes: default, reduce-overhead, max-autotune",
+      "learningObjective": "Distinguish the intent of `torch.compile` `mode` presets and identify correct behavior claims.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statements about `torch.compile` `mode` presets are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "`mode='max-autotune'` enables aggressive kernel-selection / autotuning (e.g., trying multiple Triton block configurations) at the cost of longer compilation time."
+        },
+        {
+          "id": "B",
+          "text": "The default mode is functionally different from `reduce-overhead` and `max-autotune` in what it compiles; the modes tune codegen/runtime knobs rather than changing which ops are captured."
+        },
+        {
+          "id": "C",
+          "text": "`mode='max-autotune'` is required to enable any Triton codegen; the default mode always emits pure Python fallback for CUDA tensors. Under this framing, `mode='max-autotune'` is required to enable any Triton codegen; the default mode always emits a pure Python fallback for CUDA tensors, and reduce-overhead is a legacy alias for the default mode retained for backward compatibility with older scripts."
+        },
+        {
+          "id": "D",
+          "text": "`mode='reduce-overhead'` uses CUDA Graph capture to lower per-launch dispatch and kernel-launch overhead, which is helpful for many-small-kernel workloads."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 mode-preset semantics.",
+        "CUDA tensors are used (Triton codegen path)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-MUT-023",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Mutation on a captured non-input tensor",
+      "learningObjective": "Reason about how torch.compile handles in-place mutation of an object captured from the enclosing Python scope (a non-input tensor).",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider a compiled function that mutates a tensor stored in a global list (not an input argument). Which best describes torch.compile's treatment of this pattern?",
+      "codeSnippet": "import torch\n\nbuffers = [torch.zeros(64, device=\"cuda\")]\n\n@torch.compile\ndef f(x):\n    buffers[0].add_(x)   # in-place update to a globally-referenced tensor\n    return x * 2.0\n\nx = torch.randn(64, device=\"cuda\")\nf(x)\n# The caller expects buffers[0] to accumulate x.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Torch.compile transparently supports arbitrary Python container mutations with no cost; `buffers[0].add_(x)` is compiled into the fused Triton kernel with no additional overhead and no impact on how downstream ops are compiled."
+        },
+        {
+          "id": "B",
+          "text": "This pattern raises a compile-time error: any tensor not in the function's argument list cannot be mutated inside a compiled region under any circumstances. In this framing, this pattern raises a compile-time error: any tensor not appearing in the function's explicit argument list cannot be mutated inside a compiled region under any TorchDynamo configuration, so the code as written would fail to compile."
+        },
+        {
+          "id": "C",
+          "text": "Mutation of a captured tensor is silently dropped: `buffers[0]` remains all zeros after the call because the compiled region does not have permission to write back to the outer Python scope. Under this reading, the mutation of a captured tensor is silently dropped by the compiler: `buffers[0]` remains all zeros after the call because the compiled region does not have permission to write back to the outer Python scope through the referenced list object."
+        },
+        {
+          "id": "D",
+          "text": "Mutating a Python-list-held tensor is treated as a side effect on an externally-visible object: TorchDynamo either lifts the referenced tensor into an input of the compiled region (with a write-back at the boundary) or graph-breaks around the mutation, depending on whether the list is recognized as accessible for tracing."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with default settings.",
+        "The list `buffers` is reachable to Dynamo's tracer via standard Python semantics."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-RECDIAG-030",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "Excessive recompilation diagnosis",
+      "learningObjective": "Diagnose a scenario in which torch.compile recompiles repeatedly and identify the correct remediation approach.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "A training loop shows dozens of recompiles per epoch. The user checked shapes and confirms they are constant, and the model class is not being redefined. The recompile log excerpt is shown. Which remediation is best supported by the log?",
+      "codeSnippet": "# TORCH_LOGS=\"recompiles\" (representative excerpt across iterations):\n#   Recompiling function forward\n#     triggered by the following guard failure(s):\n#       - guard on user-defined class attribute L['self'].dropout_p changed from 0.1 to 0.2\n#   ... (repeats with varying dropout_p values across steps) ...\n\n# The user sets self.dropout_p from a scheduler each step for curriculum training.\n\nimport torch\n\nclass M(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.linear = torch.nn.Linear(64, 64)\n        self.dropout_p = 0.1\n    def forward(self, x):\n        return torch.nn.functional.dropout(self.linear(x), self.dropout_p, self.training)",
+      "profileData": "Compile cache thrashing: a new compiled variant produced whenever dropout_p changes; each recompile takes seconds and dominates step time.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Increase the number of allowed recompiles via `torch._dynamo.config.cache_size_limit = 1000` and continue; the compile cache will simply grow to hold each variant."
+        },
+        {
+          "id": "B",
+          "text": "Disable torch.compile entirely with `torch.compile(mode='reduce-overhead')`, which is documented to skip Python-value guards. Under this framing, the fix is to increase the number of allowed recompiles via `torch._dynamo.config.cache_size_limit = 1000` and continue running as before; the in-memory compile cache will simply grow to hold each distinct dropout_p variant, and cache hit rate will improve."
+        },
+        {
+          "id": "C",
+          "text": "Move the varying value (`dropout_p`) out of a specialized guard by passing it as a tensor argument to the forward (e.g., `torch.tensor(dropout_p)`), so Dynamo does not specialize on its Python value; alternatively, use a control-flow op that treats it dynamically. This preserves correctness while eliminating the per-value recompiles. In this reading, the fix is to disable torch.compile entirely with `torch.compile(mode='reduce-overhead')` on this module; that mode is documented to skip Python-value guards entirely because CUDA Graph capture already re-establishes the necessary runtime invariants."
+        },
+        {
+          "id": "D",
+          "text": "Rename `dropout_p` to `_dropout_p` (underscore prefix); TorchDynamo skips guards on names starting with an underscore by convention. Under this account, the correct remediation is to rename `dropout_p` to `_dropout_p` with an underscore prefix; TorchDynamo skips installing guards on names starting with an underscore by convention, so the varying attribute would no longer participate in the compile cache key."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 defaults.",
+        "The user is willing to change the model's API slightly to accept the varying scalar as an input."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-REDUCE-014",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchInductor reduction + pointwise fusion (softmax)",
+      "learningObjective": "Predict how TorchInductor fuses a reduction chain such as a numerically stable softmax and identify the resulting kernel structure.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            8,
+            4096
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ]
+      },
+      "stem": "Consider a compiled numerically-stable softmax over the last dim of a `[8, 4096]` FP32 tensor. Which best describes the kernel structure TorchInductor typically produces on CUDA?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef sm(x):\n    m = x.max(dim=-1, keepdim=True).values\n    e = (x - m).exp()\n    s = e.sum(dim=-1, keepdim=True)\n    return e / s\n\nx = torch.randn(8, 4096, device=\"cuda\")\ny = sm(x)  # first call warms up compilation",
+      "options": [
+        {
+          "id": "A",
+          "text": "Inductor emits one kernel per line of Python (four kernels: max, sub-exp, sum, div), because each intermediate tensor is materialized and cannot be fused across reduction boundaries. In this reading, Inductor emits one Triton kernel per line of Python (four kernels: one for max, one for the sub-exp, one for the sum reduction, and one for the final division), because each intermediate tensor is materialized in HBM and cannot be fused across the reduction boundary."
+        },
+        {
+          "id": "B",
+          "text": "Inductor fuses the reduction and elementwise ops into a small number of kernels (commonly one 2-pass kernel over the last dim, or two kernels: a reduction to compute (max, sum) and a pointwise finalize), avoiding materializing the intermediate `e` tensor as a full HBM buffer when possible."
+        },
+        {
+          "id": "C",
+          "text": "Inductor cannot compile softmax and falls back to eager per-op execution because `.max(dim=-1)` returns a namedtuple (values, indices) which is not supported by the tracer. Under this framing, Inductor cannot compile softmax at all and falls back to eager per-op execution for the entire function; the underlying reason is that `.max(dim=-1)` returns a `torch.return_types.max` namedtuple containing (values, indices), which the tracer does not know how to unpack."
+        },
+        {
+          "id": "D",
+          "text": "Inductor emits a single CPU C++ kernel and marshals data from CUDA to CPU for each softmax call because reductions on the last dim are always executed on the host in current releases. In this account, Inductor emits a single CPU C++ kernel and marshals data from CUDA to CPU for each softmax call, because reductions on the last dim are always executed on the host in current releases; the round-trip is what makes softmax slower than one might expect."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with default Inductor configuration on CUDA.",
+        "No user-provided decomposition disables softmax fusion."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-SCHED-015",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchInductor scheduler across a reduction boundary",
+      "learningObjective": "Interpret an Inductor scheduler log showing that a chain broke into multiple kernels at a reduction boundary.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The Inductor scheduler log for the compiled function shows two kernels: one for the reduction and one for the pointwise chain that follows. The user expected a single fused kernel. Which diagnosis best explains why two kernels were emitted?",
+      "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    s = x.sum(dim=-1, keepdim=True)   # reduction along last dim -> shape [N, 1]\n    return x / s + 1.0                # pointwise chain reads full x and s\n\nx = torch.randn(8, 4096, device=\"cuda\")\ny = f(x)\n\n# TORCH_LOGS=\"inductor\" (schedule excerpt):\n#   fused reduction node: sum(x)\n#   pointwise chain: (x / s + 1.0)\n#   scheduler kept them separate (different iteration domains: reduction output has shape [N,1],\n#   pointwise consumes full [N, 4096])",
+      "profileData": "Two kernel launches per call: a reduction kernel and a pointwise kernel; kernel names include 'triton_red_' and 'triton_poi_' prefixes.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Inductor emits one kernel per Python-level op regardless of iteration space; the two kernels seen in the log are the elementwise multiply and add, and no reduction actually runs on GPU in this program — `x.sum` is performed on the CPU host and its result broadcast back to CUDA."
+        },
+        {
+          "id": "B",
+          "text": "The reduction consumes `x` along the last dim and produces `s` with shape `[N,1]`; the following pointwise chain consumes both the full `x` and `s`. Because the pointwise iteration space differs from the reduction's, the scheduler keeps them as two kernels: it does not perform epilogue fusion across this reduction boundary in this pattern."
+        },
+        {
+          "id": "C",
+          "text": "TorchInductor cannot fuse pointwise ops with reductions of any kind on CUDA; the split into two kernels is a hard architectural limit of the scheduler that also applies to well-known patterns like softmax and layer-norm epilogues, which is why hand-written FlashAttention kernels are still preferred in production."
+        },
+        {
+          "id": "D",
+          "text": "The two kernels come from a graph break at the `/` operator on a scalar result; the log excerpt is misleading because Inductor never sees the pointwise chain, and the second kernel shown is actually generated by eager mode after Dynamo splits the function around the division."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with default Inductor scheduler on CUDA.",
+        "No user-provided scheduler override."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-SYMINT-008",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "SymInt / symbolic integer propagation",
+      "learningObjective": "Explain what a SymInt is in PyTorch 2 and how it participates in the traced graph.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement most precisely defines the role of a SymInt in PyTorch 2's dynamic-shape support?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A SymInt is a compile-time symbolic representation of an integer whose concrete value is unknown at trace time; it lets Dynamo/AOTAutograd trace with dim expressions (e.g., `s0`, `s0*4`) that resolve to integers at runtime, avoiding shape specialization. Under this reading, a SymInt is a runtime tensor holding an integer value on the GPU device; PyTorch inserts SymInts to record shape values for autograd's backward pass, and they are only read at gradient-computation time when the backward graph runs."
+        },
+        {
+          "id": "B",
+          "text": "A SymInt is a runtime tensor holding an integer value on the GPU; PyTorch inserts SymInts to record shape values for autograd's backward pass and they are only read at gradient computation."
+        },
+        {
+          "id": "C",
+          "text": "A SymInt is a Python `int` subclass that always evaluates to the average of previously seen sizes; the tracer inserts a SymInt whenever more than three distinct sizes have been observed for a particular dim. In this framing, a SymInt is a Python `int` subclass that always evaluates to the average of previously seen sizes; the tracer inserts a SymInt for a dim whenever more than three distinct sizes have been observed for it during warm-up runs."
+        },
+        {
+          "id": "D",
+          "text": "A SymInt is a marker used by TorchInductor to force generated Triton kernels to be integer-only; kernels with floating-point compute never contain SymInts. Under this account, a SymInt is a marker used by TorchInductor to force generated Triton kernels to be integer-only; kernels whose body contains floating-point compute never contain SymInts, and this is how Inductor decides on integer vs floating-point codegen."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 semantics.",
+        "The graph is being traced with symbolic-shape support (via mark_dynamic, dynamic=True, or automatic dynamic promotion)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "D-TRITON-016",
+      "type": "single",
+      "module": "pytorch_compiler",
+      "subtopic": "TorchInductor generated Triton kernel structure",
+      "learningObjective": "Recognize the structure of a Triton kernel generated by TorchInductor for a simple pointwise operation.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any CUDA-capable",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "TorchInductor's generated Triton kernel (with `TORCH_LOGS=output_code`) for `y = x * 2 + 1` on a large 1-D tensor looks roughly like the sketch below. Which observation is most accurate about this generated code?",
+      "codeSnippet": "# TORCH_LOGS=\"output_code\" (excerpt, simplified):\nimport triton\nimport triton.language as tl\n\n@triton.jit\ndef triton_poi_fused_add_mul_0(in_ptr0, out_ptr0, xnumel, XBLOCK: tl.constexpr):\n    xoffset = tl.program_id(0) * XBLOCK\n    xindex  = xoffset + tl.arange(0, XBLOCK)[:]\n    xmask   = xindex < xnumel\n    tmp0    = tl.load(in_ptr0 + xindex, xmask)\n    tmp1    = tmp0 * 2.0\n    tmp2    = tmp1 + 1.0\n    tl.store(out_ptr0 + xindex, tmp2, xmask)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The kernel actually performs three separate GPU launches — one for load, one for arithmetic, one for store — because Triton does not support fusing arithmetic with memory ops in a single kernel."
+        },
+        {
+          "id": "B",
+          "text": "The generated kernel launches with block size `XBLOCK` per program, computes a masked load / arithmetic / masked store per element, and fuses the multiply and add into one kernel; the mask (`xindex < xnumel`) handles the tail of the tensor when `xnumel` is not a multiple of `XBLOCK`. Under this account, the kernel exits early if any element in the current block would cross the tensor boundary; the last `xnumel % XBLOCK` elements are therefore silently left unwritten in the output tensor and the caller must zero the output buffer manually before invocation."
+        },
+        {
+          "id": "C",
+          "text": "The kernel exits early if any element in the block would cross the tensor boundary; this means the last `xnumel % XBLOCK` elements are silently left unwritten and the caller must zero the output manually. In this reading, the mask (`xindex < xnumel`) is unused at runtime; Inductor emits it only for debug diagnostics and it is stripped from the compiled PTX during codegen, so no tail handling actually occurs and out-of-bounds lanes rely on undefined behavior."
+        },
+        {
+          "id": "D",
+          "text": "The mask is unused at runtime; Inductor emits it only for debug and it is stripped from the compiled PTX, so no tail handling occurs. Under this framing, the generated Triton kernel actually performs three separate GPU launches — one for the load, one for the arithmetic, and one for the store — because Triton does not support fusing memory ops and arithmetic ops in a single kernel; the excerpt is only the middle launch."
+        }
+      ],
+      "assumptions": [
+        "PyTorch 2.3 ~ 2.5 with default Inductor Triton backend on CUDA.",
+        "The tensor is 1-D and the fused op chain is pure elementwise."
+      ],
+      "version": 1
+    }
+  ]
+}

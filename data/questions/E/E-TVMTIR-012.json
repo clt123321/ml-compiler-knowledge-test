@@ -1,0 +1,94 @@
+{
+  "id": "E-TVMTIR-012",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "TVM / TensorIR PrimFunc \u2014 compute + schedule separation",
+  "learningObjective": "Explain how TensorIR represents tensor-level programs and how compute and schedule are separated.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM",
+    "frameworkVersionScope": "TVM Unity (~0.14+)",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement about TVM TensorIR PrimFunc is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "TensorIR schedule primitives are semantic transformations that may change the mathematical result of the PrimFunc; users must supply a separate golden reference to verify correctness after each schedule step."
+    },
+    {
+      "id": "B",
+      "text": "A PrimFunc is a graph-level op description without loops; all loop structure lives in Relax and is projected into PrimFunc only during code generation."
+    },
+    {
+      "id": "C",
+      "text": "A PrimFunc is a loop-level tensor program with explicit blocks, iteration variables, and buffer accesses; schedule primitives (`split`, `tile`, `bind`, `vectorize`) transform the loop structure without changing the underlying compute semantics."
+    },
+    {
+      "id": "D",
+      "text": "PrimFunc bodies are opaque Python callables that TVM's runtime interprets at execution time; TVM does not analyze or transform their internal structure at compile time."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "TensorIR PrimFunc is TVM's loop-level IR (successor to the original TVM tensor expression + TIR). It exposes explicit loops, iteration variables, and buffer accesses (via `block` constructs). Schedule primitives \u2014 `split`, `tile`, `reorder`, `parallel`, `vectorize`, `bind` to threadIdx/blockIdx, etc. \u2014 rewrite the loop structure while preserving compute semantics. This is the direct descendant of the Halide-style separation of compute and schedule.",
+  "optionExplanations": {
+    "A": "Wrong: schedule primitives are semantics-preserving by construction.",
+    "B": "Wrong: loops live in TensorIR, not Relax.",
+    "C": "Correct: TensorIR is a loop-level IR with explicit compute + schedule separation.",
+    "D": "Wrong: TVM compiles PrimFunc statically, not interprets Python at runtime."
+  },
+  "assumptions": [
+    "TensorIR as documented in TVM Unity docs.",
+    "Schedule primitives operate on the block/loop structure."
+  ],
+  "nonImplications": [
+    "Does not imply schedules cannot go wrong; a bug in the schedule primitive itself would violate this invariant, but the design intent is correctness-preserving.",
+    "Does not imply that PrimFunc cannot express dynamic shape; it can via symbolic dims."
+  ],
+  "misconceptionTags": [
+    "primfunc_graph_level_myth",
+    "schedule_changes_semantics_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim that schedules change semantics.",
+    "B": "Confuses graph-level and loop-level IRs.",
+    "D": "Wrong claim of interpreted execution."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "TensorIR / PrimFunc overview, schedule primitives",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:halide",
+      "locator": "Halide \u2014 compute/schedule separation as the intellectual predecessor",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-TVMTIR-012.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

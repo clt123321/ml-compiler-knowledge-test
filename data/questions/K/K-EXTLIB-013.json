@@ -1,0 +1,92 @@
+{
+  "id": "K-EXTLIB-013",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "External library (cuBLAS / cuDNN / cuBLASLt)",
+  "learningObjective": "Reason about the trade-offs of calling external libraries (cuBLAS, cuDNN, cutlass, MKL) from a compiled runtime versus emitting compiler-generated kernels.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere+ (sm_80+)",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic runtime + cuBLAS/cuDNN",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about calling into external libraries (cuBLAS, cuDNN, cutlass) from an ML compiler stack are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "External libraries expose stable numerical results across driver and library versions on the same hardware; the compiler can assume bitwise reproducibility of outputs across major versions of cuBLAS or cuDNN."
+    },
+    {
+      "id": "B",
+      "text": "For standard GEMM/Conv patterns, a heavily-tuned vendor library often outperforms a compiler-generated kernel of comparable complexity because it ships hand-tuned tile shapes, algorithmic variants, and Tensor Core paths per architecture."
+    },
+    {
+      "id": "C",
+      "text": "A compiler emitting its own fused kernel can beat an external GEMM library specifically when it fuses producer or epilogue ops into the matmul, because the external library sees only the isolated GEMM and cannot fuse across its boundaries."
+    },
+    {
+      "id": "D",
+      "text": "Calling an external library from a compiled graph always eliminates the need for a caching allocator because the external library manages its own memory pool that the runtime can substitute in for its own allocator."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
+  "explanation": "Correct: B, C.  A: Wrong: numerical results can drift across cuBLAS/cuDNN versions. B: Correct: standard vendor-lib advantage. C: Correct: compiler advantage lies in fusion boundaries. D: Wrong: external libraries request workspace but do not replace the allocator.",
+  "optionExplanations": {
+    "A": "Wrong: numerical results can drift across cuBLAS/cuDNN versions.",
+    "B": "Correct: standard vendor-lib advantage.",
+    "C": "Correct: compiler advantage lies in fusion boundaries.",
+    "D": "Wrong: external libraries request workspace but do not replace the allocator."
+  },
+  "assumptions": [
+    "The reference stack is CUDA with NVIDIA vendor libraries; analogous points apply on other vendors."
+  ],
+  "nonImplications": [
+    "Does not imply compilers can never beat vendor libs at GEMM in isolation; specialized shapes or dtypes sometimes favor Triton/Cutlass generation.",
+    "Does not imply fusion is always feasible; some epilogues are unsupported in specific library APIs."
+  ],
+  "misconceptionTags": [
+    "extlib_replaces_allocator",
+    "bit_reproducibility_myth"
+  ],
+  "distractorRationales": {
+    "A": "Overstates reproducibility guarantees.",
+    "D": "Confuses workspace with full allocator ownership."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "cuBLAS workspace management",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "TorchInductor + external kernels; fusion boundary discussion",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GEMM/Conv comparison of vendor-lib vs compiler codegen with and without epilogue fusion",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/K/K-EXTLIB-013.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

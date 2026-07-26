@@ -1,0 +1,55 @@
+{
+  "questionId": "G-AUTOTUNE-021",
+  "learningObjective": "Diagnose why an autotuner's best-config picks differ across runs and identify the primary contributor.",
+  "canonicalClaims": [
+    {
+      "claim": "When measurement noise is on the same order as the runtime gap between top autotuner candidates, winner-take-all rankings are unstable across runs; robust methodology (more repetitions, median/geomean, equivalence bands) is required.",
+      "conditions": [
+        "Measurement noise is characterized (variance across replays).",
+        "The tuner uses a winner-take-all rule."
+      ],
+      "nonImplications": [
+        "Does not imply autotuning is unusable; sound methodology contains the issue.",
+        "Does not imply the top-2 gap is always within noise — for some workloads it exceeds noise."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "Measurement design" },
+        { "ref": "PAPER:tvm", "locator": "AutoTVM measurement" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A GPU driver memory leak causes the non-determinism, and upgrading the driver fixes it.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Driver leaks manifest as monotonic slowdown or OOM, not as switching winners between two configs.",
+      "sourceOrEvidence": "NVIDIA driver release notes"
+    },
+    {
+      "claim": "Setting a fixed random seed makes different kernels report identical runtimes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Seeds control the tuner's exploration path; kernel runtimes depend on hardware state, not on the seed.",
+      "sourceOrEvidence": "Tuner implementation"
+    },
+    {
+      "claim": "Any two kernels that differ in runtime by less than 10% must have identical performance in practice.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The threshold depends on the measured noise floor; 10% may be entirely resolvable in low-noise contexts.",
+      "sourceOrEvidence": "AutoTVM sensitivity analysis"
+    },
+    {
+      "claim": "Locking GPU clocks eliminates all measurement noise.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Clock locking removes DVFS jitter but not OS scheduling, memory allocator state, cache pollution.",
+      "sourceOrEvidence": "NVIDIA benchmarking guide"
+    }
+  ],
+  "implementationFacts": [
+    "AutoTVM runs each config N times (default 3-5) and takes the median.",
+    "Ansor recommends a per-config minimum trial count and clock-locking for benchmarking."
+  ],
+  "performanceScenarios": [
+    "On sm_80 without clock locking, single-kernel timing noise ranges 3-5% at 1 ms scale; below 100 µs, noise can exceed 10%."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

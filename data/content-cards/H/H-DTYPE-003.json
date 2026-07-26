@@ -1,0 +1,55 @@
+{
+  "questionId": "H-DTYPE-003",
+  "learningObjective": "Correctly define TF32 and its relationship to FP32.",
+  "canonicalClaims": [
+    {
+      "claim": "TF32 is a Tensor Core input format with 8-bit exponent (FP32 range) and 10-bit mantissa (FP16 precision), 19 bits total. Storage stays FP32; truncation happens at multiplier input; accumulation is FP32.",
+      "conditions": [
+        "The target GPU is Ampere or newer with Tensor Core support.",
+        "A framework flag or API call enables TF32 (e.g., PyTorch `allow_tf32`)."
+      ],
+      "nonImplications": [
+        "Does not imply TF32 matches FP32 bit-for-bit.",
+        "Does not imply TF32 is used for every FP32 tensor without opt-in."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "TF32 documentation" },
+        { "ref": "BOOK:sze-eff", "locator": "Reduced-precision Tensor Core formats" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TF32 equals FP32 in numerical accuracy; the name is a marketing rebrand.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TF32 truncates the mantissa to 10 bits at the multiplier input, which is observable in FP32 correctness tests.",
+      "sourceOrEvidence": "NVIDIA TF32 whitepaper"
+    },
+    {
+      "claim": "TF32 equals BF16 with an FP32 accumulator.",
+      "errorType": "definition_confusion",
+      "whyWrong": "BF16 has 7-bit mantissa; TF32 has 10-bit mantissa. They differ.",
+      "sourceOrEvidence": "TF32 vs BF16 comparison"
+    },
+    {
+      "claim": "TF32 is a CPU vector format unrelated to GPU Tensor Cores.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TF32 is defined on NVIDIA Tensor Cores; CPUs do not implement it.",
+      "sourceOrEvidence": "NVIDIA Ampere architecture whitepaper"
+    },
+    {
+      "claim": "TF32 always accelerates FP32 matmul without any user action.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Frameworks require an opt-in flag; some workloads disable it for numerical parity with pure FP32.",
+      "sourceOrEvidence": "PyTorch and cuBLAS TF32 configuration"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch: `torch.backends.cuda.matmul.allow_tf32 = True` and `torch.backends.cudnn.allow_tf32 = True`.",
+    "cuBLAS: `cublasSetMathMode(handle, CUBLAS_TF32_TENSOR_OP_MATH)`."
+  ],
+  "performanceScenarios": [
+    "TF32 matmul on Ampere Tensor Core: roughly 8× FP32 throughput; on Hopper, roughly 16×."
+  ],
+  "versionSensitivity": "stable_principle"
+}

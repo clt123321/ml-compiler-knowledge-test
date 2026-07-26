@@ -1,0 +1,51 @@
+{
+  "questionId": "M-COSTAG-011",
+  "learningObjective": "Compare the per-rank bandwidth costs of ring-AllGather, ring-ReduceScatter and ring-AllReduce and the relationships between them.",
+  "canonicalClaims": [
+    {
+      "claim": "For a payload of S bytes on N ranks with a ring topology, the per-rank bandwidth cost of AllGather is (N-1)/N · S; the per-rank bandwidth cost of ReduceScatter is also (N-1)/N · S; and AllReduce equals ReduceScatter followed by AllGather, giving 2·(N-1)/N · S.",
+      "conditions": [
+        "Ring implementation of each collective.",
+        "Even chunking of the payload."
+      ],
+      "nonImplications": [
+        "Does not imply that on non-ring topologies (tree, hypercube) the same equalities hold.",
+        "Does not imply that AllGather = ReduceScatter semantically; they only match in bandwidth cost on a ring."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 cost analysis of ring-based collectives" },
+        { "ref": "PAPER:gspmd", "locator": "§3 partitioner communication accounting" }
+      ]
+    },
+    {
+      "claim": "For AllGather starting from a per-rank shard of size S/N, the per-rank input is S/N but each rank must end with the full S bytes; it therefore receives (N-1)·(S/N) = (N-1)/N · S bytes.",
+      "conditions": [
+        "Starting shard size is S/N per rank (total payload is S)."
+      ],
+      "nonImplications": [
+        "Does not imply that each rank sends (N-1)·(S/N) bytes in a single message; the ring transports these through N-1 hops of S/N each."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 AllGather cost derivation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AllGather on a ring costs S per rank because each rank ends with the full tensor.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Each rank already contributes S/N; it only receives the remaining (N-1)/N · S from peers."
+    },
+    {
+      "claim": "ReduceScatter costs 2·(N-1)/N · S per rank because each rank sends its input and then receives a reduced shard.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ReduceScatter on a ring pipelines the reduction so each rank sends (N-1) chunks of size S/N total, giving (N-1)/N · S — the same as AllGather, not double."
+    },
+    {
+      "claim": "AllReduce cannot be decomposed into ReduceScatter and AllGather because the two collectives have incompatible axes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "This decomposition is the standard implementation and the reason ring-AllReduce cost is 2·(N-1)/N · S."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

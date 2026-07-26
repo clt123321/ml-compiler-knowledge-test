@@ -1,0 +1,56 @@
+{
+  "questionId": "D-GUARD-006",
+  "learningObjective": "Diagnose a stride-triggered recompilation in torch.compile by reading a recompile log and identify the correct interpretation.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchDynamo installs guards on tensor stride (in addition to shape, dtype, device, requires_grad); a call with matching shape but different strides fails the stride guard and triggers recompilation, producing a specialized variant.",
+      "conditions": [
+        "Default torch.compile settings without stride-relaxing overrides.",
+        "The user is on PyTorch 2.3 ~ 2.5."
+      ],
+      "nonImplications": [
+        "Does not imply every stride change under every setting triggers recompile; some modes relax stride guards.",
+        "Does not imply the two compiled variants are equally fast."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-dynamo", "locator": "Guards categories" },
+        { "ref": "PAPER:pytorch2", "locator": "Guards discussion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Only shape guards exist in TorchDynamo.",
+      "errorType": "scope_error",
+      "whyWrong": "Stride, dtype, device, and other guards are also installed.",
+      "sourceOrEvidence": "TorchDynamo overview"
+    },
+    {
+      "claim": "Same underlying storage means no guard failure.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Guards check tensor metadata (strides, shape), not storage identity.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    },
+    {
+      "claim": "Recompilation only happens on shape changes.",
+      "errorType": "scope_error",
+      "whyWrong": "Any failed guard (stride, dtype, etc.) can trigger recompilation.",
+      "sourceOrEvidence": "TorchDynamo docs"
+    },
+    {
+      "claim": "Stride guards were removed in recent PyTorch releases.",
+      "errorType": "version_leak",
+      "whyWrong": "Stride guards remain in current stable releases as of the verified date.",
+      "sourceOrEvidence": "TorchDynamo docs 2024-2026"
+    }
+  ],
+  "implementationFacts": [
+    "TorchDynamo guards can cover: shape, stride, dtype, device, requires_grad, class",
+    "Recompiled variants are stored in the compile cache keyed by successful guard configurations",
+    "`TORCH_LOGS=recompiles` prints the failing guard(s)"
+  ],
+  "performanceScenarios": [
+    "Unintended recompiles from stride diversity can dominate compile-cache size and startup cost in production."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

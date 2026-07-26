@@ -1,0 +1,49 @@
+{
+  "questionId": "B-DEFUSE-006",
+  "learningObjective": "Explain why def-use chains are trivial to compute in SSA compared to non-SSA IR.",
+  "canonicalClaims": [
+    {
+      "claim": "In SSA form, each variable name has exactly one textual definition, so each use trivially points to a unique def; no reaching-definitions dataflow analysis is required to build def-use chains.",
+      "conditions": [
+        "The IR is in valid SSA form (each name defined exactly once).",
+        "Phi-functions merge reaching definitions at joins."
+      ],
+      "nonImplications": [
+        "Does not imply that def-use chain construction is free; a linear scan is still needed.",
+        "Does not imply non-SSA IRs cannot compute def-use chains; they simply require reaching-definitions analysis first."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "SSA and def-use chain construction" },
+        { "ref": "BOOK:appel", "locator": "SSA chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "SSA prohibits loops so def-use chains cannot cross backedges.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SSA supports loops via loop-header phis; def-use chains cross backedges through phi operands.",
+      "sourceOrEvidence": "EAC3 SSA chapter"
+    },
+    {
+      "claim": "SSA merges phi values into a single memory slot at runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Phis are IR pseudo-instructions eliminated during out-of-SSA to copies at predecessor blocks; they do not correspond to a runtime memory slot.",
+      "sourceOrEvidence": "Appel SSA chapter"
+    },
+    {
+      "claim": "SSA guarantees every use is reachable from every def.",
+      "errorType": "wrong_condition",
+      "whyWrong": "SSA guarantees each use has a unique reaching def, not that all defs reach all uses.",
+      "sourceOrEvidence": "EAC3 SSA properties"
+    }
+  ],
+  "implementationFacts": [
+    "In LLVM, llvm::Value::use_iterator provides the def-use chain in O(1) navigation per use.",
+    "SSA def-use chains support fast constant propagation, SCCP, dead-code elimination."
+  ],
+  "performanceScenarios": [
+    "SSA-based dataflow analyses (SCCP, GVN) leverage sparse def-use chains for scalable analysis."
+  ],
+  "versionSensitivity": "stable_principle"
+}

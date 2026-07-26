@@ -1,0 +1,56 @@
+{
+  "questionId": "D-FAKE-026",
+  "learningObjective": "Define what a FakeTensor is in PyTorch 2 and describe its role during tracing.",
+  "canonicalClaims": [
+    {
+      "claim": "A FakeTensor is a tensor-like object carrying shape/dtype/device/stride metadata without a real data buffer; the tracer uses each ATen op's meta implementation to propagate FakeTensors through the traced graph, obtaining output metadata without executing real kernels.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The traced ops all have meta implementations."
+      ],
+      "nonImplications": [
+        "Does not imply FakeTensor tracing captures data-dependent behavior.",
+        "Does not imply every op can propagate as a FakeTensor; some ops need real data and cause specialization or graph breaks."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-dynamo", "locator": "FakeTensor" },
+        { "ref": "PAPER:pytorch2", "locator": "FakeTensor and meta impls" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FakeTensors carry real data on GPU.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They have no data buffer; only metadata.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "FakeTensors are a TorchScript concept unrelated to torch.compile.",
+      "errorType": "scope_error",
+      "whyWrong": "They are central to torch.compile's tracing model.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "TorchDynamo uses FakeTensors to numerically verify each op's output.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FakeTensors have no data; no numerical comparison happens.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "FakeTensor propagation eliminates the need for meta implementations of ops.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Meta impls are exactly what enable FakeTensor propagation.",
+      "sourceOrEvidence": "torch.library docs"
+    }
+  ],
+  "implementationFacts": [
+    "FakeTensors have device='meta' storage semantics",
+    "Each op's meta impl determines output shape/dtype from input FakeTensors",
+    "SymInts propagate alongside FakeTensor metadata for dynamic shapes"
+  ],
+  "performanceScenarios": [
+    "FakeTensor propagation is what makes tracing cheap: no GPU work is done during trace."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

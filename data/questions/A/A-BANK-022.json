@@ -1,0 +1,96 @@
+{
+  "id": "A-BANK-022",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Shared memory bank conflict",
+  "learningObjective": "Determine the degree of shared-memory bank conflict for a stride access pattern and its throughput impact.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "32 shared-memory banks, 4-byte bank width"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "codeSnippet": "__shared__ float smem[32][32];\n// Load\nsmem[threadIdx.y][threadIdx.x] = ...;\n__syncthreads();\n// Later access:\nfloat v = smem[threadIdx.x][threadIdx.y];  // access pattern in question",
+  "stem": "A CUDA kernel declares `__shared__ float smem[32][32]` (32 banks × 4-byte bank width on Ampere). After a `__syncthreads()`, the block reads `smem[threadIdx.x][threadIdx.y]` with a 32×32 thread block. What is the resulting bank-conflict behavior for a warp with a single value of threadIdx.y (threads share y, differ in x)?",
+  "options": [
+    {
+      "id": "A",
+      "text": "No conflict: threads in a warp read column `y` from rows `0..31`; each row starts on a different bank, so all 32 threads target distinct banks in one cycle."
+    },
+    {
+      "id": "B",
+      "text": "The compiler automatically pads the shared-memory declaration to avoid conflicts, so this access pattern is transparently conflict-free."
+    },
+    {
+      "id": "C",
+      "text": "16-way conflict: half-warp granularity limits shared-memory conflicts to at most 16-way on Ampere."
+    },
+    {
+      "id": "D",
+      "text": "32-way conflict: threads in the warp read a single column `y`, i.e., addresses smem[0][y], smem[1][y], ..., smem[31][y]. Each of these lies in the same bank because 32 × 4 B row stride is a multiple of the bank stride (32×4 B), serializing to 32 accesses."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Option D is correct; options A, B, C are incorrect. A (Wrong): with a 32-wide row of 4-byte elements, the row stride matches the bank period (128 B = 32 banks × 4 B), so column-major access hits the same bank across rows. B (Wrong): shared-memory padding must be programmer-written (e.g., declare [32][33]). C (Wrong): half-warp granularity applied to legacy architectures (Fermi and earlier); Ampere uses warp-wide conflict analysis. D (Correct): the access serializes to 32 cycles due to same-bank targeting. General context: Ampere shared memory has 32 banks with 4-byte width; bank = (address / 4) mod 32. For smem[i][y] with row size 32 floats (128 B), the byte address is i·128 + y·4. The bank index (i·128 + y·4)/4 mod 32 = (i·32 + y) mod 32 = y (since i·32 mod 32 = 0). All 32 threads in the warp map to the same bank y → 32-way conflict; access serializes into 32 cycles. Padding to [32][33] (or transposing the access) restores conflict-free behavior.",
+  "optionExplanations": {
+    "A": "Wrong: with a 32-wide row of 4-byte elements, the row stride matches the bank period (128 B = 32 banks × 4 B), so column-major access hits the same bank across rows.",
+    "B": "Wrong: shared-memory padding must be programmer-written (e.g., declare [32][33]).",
+    "C": "Wrong: half-warp granularity applied to legacy architectures (Fermi and earlier); Ampere uses warp-wide conflict analysis.",
+    "D": "Correct: the access serializes to 32 cycles due to same-bank targeting."
+  },
+  "assumptions": [
+    "32 banks × 4 B bank width (default on modern NVIDIA compute capabilities).",
+    "Warp is 32 threads with threadIdx.x varying and threadIdx.y constant.",
+    "No compiler transformation altering the declared layout."
+  ],
+  "nonImplications": [
+    "Does not imply the kernel is unusable at 32-way conflict; the impact is on throughput, not correctness.",
+    "Does not imply that padding to [32][33] is universally the right fix; some kernels prefer swizzled addressing or transposed staging."
+  ],
+  "misconceptionTags": [
+    "bank_conflict_direction",
+    "half_warp_granularity_myth"
+  ],
+  "distractorRationales": {
+    "A": "Miscounts bank alignment.",
+    "B": "Assumes non-existent compiler padding.",
+    "C": "Version-leak on half-warp granularity."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Shared memory bank organization; bank conflicts",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Shared memory and bank conflict chapter",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Ampere shared memory bank-conflict pattern for a 32×32 float array with transposed access",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-BANK-022.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

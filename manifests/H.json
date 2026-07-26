@@ -1,0 +1,252 @@
+{
+  "module": "quantization",
+  "code": "H",
+  "expectedCount": 35,
+  "questions": [
+    {
+      "id": "H-DTYPE-001",
+      "file": "data/questions/H/H-DTYPE-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-DTYPE-001.json",
+      "version": 1
+    },
+    {
+      "id": "H-DTYPE-002",
+      "file": "data/questions/H/H-DTYPE-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-DTYPE-002.json",
+      "version": 2
+    },
+    {
+      "id": "H-DTYPE-003",
+      "file": "data/questions/H/H-DTYPE-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-DTYPE-003.json",
+      "version": 1
+    },
+    {
+      "id": "H-FP8-004",
+      "file": "data/questions/H/H-FP8-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-FP8-004.json",
+      "version": 1
+    },
+    {
+      "id": "H-INT-005",
+      "file": "data/questions/H/H-INT-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-INT-005.json",
+      "version": 1
+    },
+    {
+      "id": "H-OVERFLOW-006",
+      "file": "data/questions/H/H-OVERFLOW-006.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-OVERFLOW-006.json",
+      "version": 1
+    },
+    {
+      "id": "H-ACCUM-007",
+      "file": "data/questions/H/H-ACCUM-007.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-ACCUM-007.json",
+      "version": 2
+    },
+    {
+      "id": "H-ACCUM-008",
+      "file": "data/questions/H/H-ACCUM-008.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-ACCUM-008.json",
+      "version": 1
+    },
+    {
+      "id": "H-SCALE-009",
+      "file": "data/questions/H/H-SCALE-009.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-SCALE-009.json",
+      "version": 1
+    },
+    {
+      "id": "H-SYMM-010",
+      "file": "data/questions/H/H-SYMM-010.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-SYMM-010.json",
+      "version": 2
+    },
+    {
+      "id": "H-GRAN-011",
+      "file": "data/questions/H/H-GRAN-011.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-GRAN-011.json",
+      "version": 1
+    },
+    {
+      "id": "H-GRAN-012",
+      "file": "data/questions/H/H-GRAN-012.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-GRAN-012.json",
+      "version": 2
+    },
+    {
+      "id": "H-WQUANT-013",
+      "file": "data/questions/H/H-WQUANT-013.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-WQUANT-013.json",
+      "version": 1
+    },
+    {
+      "id": "H-DYN-014",
+      "file": "data/questions/H/H-DYN-014.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-DYN-014.json",
+      "version": 1
+    },
+    {
+      "id": "H-PTQ-015",
+      "file": "data/questions/H/H-PTQ-015.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-PTQ-015.json",
+      "version": 1
+    },
+    {
+      "id": "H-FAKE-016",
+      "file": "data/questions/H/H-FAKE-016.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-FAKE-016.json",
+      "version": 2
+    },
+    {
+      "id": "H-CALIB-017",
+      "file": "data/questions/H/H-CALIB-017.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-CALIB-017.json",
+      "version": 2
+    },
+    {
+      "id": "H-OUTLIER-018",
+      "file": "data/questions/H/H-OUTLIER-018.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-OUTLIER-018.json",
+      "version": 1
+    },
+    {
+      "id": "H-SMOOTH-019",
+      "file": "data/questions/H/H-SMOOTH-019.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-SMOOTH-019.json",
+      "version": 1
+    },
+    {
+      "id": "H-GPTQ-020",
+      "file": "data/questions/H/H-GPTQ-020.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-GPTQ-020.json",
+      "version": 1
+    },
+    {
+      "id": "H-AWQ-021",
+      "file": "data/questions/H/H-AWQ-021.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-AWQ-021.json",
+      "version": 1
+    },
+    {
+      "id": "H-GEMM-022",
+      "file": "data/questions/H/H-GEMM-022.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-GEMM-022.json",
+      "version": 1
+    },
+    {
+      "id": "H-MIXED-023",
+      "file": "data/questions/H/H-MIXED-023.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-MIXED-023.json",
+      "version": 2
+    },
+    {
+      "id": "H-MEMTRAFFIC-024",
+      "file": "data/questions/H/H-MEMTRAFFIC-024.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-MEMTRAFFIC-024.json",
+      "version": 2
+    },
+    {
+      "id": "H-KVQ-025",
+      "file": "data/questions/H/H-KVQ-025.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-KVQ-025.json",
+      "version": 1
+    },
+    {
+      "id": "H-KVQ-026",
+      "file": "data/questions/H/H-KVQ-026.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-KVQ-026.json",
+      "version": 1
+    },
+    {
+      "id": "H-KVQ-027",
+      "file": "data/questions/H/H-KVQ-027.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-KVQ-027.json",
+      "version": 2
+    },
+    {
+      "id": "H-KERN-028",
+      "file": "data/questions/H/H-KERN-028.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-KERN-028.json",
+      "version": 1
+    },
+    {
+      "id": "H-DEQ-029",
+      "file": "data/questions/H/H-DEQ-029.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-DEQ-029.json",
+      "version": 1
+    },
+    {
+      "id": "H-ROUND-030",
+      "file": "data/questions/H/H-ROUND-030.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-ROUND-030.json",
+      "version": 1
+    },
+    {
+      "id": "H-SATURATE-031",
+      "file": "data/questions/H/H-SATURATE-031.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-SATURATE-031.json",
+      "version": 1
+    },
+    {
+      "id": "H-FP8ACCUM-032",
+      "file": "data/questions/H/H-FP8ACCUM-032.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-FP8ACCUM-032.json",
+      "version": 2
+    },
+    {
+      "id": "H-QAT-033",
+      "file": "data/questions/H/H-QAT-033.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-QAT-033.json",
+      "version": 1
+    },
+    {
+      "id": "H-TRTLLM-034",
+      "file": "data/questions/H/H-TRTLLM-034.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-TRTLLM-034.json",
+      "version": 1
+    },
+    {
+      "id": "H-INT4KV-035",
+      "file": "data/questions/H/H-INT4KV-035.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/H/H-INT4KV-035.json",
+      "version": 2
+    }
+  ]
+}

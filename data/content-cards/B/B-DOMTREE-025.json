@@ -1,0 +1,50 @@
+{
+  "questionId": "B-DOMTREE-025",
+  "learningObjective": "Identify structural properties of the dominator tree and its use in SSA construction.",
+  "canonicalClaims": [
+    {
+      "claim": "The dominator tree is rooted at the CFG's entry; each block's parent is its immediate dominator. SSA construction places phi functions at the dominance frontier of each definition, which comprises the blocks just outside the strictly-dominated region of the defining block but reachable from it.",
+      "conditions": [
+        "CFG has a distinguished entry block.",
+        "Standard SSA construction algorithm (Cytron et al.)."
+      ],
+      "nonImplications": [
+        "Does not imply the dominator tree is expensive to build; efficient algorithms exist.",
+        "Does not imply that the dominator tree captures control dependence, which relies on post-dominance."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Dominator tree and SSA chapter" },
+        { "ref": "BOOK:appel", "locator": "Dominance frontier chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The dominator tree is the CFG reversed.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The dominator tree is a distinct tree derived from the dominance relation; it is not the CFG's transpose.",
+      "sourceOrEvidence": "EAC3 dominator computation"
+    },
+    {
+      "claim": "The dominator tree nodes are phi functions, one per phi.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Nodes are CFG basic blocks; phi functions are inserted into blocks based on the dominance frontier.",
+      "sourceOrEvidence": "Appel SSA chapter"
+    },
+    {
+      "claim": "The dominator tree is identical to the loop nest tree.",
+      "errorType": "scope_error",
+      "whyWrong": "Loop nest tree captures loop containment; dominator tree captures dominance. They can differ significantly.",
+      "sourceOrEvidence": "EAC3 loop structure chapter"
+    }
+  ],
+  "implementationFacts": [
+    "Lengauer-Tarjan algorithm for dominator tree: O(m·α(m,n)).",
+    "Dominance frontier DF(B) = { Y | B dominates a predecessor of Y but does not strictly dominate Y }.",
+    "Iterated dominance frontier is used to place phi functions correctly across multiple definitions."
+  ],
+  "performanceScenarios": [
+    "SSA construction time is dominated by dominator tree and dominance frontier computations; efficient algorithms make SSA feasible at scale."
+  ],
+  "versionSensitivity": "stable_principle"
+}

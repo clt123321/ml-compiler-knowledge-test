@@ -1,0 +1,87 @@
+{
+  "id": "I-FLASH-005",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "FlashAttention / IO complexity and backward recomputation",
+  "learningObjective": "Explain FlashAttention's core algorithmic idea: block-tiled attention with online softmax and backward recomputation of the attention matrix.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "large SMEM for K, V, S tiles"
+    ]
+  },
+  "softwareContext": {
+    "framework": "generic (FlashAttention v1/v2 style)",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement most accurately describes the algorithmic contribution of FlashAttention (as an exact attention algorithm)?",
+  "options": [
+    {
+      "id": "A",
+      "text": "FlashAttention keeps the attention math exact but reorders the computation into K/V-block tiles with an online softmax so the full N x N attention matrix is never materialized in HBM; in the backward pass the attention weights are recomputed from stored (m, l) statistics and Q, K, V rather than reloaded from HBM."
+    },
+    {
+      "id": "B",
+      "text": "FlashAttention replaces softmax with a low-rank approximation whose rank is chosen per tile, reducing attention from O(N^2) to O(N sqrt(N)) FLOPs while remaining within an epsilon-approximation of exact attention."
+    },
+    {
+      "id": "C",
+      "text": "FlashAttention prunes tokens with attention weight below a learned threshold (sparse attention) and skips the corresponding tiles; correctness is preserved because the pruned weights are provably below numerical noise for typical language models."
+    },
+    {
+      "id": "D",
+      "text": "FlashAttention rewrites attention in FP8 with per-row scale factors that let the softmax denominator be computed without dequantization; the FP8 arithmetic is the key to the wall-clock speedup."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "FlashAttention is an IO-aware but exact attention algorithm. It tiles Q, K, V into blocks and computes softmax(QK^T)V per tile using the online softmax recurrence, so the N x N attention matrix S is never stored in HBM. Only per-row statistics (m, l) and the running output O are kept. In the backward pass, S and the softmax probabilities P are recomputed from Q, K, V and the stored (m, l), avoiding an HBM-resident P. This trades a small amount of extra compute (backward recomputation) for a large reduction in HBM I/O.",
+  "optionExplanations": {
+    "A": "Correct: exact algorithm + IO-aware tiling + backward recomputation.",
+    "B": "Wrong: FlashAttention is exact, not approximate; it does not change asymptotic FLOP count.",
+    "C": "Wrong: FlashAttention is dense and exact; token pruning is a different (approximate) family.",
+    "D": "Wrong: FlashAttention v1/v2 do not require FP8; the win is HBM I/O reduction, not lower precision."
+  },
+  "assumptions": [
+    "Discussion refers to FlashAttention v1/v2 exact attention (not FlashAttention-style approximate variants).",
+    "SMEM per SM is large enough to hold Q, K, V, and S tiles for the chosen block sizes."
+  ],
+  "nonImplications": [
+    "Does not imply that FlashAttention is faster than a well-implemented naive attention on very short sequences.",
+    "Does not imply that the speedup is uniform across shapes; head dim, sequence length, and batch all matter."
+  ],
+  "misconceptionTags": [
+    "flashattn_approximate_myth",
+    "flashattn_low_precision_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates approximation.",
+    "C": "Confuses with sparse/pruned attention.",
+    "D": "Attributes gains to precision changes."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Alg. 1 forward, Alg. 4 backward recomputation",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-FLASH-005.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

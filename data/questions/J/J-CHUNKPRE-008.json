@@ -1,0 +1,102 @@
+{
+  "id": "J-CHUNKPRE-008",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Chunked prefill / Prefill-decode interleaving",
+  "learningObjective": "Explain what chunked prefill is and why it improves multi-tenant serving under mixed prefill+decode load.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "vLLM / SGLang / TRT-LLM (2024+)",
+    "frameworkVersionScope": "vLLM 0.4+, SGLang, TRT-LLM 0.9+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Chunked prefill in modern LLM serving systems addresses which problem, and how?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Long prefill requests block decode requests behind them, spiking TPOT for concurrent short-completion requests. Chunked prefill splits a prefill of length P into chunks (e.g., 512 tokens each) and lets each chunk share a model-forward iteration with ongoing decode requests, keeping per-token latency bounded while making forward progress on the long prefill."
+    },
+    {
+      "id": "B",
+      "text": "Prefill sometimes exceeds available HBM for the intermediate activations of the whole prompt at once; chunked prefill processes the prompt in windows so that only one chunk of activations lives in memory at a time. This is the sole reason for chunked prefill."
+    },
+    {
+      "id": "C",
+      "text": "Chunked prefill splits the prompt across multiple GPUs via tensor parallelism; each GPU handles one chunk of the prompt independently, and the chunks are recombined at the attention step. It is essentially a form of context parallelism."
+    },
+    {
+      "id": "D",
+      "text": "Chunked prefill converts the prefill matmul into smaller matmuls that fit tensor-core tile sizes better; the primary benefit is arithmetic throughput improvement of the prefill phase itself."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Chunked prefill (an SGLang / vLLM / TRT-LLM inflight-batching feature) is a scheduling policy: a long prefill is broken into chunks (typical 512-2048 tokens per chunk) and each chunk is packed into the same model-forward iteration as concurrent decode requests. This keeps TPOT bounded for other tenants while the long prefill makes forward progress. It is orthogonal to how the prefill kernel is written; it is a scheduling / batching decision.",
+  "optionExplanations": {
+    "A": "Correct: chunked prefill's role in preventing TPOT spikes under mixed workload.",
+    "B": "Wrong: activation memory can motivate chunking, but it is not the primary motivation in modern serving stacks.",
+    "C": "Wrong: describes context parallelism / sequence parallelism, not chunked prefill.",
+    "D": "Wrong: prefill is already compute-bound and tile-friendly; chunking is about scheduling, not tiling."
+  },
+  "assumptions": [
+    "Serving system supports continuous / inflight batching so a chunk can be co-scheduled with decode requests.",
+    "Chunk size is a tunable parameter, typically 512-2048 tokens."
+  ],
+  "nonImplications": [
+    "Does not imply that chunked prefill speeds up prefill in isolation; it may slow it slightly due to overhead.",
+    "Does not imply prefill activation memory is never a concern; it is, especially for very long prompts."
+  ],
+  "misconceptionTags": [
+    "chunkpre_activation_only_myth",
+    "chunkpre_context_parallel_confusion"
+  ],
+  "distractorRationales": {
+    "B": "Names a secondary motivation as primary.",
+    "C": "Confuses with context parallelism.",
+    "D": "Wrong primary benefit."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:sglang",
+      "locator": "Chunked prefill scheduler docs",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "Chunked prefill implementation",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:trtllm",
+      "locator": "Chunked context / inflight batching",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Chunked prefill scheduling and its TPOT benefit under mixed workloads",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/J/J-CHUNKPRE-008.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

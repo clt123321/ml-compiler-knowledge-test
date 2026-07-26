@@ -1,0 +1,55 @@
+{
+  "questionId": "D-EXPCONS-019",
+  "learningObjective": "Read a torch.export call with explicit dynamic-dim constraints and choose the correct interpretation.",
+  "canonicalClaims": [
+    {
+      "claim": "Sharing a `Dim` object across multiple inputs' dims in `torch.export` semantically constrains those dims to be equal at runtime; the exported program is parameterized in a single symbolic value for the shared dim and mismatches are errors.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The Dim's min/max are consistent with the example inputs."
+      ],
+      "nonImplications": [
+        "Does not imply arbitrary constraints are satisfiable; overly tight constraints can fail at export.",
+        "Does not imply that runtime handles shape mismatches by fallback; they are errors."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-export", "locator": "Dim and dynamic_shapes semantics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Sharing a Dim object across inputs is only a naming convention.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Dim identity has semantic meaning and enforces equality at runtime.",
+      "sourceOrEvidence": "torch.export docs"
+    },
+    {
+      "claim": "Dim constraints are stripped at export.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Dim bounds and shared-Dim constraints are preserved in the ExportedProgram.",
+      "sourceOrEvidence": "torch.export docs"
+    },
+    {
+      "claim": "torch.export ignores dynamic_shapes if example inputs are provided.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both example inputs and dynamic_shapes are used; example inputs drive tracing, dynamic_shapes constrain generality.",
+      "sourceOrEvidence": "torch.export docs"
+    },
+    {
+      "claim": "Runtime mismatches with Dim bounds cause silent recompilation.",
+      "errorType": "scope_error",
+      "whyWrong": "Export produces a static artifact; violations at runtime are errors, not recompiles.",
+      "sourceOrEvidence": "torch.export docs"
+    }
+  ],
+  "implementationFacts": [
+    "Dim(\"name\", min=..., max=...) with optional bounds",
+    "Shared Dim across inputs enforces equality constraints",
+    "Separate Dim objects allow independent variation"
+  ],
+  "performanceScenarios": [
+    "Correctly declared Dim constraints reduce over-specialization while still enabling meaningful codegen."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

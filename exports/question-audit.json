@@ -1,0 +1,109 @@
+{
+  "generatedAt": "2026-07-26",
+  "gates": {
+    "duplicate_stems": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "duplicate_option_sets": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "meta_statement_options": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "missing_content_cards": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "missing_subtopic_misconceptions": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    },
+    "correct_longest_ratio": {
+      "value": 0.74,
+      "max": 0.8,
+      "pass": true
+    },
+    "correct_wrong_length_gap": {
+      "value": 0.194,
+      "max": 0.3,
+      "pass": true
+    },
+    "answer_position_bias": {
+      "value": 0.049,
+      "max": 0.35,
+      "pass": true
+    },
+    "tier3_only_sources": {
+      "value": 0,
+      "max": 0,
+      "pass": true
+    }
+  },
+  "stats": {
+    "total": 400,
+    "bySingleAnswerPosition": {
+      "A": 69,
+      "B": 74,
+      "C": 75,
+      "D": 68
+    },
+    "correctLongestCount": 296,
+    "avgCorrectLen": 234.21,
+    "avgWrongLen": 196.17
+  },
+  "issues": [
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "A-PCIE-013: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "G-ANSOR-024: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "K-PLACE-007: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "K-TRTBUILD-021: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "L-E2E-020: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "L-GOLDEN-009: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "N-ANSOR-003: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "N-PYT2-009: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "N-QUANT-010: potential kernel↔e2e confusion; review manually"
+    }
+  ]
+}

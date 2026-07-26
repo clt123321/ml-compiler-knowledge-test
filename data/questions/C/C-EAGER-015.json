@@ -1,0 +1,91 @@
+{
+  "id": "C-EAGER-015",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Eager vs. static / define-by-run vs. define-and-run",
+  "learningObjective": "Distinguish eager execution (define-by-run) from static graph capture (define-and-run) and identify the correct implications of each.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Eager execution and static graph capture describe two different points in the design space of ML frameworks. Which statement most accurately captures the key distinction?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Eager and static differ only in file format: eager mode stores the graph as JSON while static mode uses a binary format; the runtime behavior and optimization opportunities are otherwise the same."
+    },
+    {
+      "id": "B",
+      "text": "Eager runs each operation immediately as Python encounters it, with no persistent graph representation captured by default; static graph capture constructs a persistent IR before execution, enabling whole-program optimizations at the cost of trace-time restrictions."
+    },
+    {
+      "id": "C",
+      "text": "Eager execution requires a JIT compiler because it must generate machine code for each Python line; static graph frameworks are Python-free by definition. Under this reading, static graph frameworks always achieve peak hardware utilization because the compiler owns the whole program, while eager mode is only useful for interactive notebooks and cannot support production training pipelines at all."
+    },
+    {
+      "id": "D",
+      "text": "Static graph capture is always faster than eager because the graph is compiled; eager mode is only used for debugging and has no production role because it cannot fuse kernels. In this description, eager mode serializes each op as a JSON blob on the wire while static mode uses a length-prefixed protobuf, but both feed the same executor and optimization pipeline at runtime."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "The core distinction is when (and whether) a graph representation is constructed. Eager mode dispatches ops immediately, matching Python semantics closely; static graphs are captured before execution, allowing whole-program passes (fusion, layout choice, memory planning) but restricting what Python constructs can be used inside the traced region. Neither is universally faster nor a file-format concern; eager mode itself does not require a JIT compiler.",
+  "optionExplanations": {
+    "A": "Wrong: the difference is semantic, not about file format.",
+    "B": "Correct: standard textbook distinction.",
+    "C": "Wrong: eager dispatches to pre-compiled kernel implementations; no per-line JIT is required.",
+    "D": "Wrong: eager can still be efficient (via fused ops from the framework); eager has many production uses."
+  },
+  "assumptions": [
+    "The comparison is at the framework-execution level (PyTorch eager vs. TF-1 static graphs, or PyTorch eager vs. torch.compile / XLA).",
+    "Optimization scope refers to graph-level passes."
+  ],
+  "nonImplications": [
+    "Does not imply eager frameworks cannot compile: torch.compile compiles subgraphs while retaining eager as the outer control-flow driver.",
+    "Does not imply that static frameworks always beat eager; overhead can vary."
+  ],
+  "misconceptionTags": [
+    "eager_static_only_file_format",
+    "static_always_faster"
+  ],
+  "distractorRationales": {
+    "A": "Trivializes the distinction.",
+    "C": "Confuses eager dispatch with per-line JIT.",
+    "D": "Overgeneralizes the performance gap."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "AOT vs. JIT vs. interpretation background",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "PyTorch eager vs. compiled discussion",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-EAGER-015.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

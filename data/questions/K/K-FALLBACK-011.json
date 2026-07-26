@@ -1,0 +1,92 @@
+{
+  "id": "K-FALLBACK-011",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "CPU fallback",
+  "learningObjective": "Explain the design and cost of a CPU fallback path when the compiler encounters an op with no GPU implementation.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable + x86 host",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic (ONNX Runtime, TensorRT, TVM, torch.compile)",
+    "stability": "stable_principle"
+  },
+  "stem": "A compiled GPU inference graph contains a single op with no GPU kernel; the runtime supports a CPU fallback for that op. Which description most accurately captures what happens at execution time?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The runtime executes the op on both the GPU (using a zero-fill placeholder) and the CPU in parallel, then compares the outputs at run time to decide which to keep; this pattern doubles memory usage but eliminates transfer overhead entirely."
+    },
+    {
+      "id": "B",
+      "text": "The GPU driver internally emulates the CPU op on the GPU by executing the CPU instruction stream on a special 'compatibility SM' with no host↔device transfer, incurring only a constant driver overhead of roughly 1 µs per op regardless of tensor size."
+    },
+    {
+      "id": "C",
+      "text": "The runtime silently drops the op from the graph; the missing computation is lossy but tolerable in practice because most such ops (e.g., control-flow or shape ops) do not affect the model's output tensor values downstream."
+    },
+    {
+      "id": "D",
+      "text": "The runtime copies the op's input tensors from device to host, runs the CPU implementation, then copies the result back to device before the next GPU op resumes. Every fallback op adds a round-trip H2D/D2H transfer that can dominate its execution cost."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Standard CPU fallback issues D2H transfers for the op's inputs, runs the CPU kernel, and issues H2D transfers for the outputs before the next GPU op. Each fallback introduces synchronization and PCIe transfer cost that can dominate the actual op cost, which is why runtimes such as ONNX Runtime, TensorRT and torch.compile aim to minimize fallback ops or group them into a single CPU subgraph.",
+  "optionExplanations": {
+    "A": "Wrong: parallel dual-execution is not a standard fallback strategy.",
+    "B": "Wrong: GPUs cannot emulate arbitrary CPU code on 'compatibility SMs'; no such feature exists.",
+    "C": "Wrong: runtimes do not silently drop ops.",
+    "D": "Correct: standard CPU-fallback semantics."
+  },
+  "assumptions": [
+    "The graph is otherwise GPU-resident; only the one op lacks a GPU kernel."
+  ],
+  "nonImplications": [
+    "Does not imply fallback is always bad; for ops that are inherently CPU-appropriate (e.g., string preprocessing) it may be the only viable path.",
+    "Does not imply the copy cost is always dominant; large fallback ops can amortize the transfer."
+  ],
+  "misconceptionTags": [
+    "gpu_emulates_cpu",
+    "silent_op_drop"
+  ],
+  "distractorRationales": {
+    "A": "Fabricates a dual-execution pattern.",
+    "B": "Fabricates a hardware feature.",
+    "C": "Fabricates lossy semantics."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:onnx",
+      "locator": "ONNX Runtime execution provider fallback semantics",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:trt",
+      "locator": "TensorRT unsupported-op fallback / plugin behavior",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Fine-grained CPU fallback ops in an otherwise-GPU-resident graph",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/K/K-FALLBACK-011.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

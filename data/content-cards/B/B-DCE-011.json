@@ -1,0 +1,49 @@
+{
+  "questionId": "B-DCE-011",
+  "learningObjective": "Distinguish dead code elimination from unreachable code elimination and identify soundness conditions.",
+  "canonicalClaims": [
+    {
+      "claim": "DCE removes instructions that (1) produce a value with no live uses and (2) have no observable side effects. Unreachable code elimination is a distinct pass that removes CFG blocks not reachable from entry.",
+      "conditions": [
+        "IR distinguishes pure from side-effecting operations.",
+        "Language/target semantics define what counts as an observable side effect (I/O, memory writes, exceptions, volatile access)."
+      ],
+      "nonImplications": [
+        "Does not imply all loads can be removed; volatile and side-effecting loads must remain.",
+        "Does not imply a single DCE pass captures all dead code; iteration with other optimizations often uncovers more."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "DCE chapter" },
+        { "ref": "BOOK:appel", "locator": "Optimization: DCE and unreachable code" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any pure computation with unused result can be removed by DCE regardless of possible exceptions.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Floating-point exceptions or divide-by-zero traps are observable side effects in strict-FP or trap-on-signal environments; removing them can change program behavior.",
+      "sourceOrEvidence": "EAC3 DCE chapter; LLVM strict FP semantics"
+    },
+    {
+      "claim": "DCE requires SSA form.",
+      "errorType": "definition_confusion",
+      "whyWrong": "DCE can be implemented on non-SSA IRs using reaching-definition and liveness analysis; SSA simplifies but is not required.",
+      "sourceOrEvidence": "Appel DCE chapter"
+    },
+    {
+      "claim": "Unreachable code elimination is a special case of DCE.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Unreachable code elimination is CFG-based (control flow); DCE is data-flow-based (unused values). They compose but are distinct.",
+      "sourceOrEvidence": "EAC3 optimization overview"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM has separate passes: DeadCodeElimination, AggressiveDCE (ADCE), and UnreachableBlockElim.",
+    "ADCE assumes all code is dead until proven live by walking backward from side-effecting instructions and terminators."
+  ],
+  "performanceScenarios": [
+    "Iterating SCCP + DCE + simplification is a canonical mid-end optimization pattern."
+  ],
+  "versionSensitivity": "stable_principle"
+}

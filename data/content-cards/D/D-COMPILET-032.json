@@ -1,0 +1,56 @@
+{
+  "questionId": "D-COMPILET-032",
+  "learningObjective": "Reason about the trade-off between torch.compile's compile-time cost and steady-state kernel performance.",
+  "canonicalClaims": [
+    {
+      "claim": "torch.compile has a non-trivial compile-time cost (tracing, AOTAutograd, Inductor codegen, and — under max-autotune — kernel search) that must be amortized across enough steps to yield a net speedup over eager; short-running scripts may not amortize the cost, while long-running loops usually do.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "Measurements include the first-call compile time."
+      ],
+      "nonImplications": [
+        "Does not imply torch.compile is universally slower for short runs; warm caches change the picture.",
+        "Does not imply autotune search space is constant across releases."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Compile-time cost" },
+        { "ref": "PAPER:pytorch2", "locator": "Compile time" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "torch.compile adds per-call runtime overhead of seconds.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Steady-state per-call overhead is small; the seconds come from initial compile.",
+      "sourceOrEvidence": "PyTorch profiler docs"
+    },
+    {
+      "claim": "max-autotune sacrifices numerical accuracy for speed.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It explores configs but preserves numerical semantics.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "GIL contention is the reason short torch.compile runs are slower.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "GIL is unrelated to this specific compile-time cost effect.",
+      "sourceOrEvidence": "Python docs"
+    },
+    {
+      "claim": "Compile time can be ignored when comparing eager vs. compile for a run.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Ignoring compile time inflates the perceived speedup; honest benchmarks include it.",
+      "sourceOrEvidence": "PyTorch benchmark guidance"
+    }
+  ],
+  "implementationFacts": [
+    "First-call compile includes tracing + AOTAutograd + Inductor codegen + autotune search (under max-autotune)",
+    "Subsequent calls hit the compile cache (in-memory by default)",
+    "Warm-up runs are standard when benchmarking compiled code"
+  ],
+  "performanceScenarios": [
+    "Choosing when torch.compile is worth it requires comparing amortized runtime including compile time."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

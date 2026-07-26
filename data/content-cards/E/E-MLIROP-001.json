@@ -1,0 +1,53 @@
+{
+  "questionId": "E-MLIROP-001",
+  "learningObjective": "Distinguish the roles of Operation, Region, Block, Value, Type, and Attribute in the MLIR structural model, and identify which entity carries compile-time constants vs. SSA runtime values.",
+  "canonicalClaims": [
+    {
+      "claim": "In MLIR, an Operation may contain zero or more Regions, each Region contains one or more Blocks (Block list), Blocks contain Operations recursively; SSA Values are produced and consumed by Operations at runtime, while Attributes are compile-time constant metadata attached to an Operation.",
+      "conditions": [
+        "The IR follows the MLIR structural model documented in LangRef.",
+        "Attribute values are not mutated during execution."
+      ],
+      "nonImplications": [
+        "Does not imply every Op has Regions; leaf Ops (arith.addi) have zero Regions.",
+        "Does not imply Regions are always SSACFG; Graph regions also exist."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Operations, Regions, Blocks, Values, Types, Attributes" },
+        { "ref": "PAPER:mlir", "locator": "MLIR CGO 2021 — Section 3, Core IR" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Attributes are SSA runtime values attached to Ops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Attributes are compile-time constants on Ops; SSA Values are Operation operands/results.",
+      "sourceOrEvidence": "MLIR LangRef"
+    },
+    {
+      "claim": "Blocks are the top-level unit of MLIR IR; each Block owns exactly one Region.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The top-level unit is an Operation (typically ModuleOp) containing a Region containing Blocks; Blocks do not own Regions.",
+      "sourceOrEvidence": "MLIR LangRef, Structure section"
+    },
+    {
+      "claim": "Every Value in MLIR must carry its own Attribute alongside its Type.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Values have Types only; Attributes are attached to Ops.",
+      "sourceOrEvidence": "MLIR LangRef, Value system"
+    },
+    {
+      "claim": "A Region in MLIR is limited to a single Block.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Regions may contain multiple Blocks forming a CFG; single-block regions are just a common special case.",
+      "sourceOrEvidence": "MLIR LangRef, Regions"
+    }
+  ],
+  "implementationFacts": [
+    "ModuleOp: an Operation with a single Region containing one Block of top-level Ops.",
+    "arith.constant carries a `value` Attribute and produces one SSA Value of a given Type."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,90 @@
+{
+  "id": "M-AR-001",
+  "type": "single",
+  "module": "distributed",
+  "subtopic": "AllReduce vs AllGather semantics",
+  "learningObjective": "Distinguish the semantics of AllReduce and AllGather as collective operations over a device group.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "N ranks each hold a tensor T_i of identical shape S. After the collective, each rank must observe a specific result. Which statement correctly distinguishes AllReduce (sum) from AllGather along a new leading axis?",
+  "options": [
+    {
+      "id": "A",
+      "text": "After AllReduce and after AllGather, every rank holds a tensor of shape [N, *S]; AllReduce differs only in that it also multiplies each slice by 1/N so that a subsequent local sum yields the reduction."
+    },
+    {
+      "id": "B",
+      "text": "After AllReduce (sum), every rank holds a tensor of shape S equal to Σ_i T_i; after AllGather, every rank holds a tensor of shape [N, *S] containing all T_i stacked."
+    },
+    {
+      "id": "C",
+      "text": "After AllReduce (sum), every rank holds a tensor of shape [N, *S] equal to the concatenation of the T_i; after AllGather, every rank holds only its own T_i annotated with the ranks of the peers."
+    },
+    {
+      "id": "D",
+      "text": "AllReduce and AllGather are semantically identical; the difference is purely an implementation choice — AllGather is a synonym used by MPI while AllReduce is the corresponding NCCL name for the same operation."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "AllReduce combines per-rank inputs via an associative reduction, producing a tensor of the same shape S on every rank whose value is the reduction (here Σ_i T_i). AllGather is pure data movement: every rank ends with a tensor containing all N inputs (typically shape [N, *S] when stacking on a new axis, or [N·d, *rest] when concatenating along an existing one).",
+  "optionExplanations": {
+    "A": "Wrong: AllReduce output has shape S, not [N, *S], and it does not silently scale by 1/N.",
+    "B": "Correct: matches the standard collective-communication semantics for AllReduce and AllGather.",
+    "C": "Wrong: swaps the two definitions.",
+    "D": "Wrong: MPI and NCCL both define AllReduce and AllGather as distinct primitives with different semantics."
+  },
+  "assumptions": [
+    "All ranks participate with tensors of the same shape and dtype.",
+    "The reduction operator for AllReduce is the standard element-wise sum."
+  ],
+  "nonImplications": [
+    "Does not imply that ring-AllReduce internally materializes the gathered tensor on any rank.",
+    "Does not imply that AllReduce with mean is unavailable; it is standard in DL frameworks."
+  ],
+  "misconceptionTags": [
+    "allreduce_allgather_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Confuses shape and adds a spurious 1/N scaling.",
+    "C": "Reverses the two operations.",
+    "D": "Denies the semantic distinction."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 6 discussion of collective communication primitives",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§2 background on collective operations for ML",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-AR-001.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

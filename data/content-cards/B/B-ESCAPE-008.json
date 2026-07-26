@@ -1,0 +1,51 @@
+{
+  "questionId": "B-ESCAPE-008",
+  "learningObjective": "Precisely define escape analysis and identify what optimizations it enables.",
+  "canonicalClaims": [
+    {
+      "claim": "Escape analysis determines whether a heap-allocated object's reference escapes the allocating scope (via return value, thread visibility, or stored reference); non-escaping objects can be stack-allocated, scalarized (SROA), or entirely eliminated by the compiler.",
+      "conditions": [
+        "Language semantics permit heap allocation and reference passing.",
+        "The analysis is sound: it may miss optimizations but never converts an escaping object into a non-escaping one."
+      ],
+      "nonImplications": [
+        "Does not imply all heap allocations are eliminable; only provably non-escaping ones.",
+        "Does not imply garbage collection is unnecessary; some escaping objects still need heap allocation."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Interprocedural analysis chapter" },
+        { "ref": "BOOK:appel", "locator": "Heap allocation optimization chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Escape analysis is a synonym for loop-invariant analysis.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They analyze different properties; loop-invariance concerns computation not changing across iterations, escape concerns reference visibility across scopes.",
+      "sourceOrEvidence": "EAC3 optimization chapters"
+    },
+    {
+      "claim": "Escape analysis drives register allocation.",
+      "errorType": "scope_error",
+      "whyWrong": "Register allocation operates on lower-level IR and uses liveness/interference. Escape analysis operates on high-level object semantics.",
+      "sourceOrEvidence": "Appel register allocation vs high-level optimization chapters"
+    },
+    {
+      "claim": "If escape analysis is imprecise, incorrect optimizations may result.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Imprecise (conservative) escape analysis simply forgoes optimization opportunities; unsound results are separately a bug in the analysis.",
+      "sourceOrEvidence": "Choi et al., original escape analysis paper"
+    }
+  ],
+  "implementationFacts": [
+    "JVM HotSpot and Go compiler perform escape analysis to move allocations from heap to stack.",
+    "LLVM's Scalar Replacement of Aggregates (SROA) is enabled for non-escaping structs.",
+    "Andersen-style points-to analysis and connection-graph algorithms are used for escape analysis."
+  ],
+  "performanceScenarios": [
+    "Java lambda captures and iterators are common targets of escape analysis-driven stack allocation.",
+    "Go compiler explicitly reports 'escapes to heap' for variables that must be heap-allocated."
+  ],
+  "versionSensitivity": "stable_principle"
+}

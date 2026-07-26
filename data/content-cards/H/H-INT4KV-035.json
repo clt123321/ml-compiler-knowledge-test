@@ -1,0 +1,55 @@
+{
+  "questionId": "H-INT4KV-035",
+  "learningObjective": "Identify the trade-offs of INT4 KV cache quantization vs INT8/FP8 for LLM serving.",
+  "canonicalClaims": [
+    {
+      "claim": "INT4 KV cache halves KV memory footprint again vs INT8 (4× vs FP16) but is more accuracy-sensitive at long contexts because coarser per-element quantization amplifies softmax's cumulative logit noise; kernel-side support is less mature than INT8/FP8, with many stacks dequantizing INT4 KVs to FP16 in the attention kernel.",
+      "conditions": [
+        "Per-token or per-head-per-token scaling for KV quantization.",
+        "The attention kernel supports the chosen quantized dtype at least via dequant-in-register."
+      ],
+      "nonImplications": [
+        "Does not imply INT4 KV is unusable — many workloads tolerate the accuracy trade-off.",
+        "Does not imply INT4 KV yields 2× speedup over INT8; kernel overhead reduces the effective gain."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "KV cache quantization support matrix" },
+        { "ref": "BOOK:sze-eff", "locator": "Aggressive quantization trade-offs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "INT4 KV cache is always at least as accurate as INT8 KV cache because more scale factors are stored.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Per-element precision (4 vs 8 bits) is the dominant factor; scale-factor count cannot compensate for 4-bit resolution.",
+      "sourceOrEvidence": "TensorRT-LLM KV accuracy studies"
+    },
+    {
+      "claim": "INT4 KV cache requires FP4 Tensor Cores on the deployment GPU.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Attention kernels typically dequant INT4 KVs to FP16 in registers; FP4 Tensor Cores are not required (and were not available in the referenced framework versions).",
+      "sourceOrEvidence": "vLLM / TRT-LLM implementations"
+    },
+    {
+      "claim": "INT4 KV cache is universally supported across attention kernels and delivers speedup identical to INT8.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Kernel support is less mature than INT8/FP8; effective speedup depends on dequant path and kernel maturity.",
+      "sourceOrEvidence": "Framework release notes"
+    },
+    {
+      "claim": "Accuracy at INT4 KV is independent of context length.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Softmax cumulatively amplifies logit noise; longer contexts see larger accuracy drops from KV quantization noise.",
+      "sourceOrEvidence": "KV quantization ablations across context lengths"
+    }
+  ],
+  "implementationFacts": [
+    "TensorRT-LLM: INT4 KV supported experimentally in recent versions.",
+    "vLLM: FP8 and INT8 KV cache are production-ready; INT4 KV is less common."
+  ],
+  "performanceScenarios": [
+    "LLaMA-70B at 8K context: INT4 KV shows 1-3% accuracy drop on long-context QA vs INT8 KV, but doubles the concurrent-request capacity."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

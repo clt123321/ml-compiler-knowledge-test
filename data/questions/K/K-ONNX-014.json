@@ -1,0 +1,83 @@
+{
+  "id": "K-ONNX-014",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "ONNX: interchange format vs runtime",
+  "learningObjective": "Distinguish ONNX as an interchange format from any specific runtime (ONNX Runtime, TensorRT importer) that consumes ONNX.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "ONNX / ONNX Runtime / TensorRT",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement most accurately describes ONNX's role in the deployment stack?",
+  "options": [
+    {
+      "id": "A",
+      "text": "ONNX is a high-performance inference runtime that runs models directly on GPU or CPU; converting to another format such as TensorRT is unnecessary because ONNX already ships GPU kernels for every op."
+    },
+    {
+      "id": "B",
+      "text": "ONNX is a serialization format for a graph of standardized operators (with a versioned opset) that different runtimes and compilers can import; performance depends on the runtime that consumes the model, not on ONNX itself."
+    },
+    {
+      "id": "C",
+      "text": "ONNX is a JIT compiler that lowers PyTorch or TensorFlow models to Triton at load time on the deployment machine; the resulting kernels are cached in the ONNX file for subsequent loads."
+    },
+    {
+      "id": "D",
+      "text": "ONNX is a proprietary format used only by Microsoft's ONNX Runtime; other runtimes cannot import it and must convert through TorchScript or SavedModel first."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "ONNX is an open interchange format — a protobuf-encoded graph of standardized operators with an opset version. Multiple runtimes (ONNX Runtime, TensorRT, TVM, IREE, OpenVINO, etc.) can import ONNX and execute it with their own kernels. Performance is a property of the consuming runtime, not of the ONNX file, and 'interchange format ≠ high-performance runtime' is one of the module's canonical boundaries.",
+  "optionExplanations": {
+    "A": "Wrong: ONNX is a format, not a runtime; ONNX Runtime is a separate project that consumes it.",
+    "B": "Correct: standard definition of ONNX.",
+    "C": "Wrong: ONNX does not lower to Triton; it is a format, not a JIT compiler.",
+    "D": "Wrong: ONNX is open and consumed by many runtimes."
+  },
+  "assumptions": [
+    "The user is comparing 'the ONNX file' to 'the runtime that loads it'."
+  ],
+  "nonImplications": [
+    "Does not imply every op is portable across all runtimes; consumers may not support the full opset.",
+    "Does not imply ONNX cannot be compiled AOT; runtimes like TensorRT can build an engine from ONNX at ahead-of-time."
+  ],
+  "misconceptionTags": [
+    "format_vs_runtime_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Confuses format with runtime.",
+    "C": "Fabricates JIT behavior.",
+    "D": "False proprietary claim."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:onnx",
+      "locator": "Overview: interchange format, opset, model IR",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-ONNX-014.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

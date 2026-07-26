@@ -1,0 +1,85 @@
+{
+  "id": "H-SMOOTH-019",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "SmoothQuant / Design intent",
+  "learningObjective": "Explain the SmoothQuant technique: migrating activation outlier magnitude to weights via a per-channel diagonal scaling.",
+  "archetype": "paper_design_intent",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic INT8 GEMM",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "SmoothQuant enables W8A8 quantization for LLMs where naive per-tensor activation quantization fails due to outliers. Which best describes its central technique?",
+  "options": [
+    {
+      "id": "A",
+      "text": "SmoothQuant applies a global smoothing filter to activation tensors before quantization, low-passing the outliers."
+    },
+    {
+      "id": "B",
+      "text": "SmoothQuant identifies outlier channels and casts them to FP16 while quantizing the rest to INT8; the resulting kernel is mixed-precision."
+    },
+    {
+      "id": "C",
+      "text": "SmoothQuant chooses a per-channel diagonal scaling vector `s` and rewrites `Y = XW` as `Y = (X \u00b7 diag(1/s)) \u00b7 (diag(s) \u00b7 W)`; the activation channels are 'smoothed' (outlier magnitude reduced), while the weights absorb the migrated magnitude. Since weights are easy to per-channel-quantize but activations are usually per-tensor, this makes W8A8 tractable."
+    },
+    {
+      "id": "D",
+      "text": "SmoothQuant retrains the model with regularization that penalizes outlier activations, producing a naturally quantization-friendly network."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "SmoothQuant's core observation: activation outliers concentrate in a small number of channels; per-tensor activation quantization suffers, but per-channel weight quantization is cheap. Multiplying activations by `diag(1/s)` (which requires `s` on their per-channel scale) and correspondingly multiplying weights by `diag(s)` is a mathematically-equivalent rewrite that pushes the outlier magnitude from activations into weights. The rewritten activations are 'smooth' (small dynamic range \u2192 good per-tensor INT8), while the rewritten weights have per-channel-magnitude variation that per-channel weight quantization already handles well. Option B describes LLM.int8, not SmoothQuant. Option C invents a filtering-based approach. Option D invents a training-based method.",
+  "optionExplanations": {
+    "A": "Wrong: SmoothQuant is a mathematical rewrite, not signal smoothing.",
+    "B": "Wrong: describes LLM.int8's mixed-precision fallback.",
+    "C": "Correct: matches the SmoothQuant paper's central technique.",
+    "D": "Wrong: SmoothQuant is a PTQ method, not a training modification."
+  },
+  "assumptions": [
+    "The linear layer is `Y = XW` with per-channel activation outliers along X's feature dimension.",
+    "Weights are per-channel quantized (standard for INT8 W8A8)."
+  ],
+  "nonImplications": [
+    "Does not imply the diagonal scaling absorbs the entire outlier \u2014 the migration factor `s` is a tunable hyperparameter balancing activation smoothness vs. weight quantization difficulty.",
+    "Does not imply SmoothQuant matches every FP16 accuracy \u2014 some residual loss is typical, though small."
+  ],
+  "misconceptionTags": [
+    "smoothquant_llm_int8_confusion",
+    "smoothquant_signal_filter"
+  ],
+  "distractorRationales": {
+    "A": "Confuses with signal smoothing.",
+    "B": "Confuses with LLM.int8.",
+    "D": "Confuses with training-time methods."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:smoothquant",
+      "locator": "Sections 3-4: diagonal scaling and migration factor",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "SmoothQuant PTQ technique for W8A8 LLM quantization",
+    "evidenceType": "paper_result",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-SMOOTH-019.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

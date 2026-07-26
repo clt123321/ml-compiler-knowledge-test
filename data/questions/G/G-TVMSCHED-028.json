@@ -1,0 +1,90 @@
+{
+  "id": "G-TVMSCHED-028",
+  "type": "multiple",
+  "module": "graph_opt_schedule",
+  "subtopic": "TensorIR / Schedule primitives",
+  "learningObjective": "Identify the legality preconditions of common TensorIR / TVM schedule primitives.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM TensorIR / MetaSchedule",
+    "frameworkVersionScope": "TVM 0.14 ~ 0.16",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "irSnippet": "# TensorIR schedule primitives (simplified)\ni, j, k = sch.get_loops(block)\nio, ii = sch.split(i, factors=[None, 32])       # split loop i into outer and inner\nsch.reorder(io, k, ii, j)                        # reorder loops (must preserve dependences)\nsch.vectorize(ii)                                # vectorize the inner-32 loop\nsch.bind(io, 'blockIdx.x')                       # map to a GPU block dimension\nsch.parallel(k)                                  # parallelize k across threads",
+  "stem": "Which of the following statements about the TensorIR schedule primitives above are TRUE? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "`bind` to `blockIdx.x` is legal for any loop; TVM will emit correct code even if the loop has cross-iteration writes into shared state."
+    },
+    {
+      "id": "B",
+      "text": "`split` is always legal because it only relabels the iteration space; the composition `factors=[None, 32]` decomposes `i` into `i = io * 32 + ii` and does not require dependence analysis."
+    },
+    {
+      "id": "C",
+      "text": "`reorder` is legal only when the new order does not violate any dependence in the loop nest; TVM's schedule primitive rejects reorderings that would reverse a true dependence."
+    },
+    {
+      "id": "D",
+      "text": "`vectorize` requires that the target loop's iterations are independent (no cross-iteration write dependence) and that the loop's trip count is compatible with the target's vector width."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): bind to a thread axis has independence preconditions. B (Correct): split is a pure reindexing. C (Correct): reorder requires dependence preservation. D (Correct): vectorize requires independence. General context: the target axis; otherwise cross-thread races occur.",
+  "optionExplanations": {
+    "A": "Wrong: bind to a thread axis has independence preconditions.",
+    "B": "Correct: split is a pure reindexing.",
+    "C": "Correct: reorder requires dependence preservation.",
+    "D": "Correct: vectorize requires independence."
+  },
+  "assumptions": [
+    "The TensorIR block metadata correctly describes reads and writes.",
+    "The scheduler enforces primitive preconditions."
+  ],
+  "nonImplications": [
+    "Does not imply all splits produce correct code once combined with subsequent primitives; downstream primitives (like vectorize) still have their own preconditions.",
+    "Does not imply MetaSchedule's search never generates illegal candidates internally \u2014 it may, but the primitives reject them at application."
+  ],
+  "misconceptionTags": [
+    "parallel_semantically_neutral",
+    "bind_no_dependence_check"
+  ],
+  "distractorRationales": {
+    "A": "Confuses tagging with dependence-aware binding."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "TensorIR schedule primitive reference",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/G/G-TVMSCHED-028.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

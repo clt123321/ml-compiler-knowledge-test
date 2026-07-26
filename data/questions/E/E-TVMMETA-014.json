@@ -1,0 +1,94 @@
+{
+  "id": "E-TVMMETA-014",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "TVM / MetaSchedule \u2014 search-based auto-tuning",
+  "learningObjective": "Understand the role of MetaSchedule in TVM: search space, measurement, cost model, and its relationship to TensorIR schedule primitives.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM MetaSchedule",
+    "frameworkVersionScope": "TVM Unity",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement about TVM's MetaSchedule is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "MetaSchedule operates at the Relax graph level; it does not touch loop-level IR and instead selects among pre-built kernel library implementations."
+    },
+    {
+      "id": "B",
+      "text": "MetaSchedule replaces TensorIR schedule primitives with a purely analytical solver based on the polyhedral model; it does not perform any real measurement and relies solely on integer-linear-programming derived closed-form costs."
+    },
+    {
+      "id": "C",
+      "text": "MetaSchedule automatically generates candidate schedules over TensorIR PrimFunc using rule-based expansion (space definition), then evaluates them via a cost model and real measurement on target hardware, iterating to find high-performance implementations."
+    },
+    {
+      "id": "D",
+      "text": "MetaSchedule is deterministic: given the same PrimFunc and target, it always produces the same schedule regardless of search budget, seed, or measurement noise."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "MetaSchedule (the successor to Ansor) is TVM's search-based auto-tuning framework operating on TensorIR PrimFunc. It defines a search space via schedule rules (e.g., tile sizes, unroll factors, thread-block dimensions), samples candidates, evaluates them with a cost model, actually measures top candidates on hardware, and iterates. It is thus a hybrid analytical + empirical approach. Determinism is not guaranteed; measurement noise and search seeds affect outcomes.",
+  "optionExplanations": {
+    "C": "Correct: rule-based expansion + cost model + real measurement.",
+    "B": "Wrong: MetaSchedule does real measurement; it is not a pure analytical solver.",
+    "A": "Wrong: MetaSchedule works on TensorIR, not on Relax graph rewrite alone.",
+    "D": "Wrong: results depend on search budget, seed, and measurement variance."
+  },
+  "assumptions": [
+    "MetaSchedule as documented for TVM Unity.",
+    "Search-based tuning as the intended workflow."
+  ],
+  "nonImplications": [
+    "Does not imply MetaSchedule always outperforms hand-tuned libraries.",
+    "Does not imply the cost model alone is sufficient; measurement is what breaks ties."
+  ],
+  "misconceptionTags": [
+    "metaschedule_pure_analytical_myth",
+    "metaschedule_graph_level_myth"
+  ],
+  "distractorRationales": {
+    "B": "Overstates analytical purity.",
+    "A": "Confuses tensor-level with graph-level scope.",
+    "D": "Ignores stochastic search elements."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "MetaSchedule overview",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Ansor (predecessor) \u2014 search space, cost model, measurement",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-TVMMETA-014.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

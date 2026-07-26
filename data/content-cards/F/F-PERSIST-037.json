@@ -1,0 +1,49 @@
+{
+  "questionId": "F-PERSIST-037",
+  "learningObjective": "Understand persistent-kernel pattern: fixed blocks + internal work-stealing loop for launch-overhead amortization.",
+  "canonicalClaims": [
+    {
+      "claim": "A persistent CUDA kernel launches a fixed number of blocks (matched to hardware occupancy) and loops internally over work items pulled from a global counter/queue; the pattern amortizes kernel-launch overhead across many small work items and gives the kernel manual control over scheduling.",
+      "conditions": ["Work items are numerous and short; atomicAdd is available."],
+      "nonImplications": [
+        "Does not imply persistent kernels always win over many-launch approaches.",
+        "Does not imply CUDA provides a `__persistent__` attribute."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Persistent threads / work stealing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "CUDA provides a `__persistent__` kernel attribute.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No such attribute exists; the pattern is an idiom.",
+      "sourceOrEvidence": "CUDA docs"
+    },
+    {
+      "claim": "Persistent kernels must be killed via `cudaKillKernel`.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No such API; kernels self-terminate via exit condition.",
+      "sourceOrEvidence": "CUDA docs"
+    },
+    {
+      "claim": "Persistent kernels only work on Grace-Hopper CPUs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No dependence on host architecture.",
+      "sourceOrEvidence": "CUDA docs"
+    },
+    {
+      "claim": "Persistent kernels eliminate all overhead, including per-work-item atomicAdd cost.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Work-stealing atomics have their own contention cost; the pattern trades one overhead for another.",
+      "sourceOrEvidence": "GPU performance literature"
+    }
+  ],
+  "implementationFacts": [
+    "Typical loop: `while ((wid = atomicAdd(&counter, 1)) < N) { process(wid); }`",
+    "Common in LLM decoding, small-tile GEMM tail handling, custom schedulers."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

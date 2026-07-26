@@ -1,0 +1,1875 @@
+{
+  "module": "core_ops_attention",
+  "code": "I",
+  "label": "核心算子、融合 Kernel 与 Attention",
+  "generatedAt": "2026-07-26",
+  "count": 30,
+  "questions": [
+    {
+      "id": "I-ATTBACK-025",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "Attention backward / Memory footprint and recomputation",
+      "learningObjective": "Reason about the peak activation memory of standard attention backward and how FlashAttention-style recomputation changes it.",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM",
+          "SMEM sized for tile"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ],
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ],
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ],
+          [
+            "B",
+            "H",
+            "N",
+            "N"
+          ],
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the backward pass of standard attention O = softmax(Q @ K^T / sqrt(d)) @ V for shapes Q, K, V ∈ [B, H, N, d]. Select all correct statements about activation memory and recomputation. (Choose all that apply.)",
+      "codeSnippet": "# Forward:\n# S = Q @ K^T / sqrt(d)                # [B, H, N, N]\n# P = softmax(S, dim=-1)               # [B, H, N, N]\n# O = P @ V                             # [B, H, N, d]\n\n# Backward (given dO):\n# Need dQ, dK, dV. Naive requires materialized P (or S).",
+      "options": [
+        {
+          "id": "A",
+          "text": "FlashAttention avoids storing P in HBM by re-tiling backward: it stores only per-row (m, l) statistics from forward (size O(B*H*N)) and recomputes P block-by-block from Q, K in backward, trading extra compute for a large HBM saving."
+        },
+        {
+          "id": "B",
+          "text": "In FlashAttention backward, the extra recomputation makes total FLOPs strictly larger than the forward-only baseline; the wall-clock speedup comes entirely from reduced HBM traffic dominating the extra compute."
+        },
+        {
+          "id": "C",
+          "text": "The naive backward stores the softmax output P (or S) of shape [B, H, N, N] from forward and re-uses it in backward; this dominates activation memory for long sequences (quadratic in N) and is the main reason non-flash attention runs out of memory at long context."
+        },
+        {
+          "id": "D",
+          "text": "The backward gradient of softmax with respect to logits requires access to the full P matrix element-by-element; there is no way to avoid materializing P in HBM at some point in any correct algorithm."
+        }
+      ],
+      "assumptions": [
+        "Discussion is training attention with standard cross-entropy loss upstream.",
+        "'Naive backward' means a straightforward autograd derivation without I/O-aware fusion."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-CONV-016",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Convolution / Direct vs im2col-GEMM",
+      "learningObjective": "Compare direct convolution and im2col-based GEMM convolution in terms of memory and compute.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N",
+            "C",
+            "H",
+            "W"
+          ],
+          [
+            "K",
+            "C",
+            "R",
+            "S"
+          ],
+          [
+            "N",
+            "K",
+            "H_out",
+            "W_out"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "NCHW",
+          "KCRS",
+          "NCHW"
+        ]
+      },
+      "stem": "Compare two implementation strategies for a standard 2D convolution: (1) direct convolution kernel that computes each output pixel with its own R*S*C-tap sum; (2) im2col followed by cuBLAS/GEMM. Which comparison is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both have the same FLOP count. im2col replicates each input pixel R*S times into a lowered matrix (extra memory and HBM traffic), then calls a highly-tuned GEMM; direct convolution avoids the replication cost but requires a custom kernel with careful data reuse. im2col is often faster in practice because the GEMM tail leverages tensor cores well."
+        },
+        {
+          "id": "B",
+          "text": "im2col strictly reduces FLOPs compared to direct convolution because it removes the redundant multiplications along the receptive field, converting the convolution into an equivalent smaller matmul."
+        },
+        {
+          "id": "C",
+          "text": "Direct convolution stores overlapping receptive fields once in HBM and streams them per output; im2col requires strictly less memory because the reshaped matrix reuses input storage in place."
+        },
+        {
+          "id": "D",
+          "text": "Both strategies have the same FLOPs, memory traffic, and peak memory; the choice is purely about kernel implementation complexity and does not affect end-to-end performance."
+        }
+      ],
+      "assumptions": [
+        "Standard 2D convolution with stride >= 1 and non-trivial R, S.",
+        "im2col produces a [N*H_out*W_out, C*R*S] matrix multiplied by a [C*R*S, K] weight matrix."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-EMB-017",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Embedding lookup / Gather kernel",
+      "learningObjective": "Characterize the embedding lookup as a gather kernel and identify its memory access pattern.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "V",
+            "D"
+          ],
+          [
+            "B",
+            "N"
+          ],
+          [
+            "B",
+            "N",
+            "D"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "int64",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "The input embedding layer takes an int64 index tensor [B, N] and gathers rows from a weight table [V, D] (vocabulary V, hidden dim D). Which characterization of this kernel is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "It is a random-access read of individual elements: for each output element out[b, n, d] the kernel reads a single scalar table[idx[b,n], d], so global memory transactions are uncoalesced by design and the kernel is latency-bound."
+        },
+        {
+          "id": "B",
+          "text": "It is functionally equivalent to a GEMM between a one-hot [B, N, V] input and the [V, D] table; a good implementation actually forms this one-hot and calls a sparse-GEMM primitive, which is faster than a hand-written gather kernel."
+        },
+        {
+          "id": "C",
+          "text": "It is a reduction kernel that sums the embedding rows selected by all B*N indices; the output is [D] per batch item, and the runtime is dominated by the reduction depth log2(B*N)."
+        },
+        {
+          "id": "D",
+          "text": "It is a gather kernel with irregular but coalesced-per-row access: each of the B*N indices induces one contiguous read of D floats from the [V, D] table. FLOPs are zero; runtime is bandwidth-bound on the D-element rows read from the embedding table."
+        }
+      ],
+      "assumptions": [
+        "Standard row-major embedding weight [V, D].",
+        "Warps cooperatively load a row rather than each thread choosing a different row."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-EPILOGUE-024",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "GEMM epilogue fusion / Bias + activation + norm",
+      "learningObjective": "Reason about which operations can be fused as a GEMM epilogue and what the HBM-traffic benefit is.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": [
+          "tensor cores"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "N",
+            "D_in"
+          ],
+          [
+            "D_in",
+            "D_out"
+          ],
+          [
+            "D_out"
+          ],
+          [
+            "B",
+            "N",
+            "D_out"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "A GEMM Y = X @ W is followed by (i) bias add, (ii) elementwise activation (GELU), (iii) RMSNorm along the last axis. Select all statements about fusing these into a GEMM epilogue that are correct. (Choose all that apply.)",
+      "codeSnippet": "# Sequence to fuse:\n# Y0 = X @ W                              # GEMM\n# Y1 = Y0 + bias                          # (i) bias add, per-row broadcast\n# Y2 = gelu(Y1)                           # (ii) elementwise activation\n# Y3 = rmsnorm(Y2, gamma)                 # (iii) reduction across last axis + normalize",
+      "options": [
+        {
+          "id": "A",
+          "text": "Fusing the epilogue removes tensor-core benefit because tensor cores can only accumulate into registers, and any epilogue instruction moves the accumulator to shared memory first, forcing a synchronous barrier that undoes the tensor-core throughput advantage."
+        },
+        {
+          "id": "B",
+          "text": "(i) bias add and (ii) elementwise activation fuse naturally as a GEMM epilogue because they are pure elementwise transforms on the accumulator tile before it is written to HBM; the fused kernel avoids the intermediate Y0 and Y1 HBM roundtrips."
+        },
+        {
+          "id": "C",
+          "text": "(iii) RMSNorm fuses as a standard GEMM epilogue in the same way as bias-add and activation, because normalization is elementwise once the running variance is precomputed as a scalar constant of the workload."
+        },
+        {
+          "id": "D",
+          "text": "(iii) RMSNorm requires a reduction along the last axis (i.e., across the D_out output columns of the GEMM tile), which typically cuts across CTAs unless the GEMM is designed with a full-row tile; in mainstream libraries, RMSNorm is left as a separate kernel or fused only with a specialized 'GEMM-with-row-reduction' epilogue."
+        }
+      ],
+      "assumptions": [
+        "Standard cuBLASLt / CUTLASS epilogue programming model applies.",
+        "GEMM tile size does not span the full D_out row of the output."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-FFT-023",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "FFT / Custom operator characteristics",
+      "learningObjective": "Reason about the memory and compute characteristics of FFT and related transforms as custom operators inside ML models.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "A model uses a 1D FFT of length N (with N a power of two) as a custom operator inside a layer. Select all correct statements about this operator on GPU. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The Cooley-Tukey FFT has O(N log N) compute (versus O(N^2) for a naive DFT); on modern GPUs cuFFT organizes the computation into O(log N) rounds of butterfly operations, each round with a specific stride pattern that dominates its memory access."
+        },
+        {
+          "id": "B",
+          "text": "FFT of length N reads/writes O(N) elements per round; the compute-to-byte ratio per round is essentially constant (small), which makes FFT of large N memory-bandwidth bound on GPU rather than compute bound."
+        },
+        {
+          "id": "C",
+          "text": "Because FFT preserves L2 norms (Parseval), it introduces no numerical error and can therefore be treated as a bit-exact linear operator regardless of floating-point precision used."
+        },
+        {
+          "id": "D",
+          "text": "In ML models, FFT is often used to accelerate long-range convolutions via the convolution theorem: conv(a, b) = IFFT(FFT(a) * FFT(b)); the crossover point where FFT-based convolution beats direct convolution grows with kernel size."
+        }
+      ],
+      "assumptions": [
+        "N is a power of two so radix-2 or radix-4 FFTs apply directly.",
+        "GPU has HBM and standard cuFFT-like optimized implementations available."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-FLASH-005",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "FlashAttention / IO complexity and backward recomputation",
+      "learningObjective": "Explain FlashAttention's core algorithmic idea: block-tiled attention with online softmax and backward recomputation of the attention matrix.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "large SMEM for K, V, S tiles"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic (FlashAttention v1/v2 style)",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement most accurately describes the algorithmic contribution of FlashAttention (as an exact attention algorithm)?",
+      "options": [
+        {
+          "id": "A",
+          "text": "FlashAttention keeps the attention math exact but reorders the computation into K/V-block tiles with an online softmax so the full N x N attention matrix is never materialized in HBM; in the backward pass the attention weights are recomputed from stored (m, l) statistics and Q, K, V rather than reloaded from HBM."
+        },
+        {
+          "id": "B",
+          "text": "FlashAttention replaces softmax with a low-rank approximation whose rank is chosen per tile, reducing attention from O(N^2) to O(N sqrt(N)) FLOPs while remaining within an epsilon-approximation of exact attention."
+        },
+        {
+          "id": "C",
+          "text": "FlashAttention prunes tokens with attention weight below a learned threshold (sparse attention) and skips the corresponding tiles; correctness is preserved because the pruned weights are provably below numerical noise for typical language models."
+        },
+        {
+          "id": "D",
+          "text": "FlashAttention rewrites attention in FP8 with per-row scale factors that let the softmax denominator be computed without dequantization; the FP8 arithmetic is the key to the wall-clock speedup."
+        }
+      ],
+      "assumptions": [
+        "Discussion refers to FlashAttention v1/v2 exact attention (not FlashAttention-style approximate variants).",
+        "SMEM per SM is large enough to hold Q, K, V, and S tiles for the chosen block sizes."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-FLASHIO-006",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "FlashAttention / HBM traffic analysis of attention",
+      "learningObjective": "Compare HBM traffic patterns between naive attention (materialized S = QK^T) and FlashAttention (block-tiled, streamed).",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM",
+          "large SMEM"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ],
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ],
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ],
+          [
+            "B",
+            "H",
+            "N",
+            "N"
+          ],
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Compare the HBM traffic of naive attention (which explicitly materializes S = QK^T in HBM before softmax and O = softmax(S)V) with FlashAttention over a single (B=1, H=1) head with sequence length N and head dim d = 64. Which comparison is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Naive: O(N*d) reads/writes; FlashAttention: O(N^2) reads/writes. FlashAttention pays more HBM traffic in exchange for constant SMEM usage and lower peak register pressure."
+        },
+        {
+          "id": "B",
+          "text": "Both algorithms have HBM traffic dominated by loading Q, K, V (O(N*d)) and writing O (O(N*d)); FlashAttention's benefit is entirely from fusing softmax into the matmul, not from I/O."
+        },
+        {
+          "id": "C",
+          "text": "Both have HBM traffic O(N^2); FlashAttention only saves compute by fusing softmax with the K, V matmul into a single kernel."
+        },
+        {
+          "id": "D",
+          "text": "Naive attention has HBM traffic dominated by writing and re-reading S (O(N^2)), on top of loading Q, K, V, and writing O. FlashAttention keeps S entirely on-chip and its HBM traffic is O(N^2 * d / M) where M is on-chip memory per SM, reducing to roughly O(N*d) when a full K/V tile fits — much less than naive for large N."
+        }
+      ],
+      "assumptions": [
+        "Standard (non-fused) baseline actually writes S to HBM (as in an unoptimized softmax-then-matmul kernel).",
+        "The on-chip memory M is at least large enough to hold one Q tile and one K/V tile."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-FLASHPROP-026",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "FlashAttention / Design properties and non-implications",
+      "learningObjective": "Distinguish claims about FlashAttention that are algorithm-level truths from common overgeneralizations about performance.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper",
+        "device": "GPU",
+        "requiredFeatures": [
+          "large SMEM"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all statements about FlashAttention that are correct at the algorithm-and-analysis level (i.e., independent of any specific paper wall-clock number). (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "FlashAttention delivers a fixed wall-clock speedup (roughly 3-4x) uniformly across sequence lengths, batch sizes, and head dimensions on all modern GPUs, because it is designed to be independent of hardware configuration."
+        },
+        {
+          "id": "B",
+          "text": "The backward pass of FlashAttention deliberately recomputes the softmax probabilities block-by-block from stored (m, l) statistics; this recomputation trades extra FLOPs for a much smaller HBM footprint."
+        },
+        {
+          "id": "C",
+          "text": "FlashAttention is exact (bitwise up to summation-order rounding, not approximate) and does not change the FLOP count of forward attention."
+        },
+        {
+          "id": "D",
+          "text": "FlashAttention's asymptotic HBM I/O scales as O(N^2 d / M), where M is on-chip memory per SM; the gap versus O(N^2) baselines grows with N."
+        }
+      ],
+      "assumptions": [
+        "'FlashAttention' refers to the FA v1/v2 exact algorithms.",
+        "'Wall-clock speedup' is shape and hardware dependent."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-FUSEDMLP-014",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Fused MLP / Activation fusion boundary",
+      "learningObjective": "Reason about which parts of an MLP block can be fused into a single GPU kernel and where the fusion boundary lies for a Fused-QKV/-MLP style optimization.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "N",
+            "D"
+          ],
+          [
+            "D",
+            "F"
+          ],
+          [
+            "F",
+            "D"
+          ],
+          [
+            "B",
+            "N",
+            "D"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "A standard MLP block computes y = down(activation(up(x))) with intermediate size F. For x shape [B, N, D] and F > D, which fusion strategy is most consistent with how modern LLM inference kernels are structured?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Fuse up + activation into one kernel (writing intermediate a of shape [B, N, F] to HBM) and keep down as a separate GEMM. The [B, N, F] tensor is written and read once, which is acceptable because the down GEMM is a big matmul that would not fuse with an elementwise activation without hurting its tile design."
+        },
+        {
+          "id": "B",
+          "text": "Fuse up + activation + down into a single kernel that never materializes the [B, N, F] intermediate in HBM, using a K-block reduction over the intermediate dim to stream partial outputs directly into y. Because F is a reduction dim, this fusion is a producer-consumer along a shared iteration space."
+        },
+        {
+          "id": "C",
+          "text": "Do not fuse anything: three separate kernel launches (up GEMM, activation, down GEMM) let each op run its optimal tile shape and give the profiler cleaner boundaries; fusion of any pair uniformly slows the block due to register pressure."
+        },
+        {
+          "id": "D",
+          "text": "Fuse up + down into a single kernel by concatenating W_up and W_down^T into one weight matrix, then apply the activation last. This yields one GEMM with concatenated weights and one final elementwise activation."
+        }
+      ],
+      "assumptions": [
+        "F > D so the intermediate [B, N, F] is larger than the input/output.",
+        "Standard elementwise activation (GELU/SiLU) that is cheap per element."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-FUSEDPROP-030",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "Fused kernels / Benefits and boundary conditions",
+      "learningObjective": "Distinguish real benefits and non-benefits of kernel fusion for transformer building blocks.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all correct statements about kernel fusion in transformer inference. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Kernel fusion always improves latency because it eliminates all HBM traffic between the fused ops; there is no configuration in which fusion hurts performance."
+        },
+        {
+          "id": "B",
+          "text": "Aggressive fusion can hurt occupancy by inflating per-thread register footprint; when register pressure spills to local memory, the fused kernel may be slower than the un-fused version."
+        },
+        {
+          "id": "C",
+          "text": "Fusion primarily reduces HBM roundtrips of intermediate tensors and amortizes kernel-launch overhead; the FLOP count of the fused operations is unchanged."
+        },
+        {
+          "id": "D",
+          "text": "Producer-consumer fusion (e.g., pointwise ops on the output of a GEMM) is straightforward, but fusing across a reduction boundary (e.g., across softmax) requires restructuring the tiling and typically only pays off under specific tile-size constraints."
+        }
+      ],
+      "assumptions": [
+        "'Fusion' means combining multiple logical ops into a single kernel launch.",
+        "GPU with register file and SMEM as the on-chip staging levels."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-FUSEDQKV-010",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Fused QKV projection / GEMM merging",
+      "learningObjective": "Explain why the three Q, K, V linear projections are fused into a single GEMM and what the correctness and performance requirements are.",
+      "archetype": "systems_dataflow",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "N",
+            "D"
+          ],
+          [
+            "D",
+            "3*D"
+          ],
+          [
+            "B",
+            "N",
+            "3*D"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "A transformer implementation replaces three separate linear projections (X@W_Q, X@W_K, X@W_V) with a single fused GEMM X @ [W_Q | W_K | W_V] whose output is sliced into Q, K, V. Which characterization is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Fusing the three projections produces different Q, K, V values compared to separate projections because the shared reduction accumulator introduces cross-projection numerical coupling; the fusion must be disabled whenever bit-exact reproducibility of separate projections is required."
+        },
+        {
+          "id": "B",
+          "text": "Fused QKV is only safe when H_kv = H (i.e., MHA); MQA and GQA break the fusion because Q has H heads while K, V have H_kv < H heads, so the concatenated weight matrix is no longer rectangular."
+        },
+        {
+          "id": "C",
+          "text": "The fusion doubles compute FLOPs because the combined weight matrix is [D, 3D] rather than [D, D], turning the projection into a wider GEMM whose runtime is bounded by tensor-core issue rate rather than memory."
+        },
+        {
+          "id": "D",
+          "text": "Numerically the fused and separate projections are equivalent (up to rounding order). The primary benefit is a single kernel launch and one HBM read of X instead of three; the concatenation of the weight matrices is done offline so W is fetched once for the combined GEMM."
+        }
+      ],
+      "assumptions": [
+        "Weights are stored contiguously as a single [D, 3D] (or [D, D + 2*H_kv*d]) tensor.",
+        "The output is contiguous and can be sliced without copies."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-GEMM-001",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "GEMM / Tile size and shared-memory reuse",
+      "learningObjective": "Reason about the arithmetic intensity of a tiled GEMM kernel and why larger tiles increase compute-per-byte until register/SMEM pressure caps the design.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "shared memory",
+          "sufficient register file for M_TILE x N_TILE accumulators"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "K"
+          ],
+          [
+            "K",
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float32"
+        ],
+        "layouts": [
+          "row-major",
+          "row-major",
+          "row-major"
+        ]
+      },
+      "stem": "A tiled GEMM kernel uses per-thread-block tiles M_TILE x N_TILE with a K-loop step of K_TILE, staging A and B fragments in shared memory. Which statement about arithmetic intensity is correct?",
+      "codeSnippet": "// Pseudocode — one thread block computes a M_TILE x N_TILE tile of C\n// per iteration of the K-loop, it stages A[m0:m0+M_TILE, k:k+K_TILE]\n// and B[k:k+K_TILE, n0:n0+N_TILE] into shared memory, then multiplies.\n// Flops per K_TILE step:   2 * M_TILE * N_TILE * K_TILE\n// Bytes read per K_TILE step (from HBM): (M_TILE + N_TILE) * K_TILE * sizeof(elt)\n// Arithmetic intensity (per element type of A/B) ≈\n//     (2 * M_TILE * N_TILE) / ((M_TILE + N_TILE) * sizeof(elt))",
+      "options": [
+        {
+          "id": "A",
+          "text": "Arithmetic intensity is independent of M_TILE and N_TILE because each output element ultimately requires exactly 2K flops and 2K element reads regardless of tiling; tile sizing only affects launch grid dimensions, not HBM traffic per output."
+        },
+        {
+          "id": "B",
+          "text": "Arithmetic intensity scales with K_TILE, not with M_TILE/N_TILE, because A and B are streamed along K; therefore choosing K_TILE = K (full K in one step) is always optimal for HBM traffic minimization."
+        },
+        {
+          "id": "C",
+          "text": "Increasing M_TILE and N_TILE raises arithmetic intensity roughly as (M_TILE*N_TILE)/(M_TILE+N_TILE), so larger tiles amortize each fetched A/B row/column over more MACs; the ceiling is set by register/SMEM capacity per SM."
+        },
+        {
+          "id": "D",
+          "text": "Because the C accumulator is written once at the end, HBM write traffic dominates and arithmetic intensity is determined by the M_TILE*N_TILE / (M_TILE*N_TILE*sizeof(C)) ratio, so increasing tile size reduces intensity."
+        }
+      ],
+      "assumptions": [
+        "M, N, K are large enough that boundary effects are negligible.",
+        "A and B are fetched from HBM (no L2 residency guarantees)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-GEMV-002",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "GEMV / Memory-bound characterization",
+      "learningObjective": "Explain why GEMV is memory-bound on GPU and how per-row parallelism does not change its roofline classification.",
+      "archetype": "formula_performance",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any modern data-center GPU",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            "M"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "row-major",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "For y = A @ x where A is [M, N] and x is [N], both FP16, what is the correct classification of a well-implemented GEMV on modern GPUs, and why?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Memory-bound: each output element reuses x lightly (N reads) but A is streamed with essentially no reuse, so intensity is ≈ 1 flop/byte for FP16, well below the ridge point of modern GPUs; runtime is dominated by HBM bandwidth of A."
+        },
+        {
+          "id": "B",
+          "text": "Compute-bound when N is large: as N grows, the intensity per output row grows linearly with N, so long inner dimensions push GEMV into the compute-limited regime regardless of dtype or memory system."
+        },
+        {
+          "id": "C",
+          "text": "Compute-bound: GEMV performs 2*M*N flops with M*N loads, giving arithmetic intensity of about 2 flops/byte for FP16, which sits comfortably above modern GPU ridge points and therefore saturates tensor-core throughput."
+        },
+        {
+          "id": "D",
+          "text": "Latency-bound: the reduction across N introduces a long serial dependency chain on each output row, and this dependency, not memory or compute, determines runtime on modern out-of-order GPU pipelines."
+        }
+      ],
+      "assumptions": [
+        "A is not cache-resident (M*N is much larger than L2).",
+        "The kernel uses efficient row-parallel decomposition with warp-shuffle reductions."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-GGEMM-021",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Grouped GEMM / MoE batched execution",
+      "learningObjective": "Explain what a Grouped GEMM is and why it is preferred over per-expert independent GEMMs in sparse MoE serving.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer (CUTLASS grouped GEMM)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "dynamic per-group problem sizes"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "In a sparse MoE layer with E experts, after routing each expert i receives n_i tokens (n_i variable, sum n_i = k * B * N). Which choice best describes Grouped GEMM and why it is used?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Grouped GEMM is a Winograd-like transform that combines groups of adjacent experts into a shared linear operator; only the transform + inverse-transform cost per group scales with n_i, so the algorithm reduces FLOPs by a factor of E."
+        },
+        {
+          "id": "B",
+          "text": "Grouped GEMM sums the outputs of E GEMMs into a single [B*N, F] tensor as part of the same kernel; the 'grouping' refers to the reduction across experts, and the kernel is chosen because it fuses the final combination step of MoE."
+        },
+        {
+          "id": "C",
+          "text": "Grouped GEMM pads all n_i to the same length n_max and runs a single batched GEMM [E, n_max, F]. It is preferred because a single batched GEMM primitive is always faster than a grouped kernel; the padding overhead is negligible."
+        },
+        {
+          "id": "D",
+          "text": "Grouped GEMM executes E GEMMs of shapes [n_i, D] x [D, F] as a single kernel launch that dispatches per-group tile schedules across SMs. Compared to E independent GEMM launches, it amortizes launch overhead and lets small n_i groups share SMs with larger groups, avoiding SM under-utilization on skinny GEMMs."
+        }
+      ],
+      "assumptions": [
+        "Token distribution across experts is variable and often skewed.",
+        "Modern CUTLASS or cuBLAS grouped-GEMM APIs are available."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-GQA-008",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "GQA / Compute vs memory trade-off across variants",
+      "learningObjective": "Distinguish how MQA/GQA affect KV memory, decode compute, and quality relative to MHA.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all statements that are correct about GQA (Grouped Query Attention) relative to MHA and MQA. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "GQA is typically found to preserve model quality better than MQA, at the cost of using more KV memory than MQA but still much less than MHA."
+        },
+        {
+          "id": "B",
+          "text": "GQA cannot be applied to a pretrained MHA model without full retraining, because the arrangement of KV heads is a topological property of the attention operator that is not amenable to post-hoc adaptation."
+        },
+        {
+          "id": "C",
+          "text": "GQA reduces per-token KV cache to 2 * G * d per layer (G = number of KV groups), which for typical G = H/8 or H/4 gives 4-8x KV footprint reduction over MHA."
+        },
+        {
+          "id": "D",
+          "text": "GQA reduces total attention FLOPs at inference by the same factor as it reduces KV heads, because each query head only needs to compute attention against a subset of KV heads."
+        }
+      ],
+      "assumptions": [
+        "G divides H evenly; each group of H/G query heads shares one KV head.",
+        "Discussion is inference decode compute/memory, not training."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-KVCACHE-009",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "KV Cache / Read-write pattern in prefill vs decode",
+      "learningObjective": "Distinguish the KV cache read/write pattern in prefill vs decode and characterize the resulting HBM traffic per token.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider a decoder-only transformer running (a) prefill on an input of length P, then (b) autoregressive decode for T new tokens. For a single attention layer with H_kv KV heads and head dim d, which characterization of KV cache HBM traffic is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Prefill writes P tokens' KV once (O(P * H_kv * d)) and reads nothing; decode reads the growing cache once per step but does not write, so total KV bandwidth is O(P * H_kv * d + T * (P+T) * H_kv * d / 2) roughly."
+        },
+        {
+          "id": "B",
+          "text": "Prefill and decode both write and read the entire KV cache every step: prefill because each token attends to all previous tokens, and decode because each step re-verifies previously written entries. Total KV bandwidth is O((P+T)^2 * H_kv * d)."
+        },
+        {
+          "id": "C",
+          "text": "KV cache is never touched in decode; decode only recomputes K and V from the current token and multiplies by all previous Q vectors that are re-read from HBM. Total KV bandwidth is therefore O(T * H_kv * d)."
+        },
+        {
+          "id": "D",
+          "text": "Prefill writes each of the P tokens' KV once and reads the growing cache for the causal attention (roughly O(P^2 * H_kv * d) reads inside a FlashAttention-style kernel this collapses to O(P^2 d / M) HBM). Decode writes exactly 1 new KV entry per step and reads the entire current cache (P + t) each step, giving read traffic Σ_{t=1..T} (P+t) * H_kv * d ≈ O(T*(P+T) * H_kv * d)."
+        }
+      ],
+      "assumptions": [
+        "Standard causal decoder attention (each token attends to all earlier positions including itself).",
+        "KV cache is a monotonically growing tensor; entries are written once and never overwritten (except on preemption)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-KVDF-029",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "KV cache dataflow / Layout and bandwidth",
+      "learningObjective": "Reason about the KV cache dataflow during a single autoregressive decode step and its interaction with attention kernels.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "H_kv",
+            "seq_len",
+            "d"
+          ],
+          [
+            "B",
+            "H_kv",
+            "d"
+          ],
+          [
+            "B",
+            "H",
+            "d"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider one decode step for a batch of B sequences, each of length seq_len (varying). Select all correct statements about KV-cache dataflow inside a single attention layer. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because decode is memory-bandwidth bound on KV reads, KV cache quantization (e.g., FP8 or INT8 KV) is a direct lever on decode latency, subject to available dequant kernels and acceptable accuracy loss."
+        },
+        {
+          "id": "B",
+          "text": "The step writes exactly one new K entry and one new V entry per sequence (each of size H_kv * d), then reads the full cache of length seq_len for each sequence to compute attention. Write traffic is small; read traffic is dominated by seq_len."
+        },
+        {
+          "id": "C",
+          "text": "KV cache must be stored in one contiguous [B, H_kv, MAX_SEQ, d] tensor per layer to enable coalesced reads by the attention kernel; PagedAttention breaks this requirement and therefore has strictly higher HBM latency per attention step."
+        },
+        {
+          "id": "D",
+          "text": "In MQA/GQA the same K, V pair is read by multiple query heads within a token; a well-designed attention kernel keeps the loaded K/V tile in SMEM and reuses it across query heads, avoiding redundant HBM reads."
+        }
+      ],
+      "assumptions": [
+        "Sequences of varying length are handled either as a batched-with-mask kernel or via a paged attention kernel.",
+        "Standard decoder-only causal attention."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-MHAMQA-007",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "MHA vs MQA vs GQA / KV cache footprint",
+      "learningObjective": "Compare per-token KV-cache footprint of MHA, MQA, and GQA and its effect on decode-time HBM traffic.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "N",
+            "H",
+            "d"
+          ],
+          [
+            "B",
+            "N",
+            "H_kv",
+            "d"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "A transformer has H query heads and head dim d. Which comparison of per-token KV-cache size and decode-time HBM traffic is correct? (K and V each contribute one head dim per KV head.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "MHA, MQA, and GQA all use H_kv = H; they only differ in how the QK^T scores are shared across heads at the software level and therefore have identical KV footprint per token. The performance difference is entirely due to different attention kernels."
+        },
+        {
+          "id": "B",
+          "text": "MHA has H_kv = H, so per-token KV footprint (K+V) is 2*H*d elements per layer; MQA has H_kv = 1 (2*d per layer); GQA has 1 < H_kv < H (2*H_kv*d per layer). Decode-time HBM traffic is dominated by streaming KV each step, so MQA cuts KV bandwidth by a factor of H relative to MHA and GQA sits between MQA and MHA."
+        },
+        {
+          "id": "C",
+          "text": "MHA has H_kv = 1 (one shared K, V), MQA has H_kv = H, and GQA has H_kv in between. The naming follows 'multi' for the multi-headed K/V design in MHA and 'multi-query' for the multi-headed Q design in MQA."
+        },
+        {
+          "id": "D",
+          "text": "MQA halves KV cache versus MHA (H_kv = H/2) and GQA halves it again (H_kv = H/4); both are fixed ratios and independent of the number of query heads."
+        }
+      ],
+      "assumptions": [
+        "Discussion is about the KV cache of a decoder-only transformer at inference; per-token cache excludes Q since Q is not cached.",
+        "GQA uses H_kv = G groups; each group of query heads shares one K and one V head."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-MOEPROP-028",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "MoE / Compute, parameter, and imbalance properties",
+      "learningObjective": "Distinguish correct claims about MoE compute/parameter efficiency and imbalance from common misconceptions.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "A top-2 MoE model with E=8 experts replaces a dense FFN block. Select all correct statements. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "MoE inference is always memory-bandwidth bound because every forward pass must load all E experts' weights from HBM; expert parallelism does not help because it only distributes the weight-loading cost, not the parameter footprint."
+        },
+        {
+          "id": "B",
+          "text": "The total parameter count scales linearly with E (all E experts have their own weight matrices), and the compute per token scales with E as well because the router must compute a gating score against every expert."
+        },
+        {
+          "id": "C",
+          "text": "Total parameter count scales linearly with E, but compute per token is roughly constant in E (top-k activated) plus a small O(E) gating cost. This is why MoE gives parameter-to-flop leverage."
+        },
+        {
+          "id": "D",
+          "text": "In serving, load imbalance across experts is a real problem: with random routing the variance of tokens-per-expert scales as sqrt(B*N/E), which can cause hot experts to bottleneck the batched matmul. Capacity limits or expert-parallel load-balancing are needed."
+        }
+      ],
+      "assumptions": [
+        "Top-k MoE with k << E.",
+        "Routing is roughly balanced under normal training; imbalance is a corner case, not the norm."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-MOEROUT-020",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "MoE / Top-k routing and dispatch",
+      "learningObjective": "Describe the MoE routing pipeline: gating, top-k expert selection, and token dispatch to experts.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "N",
+            "D"
+          ],
+          [
+            "D",
+            "E"
+          ],
+          [
+            "B",
+            "N",
+            "k"
+          ],
+          [
+            "B",
+            "N",
+            "k"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "int32",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "In a top-k MoE MLP layer with E experts, each token is routed to k experts based on a gating network. Which description of the dataflow is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The gate produces scores over the E experts per token; top-k experts (typically k=2) are selected and each token contributes to those k experts' input batches with weights = softmax over the top-k scores. Only the k selected experts run their MLP on that token, and outputs are combined by the gate weights. Load balancing across experts is enforced by auxiliary losses / capacity limits."
+        },
+        {
+          "id": "B",
+          "text": "The gating network selects a single expert per token; multi-expert (top-k > 1) MoE always requires k independent forward passes through the full MLP block, because token-to-expert routing is not amenable to batched execution."
+        },
+        {
+          "id": "C",
+          "text": "The gate produces per-expert probabilities for each token; every token is routed to the expert with highest probability, and its output is scaled by that probability. The scaling is what preserves gradient flow through the routing decision."
+        },
+        {
+          "id": "D",
+          "text": "Every token is sent to every expert; the gating scores are used only as a soft mask on the outputs so that experts with score 0 contribute nothing. The 'sparsity' of MoE is entirely about the sum of gating weights, not about avoided compute."
+        }
+      ],
+      "assumptions": [
+        "Discussion is of top-k sparse MoE at inference or training, not dense mixture.",
+        "Capacity limits and drop policies are implementation details not affecting the routing definition."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-ONLINESM-004",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Online Softmax / One-pass streaming reduction",
+      "learningObjective": "State the online softmax update rules that let a single-pass streaming algorithm compute exact softmax over a partitioned row.",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "An online softmax algorithm streams over a row in tiles B_1, B_2, .... After processing tile B_t it maintains a running max m_t and a running denominator d_t such that d_t = sum_{i in B_1..t} exp(x_i - m_t). Which update rule is correct when a new tile B_{t+1} arrives with local max m' and local denominator d' = sum_{i in B_{t+1}} exp(x_i - m')?",
+      "codeSnippet": "# State after tile t:  m_t (running max), d_t = sum_{i<=t} exp(x_i - m_t)\n# New tile stats:      m' = max over B_{t+1};   d' = sum_{i in B_{t+1}} exp(x_i - m')\n# We want:             m_{t+1} = max(m_t, m'),  d_{t+1} = sum_{i<=t+1} exp(x_i - m_{t+1})",
+      "options": [
+        {
+          "id": "A",
+          "text": "m_{t+1} = max(m_t, m') ; d_{t+1} = d_t * exp(m_t - m_{t+1}) + d' * exp(m' - m_{t+1})  (both partial denominators are rescaled by the exponential of the difference between their old reference max and the new global max.)"
+        },
+        {
+          "id": "B",
+          "text": "m_{t+1} = max(m_t, m') ; d_{t+1} = d_t + d'  (the max is the elementwise maximum; the denominator combines by simple addition because both partial sums are already normalized.)"
+        },
+        {
+          "id": "C",
+          "text": "m_{t+1} = max(m_t, m') ; d_{t+1} = d_t + d' * exp(m' - m_{t+1})  (only the new tile's denominator needs a correction factor because the old running sum was already normalized to the true maximum seen so far.)"
+        },
+        {
+          "id": "D",
+          "text": "m_{t+1} = m_t + m' ; d_{t+1} = d_t + d'  (sum both running max and denominator to preserve the streaming invariant.)"
+        }
+      ],
+      "assumptions": [
+        "All exp arguments (x_i - m_{t+1}) are non-positive so no overflow.",
+        "Sufficient accumulation precision (typically FP32)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-REDUCE-015",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Reduction / Warp shuffle vs shared-memory tree",
+      "learningObjective": "Compare warp-shuffle intra-warp reductions with shared-memory tree reductions for a per-block sum.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Kepler or newer (shuffles), Volta+ for __shfl_sync",
+        "device": "GPU",
+        "requiredFeatures": [
+          "warp-level shuffle intrinsics"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA",
+        "stability": "stable_principle"
+      },
+      "stem": "A CUDA kernel needs to sum an array of length N per thread block (block size 256, 8 warps of 32 threads). Which implementation strategy is standard and correct?",
+      "codeSnippet": "// Per-thread partial: each thread reads N/256 elements and accumulates locally into `sum`.\n// Then reduce across the block.\n\n// Strategy X: intra-warp reduce with __shfl_down_sync, one lane writes to SMEM,\n// then one warp reduces the 8 SMEM values with another shfl-down.\n\n// Strategy Y: recursive shared-memory tree with 8 __syncthreads() rounds.\n\n// Strategy Z: block-wide atomicAdd from every thread.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Strategy Y is preferred: shared-memory tree with __syncthreads() barriers is the most portable and typically fastest option because it avoids shuffle latency, and the cost of 8 barriers is amortized over N reads."
+        },
+        {
+          "id": "B",
+          "text": "Strategy X is preferred: __shfl_down_sync reduces within a warp in log2(32) = 5 cycles without SMEM or barriers, then the 8 warp-level partial sums are written to SMEM and reduced by one warp with another shuffle. This is the standard 'warp-shuffle + shared' pattern and is faster than a pure SMEM tree."
+        },
+        {
+          "id": "C",
+          "text": "Strategy Z (atomicAdd from every thread) is preferred: modern GPUs have hardware-level atomic aggregation that makes this the fastest path; it also avoids the need for shared memory and barriers entirely."
+        },
+        {
+          "id": "D",
+          "text": "All three strategies produce bit-identical results in FP32 because the number of additions is the same; the choice is purely stylistic and has no measurable performance impact."
+        }
+      ],
+      "assumptions": [
+        "Reduction is over FP32 or integer values; the strategy generalizes to FP16 with FP32 accumulate.",
+        "Block size is a multiple of 32 (warpSize)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-RMSPROP-027",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "RMSNorm / Kernel structure and non-implications",
+      "learningObjective": "Distinguish correct claims about RMSNorm's compute pattern from common overgeneralizations.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all correct statements about RMSNorm y = x * rsqrt(mean(x^2) + eps) * g. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "RMSNorm is memory-bandwidth bound in practice: for a row of length N, the kernel reads N x-values and 1 weight tensor once, writes N y-values once, and performs O(N) elementwise operations plus one reduction — the reduction and rsqrt are negligible relative to HBM traffic on modern hardware."
+        },
+        {
+          "id": "B",
+          "text": "RMSNorm requires a single reduction (E[x^2]) over the normalization axis and no mean subtraction; per-element compute is fewer ops than LayerNorm."
+        },
+        {
+          "id": "C",
+          "text": "RMSNorm is compute-bound on modern GPUs because the rsqrt and elementwise scaling per element are expensive relative to the memory bandwidth used."
+        },
+        {
+          "id": "D",
+          "text": "RMSNorm is mathematically identical to LayerNorm applied to zero-mean inputs, so it can always be replaced by LayerNorm with the same weights without changing the trained model."
+        }
+      ],
+      "assumptions": [
+        "Standard implementations with FP32 accumulation.",
+        "Weight g is per-feature (one scalar per feature dim)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-RMSVSLN-011",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "RMSNorm vs LayerNorm / Compute and memory pattern",
+      "learningObjective": "Compare compute and memory patterns of RMSNorm vs LayerNorm and identify which reduction operations each requires.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Compare a per-row RMSNorm — y = x * rsqrt(mean(x^2) + eps) * g — with LayerNorm — y = (x - mean(x)) / sqrt(var(x) + eps) * g + b. Which comparison of reductions and memory is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both require exactly one reduction (over the row); RMSNorm reduces sum(x), LayerNorm reduces sum(x^2). Total HBM traffic is identical because both read the row once and write the row once."
+        },
+        {
+          "id": "B",
+          "text": "LayerNorm requires two reductions over the row (mean and variance) that must be executed in two passes; RMSNorm requires two reductions as well (sum of x and sum of x^2) because rsqrt needs both statistics."
+        },
+        {
+          "id": "C",
+          "text": "RMSNorm needs one reduction (sum of x^2); LayerNorm can be computed with one reduction (using E[x^2] - E[x]^2) but requires two moments (sum and sum of squares). HBM read of x is once per row in both; RMSNorm skips the mean subtraction and the bias b, giving fewer per-element ops."
+        },
+        {
+          "id": "D",
+          "text": "RMSNorm requires two passes over x (one to compute mean(x^2), one to normalize); LayerNorm is single-pass because the numerator can subsume the mean in a running formula."
+        }
+      ],
+      "assumptions": [
+        "The full row fits in one program's registers / SMEM for a single-pass implementation; if not, an online algorithm is needed.",
+        "eps is a positive scalar to avoid division by zero."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-ROPE-012",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "RoPE / Rotary position embedding computation",
+      "learningObjective": "Explain the elementwise rotation pattern of RoPE and where in the transformer stack it is applied.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "H",
+            "N",
+            "d"
+          ]
+        ],
+        "dtypes": [
+          "float16"
+        ],
+        "layouts": [
+          "contiguous"
+        ]
+      },
+      "stem": "Rotary Position Embedding (RoPE) is applied to Q and K in an attention layer. Which characterization of RoPE's computation and dataflow is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "RoPE is applied to the attention scores QK^T by adding a bias matrix whose entry (i, j) is a function of the relative position i - j; the scores are then softmaxed. Q and K themselves are unchanged."
+        },
+        {
+          "id": "B",
+          "text": "RoPE is added elementwise to Q, K, and V as a learned position embedding table indexed by position; the addition happens after the softmax so that the rotation applies to the attention weights themselves rather than to the projections."
+        },
+        {
+          "id": "C",
+          "text": "RoPE rotates pairs of feature dimensions of Q and K by position-dependent angles theta_{pos, i}; it is applied elementwise to Q and K after the QKV projection but before the QK^T score computation. RoPE is not applied to V, and each token's rotation is independent of other tokens."
+        },
+        {
+          "id": "D",
+          "text": "RoPE is a data-dependent low-rank correction applied to Q, K, V that requires a full reduction over the sequence dimension per token; this reduction is the reason RoPE is expensive to compute in decode."
+        }
+      ],
+      "assumptions": [
+        "Standard RoPE as in RoFormer / Llama; extensions (linear/NTK scaling) modify the frequency schedule but not the rotation structure.",
+        "d is even so features can be paired."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-SAMPLE-019",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Sampling / Temperature and top-p (nucleus)",
+      "learningObjective": "Explain what temperature and top-p sampling do at the logits/probability level.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Which description of temperature (T) and top-p (nucleus, p) sampling for LLM decoding is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Temperature T scales the logits by exp(T) after softmax; top-p sorts the resulting probabilities in ascending order and keeps the first p fraction of the distribution, then renormalizes."
+        },
+        {
+          "id": "B",
+          "text": "Temperature T divides the logits by T before the softmax (T > 1 flattens the distribution, T < 1 sharpens it); top-p, after softmax, sorts probabilities in descending order and keeps the smallest set whose cumulative probability first exceeds p, then renormalizes over this set before sampling."
+        },
+        {
+          "id": "C",
+          "text": "Temperature T divides the softmax output by T; top-p keeps exactly floor(p * V) tokens by count (not by cumulative probability) to give an upper bound on the sampling set size."
+        },
+        {
+          "id": "D",
+          "text": "Temperature T is applied by clipping logits above the T-th percentile; top-p is a synonym for top-k with p = k / V, so the two are algebraically equivalent under this identification."
+        }
+      ],
+      "assumptions": [
+        "T > 0 (strictly positive).",
+        "0 < p <= 1."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-SOFTMAX-003",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Softmax / Numerical stability via max subtraction",
+      "learningObjective": "Explain why row-max subtraction is required for a numerically stable softmax and what happens when it is omitted.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any IEEE-754 GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "CUDA",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "N"
+          ],
+          [
+            "B",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "The 'safe softmax' formulation is softmax(x)_i = exp(x_i - m) / sum_j exp(x_j - m) where m = max_j x_j. Which statement about this formulation is correct?",
+      "codeSnippet": "# Naive softmax\n# y_i = exp(x_i) / sum_j exp(x_j)\n\n# Safe softmax\n# m   = max_j x_j\n# e_i = exp(x_i - m)          # e_i in (0, 1]\n# y_i = e_i / sum_j e_j",
+      "options": [
+        {
+          "id": "A",
+          "text": "Subtracting m makes every exponent non-positive so exp(x_i - m) lies in (0, 1], preventing overflow when any x_i is large; the algebraic identity softmax(x) = softmax(x - c) for any constant c guarantees the result is unchanged in exact arithmetic."
+        },
+        {
+          "id": "B",
+          "text": "The subtraction shifts the outputs by exp(-m) but this factor cancels in the ratio, so mathematically both forms are equivalent and safe softmax is only needed on integer hardware without native FP exponent range."
+        },
+        {
+          "id": "C",
+          "text": "The main benefit of max subtraction is preventing underflow of the denominator; overflow of individual exp(x_i) is already handled by IEEE-754 saturation to inf which cancels in the division and yields the correct value."
+        },
+        {
+          "id": "D",
+          "text": "Max subtraction changes softmax outputs by a constant additive offset; this offset is absorbed by the following LayerNorm in transformer stacks, so safe softmax and naive softmax produce identical logits at the final output only in the presence of a downstream normalization."
+        }
+      ],
+      "assumptions": [
+        "Inputs are finite floats; NaN inputs are not addressed by max subtraction.",
+        "The reduction uses appropriate precision (typically FP32 accumulate)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-SPARSE-022",
+      "type": "multiple",
+      "module": "core_ops_attention",
+      "subtopic": "Sparse vs dense kernel boundary / When sparsity pays",
+      "learningObjective": "Identify when unstructured or structured sparsity actually reduces wall-clock time on GPU, vs when it only reduces FLOP count.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer for 2:4 sparse tensor cores",
+        "device": "GPU",
+        "requiredFeatures": [
+          "tensor cores",
+          "for structured 2:4: sparse tensor-core support"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "Select all statements that correctly characterize the boundary between sparse and dense GPU kernels. (Choose all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Any percentage of sparsity greater than 50% in a weight matrix automatically gives a proportional wall-clock speedup on modern GPUs, since sparse tensor-cores dynamically skip zero tiles regardless of the sparsity pattern."
+        },
+        {
+          "id": "B",
+          "text": "Unstructured sparsity (arbitrary zero pattern) rarely translates to wall-clock speedup on GPU unless density is well below ~10%, because indexing overhead and irregular memory access outweigh the FLOP reduction on tensor-core-driven dense hardware."
+        },
+        {
+          "id": "C",
+          "text": "Structured 2:4 sparsity (Ampere) preserves tensor-core throughput at half the FLOP cost of the equivalent dense GEMM; it is a hardware-native format supported by cuSPARSELt / cuBLAS sparse APIs and yields real speedup on supported dtypes."
+        },
+        {
+          "id": "D",
+          "text": "For LLM inference, weight sparsity that reduces HBM traffic (e.g., N:M or block-sparse weight formats) is more impactful than FLOP reduction, because decode is bandwidth-bound. However, this only works if a compatible sparse kernel exists for the target dtype."
+        }
+      ],
+      "assumptions": [
+        "GPU refers to modern NVIDIA GPUs (Ampere and newer).",
+        "'Sparse kernel' means a specialized kernel that reads only nonzeros and their indices."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-SWIGLU-013",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "SwiGLU MLP / Parameter count and compute",
+      "learningObjective": "Characterize the SwiGLU MLP block: three linear layers with a gated activation and its parameter/compute compared to a standard two-linear MLP.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "N",
+            "D"
+          ],
+          [
+            "D",
+            "F"
+          ],
+          [
+            "D",
+            "F"
+          ],
+          [
+            "F",
+            "D"
+          ],
+          [
+            "B",
+            "N",
+            "D"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "The SwiGLU MLP block used in Llama-style LLMs computes y = (silu(x @ W_gate) * (x @ W_up)) @ W_down where W_gate, W_up are [D, F] and W_down is [F, D]. Which characterization is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "SwiGLU has three linear layers (gate, up, down) — 3 * D * F parameters vs 2 * D * F for a standard two-linear MLP at intermediate dim F. To keep parameter/FLOP budget constant when moving from a GELU MLP with intermediate dim F to SwiGLU, implementations typically use SwiGLU with intermediate dim (2/3) * F."
+        },
+        {
+          "id": "B",
+          "text": "SwiGLU is equivalent to a GELU MLP with intermediate dim F, but requires an extra elementwise multiplication that raises per-token FLOPs by 50% compared to a two-linear MLP with the same F; parameter count is the same."
+        },
+        {
+          "id": "C",
+          "text": "SwiGLU uses three linear layers (gate, up, down), which triples both parameters and FLOPs relative to a standard two-linear MLP at the same intermediate dim F; to keep parameter budget constant, implementations must halve F when switching from GELU to SwiGLU."
+        },
+        {
+          "id": "D",
+          "text": "SwiGLU is a bilinear activation between x @ W_gate and x @ W_up; the elementwise product of these two projections replaces the ReLU/GELU nonlinearity but does not increase parameter count over a standard MLP because the gate and up projections share weights via a symmetry constraint."
+        }
+      ],
+      "assumptions": [
+        "The comparison baseline is a two-linear GELU MLP: up [D, F] and down [F, D].",
+        "silu(x) = x * sigmoid(x) is the elementwise nonlinearity on the gate branch."
+      ],
+      "version": 1
+    },
+    {
+      "id": "I-TOPK-018",
+      "type": "single",
+      "module": "core_ops_attention",
+      "subtopic": "Top-k / Sampling primitive on GPU",
+      "learningObjective": "Explain the standard GPU strategy for computing top-k over a large vocabulary and why full sort is not required.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "any modern GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "V"
+          ],
+          [
+            "B",
+            "k"
+          ],
+          [
+            "B",
+            "k"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "int32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "An LLM sampler needs to compute the top-k tokens per batch row over a [B, V] logits tensor, where V is typically 32K-200K and k is small (e.g. 50). Which GPU strategy is most appropriate?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Use a two-stage approach: partition each row into blocks, keep a per-block top-k with a small in-register heap or bitonic-select, then merge the per-block candidates into a single top-k with a final reduction. Total work is O(V log k), well below full-sort."
+        },
+        {
+          "id": "B",
+          "text": "Sort each row in full with a merge sort or radix sort of complexity O(V log V), then take the top k. This is essentially the only correct approach because partial-selection algorithms cannot guarantee stable order among ties."
+        },
+        {
+          "id": "C",
+          "text": "Compute softmax over the entire row and then threshold at 1 / (k * V); this yields top-k without any sort because the probability of the k-th largest logit is bounded above by 1/k in expectation."
+        },
+        {
+          "id": "D",
+          "text": "Top-k is inherently sequential across the V dimension because each selection depends on all previous ones; the only GPU-friendly path is to move top-k to the CPU on a small logits copy over PCIe."
+        }
+      ],
+      "assumptions": [
+        "V is much larger than k so partitioning is beneficial.",
+        "Ties can be resolved with an arbitrary stable rule (e.g., lower index wins)."
+      ],
+      "version": 1
+    }
+  ]
+}

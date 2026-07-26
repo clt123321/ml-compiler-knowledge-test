@@ -1,0 +1,48 @@
+{
+  "questionId": "I-SAMPLE-019",
+  "learningObjective": "Explain what temperature and top-p sampling do at the logits/probability level.",
+  "canonicalClaims": [
+    {
+      "claim": "Temperature T divides logits by T before softmax; top-p (nucleus) sampling, after softmax, keeps the smallest descending-cumulative set whose sum first exceeds p, then renormalizes and samples from that set.",
+      "conditions": [
+        "T > 0.",
+        "0 < p <= 1."
+      ],
+      "nonImplications": [
+        "Does not imply top-p is equivalent to top-k.",
+        "Does not imply temperature affects relative rank exactly; extreme T can numerically flatten it."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Text generation sampling strategies" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Temperature is applied to softmax outputs, not logits.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Standard definition applies T to logits before softmax; applying to outputs breaks the probability property.",
+      "sourceOrEvidence": "Nucleus sampling paper (Holtzman 2020)"
+    },
+    {
+      "claim": "Top-p keeps a fixed fraction floor(p*V) of tokens by count.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Top-p uses cumulative probability, not count; the set size is adaptive.",
+      "sourceOrEvidence": "Nucleus sampling paper"
+    },
+    {
+      "claim": "Top-p is equivalent to top-k under p = k / V.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Top-p adapts to distribution shape; top-k does not.",
+      "sourceOrEvidence": "Sampling literature"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM, SGLang, TRT-LLM all implement temperature + top-p (+ optional top-k) as a fused sampling kernel.",
+    "Greedy decoding = T → 0 (or T=0 handled as argmax)."
+  ],
+  "performanceScenarios": [
+    "Sampling is a small fraction of decode time but must be latency-optimized because it is on the critical path per token."
+  ],
+  "versionSensitivity": "stable_principle"
+}

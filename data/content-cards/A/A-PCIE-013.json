@@ -1,0 +1,51 @@
+{
+  "questionId": "A-PCIE-013",
+  "learningObjective": "Estimate host-to-device PCIe transfer time and reason about overlap with kernel execution.",
+  "canonicalClaims": [
+    {
+      "claim": "PCIe transfer time equals size divided by practical bandwidth; when transfer and kernel run in overlapping streams, end-to-end time is max(transfer, kernel), never below the longer of the two.",
+      "conditions": [
+        "Pinned host memory for full PCIe throughput.",
+        "Independent streams so H2D DMA and kernel scheduler proceed in parallel.",
+        "No dependency between the transfer and the kernel that forces serialization."
+      ],
+      "nonImplications": [
+        "Does not imply overlap reduces transfer duration itself; it only hides one behind the other.",
+        "Does not imply pageable memory transfers hit the same rate; pageable transfers stage through a driver-managed pinned buffer."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Host-device data transfer chapter" },
+        { "ref": "BOOK:hp6", "locator": "Interconnect chapters" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Overlapping cudaMemcpyAsync with a kernel reduces end-to-end time to the shorter of the two.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Overlap gives max, not min. The slower operation still bounds wall time.",
+      "sourceOrEvidence": "CUDA Best Practices Guide, streams and concurrency"
+    },
+    {
+      "claim": "PCIe Gen4 x16 practical H2D bandwidth is 100 GB/s.",
+      "errorType": "hardware_leak",
+      "whyWrong": "PCIe Gen4 x16 theoretical is ~32 GB/s and practical is around 25 GB/s. 100 GB/s corresponds to NVLink or PCIe Gen5 links with multiple aggregated lanes.",
+      "sourceOrEvidence": "NVIDIA hardware whitepapers"
+    },
+    {
+      "claim": "Pageable host memory is transferred at the same rate as pinned memory.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Pageable memory is staged through a pinned buffer inside the driver, adding a copy and typically halving throughput.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "PCIe Gen4 x16 theoretical ≈ 32 GB/s; practical ~ 25 GB/s per direction.",
+    "PCIe Gen5 x16 theoretical ≈ 64 GB/s.",
+    "NVLink 4.0 per-GPU aggregate ≈ 900 GB/s bidirectional (H100)."
+  ],
+  "performanceScenarios": [
+    "Deployment pipelines that reload weights via PCIe every batch see PCIe bottlenecks; solutions include keeping weights resident, quantizing to reduce bytes, or NVLink for multi-GPU replication."
+  ],
+  "versionSensitivity": "stable_principle"
+}

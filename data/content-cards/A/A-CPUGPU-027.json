@@ -1,0 +1,49 @@
+{
+  "questionId": "A-CPUGPU-027",
+  "learningObjective": "Compare CPU and GPU execution models on branch prediction, out-of-order execution, register file, and cache hierarchy design.",
+  "canonicalClaims": [
+    {
+      "claim": "CPUs are optimized for single-thread latency with large control-and-cache overheads (branch prediction, OoO issue, deep cache hierarchy) per core; GPUs are optimized for aggregate throughput with a large register file per SM and rely on massive TLP (many warps) for latency hiding, at the cost of higher per-op latency.",
+      "conditions": [
+        "Modern data-center GPU (Ampere/Hopper) vs modern desktop/server CPU (Intel/AMD OoO)."
+      ],
+      "nonImplications": [
+        "Does not imply GPUs have no caches; L1 and L2 are present.",
+        "Does not imply CPUs cannot do SIMD; wide-vector ISAs are standard."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 4 DLP, design philosophies" },
+        { "ref": "BOOK:pmpp4", "locator": "Ch. 1-3 introduction to GPU architecture" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GPUs do not use caches at all.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Modern GPUs have L1 (per SM) and L2 (per GPU) caches. Latency hiding via warp switching complements caches; it does not replace them.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, memory hierarchy"
+    },
+    {
+      "claim": "CPU cores have larger register files per core than a GPU SM.",
+      "errorType": "hardware_leak",
+      "whyWrong": "A GPU SM's register file is on the order of 256 KB; a CPU core's architectural register file is a few KB (physical registers may be larger but still smaller than an SM's file).",
+      "sourceOrEvidence": "NVIDIA compute capability tables"
+    },
+    {
+      "claim": "GPUs achieve throughput without any branch handling because SIMT is branch-free.",
+      "errorType": "scope_error",
+      "whyWrong": "SIMT does handle branches, just with warp-level divergence serialization instead of speculative branch prediction.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "implementationFacts": [
+    "A100 SM: 65,536 × 4 B register file ≈ 256 KB per SM.",
+    "CPU cores (e.g., Zen4, Golden Cove) typically have ~32-48 KB L1D per core.",
+    "GPU latency hiding uses warp-level context switching, not branch speculation."
+  ],
+  "performanceScenarios": [
+    "GEMM kernels benefit from GPUs' massive TLP and large register file; branchy irregular graph traversals often run better on CPUs."
+  ],
+  "versionSensitivity": "stable_principle"
+}

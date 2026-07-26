@@ -1,0 +1,47 @@
+{
+  "questionId": "K-STHLO-018",
+  "learningObjective": "Explain the role of StableHLO as a compiler-portability boundary between ML frameworks (JAX, PyTorch export, TF) and compilers (XLA, IREE, others).",
+  "canonicalClaims": [
+    {
+      "claim": "StableHLO is a versioned, stable operator set specified as an MLIR dialect that serves as an interchange IR between ML frameworks and downstream compilers, with forward/backward compatibility guarantees.",
+      "conditions": [
+        "Both producer and consumer are part of the StableHLO ecosystem.",
+        "The model's ops are within StableHLO's coverage."
+      ],
+      "nonImplications": [
+        "Does not imply StableHLO is a runtime.",
+        "Does not imply StableHLO covers all framework-specific ops."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "StableHLO overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "StableHLO is LLVM IR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "StableHLO is a high-level ML operator dialect; LLVM IR is a lower-level scalar/vector IR.",
+      "sourceOrEvidence": "StableHLO specification"
+    },
+    {
+      "claim": "StableHLO is a runtime engine.",
+      "errorType": "definition_confusion",
+      "whyWrong": "StableHLO is an IR; runtimes such as XLA or IREE execute lowered code.",
+      "sourceOrEvidence": "OpenXLA project overview"
+    },
+    {
+      "claim": "StableHLO is a Python DSL.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is an MLIR dialect that can be produced by DSL-like APIs but is not itself a DSL.",
+      "sourceOrEvidence": "StableHLO specification"
+    },
+    {
+      "claim": "StableHLO removes the need for compilers.",
+      "errorType": "scope_error",
+      "whyWrong": "StableHLO is a producer/consumer boundary; downstream compilers still lower it to target code.",
+      "sourceOrEvidence": "OpenXLA architecture"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,48 @@
+{
+  "questionId": "K-CUSTOM-012",
+  "learningObjective": "Describe how a custom operator is registered into a runtime so that both the compiler and the executor recognize it, and what obligations the author takes on.",
+  "canonicalClaims": [
+    {
+      "claim": "Adding a custom operator requires declaring a schema (types, shapes, attributes), providing one or more (device, dtype) kernel implementations, and — if used in autograd — a backward or functional decomposition.",
+      "conditions": [
+        "The runtime provides an extension API for custom ops.",
+        "The author cares about correctness for all needed combinations of device/dtype."
+      ],
+      "nonImplications": [
+        "Does not imply all dtypes must be implemented; only those declared as supported.",
+        "Does not imply autograd is always required."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Custom operator API" },
+        { "ref": "DOC:trt", "locator": "IPluginV2 API" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Runtimes auto-generate GPU kernels from Python functions.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Runtimes do not synthesize CUDA code from a Python signature; the author supplies the kernel.",
+      "sourceOrEvidence": "ONNX Runtime / TensorRT plugin API"
+    },
+    {
+      "claim": "Runtimes introspect .cu source for schema and gradients.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Schemas are declared; gradients are supplied by the author or derived from primitive ops.",
+      "sourceOrEvidence": "torch custom op tutorial"
+    },
+    {
+      "claim": "Custom ops require shipping source that is recompiled on every start.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Kernels are typically shipped as compiled objects (plugins, shared libraries).",
+      "sourceOrEvidence": "TensorRT plugin distribution"
+    },
+    {
+      "claim": "Registering a custom op is optional; the runtime infers unknown ops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Unknown ops fail; explicit registration is required.",
+      "sourceOrEvidence": "ONNX / TensorRT docs"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

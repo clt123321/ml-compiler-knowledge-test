@@ -1,0 +1,92 @@
+{
+  "id": "C-BUFFER-012",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Buffer vs. tensor semantics / Bufferization",
+  "learningObjective": "Contrast tensor-typed IR (value semantics) with buffer-/memref-typed IR (reference semantics) and explain what bufferization does.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "The IR is transformed from a linalg-on-tensor form to a linalg-on-memref form by MLIR's bufferization. Which pair of properties best describes the tensor-form and memref-form semantics, respectively?",
+  "irSnippet": "// BEFORE (linalg on tensor — value semantics)\n%y0 = linalg.generic { ... } ins(%x : tensor<Nxf32>)\n                            outs(%init : tensor<Nxf32>) -> tensor<Nxf32>\n%y1 = linalg.generic { ... } ins(%y0 : tensor<Nxf32>)\n                            outs(%init : tensor<Nxf32>) -> tensor<Nxf32>\n\n// AFTER (linalg on memref — reference semantics, after bufferization)\nlinalg.generic { ... } ins(%X : memref<Nxf32>)\n                       outs(%Y0 : memref<Nxf32>)\nlinalg.generic { ... } ins(%Y0 : memref<Nxf32>)\n                       outs(%Y1 : memref<Nxf32>)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Tensor and memref forms are semantically identical; the only difference is textual. Bufferization is a printing pass that renames tensors to memrefs without altering the IR's data model. Under this interpretation, the pass could be safely dropped from any production pipeline without affecting correctness or code quality of the emitted kernels, since both forms would be equivalent to the codegen backend."
+    },
+    {
+      "id": "B",
+      "text": "Tensor form has reference semantics (ops mutate a shared buffer); memref form has value semantics (each op returns a new immutable buffer). Bufferization enforces immutability at the memref level."
+    },
+    {
+      "id": "C",
+      "text": "Tensor form has value semantics (immutable SSA values; each op produces a fresh tensor); memref form has reference semantics (ops write into named buffers). Bufferization assigns buffers and inserts allocations/copies as needed to preserve semantics."
+    },
+    {
+      "id": "D",
+      "text": "Tensor form is only used for GPU codegen; memref form is only used for CPU codegen. Bufferization is a device-selection pass that chooses which form to use based on the target. In this framing, tensor-form IR is exclusively a front-end concern that stops before device-specific lowering, while memref-form IR is an implementation detail of the GPU codegen path that CPU pipelines simply skip."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "In MLIR, `tensor<...>` is an SSA value with value semantics: each producing op yields a fresh, immutable tensor and no in-place update is expressible at that level. `memref<...>` has reference semantics: ops write into named memory locations. Bufferization is the pass that lowers tensor-form IR to memref-form IR, assigning buffers, inserting allocations, and inserting copies where required to preserve the tensor-level dataflow (e.g., when two consumers observe different versions of a value).",
+  "optionExplanations": {
+    "A": "Wrong: the difference is semantic (value vs. reference), not textual.",
+    "B": "Wrong: swaps the two semantics.",
+    "C": "Correct: standard MLIR terminology.",
+    "D": "Wrong: both forms exist for all targets; the choice is about optimization stage."
+  },
+  "assumptions": [
+    "The MLIR pipeline uses the standard tensor + memref + bufferization dialects."
+  ],
+  "nonImplications": [
+    "Does not imply bufferization removes all copies; when tensor-level SSA implies aliasing that cannot be proven safe, copies are inserted.",
+    "Does not imply memref form is always closer to codegen; some pipelines lower tensor-form IR directly to Triton or LLVM."
+  ],
+  "misconceptionTags": [
+    "tensor_memref_semantics_swapped",
+    "bufferization_is_rename"
+  ],
+  "distractorRationales": {
+    "A": "Trivializes bufferization.",
+    "B": "Swaps value/reference semantics.",
+    "D": "Wrong claim about device-specific dialects."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Tensor and MemRef types; bufferization semantics",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "Type system: value vs. reference semantics",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-BUFFER-012.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

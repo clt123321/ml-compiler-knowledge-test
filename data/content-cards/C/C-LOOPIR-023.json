@@ -1,0 +1,56 @@
+{
+  "questionId": "C-LOOPIR-023",
+  "learningObjective": "Reason about when two nested loops in a loop-level IR can be safely interchanged based on the affine access patterns of the loop body.",
+  "canonicalClaims": [
+    {
+      "claim": "Loop interchange preserves semantics iff no dependence direction vector in the original loop nest becomes illegal after the swap; loops with no loop-carried dependences (e.g., pure elementwise stores over disjoint iteration coordinates) permit any permutation.",
+      "conditions": [
+        "The IR supports affine access-pattern analysis or an equivalent dependence-testing framework.",
+        "The transformation preserves the original iteration domain."
+      ],
+      "nonImplications": [
+        "Does not imply legal interchange is always beneficial (cache locality varies).",
+        "Does not imply interchange is the only reordering; skewing, tiling, fission are related but different."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Loop transformations and dependence" },
+        { "ref": "DOC:mlir-langref", "locator": "affine dialect" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Loop interchange is always safe.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Loop-carried dependences can be violated by the swap; dependence analysis is required.",
+      "sourceOrEvidence": "Engineering a Compiler"
+    },
+    {
+      "claim": "Only square loop nests (M == N) can be interchanged.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Loop bounds are irrelevant to interchange legality; only dependence directions matter.",
+      "sourceOrEvidence": "Loop transformations literature"
+    },
+    {
+      "claim": "Interchange requires unrolling first.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Interchange is defined on rolled loops.",
+      "sourceOrEvidence": "MLIR affine dialect docs"
+    },
+    {
+      "claim": "Interchange changes what is computed by the loop nest.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Interchange preserves the compute; it changes only the iteration order.",
+      "sourceOrEvidence": "Compiler textbooks"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR affine analysis: dependence testing via affine access maps",
+    "Dependence direction vectors: `<, =, >` per loop dim; interchange must keep all vectors lexicographically legal",
+    "For elementwise nests with disjoint iteration reads/writes, interchange is unconditionally safe"
+  ],
+  "performanceScenarios": [
+    "Interchange changes memory access order; effect on locality depends on layout."
+  ],
+  "versionSensitivity": "stable_principle"
+}

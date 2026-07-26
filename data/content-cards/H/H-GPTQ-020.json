@@ -1,0 +1,54 @@
+{
+  "questionId": "H-GPTQ-020",
+  "learningObjective": "Explain GPTQ's central technique: per-layer weight quantization via second-order (Hessian-inverse-based) error compensation.",
+  "canonicalClaims": [
+    {
+      "claim": "GPTQ quantizes weights one column at a time, using the Cholesky-inverse of the layer's Hessian (H ≈ 2 X^T X from calibration activations) to update the still-unquantized columns and compensate for each newly-introduced quantization error. It is a per-layer, offline PTQ method (no full model retraining).",
+      "conditions": [
+        "The layer is a linear layer with a computable Hessian.",
+        "A calibration activation set is available."
+      ],
+      "nonImplications": [
+        "Does not imply GPTQ handles activation outliers — it focuses on weight quantization; typical deployment is W4A16.",
+        "Does not imply GPTQ is universally optimal — AWQ and RTN are alternatives with different trade-offs."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gptq", "locator": "Sections 3-4" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GPTQ is a form of QAT: it retrains the model with STE on quantized weights.",
+      "errorType": "definition_confusion",
+      "whyWrong": "GPTQ is PTQ; it performs no full-model training, only per-layer weight optimization against calibration activations.",
+      "sourceOrEvidence": "GPTQ paper abstract"
+    },
+    {
+      "claim": "GPTQ uses reinforcement learning to search for quantization scales.",
+      "errorType": "definition_confusion",
+      "whyWrong": "GPTQ uses a closed-form second-order weight update, not RL.",
+      "sourceOrEvidence": "GPTQ paper algorithm"
+    },
+    {
+      "claim": "GPTQ is a runtime dequantization technique that speeds up INT4 → FP16 conversion.",
+      "errorType": "scope_error",
+      "whyWrong": "GPTQ is an offline quantization algorithm; the runtime dequant kernel is a separate concern (e.g., Marlin, ExLlama).",
+      "sourceOrEvidence": "GPTQ paper Section 4"
+    },
+    {
+      "claim": "The Hessian used by GPTQ is the full model Hessian.",
+      "errorType": "scope_error",
+      "whyWrong": "GPTQ uses the per-layer Hessian of the layer's reconstruction error, which is O((in_features)^2) and tractable.",
+      "sourceOrEvidence": "GPTQ Section 3"
+    }
+  ],
+  "implementationFacts": [
+    "GPTQ's per-layer cost is dominated by the Cholesky inverse of the Hessian; typical LLaMA-7B takes minutes on a single GPU.",
+    "Standard deployment: W4A16 with per-group scales (group_size 128)."
+  ],
+  "performanceScenarios": [
+    "GPT-3 175B with GPTQ INT4 W4A16: perplexity increase of ~1-4% vs FP16 with 4× weight compression."
+  ],
+  "versionSensitivity": "stable_principle"
+}

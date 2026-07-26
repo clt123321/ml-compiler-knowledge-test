@@ -1,0 +1,56 @@
+{
+  "questionId": "C-LAYOUTOPT-026",
+  "learningObjective": "Reason about when inserting a layout-transform op in a graph is profitable and when it is not.",
+  "canonicalClaims": [
+    {
+      "claim": "Inserting a layout-transform op is a cost-benefit decision: it is profitable when the target-layout kernel's time savings exceed the transform's cost plus any restoration costs for downstream consumers.",
+      "conditions": [
+        "The target hardware has a preferred layout with a kernel implementation available.",
+        "The compiler can estimate transform cost and downstream layout requirements."
+      ],
+      "nonImplications": [
+        "Does not imply the same layout is preferred on all hardware or all shapes.",
+        "Does not imply a single layout transform is enough; some pipelines insert multiple to isolate a hot region."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Layout transforms" },
+        { "ref": "PAPER:pytorch2", "locator": "Layout selection" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "NCHW->NHWC is always a pure view (metadata only).",
+      "errorType": "definition_confusion",
+      "whyWrong": "The stride pattern of channels-last differs from NCHW-contiguous in a way that requires reordering elements in memory.",
+      "sourceOrEvidence": "PyTorch memory-format docs"
+    },
+    {
+      "claim": "Channels-last is universally faster than NCHW.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Some kernels/shapes/architectures still favor NCHW; the choice is empirical and hardware-dependent.",
+      "sourceOrEvidence": "cuDNN docs; PyTorch layout guides"
+    },
+    {
+      "claim": "Layout transforms are never profitable.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Layout-aware kernel selection can amortize transform cost easily on large workloads.",
+      "sourceOrEvidence": "cuDNN performance guides"
+    },
+    {
+      "claim": "If a layout transform requires a copy, the compiler must abort.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Copies are a normal cost; the decision remains cost-benefit.",
+      "sourceOrEvidence": "General compiler layout planning"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch channels-last is stride-only on the logical NCHW shape but requires copy from NCHW-contiguous",
+    "cuDNN convolution kernels prefer channels-last on modern NVIDIA GPUs for many shapes",
+    "Compilers plan layout globally to avoid ping-ponging"
+  ],
+  "performanceScenarios": [
+    "Layout-planning passes evaluate transform cost against kernel gains; poor plans introduce redundant copies."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,54 @@
+{
+  "questionId": "H-FAKE-016",
+  "learningObjective": "Identify a correct fake-quantization forward implementation (quantize → clamp → dequantize) used during QAT.",
+  "canonicalClaims": [
+    {
+      "claim": "A symmetric fake-quantization forward is `x_hat = clamp(round(x / s), qmin, qmax) * s`; because `round` has zero gradient a.e., the straight-through estimator (STE) is used to approximate its derivative as identity on the interior of the clamp for backward.",
+      "conditions": [
+        "Symmetric convention with z = 0.",
+        "The framework implements the STE (either via a custom autograd Function or via `torch.ops.aten.fake_quantize_per_tensor_affine`)."
+      ],
+      "nonImplications": [
+        "Does not imply STE is an unbiased estimator; it is an approximation.",
+        "Does not imply `qmin`, `qmax` must be [-127, 127]; asymmetric conventions differ."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Fake quantization and STE" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PyTorch's autograd handles the round gradient correctly out of the box, so no STE is needed.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The true derivative of `round` is zero a.e., which would zero out all upstream gradients. Frameworks explicitly override this with STE.",
+      "sourceOrEvidence": "PyTorch fake quantize implementation"
+    },
+    {
+      "claim": "The forward introduces no quantization noise because `q * scale` equals `x`.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`q = round(x / s)` loses information; multiplying back yields `x_hat` that differs from `x` by up to 0.5 * s.",
+      "sourceOrEvidence": "Quantization error analysis"
+    },
+    {
+      "claim": "The rounding convention (banker's / RNE vs. round-half-away) is a correctness issue for QAT.",
+      "errorType": "scope_error",
+      "whyWrong": "Both conventions are acceptable and their choice is a minor implementation detail; QAT robustness is not dependent on it.",
+      "sourceOrEvidence": "PyTorch / TensorRT quantization docs"
+    },
+    {
+      "claim": "STE is exact when the operator is on the interior of the clamp region.",
+      "errorType": "overgeneralization",
+      "whyWrong": "STE approximates the gradient as 1 on the interior; this is an *approximation*, not the true gradient of `round`.",
+      "sourceOrEvidence": "Bengio et al., STE literature"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch: `torch.fake_quantize_per_tensor_affine` implements STE-based fake quant.",
+    "TensorRT QAT expects fake-quant nodes with a well-defined scale attribute."
+  ],
+  "performanceScenarios": [
+    "QAT training with INT8 fake-quant typically recovers within 0.5% of FP32 baseline on ImageNet."
+  ],
+  "versionSensitivity": "stable_principle"
+}

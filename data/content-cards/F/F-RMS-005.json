@@ -1,0 +1,64 @@
+{
+  "questionId": "F-RMS-005",
+  "learningObjective": "Reason about the register/SMEM footprint of a row-parallel Triton RMSNorm kernel and how BLOCK sizing affects occupancy.",
+  "canonicalClaims": [
+    {
+      "claim": "A row-parallel RMSNorm (one Triton program per row) that loads all N columns into a single tile requires roughly N × sizeof(dtype) bytes of per-program working set; this footprint bounds the number of programs per SM (occupancy) and constrains the practical maximum N per program.",
+      "conditions": [
+        "The kernel processes the whole row in a single tile (no chunked / online reduction).",
+        "Tile data lives in registers and/or shared memory as chosen by Triton's lowering."
+      ],
+      "nonImplications": [
+        "Does not imply that low occupancy always hurts throughput; memory-bound row-parallel norm kernels often reach near-peak bandwidth at modest occupancy.",
+        "Does not imply that a chunked / online RMSNorm is always better; for moderate N the single-pass row-parallel design is simpler and competitive."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "RMSNorm / LayerNorm tutorials" },
+        { "ref": "BOOK:pmpp4", "locator": "Occupancy and per-block working set" }
+      ]
+    },
+    {
+      "claim": "Using `tl.load(..., mask=mask, other=0.0)` correctly zeros out-of-bounds lanes for a subsequent sum-based reduction because 0 is the additive identity.",
+      "conditions": ["The reduction operator is addition (or another where 0 is the identity)."],
+      "nonImplications": ["Does not imply this trick works for max/min; the wrong `other` value biases the result."],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "tl.load and tl.sum reduction semantics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`tl.sum` must receive its own `mask` argument to be correct; loading with `other=0.0` is not enough.",
+      "errorType": "definition_confusion",
+      "whyWrong": "If the masked-off lanes hold 0.0 after the load, then their contribution to a sum is already 0.",
+      "sourceOrEvidence": "Triton language reference"
+    },
+    {
+      "claim": "Setting BLOCK to exactly N always improves performance because it avoids all mask overhead.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Larger BLOCK increases per-program working set and can reduce occupancy or force register spills; whether it's a win depends on N and hardware.",
+      "sourceOrEvidence": "Triton tutorials on autotuning"
+    },
+    {
+      "claim": "`1.0 / tl.sqrt(x)` always compiles to a bit-identical `rcpsqrt` sequence across GPU architectures.",
+      "errorType": "hardware_leak",
+      "whyWrong": "PTX `rsqrt.approx` is an approximation with architecture-dependent accuracy; IEEE-compliant `1.0 / sqrt(x)` is a distinct sequence.",
+      "sourceOrEvidence": "PTX ISA / CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "One Triton program per row means the row-parallel kernel is compute-bound.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "RMSNorm reads and writes each element roughly once; the kernel is memory-bound in typical regimes.",
+      "sourceOrEvidence": "PMPP4 memory-bound kernels"
+    }
+  ],
+  "implementationFacts": [
+    "RMSNorm per-row FLOPs: O(N) (element-wise + one reduction)",
+    "RMSNorm bytes moved per row: 2 * N * sizeof(dtype) (read x, write out) + N * sizeof(dtype) (weight)",
+    "Row-parallel per-program working set: ~ N * sizeof(dtype)"
+  ],
+  "performanceScenarios": [
+    "For long-context transformer models where N (hidden dim) grows, one may switch from row-parallel single-tile RMSNorm to chunked/online variants to keep per-program footprint bounded and maintain occupancy."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

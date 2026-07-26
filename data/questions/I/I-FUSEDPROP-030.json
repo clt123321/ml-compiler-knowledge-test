@@ -1,0 +1,96 @@
+{
+  "id": "I-FUSEDPROP-030",
+  "type": "multiple",
+  "module": "core_ops_attention",
+  "subtopic": "Fused kernels / Benefits and boundary conditions",
+  "learningObjective": "Distinguish real benefits and non-benefits of kernel fusion for transformer building blocks.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Select all correct statements about kernel fusion in transformer inference. (Choose all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Kernel fusion always improves latency because it eliminates all HBM traffic between the fused ops; there is no configuration in which fusion hurts performance."
+    },
+    {
+      "id": "B",
+      "text": "Aggressive fusion can hurt occupancy by inflating per-thread register footprint; when register pressure spills to local memory, the fused kernel may be slower than the un-fused version."
+    },
+    {
+      "id": "C",
+      "text": "Fusion primarily reduces HBM roundtrips of intermediate tensors and amortizes kernel-launch overhead; the FLOP count of the fused operations is unchanged."
+    },
+    {
+      "id": "D",
+      "text": "Producer-consumer fusion (e.g., pointwise ops on the output of a GEMM) is straightforward, but fusing across a reduction boundary (e.g., across softmax) requires restructuring the tiling and typically only pays off under specific tile-size constraints."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): fusion has real costs; not universally beneficial. B (Correct): register pressure can undo the gains. C (Correct): fusion reduces HBM traffic and launch overhead. D (Correct): reduction-boundary fusion is hard and conditional.",
+  "optionExplanations": {
+    "A": "Wrong: fusion has real costs; not universally beneficial.",
+    "B": "Correct: register pressure can undo the gains.",
+    "C": "Correct: fusion reduces HBM traffic and launch overhead.",
+    "D": "Correct: reduction-boundary fusion is hard and conditional."
+  },
+  "assumptions": [
+    "'Fusion' means combining multiple logical ops into a single kernel launch.",
+    "GPU with register file and SMEM as the on-chip staging levels."
+  ],
+  "nonImplications": [
+    "Does not imply un-fused kernels are ever better on typical shapes; when register pressure is fine, fusion wins.",
+    "Does not imply fusion decisions are static; auto-tuners typically evaluate multiple fusion configurations."
+  ],
+  "misconceptionTags": [
+    "fusion_free_myth",
+    "fusion_zero_hbm_myth"
+  ],
+  "distractorRationales": {
+    "A": "Denies all fusion downsides."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Fusion boundary and register pressure",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Kernel fusion trade-offs",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Kernel fusion benefit/limit trade-offs on GPU",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/I/I-FUSEDPROP-030.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

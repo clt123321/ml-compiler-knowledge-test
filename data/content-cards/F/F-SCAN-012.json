@@ -1,0 +1,51 @@
+{
+  "questionId": "F-SCAN-012",
+  "learningObjective": "Distinguish Hillis-Steele (work-inefficient) from Blelloch (work-efficient) parallel prefix scan.",
+  "canonicalClaims": [
+    {
+      "claim": "Hillis-Steele scan has depth O(log N) with O(N log N) work; Blelloch scan has depth O(log N) with O(N) work. Blelloch is work-efficient but requires more complex indexing (up-sweep + down-sweep) and typically needs SMEM padding to avoid bank conflicts.",
+      "conditions": ["N is a power of two; shared memory used."],
+      "nonImplications": [
+        "Does not imply Blelloch is always faster in practice on GPUs.",
+        "Does not imply either algorithm handles non-associativity."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Scan chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Hillis-Steele and Blelloch have identical work.",
+      "errorType": "definition_confusion",
+      "whyWrong": "O(N log N) vs O(N) is a real complexity difference.",
+      "sourceOrEvidence": "PMPP4"
+    },
+    {
+      "claim": "Hillis-Steele requires commutativity; Blelloch does not.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both require associativity; commutativity is not the differentiator.",
+      "sourceOrEvidence": "Blelloch's original paper"
+    },
+    {
+      "claim": "Blelloch has depth O(N/2).",
+      "errorType": "definition_confusion",
+      "whyWrong": "Depth is O(log N) — that is the point of the balanced tree.",
+      "sourceOrEvidence": "PMPP4"
+    },
+    {
+      "claim": "Blelloch has no bank-conflict issues on shared memory.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The non-uniform stride pattern commonly hits bank conflicts; padding is a standard mitigation.",
+      "sourceOrEvidence": "PMPP4"
+    }
+  ],
+  "implementationFacts": [
+    "Blelloch phases: up-sweep (reduction), then down-sweep (propagation).",
+    "Common padding trick: index by `idx + idx/NUM_BANKS`."
+  ],
+  "performanceScenarios": [
+    "For small N (e.g., a single warp), Hillis-Steele's simplicity often wins; for larger blocks, Blelloch's lower work wins."
+  ],
+  "versionSensitivity": "stable_principle"
+}

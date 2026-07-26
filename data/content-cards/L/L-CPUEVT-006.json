@@ -1,0 +1,47 @@
+{
+  "questionId": "L-CPUEVT-006",
+  "learningObjective": "Choose between CUDA events and CPU timers when timing a single small CUDA kernel; understand the precision and semantic implications.",
+  "canonicalClaims": [
+    {
+      "claim": "CUDA events with enable_timing recorded on a specific stream time GPU-side execution of that stream with sub-microsecond resolution and are not perturbed by concurrent work on other streams; CPU timers combined with device-wide synchronize would also charge concurrent work into the measurement.",
+      "conditions": [
+        "Concurrent work exists on other streams during the measurement window.",
+        "The goal is to isolate the target kernel's execution."
+      ],
+      "nonImplications": [
+        "Does not imply CUDA events are the right tool for coarse timing.",
+        "Does not imply event overhead is zero (a few hundred ns per record)."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "CUDA event timing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "CUDA kernel launches block the host for small kernels.",
+      "errorType": "definition_confusion",
+      "whyWrong": "All CUDA kernel launches are asynchronous with respect to the host regardless of duration.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Device-wide synchronize is the most accurate way to time one stream.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "It also drains other streams, over-charging the measurement.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "cudaEventRecord requires the default stream.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Events can be recorded on any stream.",
+      "sourceOrEvidence": "CUDA Runtime API reference"
+    },
+    {
+      "claim": "CPU timers around async launches are always safe with a stream-scoped sync.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "They capture host dispatch time too and cannot separate driver overhead from GPU execution.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

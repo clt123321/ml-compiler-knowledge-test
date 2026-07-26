@@ -1,0 +1,49 @@
+{
+  "questionId": "B-DATAFLOW-022",
+  "learningObjective": "Explain the meet operator and lattice ordering choice for a canonical data-flow analysis.",
+  "canonicalClaims": [
+    {
+      "claim": "In classical data-flow, may-analyses use union as meet (some path suffices), must-analyses use intersection (all paths required); direction is forward for analyses reasoning about past behavior (available expressions, reaching definitions), backward for future behavior (liveness, very-busy expressions).",
+      "conditions": [
+        "Lattice is a bounded semi-lattice with a defined meet operator.",
+        "The analysis converges under monotone transfer functions."
+      ],
+      "nonImplications": [
+        "Does not imply meet is always union or intersection; more complex lattices (constant propagation) have richer meets.",
+        "Does not imply the direction is arbitrary; it is determined by the semantic property being tracked."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:dragon2", "locator": "Data-flow analysis chapter" },
+        { "ref": "BOOK:eac3", "locator": "Data-flow analysis chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Liveness is a must-analysis using intersection at joins.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Liveness is a may-analysis: a variable is live-in if it may be used in some future path; the meet at a block boundary is the union over successors' live-in sets.",
+      "sourceOrEvidence": "Dragon2 liveness section"
+    },
+    {
+      "claim": "Available expressions uses union.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Available expressions is a must-analysis: an expression is available at a block only if it is available on every predecessor; meet = intersection.",
+      "sourceOrEvidence": "EAC3 available expressions chapter"
+    },
+    {
+      "claim": "The direction of a data-flow analysis is a free parameter.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Direction is determined by whether the analysis reasons about past behavior (forward) or future behavior (backward).",
+      "sourceOrEvidence": "Dragon2 data-flow taxonomy"
+    }
+  ],
+  "implementationFacts": [
+    "Four-quadrant classification: forward-may (reaching defs), forward-must (available exprs), backward-may (liveness), backward-must (very-busy exprs).",
+    "Transfer functions must be monotone for the iterative algorithm to converge to a least fixpoint."
+  ],
+  "performanceScenarios": [
+    "Register allocation uses liveness; CSE / GVN uses available-expressions-like reasoning."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,49 @@
+{
+  "questionId": "J-FAIRTHR-030",
+  "learningObjective": "Diagnose fairness issues in multi-tenant LLM serving and identify levers that improve fairness without collapsing throughput.",
+  "canonicalClaims": [
+    {
+      "claim": "Multi-tenant fairness under bursty long-prompt loads is addressed by combining chunked prefill (interleave long prefill with short-tenant decode), per-tenant KV/admission quotas (cap contention), and fairness-aware scheduling; naïve serialization sacrifices too much throughput.",
+      "conditions": [
+        "Serving stack supports chunked prefill + admission control.",
+        "Fair-queueing available or approximable."
+      ],
+      "nonImplications": [
+        "Does not imply zero cost for any mitigation.",
+        "Does not imply the mix is universal; tuning depends on tenant SLA classes."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:sglang", "locator": "Chunked prefill + fairness" },
+        { "ref": "DOC:vllm", "locator": "Admission control" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Serializing tenants is the correct way to achieve fairness.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Serialization eliminates interference but also aggregate throughput; not a real serving option.",
+      "sourceOrEvidence": "Serving system design principles"
+    },
+    {
+      "claim": "Chunked prefill has zero cost.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Per-chunk overhead is small but nonzero; too many small chunks can waste cycles.",
+      "sourceOrEvidence": "SGLang docs"
+    },
+    {
+      "claim": "Per-tenant KV quotas eliminate all bursts.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Quotas cap worst-case, but a single tenant's traffic within its quota can still cause internal preemption.",
+      "sourceOrEvidence": "Multi-tenant serving experience"
+    }
+  ],
+  "implementationFacts": [
+    "SGLang scheduler supports per-tenant priorities and chunked prefill.",
+    "vLLM offers admission control via max_num_seqs and max_num_batched_tokens."
+  ],
+  "performanceScenarios": [
+    "The combination of chunked prefill + admission + fair queueing yields robust multi-tenant SLA in production."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

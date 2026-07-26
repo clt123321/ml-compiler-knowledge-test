@@ -1,0 +1,93 @@
+{
+  "id": "E-MLIRCONV-003",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "MLIR / Dialect Conversion, Conversion Target, Type Converter",
+  "learningObjective": "Understand the roles of Conversion Target, Type Converter, and legalization patterns in an MLIR Dialect Conversion, including the difference between partial and full conversion.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "You want to convert `func.func` bodies containing `arith.addi` on `i32` to an `llvm.func` using LLVM Dialect. You configure a `ConversionTarget` marking `LLVMDialect` as legal, `arith.addi` as illegal, register conversion patterns, and set a `TypeConverter` mapping `i32 \u2192 i32`. Which statement about the resulting Dialect Conversion is correct?",
+  "irSnippet": "// Before conversion (arith on builtin types)\nfunc.func @add(%a: i32, %b: i32) -> i32 {\n  %0 = arith.addi %a, %b : i32\n  return %0 : i32\n}\n\n// Target after full conversion (LLVM Dialect)\nllvm.func @add(%a: i32, %b: i32) -> i32 {\n  %0 = llvm.add %a, %b : i32\n  llvm.return %0 : i32\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "Because `arith.addi` is marked illegal, the framework silently deletes any matched op without a rewriter pattern; illegal ops without patterns are simply dropped, and the surrounding IR is left in an inconsistent state that a later Canonicalizer pass must repair."
+    },
+    {
+      "id": "B",
+      "text": "`applyPartialConversion` requires the same completeness as full conversion; the difference between partial and full is only whether the transformation runs in a single or multiple passes."
+    },
+    {
+      "id": "C",
+      "text": "Under `applyFullConversion`, every operation in the input (including `func.func`, `func.return`, and `arith.addi`) must have a matching legalization pattern; if any remaining op is not marked legal by the target, the conversion fails with a verification error."
+    },
+    {
+      "id": "D",
+      "text": "The `TypeConverter` is optional whenever conversion patterns keep types unchanged; here `i32 \u2192 i32` is an identity mapping, so registering the TypeConverter has no effect and can be omitted entirely regardless of how the func signature is rewritten."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "In MLIR Dialect Conversion: `applyFullConversion` requires the final IR to contain only legal Ops (per the ConversionTarget); every op must either be legal or be rewritten by a pattern. `applyPartialConversion` allows some illegal ops to remain in the output (useful for staged lowering). The TypeConverter is required whenever conversion patterns need to convert func signatures or block arguments \u2014 even 'identity' type mappings must be registered so the framework knows how to materialize casts if needed. The framework never silently drops illegal ops without patterns; it fails the conversion.",
+  "optionExplanations": {
+    "A": "Wrong: unmatched illegal ops cause the conversion to fail, not silently disappear.",
+    "B": "Wrong: the difference is exactly about whether remaining illegal ops are tolerated, not pass count.",
+    "C": "Correct: full conversion demands complete legalization; missing patterns cause failure.",
+    "D": "Wrong: TypeConverter is required for func-signature/block-arg rewrites regardless of whether types actually change."
+  },
+  "assumptions": [
+    "The reader is using upstream MLIR's `applyFullConversion` / `applyPartialConversion` APIs.",
+    "`arith.addi` on `i32` has a registered pattern lowering to `llvm.add` on `i32`."
+  ],
+  "nonImplications": [
+    "Does not imply that all conversions must be full; partial conversion is commonly used for progressive lowering.",
+    "Does not imply that a TypeConverter is always needed for `applyPatternsAndFoldGreedily` \u2014 that is a different API."
+  ],
+  "misconceptionTags": [
+    "partial_vs_full_conversion",
+    "silent_drop_myth"
+  ],
+  "distractorRationales": {
+    "A": "Fabricates 'silent drop' semantics.",
+    "B": "Confuses conversion completeness with pass count.",
+    "D": "Underestimates the role of TypeConverter for signature/block-arg rewriting."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-dialect-conversion",
+      "locator": "applyFullConversion / applyPartialConversion / TypeConverter / ConversionTarget",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Dialect Conversion overview",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-MLIRCONV-003.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

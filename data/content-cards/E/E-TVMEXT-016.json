@@ -1,0 +1,49 @@
+{
+  "questionId": "E-TVMEXT-016",
+  "learningObjective": "Understand TVM BYOC / extern-op integration for external libraries.",
+  "canonicalClaims": [
+    {
+      "claim": "TVM's BYOC and extern-op mechanisms lower a Relax op or subgraph to an opaque call into a third-party library. The compiler tracks shapes/dtypes at the graph level but does not see internal loops, so the call is a black box to TensorIR-level fusion and scheduling.",
+      "conditions": ["Target library is registered as a BYOC backend."],
+      "nonImplications": [
+        "Does not imply the library will always outperform generated code.",
+        "Does not imply BYOC and PrimFunc paths are mutually exclusive in one program."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "BYOC documentation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "External library calls are inlined into TensorIR at compile time.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They remain opaque; TVM does not have their source.",
+      "sourceOrEvidence": "BYOC doc"
+    },
+    {
+      "claim": "TVM cannot invoke external libraries from compiled artifacts.",
+      "errorType": "definition_confusion",
+      "whyWrong": "BYOC supports library calls with runtime linkage.",
+      "sourceOrEvidence": "TVM Relax docs"
+    },
+    {
+      "claim": "BYOC is CPU-only.",
+      "errorType": "overgeneralization",
+      "whyWrong": "cuBLAS/cuDNN/TensorRT are among the primary BYOC targets.",
+      "sourceOrEvidence": "TVM Relax docs"
+    },
+    {
+      "claim": "External calls are automatically fused with adjacent PrimFuncs.",
+      "errorType": "scope_error",
+      "whyWrong": "Only limited epilogue-style linking is possible; general fusion requires visible loop bodies.",
+      "sourceOrEvidence": "TVM fusion doc"
+    }
+  ],
+  "implementationFacts": [
+    "BYOC backends: TensorRT, cuBLAS, cuDNN, DNNL/oneAPI, etc.",
+    "Extern ops carry shape/dtype metadata for graph-level verification."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

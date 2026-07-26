@@ -1,0 +1,96 @@
+{
+  "id": "G-LAYOUT-014",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Layout transformation / NCHW vs. NHWC on GPU",
+  "learningObjective": "Explain why an NCHW \u2192 NHWC layout transformation can improve GPU convolution performance and identify the precondition for the transformation to pay off.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper Tensor Core",
+    "device": "GPU",
+    "requiredFeatures": [
+      "Tensor Core FP16/BF16 conv kernels"
+    ]
+  },
+  "softwareContext": {
+    "framework": "cuDNN / CUTLASS",
+    "stability": "stable_principle"
+  },
+  "profileData": "Kernel: FP16 Conv2D on ResNet block, N=32, C=256, H=W=56, K=256, R=S=3.\n  Under NCHW: cuDNN chooses IMPLICIT_GEMM_PRECOMP, Tensor Core utilization ~40%.\n  Under NHWC:  cuDNN chooses NHWC_TENSOR_OP,       Tensor Core utilization ~85%.",
+  "stem": "Switching the tensor layout from NCHW to NHWC for a Conv2D on Ampere doubles Tensor Core utilization in the profile above. Which explanation is most accurate?",
+  "options": [
+    {
+      "id": "A",
+      "text": "NHWC changes the mathematical result of the convolution, but the difference is within FP16 tolerance; the higher utilization comes from doing less numerical work."
+    },
+    {
+      "id": "B",
+      "text": "NHWC uses less memory than NCHW because it interleaves channels, so it fits better in shared memory."
+    },
+    {
+      "id": "C",
+      "text": "NHWC places the channel dimension as the fastest-varying axis, matching Tensor Core / im2col-tile access patterns and enabling cuDNN's NHWC Tensor Core kernels; NCHW places channel as a strided outer axis, which those Tensor Core kernels do not support directly."
+    },
+    {
+      "id": "D",
+      "text": "NCHW is a deprecated layout on Ampere and later; cuDNN silently converts NCHW to NHWC internally, adding a permutation kernel that costs the reported utilization gap."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "NHWC makes the channel axis contiguous. Tensor Core convolution kernels (both explicit im2col GEMM and implicit GEMM variants) load tiles along the channel dimension, so contiguous channels give coalesced loads and match the Tensor Core K-fragment layout (K = input channels for forward conv). Under NCHW, the channel is an outer strided axis, which the NHWC-native Tensor Core kernels do not accept directly; cuDNN falls back to less-optimal precomputed variants or issues an internal permutation. NHWC does not change the memory footprint (same tensor, different layout) and does not change the mathematical output. NCHW is not deprecated on Ampere; both are supported, with NHWC preferred for Tensor Core.",
+  "optionExplanations": {
+    "A": "Wrong: layout is semantics-preserving; NHWC does not change the mathematical output.",
+    "B": "Wrong: layout does not change tensor size in memory.",
+    "C": "Correct: matches cuDNN's documented layout-kernel selection rules for Tensor Core.",
+    "D": "Wrong: NCHW is still supported, and any internal permutation would appear as a distinct kernel, not as reduced TC utilization within the conv."
+  },
+  "assumptions": [
+    "The workload uses FP16/BF16 Tensor Core-capable kernels.",
+    "cuDNN's algorithm chooser follows its documented layout preferences."
+  ],
+  "nonImplications": [
+    "Does not imply NHWC is always faster; small-channel workloads (C < 32) often prefer NCHW due to Tensor Core K-alignment constraints.",
+    "Does not imply the whole model should be transposed to NHWC; a permutation cost is incurred at layout boundaries."
+  ],
+  "misconceptionTags": [
+    "layout_changes_semantics",
+    "layout_changes_memory"
+  ],
+  "distractorRationales": {
+    "A": "Confuses layout transformation with numerical change.",
+    "B": "Confuses layout with memory footprint.",
+    "D": "Fabricates a deprecation and an internal-permutation cost model."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "cuDNN conv layout preferences; Tensor Core alignment",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Convolution kernel dataflow analysis",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "cuDNN Tensor Core Conv2D layout preference on Ampere/Hopper",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-LAYOUT-014.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-07-26",
+  "coverage": {
+    "BOOK:eac3": {
+      "title": "Engineering a Compiler",
+      "used": 41
+    },
+    "BOOK:dragon2": {
+      "title": "Compilers: Principles, Techniques, and Tools",
+      "used": 7
+    },
+    "BOOK:appel": {
+      "title": "Modern Compiler Implementation",
+      "used": 22
+    },
+    "BOOK:hp6": {
+      "title": "Computer Architecture: A Quantitative Approach",
+      "used": 24
+    },
+    "BOOK:pmpp4": {
+      "title": "Programming Massively Parallel Processors",
+      "used": 64
+    },
+    "BOOK:sze-eff": {
+      "title": "Efficient Processing of Deep Neural Networks",
+      "used": 45
+    }
+  }
+}

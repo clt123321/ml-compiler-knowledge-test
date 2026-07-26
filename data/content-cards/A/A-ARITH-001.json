@@ -1,0 +1,70 @@
+{
+  "questionId": "A-ARITH-001",
+  "learningObjective": "Apply the Roofline model to classify a batch-1 GEMV as compute- or memory-bound on a specific GPU and derive the achievable throughput ceiling from arithmetic intensity times HBM bandwidth.",
+  "canonicalClaims": [
+    {
+      "claim": "A batch-1 GEMV that streams its weight matrix from HBM has arithmetic intensity around 1 FLOP/byte and is memory-bound whenever the target GPU's ridge point exceeds 1 FLOP/byte.",
+      "conditions": [
+        "Weights loaded exactly once from HBM (no persistent-kernel or weight caching that changes reuse).",
+        "Ridge point (peak compute / peak HBM BW) is much larger than 1 FLOP/byte.",
+        "Kernel is FP16 or FP32 without exotic weight-only compression that changes bytes moved."
+      ],
+      "nonImplications": [
+        "Does not imply the ceiling is exactly HBM BW in FLOP/s; the ceiling is HBM BW × AI.",
+        "Does not imply that a batched GEMM (multiple x vectors) is also memory-bound: batching raises AI proportionally."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Ch. 5 (Performance considerations) and Ch. 6 (Memory-bound kernels)" },
+        { "ref": "BOOK:hp6", "locator": "Ch. 4, memory-bandwidth-bound regime of DL kernels" }
+      ]
+    },
+    {
+      "claim": "The Roofline ceiling for a memory-bound kernel equals arithmetic intensity multiplied by peak HBM bandwidth.",
+      "conditions": [
+        "Kernel does not saturate on-chip caches such that HBM traffic drops significantly.",
+        "AI is measured against HBM traffic, not L1/SMEM traffic."
+      ],
+      "nonImplications": [
+        "Does not imply that achievable throughput equals ceiling; real kernels usually fall below."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Roofline model definition" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Batch-1 GEMV can approach the FP16 Tensor Core compute peak because the underlying kernel uses Tensor Cores.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Using Tensor Cores does not raise arithmetic intensity; the weight matrix still must be streamed once from HBM, capping throughput at HBM × AI regardless of compute hardware used.",
+      "sourceOrEvidence": "PMPP4 Ch. 5"
+    },
+    {
+      "claim": "Because on-chip SRAM has much higher bandwidth than HBM, the Roofline ceiling for a streaming GEMV is set by SRAM bandwidth.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SRAM (shared memory / L1) only affects kernels that reuse data across many operations from cache; for a single pass over weights, HBM bandwidth is the binding constraint.",
+      "sourceOrEvidence": "CUDA Best Practices Guide, memory hierarchy discussion"
+    },
+    {
+      "claim": "Arithmetic intensity for GEMV y=Wx is around 2 FLOP/byte because each multiply-add is 2 FLOPs per weight and each weight is 1 byte.",
+      "errorType": "wrong_condition",
+      "whyWrong": "This ignores the FP16 (2 bytes) dtype of weights and off-by-a-factor. AI is (2·N·N) / (2·N·N + small) ≈ 1 FLOP/byte for FP16 weights, not 2.",
+      "sourceOrEvidence": "PMPP4 chapter on arithmetic intensity"
+    },
+    {
+      "claim": "Since the GPU has 65 K registers per SM, a batch-1 GEMV is register-pressure limited rather than bandwidth limited.",
+      "errorType": "scope_error",
+      "whyWrong": "Register pressure affects occupancy, not the absolute HBM-bound ceiling; a bandwidth-limited kernel can be run at low occupancy without further slowdown.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, occupancy and register file"
+    }
+  ],
+  "implementationFacts": [
+    "GEMV Bytes ≈ N·K·sizeof(dtype) + N·sizeof(dtype) + K·sizeof(dtype)",
+    "GEMV FLOPs ≈ 2·N·K",
+    "For square N=K FP16, AI = 2·N·N / (2·N·N + O(N)·2) ≈ 1 FLOP/byte"
+  ],
+  "performanceScenarios": [
+    "Weight streaming for a single decode step in a transformer (each linear layer is a GEMV) is HBM-bandwidth limited, motivating weight quantization and weight caching."
+  ],
+  "versionSensitivity": "stable_principle"
+}

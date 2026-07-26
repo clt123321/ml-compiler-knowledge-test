@@ -1,0 +1,47 @@
+{
+  "questionId": "K-TRTBUILD-021",
+  "learningObjective": "Reason about the split between one-time build cost and per-inference runtime cost in TensorRT, and identify a common misdiagnosis when comparing to eager PyTorch.",
+  "canonicalClaims": [
+    {
+      "claim": "TensorRT builder cost is a one-time offline expense (tactic search, calibration, memory planning); per-inference latency of the deserialized engine is the meaningful deployment metric. Conflating the two produces misleading comparisons.",
+      "conditions": [
+        "Standard TensorRT build → serialize → deploy workflow.",
+        "Benchmark aims to reflect steady-state serving cost."
+      ],
+      "nonImplications": [
+        "Does not imply build time is unimportant; it matters for development velocity and rebuild-on-config-change.",
+        "Does not imply TRT is always faster at inference."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trt", "locator": "Builder / Runtime cost separation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TRT rebuilds on every inference call.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Build is one-time; runtime deserializes the plan.",
+      "sourceOrEvidence": "TensorRT developer guide"
+    },
+    {
+      "claim": "TRT is always slower than PyTorch eager.",
+      "errorType": "overgeneralization",
+      "whyWrong": "TRT frequently outperforms eager, particularly on transformers with fusion and INT8/FP8.",
+      "sourceOrEvidence": "TensorRT release notes; various benchmarks"
+    },
+    {
+      "claim": "Build time and inference time should be added.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "They belong in different columns: build is offline amortized cost; inference is per-request.",
+      "sourceOrEvidence": "TensorRT best practices"
+    },
+    {
+      "claim": "Eager PyTorch requires no synchronization to measure.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Eager PyTorch is asynchronous with respect to CUDA and requires synchronize for correct timing.",
+      "sourceOrEvidence": "CUDA best practices; PyTorch profiler docs"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

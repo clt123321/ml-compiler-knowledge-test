@@ -1,0 +1,101 @@
+{
+  "id": "M-BOUNDARY-014",
+  "type": "multiple",
+  "module": "distributed",
+  "subtopic": "Compiler vs distributed runtime boundary",
+  "learningObjective": "Delineate the responsibilities of an SPMD-style compiler versus a distributed runtime (e.g. NCCL / MPI stack).",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "Multi-GPU cluster with NCCL runtime",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "GSPMD / XLA / StableHLO + NCCL",
+    "stability": "stable_principle"
+  },
+  "stem": "Which THREE of the following statements about the division of responsibilities between an SPMD-style compiler (e.g. XLA + GSPMD emitting StableHLO) and a distributed runtime (e.g. NCCL) are correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The compiler decides which collectives (AllReduce, AllGather, All-to-All, ReduceScatter) to insert and at which mesh axes, based on sharding specs; the runtime chooses the internal algorithm (ring, tree, recursive halving) at execution time."
+    },
+    {
+      "id": "B",
+      "text": "Algorithm selection, message-chunk sizes, and NIC/NVLink lane assignment inside a collective are runtime concerns and are not visible at the SPMD IR level."
+    },
+    {
+      "id": "C",
+      "text": "Fault tolerance (dead-rank detection, retry, checkpoint restore) is a runtime/framework responsibility; the SPMD compiler does not manage process lifecycle."
+    },
+    {
+      "id": "D",
+      "text": "Because the compiler needs to reason about performance, it must know each device's NVSwitch domain and PCIe topology at compile time; without this, the emitted IR is topology-incorrect."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "C"
+  ],
+  "explanation": "A, B, C reflect the standard division. The compiler operates at the mesh-axis / collective-op level; runtime handles algorithm choice, chunking, NIC selection, and fault tolerance. D is wrong: the IR references mesh axes, not physical devices; topology-aware mapping is a runtime concern (though cost models may consult topology when available).",
+  "optionExplanations": {
+    "A": "Correct: compile-time inserts collectives; runtime picks algorithm.",
+    "B": "Correct: internal algorithm parameters live at the runtime.",
+    "C": "Correct: fault tolerance is a runtime/framework concern.",
+    "D": "Wrong: physical topology awareness lives at the runtime; compiler references mesh axes."
+  },
+  "assumptions": [
+    "Modern SPMD compiler stack (XLA + GSPMD, StableHLO) and NCCL/MPI-style runtime.",
+    "IR-level collectives are algorithm-agnostic."
+  ],
+  "nonImplications": [
+    "Does not imply the compiler has no cost model; cost models can consult mesh shape.",
+    "Does not imply the runtime cannot be topology-aware; NCCL is notably topology-aware."
+  ],
+  "misconceptionTags": [
+    "compiler_selects_ring_or_tree",
+    "topology_at_compile_time"
+  ],
+  "distractorRationales": {
+    "D": "Wrongly places topology-mapping at compile time."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§ compiler/runtime interface",
+      "supports": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "Collective ops at IR level are algorithm-agnostic",
+      "supports": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 6 runtime algorithm selection for collectives",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-BOUNDARY-014.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

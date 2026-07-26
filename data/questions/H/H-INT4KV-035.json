@@ -1,0 +1,100 @@
+{
+  "id": "H-INT4KV-035",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "INT4 KV cache / Aggressive KV quantization",
+  "learningObjective": "Identify the trade-offs of INT4 KV cache quantization vs INT8/FP8 for LLM serving.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "vLLM / TensorRT-LLM",
+    "frameworkVersionScope": "vLLM 0.5+, TRT-LLM 0.9+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which of the following statements about aggressive INT4 KV cache quantization (relative to FP16 or INT8 KV) are TRUE? (Select all that apply.)",
+  "profileData": "KV cache footprint (LLaMA-70B, 8K context, batch=1, per token):\n  FP16 KV: ~2.5 MB per token \u2192 20 GB per request\n  INT8 KV: ~1.25 MB per token \u2192 10 GB per request\n  INT4 KV: ~0.65 MB per token (INT4 + per-token FP16 scales) \u2192 5.2 GB per request\n\nLong-context QA benchmark (Needle-in-a-Haystack, 32K context, LLaMA-13B):\n  FP16 KV  : baseline accuracy\n  INT8 KV  : \u2248 FP16 - 0.4%\n  INT4 KV  : \u2248 FP16 - 2.1%\n\nKernel support:\n  vLLM 0.5+: INT8/FP8 KV production; INT4 KV experimental (dequant-in-register to FP16).\n  TensorRT-LLM 0.9+: INT8/FP8 KV production; INT4 KV in preview.",
+  "options": [
+    {
+      "id": "A",
+      "text": "Kernel support for INT4 KV attention is less mature than for INT8/FP8; some production stacks support INT4 for KV storage only, dequantizing to FP16 in the attention kernel."
+    },
+    {
+      "id": "B",
+      "text": "INT4 KV cache is always at least as accurate as INT8 KV cache because more scale factors are needed and are stored per-token."
+    },
+    {
+      "id": "C",
+      "text": "INT4 KV halves the KV memory footprint again vs INT8 (4\u00d7 vs FP16), enabling substantially longer contexts or higher batch sizes on the same GPU memory."
+    },
+    {
+      "id": "D",
+      "text": "INT4 KV quantization accuracy is more sensitive to context length than INT8 KV because the coarser quantization step amplifies softmax's cumulative sensitivity; long-context QA / retrieval-heavy benchmarks show larger drops than at INT8."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): kernel-support maturity. B (Wrong): fewer bits = less precision, regardless of scale count. C (Correct): footprint arithmetic. D (Correct): sensitivity to context length grows with quantization coarseness.",
+  "optionExplanations": {
+    "A": "Correct: kernel-support maturity.",
+    "B": "Wrong: fewer bits = less precision, regardless of scale count.",
+    "C": "Correct: footprint arithmetic.",
+    "D": "Correct: sensitivity to context length grows with quantization coarseness."
+  },
+  "assumptions": [
+    "Per-token or per-head-per-token scaling for KV quantization.",
+    "Standard attention kernel with configurable KV dtype."
+  ],
+  "nonImplications": [
+    "Does not imply INT4 KV is unusable \u2014 it works for many workloads at modest accuracy cost.",
+    "Does not imply INT4 KV always yields the theoretical 2\u00d7 speedup over INT8; kernel overhead and metadata reduce the effective gain."
+  ],
+  "misconceptionTags": [
+    "int4_more_scales_beats_int8",
+    "int4_needs_fp4_tc"
+  ],
+  "distractorRationales": {
+    "B": "Overestimates the effect of scale count."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:trtllm",
+      "locator": "KV cache quantization: INT8 and FP8 support; INT4 experimental notes",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Aggressive quantization accuracy trade-offs",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "INT4 KV cache trade-offs vs INT8 / FP16",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/H/H-INT4KV-035.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

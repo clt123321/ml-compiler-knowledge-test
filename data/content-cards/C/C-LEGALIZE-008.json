@@ -1,0 +1,56 @@
+{
+  "questionId": "C-LEGALIZE-008",
+  "learningObjective": "Distinguish MLIR's Dialect Conversion / Legalization framework (ConversionTarget, ConversionPattern, TypeConverter) from canonicalization and from arbitrary rewrite passes.",
+  "canonicalClaims": [
+    {
+      "claim": "MLIR Dialect Conversion uses a ConversionTarget to declare legal/illegal ops and dialects, ConversionPatterns to rewrite illegal ops, and a TypeConverter to define type mappings plus materialization functions inserted at type boundaries; legalization succeeds only when the resulting IR is legal per the target.",
+      "conditions": [
+        "The pass is `applyPartialConversion` or `applyFullConversion` from the Dialect Conversion driver.",
+        "ConversionPatterns cover the illegal ops and TypeConverter handles the involved types."
+      ],
+      "nonImplications": [
+        "Does not imply Dialect Conversion is required for all rewrites; simple in-dialect changes can use pattern rewriters directly.",
+        "Does not imply full conversion is always preferred; partial conversion is common when a lowering step is intermediate."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-dialect-conversion", "locator": "Dialect Conversion framework" },
+        { "ref": "DOC:mlir-langref", "locator": "Ops, dialects, types" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Dialect Conversion is identical to canonicalization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Canonicalization is in-dialect fold + normal form; Dialect Conversion is a target-driven cross-dialect rewrite framework.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "The TypeConverter is optional and only affects debug metadata.",
+      "errorType": "scope_error",
+      "whyWrong": "When ops cross type systems (e.g., tensor -> memref), TypeConverter defines the mapping and inserts materializations.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    },
+    {
+      "claim": "ConversionTarget lists ops to delete.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It lists ops that are legal or illegal; illegal ops must be rewritten by patterns, not deleted.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    },
+    {
+      "claim": "`unrealized_conversion_cast` remains in the final IR after successful conversion.",
+      "errorType": "definition_confusion",
+      "whyWrong": "These casts are transient; materializations from the TypeConverter should remove them, and remaining casts indicate an incomplete conversion.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    }
+  ],
+  "implementationFacts": [
+    "`applyPartialConversion` allows some illegal ops to remain; `applyFullConversion` requires all ops legal",
+    "ConversionPatterns take a rewriter and adaptor with converted operand types",
+    "TypeConverter registers `addConversion`, `addSourceMaterialization`, `addTargetMaterialization`, `addArgumentMaterialization`"
+  ],
+  "performanceScenarios": [
+    "Correctly configured legalization is a prerequisite for lowering to backends; misconfigured target/type converter is a common cause of pipeline failures."
+  ],
+  "versionSensitivity": "stable_principle"
+}

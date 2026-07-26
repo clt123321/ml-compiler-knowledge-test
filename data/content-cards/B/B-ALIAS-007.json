@@ -1,0 +1,51 @@
+{
+  "questionId": "B-ALIAS-007",
+  "learningObjective": "Identify sound and unsound assumptions in alias analysis and their effect on downstream optimizations.",
+  "canonicalClaims": [
+    {
+      "claim": "A sound alias analysis is a may-analysis (over-approximation); may-alias never breaks correctness but may inhibit optimizations. Must-alias is a stronger property enabling optimizations across pointers. False no-alias is a soundness bug because downstream passes trust the analysis and may reorder or eliminate memory operations incorrectly.",
+      "conditions": [
+        "The compiler operates on a standard may/no/must alias framework.",
+        "Downstream passes rely on the analysis without re-verifying their aliasing assumptions."
+      ],
+      "nonImplications": [
+        "Does not imply must-alias is common; typically only trivial cases yield must-alias.",
+        "Does not imply may-alias is useless; it soundly bounds behavior for unknown pointers."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Alias analysis chapter" },
+        { "ref": "DOC:llvm-langref", "locator": "Memory model" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Reporting 'no-alias' when pointers may alias is safe because downstream passes re-verify aliasing.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Downstream passes trust the analysis; unsound no-alias leads to reordered stores/loads and miscompilation.",
+      "sourceOrEvidence": "LLVM alias analysis documentation"
+    },
+    {
+      "claim": "May-alias is unsound because it prevents legitimate optimizations.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "May-alias is sound but imprecise; it foregoes optimizations conservatively rather than risking incorrect ones.",
+      "sourceOrEvidence": "EAC3 alias analysis"
+    },
+    {
+      "claim": "Must-alias and may-alias mean the same thing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Must-alias is a strict subset of may-alias; must-alias implies aliasing in every execution, may-alias implies aliasing in some execution.",
+      "sourceOrEvidence": "Appel pointer analysis"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM provides AliasAnalysis / AAResults interfaces returning MayAlias, MustAlias, PartialAlias, NoAlias.",
+    "Steensgaard and Andersen are canonical scalable pointer analyses; may-alias by design.",
+    "Type-based alias analysis (TBAA) uses type disjointness to prove no-alias."
+  ],
+  "performanceScenarios": [
+    "LICM cannot hoist a load over a store unless alias analysis proves no-alias.",
+    "Autovectorization requires the compiler to prove non-aliased array accesses."
+  ],
+  "versionSensitivity": "stable_principle"
+}

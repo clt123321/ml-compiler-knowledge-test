@@ -1,0 +1,39 @@
+{
+  "questionId": "M-MESH-008",
+  "learningObjective": "Explain the role of a Device Mesh as a logical named-axis grid decoupled from the physical topology.",
+  "canonicalClaims": [
+    {
+      "claim": "A Device Mesh assigns each device in a group to a coordinate in a multi-dimensional grid with named axes (e.g. 'data', 'model'), and sharding specifications refer to those axis names; the mapping to physical devices is a separate concern that the compiler / runtime resolves.",
+      "conditions": [
+        "The mesh is rectangular (or a product of axes); every axis has a size.",
+        "Sharding annotations reference mesh axes by name, not by rank id."
+      ],
+      "nonImplications": [
+        "Does not imply that the mesh must match the physical topology; the runtime is free to permute the assignment to optimize link usage.",
+        "Does not imply that a 2D mesh 'data × model' fixes the axis of parallelism — the same tensor can be sharded along any axis via its sharding spec."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§3 mesh abstraction and sharding specs" },
+        { "ref": "DOC:stablehlo", "locator": "Sharding specs referencing mesh axes" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The Device Mesh directly assigns each rank to a physical GPU; changing mesh axes requires recabling the cluster.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The mesh is a logical abstraction; the runtime maps mesh coordinates to physical devices, and can choose different mappings for different jobs."
+    },
+    {
+      "claim": "A 2D mesh named ('data', 'model') forces the compiler to shard batch on 'data' and weights on 'model'; sharding cannot cross axes.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The names are just axis labels; sharding specs decide which axes each tensor is sharded on, and a single tensor may be sharded on multiple axes."
+    },
+    {
+      "claim": "The Device Mesh is a NCCL-specific concept and is not part of the compiler IR.",
+      "errorType": "scope_error",
+      "whyWrong": "The mesh (and named axes) is a first-class concept in GSPMD / XLA / StableHLO sharding, exposed in the IR to drive partitioning decisions."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

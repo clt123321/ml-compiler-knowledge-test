@@ -1,0 +1,96 @@
+{
+  "id": "D-CACHE-024",
+  "type": "multiple",
+  "module": "pytorch_compiler",
+  "subtopic": "torch.compile compilation cache invalidation",
+  "learningObjective": "Identify factors that can invalidate torch.compile's compilation cache and cause re-compilation.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which of the following changes are expected to cause a torch.compile cache miss (and thus a fresh compile) rather than being served from the compilation cache? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Restarting the Python process without any persistent-cache mechanism enabled."
+    },
+    {
+      "id": "B",
+      "text": "Passing a tensor on a different device (e.g., moving from `cuda:0` to `cuda:1`, or from CUDA to CPU)."
+    },
+    {
+      "id": "C",
+      "text": "Changing the input tensor's dtype (e.g., from FP32 to FP16) between calls."
+    },
+    {
+      "id": "D",
+      "text": "Passing a tensor with the same shape, dtype, device, and stride as the previous call."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "C"
+  ],
+  "explanation": "A: dtype guards fail on dtype change, forcing recompile. B: without a persistent cache (like the FX-graph cache / Inductor cache extensions in some configs), a process restart loses the in-memory compile cache. D: device changes fail device guards. C is a cache hit: matching shape/dtype/device/stride reuses the compiled variant.",
+  "optionExplanations": {
+    "A": "Correct.",
+    "B": "Correct.",
+    "C": "Correct.",
+    "D": "Wrong: this is exactly the cache-hit case."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 defaults.",
+    "No persistent Inductor cache is enabled to survive across process restarts."
+  ],
+  "nonImplications": [
+    "Does not imply the in-memory compile cache can never be persisted; recent releases include experimental persistent-cache mechanisms.",
+    "Does not imply that the cache key is exclusively (shape, dtype, device, stride); source-code hashes and other guards also participate."
+  ],
+  "misconceptionTags": [
+    "matching_metadata_is_a_cache_miss"
+  ],
+  "distractorRationales": {
+    "D": "Wrong claim; matching metadata is a hit."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Compilation cache and guard categories",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Guards: dtype, device, stride",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-CACHE-024.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

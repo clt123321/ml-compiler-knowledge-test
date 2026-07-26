@@ -1,0 +1,94 @@
+{
+  "id": "F-CONSTMEM-036",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Constant memory",
+  "learningObjective": "Understand what CUDA constant memory is, its size limits, and when its broadcast semantics benefit performance.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any current NVIDIA architecture",
+    "device": "GPU",
+    "requiredFeatures": [
+      "64 KB constant memory per module"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about CUDA `__constant__` memory is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Constant memory is a runtime-mutable scratchpad allocated from global memory; writes are ordered with respect to `__threadfence()` and it is the standard place for per-warp temporary state."
+    },
+    {
+      "id": "B",
+      "text": "Constant memory is unlimited in size and is always the fastest memory on the GPU; it should be used in preference to shared memory whenever possible."
+    },
+    {
+      "id": "C",
+      "text": "Constant memory is a per-thread-block private cache holding read-only tensors; each block gets a fresh 64 KB copy that is invalidated between kernel invocations."
+    },
+    {
+      "id": "D",
+      "text": "`__constant__` memory is a 64 KB per-module region declared at file scope, cached in a dedicated constant cache; when all threads of a warp read the same address, the read is broadcast in a single access \u2014 most efficient for warp-uniform accesses (e.g., small lookup tables, per-block scalar parameters)."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "CUDA constant memory: 64 KB (module scope), declared with `__constant__` at file scope, read via normal C++ access, backed by a dedicated per-SM constant cache. The key performance property is broadcast: when all lanes of a warp read the same address, the read serves in a single access (fast); non-uniform accesses serialize. Ideal use: small lookup tables, per-launch scalar constants, per-block parameters that are uniform across threads. It is not unlimited (choice B), not per-block (choice C), not runtime-writable from the device (choice D \u2014 the host writes constants via `cudaMemcpyToSymbol` before the kernel launch).",
+  "optionExplanations": {
+    "A": "Wrong: it is not device-writable and is not for temporary state.",
+    "B": "Wrong: 64 KB limit; not universally fastest.",
+    "C": "Wrong: constant memory is not per-block.",
+    "D": "Correct: 64 KB, broadcast on warp-uniform access."
+  },
+  "assumptions": [
+    "Standard CUDA `__constant__` semantics."
+  ],
+  "nonImplications": [
+    "Does not imply constant memory is always beneficial; non-uniform accesses can serialize.",
+    "Does not imply the 64 KB limit is per-symbol; it is per compilation unit / module."
+  ],
+  "misconceptionTags": [
+    "const_mem_unlimited_myth",
+    "const_mem_per_block_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim of device-side writes.",
+    "B": "Fabricates unlimited size.",
+    "C": "Wrong per-block scoping claim."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Constant Memory and constant cache",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Constant memory guidance",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-CONSTMEM-036.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

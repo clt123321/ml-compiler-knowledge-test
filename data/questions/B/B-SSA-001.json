@@ -1,0 +1,97 @@
+{
+  "id": "B-SSA-001",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "SSA form definition",
+  "learningObjective": "Precisely characterize the defining property of SSA (Static Single Assignment) form and distinguish it from related notions.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement correctly defines Static Single Assignment (SSA) form?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Each variable is stored in a distinct memory location; SSA is a memory-layout property enforced by the register allocator."
+    },
+    {
+      "id": "B",
+      "text": "Every variable is written exactly once at runtime along every execution path; loops therefore cannot be represented in SSA without unrolling."
+    },
+    {
+      "id": "C",
+      "text": "Every variable in the intermediate representation is textually assigned in exactly one program statement, and phi (φ) functions are inserted at control-flow join points to merge different reaching definitions from predecessor blocks."
+    },
+    {
+      "id": "D",
+      "text": "SSA requires all variables to be constants, since 'single assignment' means a value is fixed at compile time."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "SSA is a syntactic property of the IR: each name has exactly one textual definition; φ-functions reconcile values that reach a join from different predecessors. Loops are representable in SSA — the loop-header uses a φ-function to merge the initial value with the value flowing back from the backedge. SSA is not about runtime write counts, storage locations, or compile-time constancy.",
+  "optionExplanations": {
+    "A": "Wrong: SSA is an IR-level concept independent of memory allocation; register allocation happens later (often after out-of-SSA).",
+    "B": "Wrong: SSA is a syntactic (textual) property, not a runtime-execution constraint; loops are naturally expressed.",
+    "C": "Correct: standard SSA definition (textual single assignment + φ at joins).",
+    "D": "Wrong: SSA variables can take runtime values; single assignment means single textual definition, not compile-time constancy."
+  },
+  "assumptions": [
+    "Standard SSA as defined in Cytron et al. and canonical compiler textbooks."
+  ],
+  "nonImplications": [
+    "Does not imply that φ-functions have a runtime cost; they are pseudo-instructions eliminated by out-of-SSA copy insertion.",
+    "Does not imply SSA is only useful for optimization; it also simplifies dataflow analysis reasoning."
+  ],
+  "misconceptionTags": [
+    "ssa_runtime_confusion",
+    "ssa_storage_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Confuses SSA with memory allocation.",
+    "B": "Confuses syntactic single-assignment with runtime execution behavior.",
+    "D": "Confuses single assignment with compile-time constant."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Ch. on SSA (§9 in EAC3): definition and construction",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Modern Compiler Implementation, SSA chapter",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:llvm-langref",
+      "locator": "SSA form section",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-SSA-001.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

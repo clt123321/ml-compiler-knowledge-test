@@ -1,0 +1,56 @@
+{
+  "questionId": "D-AOTIRT-021",
+  "learningObjective": "Understand how AOTInductor artifacts behave at runtime with respect to dynamic shapes and shape mismatch.",
+  "canonicalClaims": [
+    {
+      "claim": "An AOTInductor artifact contains compiled kernels + a runtime wrapper; loading and running it does not re-invoke torch.compile, and shape-constraint violations at runtime raise errors rather than trigger recompilation. Dims not declared dynamic must match the export-time example exactly.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The user declared dynamic dims via Dim constraints at export."
+      ],
+      "nonImplications": [
+        "Does not imply the artifact is portable across GPU vendors or CPU/GPU boundaries.",
+        "Does not imply that unconstrained dims are handled dynamically."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-aoti", "locator": "Runtime shape / device behavior" },
+        { "ref": "DOC:torch-export", "locator": "Dim constraints" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AOTInductor transparently migrates execution to the runtime device.",
+      "errorType": "scope_error",
+      "whyWrong": "The artifact targets compile-time hardware; no cross-device migration is provided.",
+      "sourceOrEvidence": "AOTInductor docs"
+    },
+    {
+      "claim": "Dims not declared dynamic are also flexible at runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Undeclared dims are treated as static.",
+      "sourceOrEvidence": "AOTInductor / export docs"
+    },
+    {
+      "claim": "Shape violations trigger a fresh torch.compile at runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The artifact is AOT; the runtime does not re-invoke torch.compile.",
+      "sourceOrEvidence": "AOTInductor docs"
+    },
+    {
+      "claim": "AOTInductor artifacts always contain a Python interpreter for control flow.",
+      "errorType": "scope_error",
+      "whyWrong": "The artifact is native code + a small wrapper; no Python interpreter is bundled.",
+      "sourceOrEvidence": "AOTInductor docs"
+    }
+  ],
+  "implementationFacts": [
+    "AOTInductor .so exposes callable entry points",
+    "Dim constraints translate to runtime shape assertions in the wrapper",
+    "Device targeting is set at compile time"
+  ],
+  "performanceScenarios": [
+    "AOTInductor is used to eliminate cold-start compile latency in production deployments."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

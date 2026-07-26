@@ -1,0 +1,49 @@
+{
+  "questionId": "I-FLASHPROP-026",
+  "learningObjective": "Distinguish claims about FlashAttention that are algorithm-level truths from common overgeneralizations about performance.",
+  "canonicalClaims": [
+    {
+      "claim": "FlashAttention (v1/v2) is an exact attention algorithm with unchanged forward FLOPs and HBM I/O of O(N^2 d / M) where M is on-chip memory per SM; backward recomputes softmax probabilities block-by-block from stored (m, l) row statistics, trading FLOPs for I/O.",
+      "conditions": [
+        "SMEM sized for tile blocks.",
+        "Standard attention with causal or non-causal mask."
+      ],
+      "nonImplications": [
+        "Does not imply universal wall-clock speedup independent of shape/hardware.",
+        "Does not imply FLOP count is reduced."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Sec 3.2, 3.3" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FlashAttention gives a fixed 3-4x speedup on all hardware and shapes.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Speedup varies significantly with N, d, batch, and hardware.",
+      "sourceOrEvidence": "FA paper Sec 4 (experiments)"
+    },
+    {
+      "claim": "FlashAttention is an approximate algorithm.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is exact up to summation-order rounding.",
+      "sourceOrEvidence": "FA paper Sec 1"
+    },
+    {
+      "claim": "FlashAttention reduces forward FLOPs.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Forward FLOPs unchanged; I/O is what's reduced.",
+      "sourceOrEvidence": "FA paper Sec 3.2"
+    }
+  ],
+  "implementationFacts": [
+    "FA v2 improves parallelism over v1 by splitting work along the seq dim.",
+    "FA has been generalized to Hopper (FA3) with async copy and warp-specialization."
+  ],
+  "performanceScenarios": [
+    "Speedup is largest on long sequences and small batches; benefit shrinks for very small N.",
+    "Backward speedup relative to naive is larger than forward because of quadratic P memory saved."
+  ],
+  "versionSensitivity": "stable_principle"
+}

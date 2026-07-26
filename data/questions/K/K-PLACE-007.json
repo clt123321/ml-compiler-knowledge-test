@@ -1,0 +1,100 @@
+{
+  "id": "K-PLACE-007",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "Device placement",
+  "learningObjective": "Reason about how a runtime decides where to place each op and tensor when the graph mixes CPU-only ops, GPU-native ops, and host↔device transfers.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable + x86 host",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic (ONNX Runtime, XLA, IREE)",
+    "stability": "stable_principle"
+  },
+  "stem": "A model graph has some ops with only a CPU implementation and others with only a GPU implementation. Which of the following statements about device placement are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Placement decisions should ideally minimize the total number of host↔device transitions along the critical path, sometimes at the cost of running an op on a slower device — the transfer cost can exceed the op-level savings."
+    },
+    {
+      "id": "B",
+      "text": "A device-placement pass typically inserts explicit host↔device transfer ops (e.g., MemcpyToHost / MemcpyToDevice) at boundaries between differently placed ops, and the emitted plan records those transfers so the runtime does not have to guess them."
+    },
+    {
+      "id": "C",
+      "text": "Placing CPU-only ops on the GPU can be forced by the runtime by 'promoting' the CPU kernel implementation to a GPU kernel automatically; no additional lowering is needed because the runtime treats device tags as advisory hints only."
+    },
+    {
+      "id": "D",
+      "text": "Alternating between CPU and GPU ops in the middle of a hot loop causes host↔device transfer traffic across PCIe/NVLink and can dominate the end-to-end latency, even if each individual kernel is fast."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
+  "explanation": "Standard device-placement passes insert transfer ops at device boundaries (A). Alternating device execution introduces PCIe/NVLink transfer overhead that often dominates fine-grained ops (C). Consequently, placement heuristics minimize the number of device transitions on the hot path (D). Option (B) is false: 'device tags' are not advisory — an op with only a CPU implementation cannot be run on the GPU without providing a GPU kernel; the runtime cannot magically synthesize one.",
+  "optionExplanations": {
+    "A": "Correct: this is the standard placement heuristic (minimize crossings on the hot path).",
+    "B": "Correct: transfer-op insertion is standard in ONNX Runtime, XLA HloRunner, TensorRT (with explicit host tensors), and IREE.",
+    "C": "Wrong: a CPU-only op needs a genuine GPU implementation to run on the GPU; there is no automatic 'promotion'.",
+    "D": "Correct: PCIe transfer cost is a well-known bottleneck for graphs with fine-grained device transitions."
+  },
+  "assumptions": [
+    "The runtime supports mixed CPU/GPU execution (typical of ONNX Runtime, XLA, IREE).",
+    "The graph is executed on a single machine with a distinct host and device memory space."
+  ],
+  "nonImplications": [
+    "Does not imply that every CPU op must be moved to GPU; small ops on the CPU can be preferable to a round-trip.",
+    "Does not imply the runtime always uses PCIe; NVLink or unified memory may reduce but not eliminate transfer cost."
+  ],
+  "misconceptionTags": [
+    "device_tag_advisory_myth",
+    "free_transfer_myth"
+  ],
+  "distractorRationales": {
+    "C": "Fabricates automatic kernel promotion."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:onnx",
+      "locator": "Device placement and Memcpy nodes in ONNX Runtime",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "PCIe transfer cost and pinned memory guidance",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:iree",
+      "locator": "Placement pass and HAL buffer transfers",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Mixed CPU/GPU graphs with fine-grained device alternation on PCIe-attached GPUs",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/K/K-PLACE-007.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

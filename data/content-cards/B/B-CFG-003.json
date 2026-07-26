@@ -1,0 +1,49 @@
+{
+  "questionId": "B-CFG-003",
+  "learningObjective": "Precisely define a basic block and identify what constitutes a valid CFG edge.",
+  "canonicalClaims": [
+    {
+      "claim": "A basic block is a maximal straight-line sequence of instructions with exactly one entry point and one exit point; the CFG has a directed edge from BB_i to BB_j when control can transfer from the terminator of BB_i to the entry of BB_j.",
+      "conditions": [
+        "Instructions inside a block are executed in sequence from entry to exit without intra-block branches.",
+        "Exceptions and calls may or may not be treated as terminators depending on the analysis's precision needs."
+      ],
+      "nonImplications": [
+        "Does not imply BBs cannot contain function calls.",
+        "Does not imply the maximal-BB partition is the only valid partitioning; smaller BB granularities are allowed."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:dragon2", "locator": "Basic blocks and CFG chapter" },
+        { "ref": "BOOK:eac3", "locator": "Basic blocks and CFG chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Basic blocks group instructions that are data-independent.",
+      "errorType": "definition_confusion",
+      "whyWrong": "BBs are defined by control-flow entry/exit properties, not by data dependency.",
+      "sourceOrEvidence": "Dragon2, CFG chapter"
+    },
+    {
+      "claim": "A basic block equals a function body.",
+      "errorType": "scope_error",
+      "whyWrong": "Functions typically contain many BBs; call graphs (which have a node per function) are different from CFGs.",
+      "sourceOrEvidence": "EAC3, CFG vs call graph"
+    },
+    {
+      "claim": "A basic block equals a loop body.",
+      "errorType": "scope_error",
+      "whyWrong": "Loops are structural features of the CFG; they typically contain multiple BBs including a header, latch, and body blocks.",
+      "sourceOrEvidence": "EAC3, loop structure chapter"
+    }
+  ],
+  "implementationFacts": [
+    "In LLVM, each BB is a llvm::BasicBlock terminated by a terminator instruction (br, ret, switch, invoke, etc.).",
+    "Fall-through edges are made explicit in LLVM by an unconditional br to the successor block."
+  ],
+  "performanceScenarios": [
+    "Optimization passes operate on BBs (e.g., local CSE) or across BBs guided by the CFG (e.g., global DCE)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

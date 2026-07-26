@@ -1,0 +1,47 @@
+{
+  "questionId": "K-TRT-019",
+  "learningObjective": "Describe the TensorRT deployment pipeline: the builder produces an engine (plan file) from a network description; the runtime loads and executes the engine.",
+  "canonicalClaims": [
+    {
+      "claim": "TensorRT's builder is a compile-time component that produces an optimized, serialized engine (plan file). The runtime deserializes that plan and creates execution contexts that run inference. Optimizations (layer fusion, kernel selection, precision calibration, memory planning) happen at build, not per inference call.",
+      "conditions": [
+        "Standard TensorRT flow (builder + engine + runtime).",
+        "Plan file is deserialized on a device with matching architecture and TensorRT major version."
+      ],
+      "nonImplications": [
+        "Does not imply plan files are cross-GPU portable.",
+        "Does not imply build cost is negligible."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trt", "locator": "Builder / Engine / Runtime overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TensorRT re-optimizes on every inference call.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Optimizations occur during build; inference merely dispatches selected kernels.",
+      "sourceOrEvidence": "TensorRT developer guide"
+    },
+    {
+      "claim": "Plan files are portable across GPU architectures.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Plans are architecture- and TRT-version-specific and typically require rebuild.",
+      "sourceOrEvidence": "TensorRT compatibility notes"
+    },
+    {
+      "claim": "TensorRT executes kernels on the CPU.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TRT is a GPU inference stack (with CUDA kernels).",
+      "sourceOrEvidence": "TensorRT overview"
+    },
+    {
+      "claim": "The plan file is a text-format description.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Plans are serialized binary blobs.",
+      "sourceOrEvidence": "TensorRT engine serialization API"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

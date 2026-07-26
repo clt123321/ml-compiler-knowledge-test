@@ -1,0 +1,91 @@
+{
+  "id": "M-RS-003",
+  "type": "single",
+  "module": "distributed",
+  "subtopic": "ReduceScatter vs AllReduce",
+  "learningObjective": "Distinguish ReduceScatter from AllReduce and identify how the two compose.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Given N ranks each holding a tensor of shape S, which statement about ReduceScatter is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "ReduceScatter reduces the N tensors elementwise and delivers the full reduced tensor of shape S to rank 0 only; other ranks receive nothing."
+    },
+    {
+      "id": "B",
+      "text": "ReduceScatter is a naming alias for All-to-All when the payload contains only one element per rank; the two are semantically identical for scalar payloads."
+    },
+    {
+      "id": "C",
+      "text": "ReduceScatter is equivalent to AllGather followed by a local reduction on each rank, so it always ends with every rank holding the full reduced tensor of shape S."
+    },
+    {
+      "id": "D",
+      "text": "ReduceScatter reduces the N tensors elementwise and gives each rank a disjoint 1/N-shard of the result, so AllReduce = ReduceScatter followed by AllGather."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "ReduceScatter is a hybrid primitive: it applies an associative reduction across ranks and then distributes disjoint shards of the reduced tensor to each rank. Because AllGather concatenates those shards on every rank, AllReduce is semantically ReduceScatter ∘ AllGather. Ring-AllReduce is often implemented exactly this way.",
+  "optionExplanations": {
+    "A": "Wrong: that describes Reduce (single-recipient), not ReduceScatter.",
+    "B": "Wrong: All-to-All permutes payloads without any reduction; the two have distinct semantics.",
+    "C": "Wrong: no rank ends with the full reduced tensor after ReduceScatter alone.",
+    "D": "Correct: reduces then distributes 1/N-shards, and ReduceScatter ∘ AllGather = AllReduce."
+  },
+  "assumptions": [
+    "All ranks contribute tensors of identical shape and dtype.",
+    "The scatter axis divides the tensor evenly into N shards."
+  ],
+  "nonImplications": [
+    "Does not imply that ReduceScatter and AllReduce cost the same; ReduceScatter's ring-cost is (N-1)/N · S per rank, half of AllReduce.",
+    "Does not imply that ReduceScatter is exclusive to FSDP; it is the first half of ring-AllReduce."
+  ],
+  "misconceptionTags": [
+    "reducescatter_vs_reduce",
+    "collective_composition"
+  ],
+  "distractorRationales": {
+    "A": "Confuses ReduceScatter with Reduce.",
+    "B": "Confuses with All-to-All.",
+    "C": "Reverses the composition."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 6, ReduceScatter and its role in ring-AllReduce",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§3 partitioning uses ReduceScatter in weight-sharded configurations",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-RS-003.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

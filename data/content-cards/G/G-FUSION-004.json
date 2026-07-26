@@ -1,0 +1,56 @@
+{
+  "questionId": "G-FUSION-004",
+  "learningObjective": "Given a GEMM followed by a pointwise chain, decide which fusion form (epilogue vs. separate kernel) is expressible and legal.",
+  "canonicalClaims": [
+    {
+      "claim": "Epilogue fusion of pointwise ops onto a GEMM only delivers memory-traffic savings when the compute kernel applies the pointwise chain to each output tile in registers before writing to DRAM; otherwise the fusion is logical only and offers no bandwidth benefit.",
+      "conditions": [
+        "The GEMM implementation exposes an epilogue extension point (cuBLAS Lt, CUTLASS, TensorIR compute_at at the output tile).",
+        "Pointwise ops are pure and elementwise over the GEMM output."
+      ],
+      "nonImplications": [
+        "Does not imply every fused pattern is faster in wall-clock; small problem sizes or downstream memory-bound ops can invert the trade-off.",
+        "Does not imply arbitrary pointwise chains are supported; libraries expose a fixed catalog."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Template epilogue for matmul" },
+        { "ref": "PAPER:tvm", "locator": "Fusion pattern classification" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any pointwise op that follows a GEMM at the IR level is automatically fused with no DRAM round-trip.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "IR-level fusion is a rewrite; the physical kernel must implement the epilogue to avoid re-reading the M×N tensor.",
+      "sourceOrEvidence": "TorchInductor scheduler notes"
+    },
+    {
+      "claim": "Broadcast biases (`[N]` shape) cannot be fused into GEMM epilogues.",
+      "errorType": "wrong_condition",
+      "whyWrong": "cuBLAS Lt and CUTLASS support per-column bias broadcast; this is one of the most common epilogue patterns.",
+      "sourceOrEvidence": "CUTLASS epilogue collection"
+    },
+    {
+      "claim": "Epilogue fusion is illegal when M×N is not a multiple of the warp size because the tail block violates SSA form.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Tail blocks are handled by masking or a separate epilogue tile; SSA form is unrelated to divisibility.",
+      "sourceOrEvidence": "CUTLASS tile handling docs"
+    },
+    {
+      "claim": "Epilogue fusion always yields a wall-clock speedup because it reduces memory traffic.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The GEMM is often compute-bound; epilogue arithmetic adds work per output element, which can slightly increase kernel runtime while cutting downstream traffic — net gain depends on the pipeline.",
+      "sourceOrEvidence": "TorchInductor scheduler heuristics"
+    }
+  ],
+  "implementationFacts": [
+    "cuBLAS Lt exposes epilogue enums for bias, activation (ReLU/GELU), and scale.",
+    "CUTLASS uses an EpilogueVisitor / EVT framework for arbitrary pointwise chains at the output tile.",
+    "TorchInductor emits Triton templates with epilogue slots for matmul + pointwise fusion."
+  ],
+  "performanceScenarios": [
+    "For M=N=4096, GEMM output is 64 MB in FP32; epilogue fusion of add+GELU saves one full read/write, roughly 128 MB of HBM traffic."
+  ],
+  "versionSensitivity": "stable_principle"
+}

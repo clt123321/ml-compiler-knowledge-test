@@ -1,0 +1,56 @@
+{
+  "questionId": "L-TIMING-002",
+  "learningObjective": "Explain why a CPU-based timer around a CUDA kernel launch loop under-reports GPU execution time and how to obtain a correct measurement.",
+  "canonicalClaims": [
+    {
+      "claim": "CUDA kernel launches are asynchronous with respect to the CPU; a CPU-side timer around a launch loop without synchronization measures dispatch cost, not GPU execution time. Wrapping the region with `torch.cuda.synchronize()` (or equivalent stream sync) before starting and after stopping the timer yields the correct wall time.",
+      "conditions": [
+        "The launch is on the default stream (or any stream that is drained by the chosen synchronization primitive).",
+        "The measured region contains enough GPU work that the sync cost is negligible."
+      ],
+      "nonImplications": [
+        "Does not imply CPU timers are always inferior; they are fine for aggregate throughput measurements when framed by synchronization.",
+        "Does not imply that `torch.cuda.Event.elapsed_time` is required; it is preferable for individual-kernel timing but not for a whole loop."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Async kernel launches; timing methodology" },
+        { "ref": "DOC:torch-profiler", "locator": "Timing best practices" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`torch.cuda.synchronize()` returns before all kernels finish and cannot be relied on for timing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`torch.cuda.synchronize()` blocks the host until all kernels on the current device's default stream have completed.",
+      "sourceOrEvidence": "PyTorch documentation"
+    },
+    {
+      "claim": "A 4096-square FP32 matmul actually executes in ~ 8 µs on modern GPUs; the CPU-timer number is correct.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Even at A100 FP32 peak (19.5 TFLOP/s), 4096³·2 ≈ 137 GFLOP takes ~ 7 ms; 8 µs is impossible.",
+      "sourceOrEvidence": "PMPP4; CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "The 400× discrepancy between the two attempts is explained by CUDA JIT warmup effects.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Warmup effects exist (kernel loading, cuBLAS handle init) but are one-time costs, not per-iteration; they do not explain a per-iter 400× gap.",
+      "sourceOrEvidence": "CUDA Best Practices Guide (warmup discussion)"
+    },
+    {
+      "claim": "Using `time.perf_counter()` around CUDA launches is fundamentally invalid; only CUDA Events can measure GPU work.",
+      "errorType": "overgeneralization",
+      "whyWrong": "CPU timers with proper synchronization measure GPU wall time correctly; CUDA Events are preferable for microsecond-scale per-kernel measurement.",
+      "sourceOrEvidence": "PyTorch profiler docs"
+    }
+  ],
+  "implementationFacts": [
+    "CUDA launch returns after the driver enqueues the kernel, before the GPU finishes",
+    "`torch.cuda.synchronize()` blocks host until all preceding work on the current device completes",
+    "`torch.cuda.Event(enable_timing=True)` supports elapsed_time measurement across events"
+  ],
+  "performanceScenarios": [
+    "Benchmarking harness pattern: (1) warm up N iterations, (2) synchronize, (3) start CPU timer, (4) launch M iterations, (5) synchronize, (6) stop CPU timer, (7) divide by M."
+  ],
+  "versionSensitivity": "stable_principle"
+}

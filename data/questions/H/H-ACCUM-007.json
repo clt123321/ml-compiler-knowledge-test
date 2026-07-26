@@ -1,0 +1,98 @@
+{
+  "id": "H-ACCUM-007",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "Accumulation precision / Mixed precision Tensor Core",
+  "learningObjective": "Enumerate the correct properties of mixed-precision Tensor Core GEMM: FP16/BF16 inputs with FP32 accumulator.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper Tensor Core",
+    "device": "GPU",
+    "requiredFeatures": [
+      "Tensor Core (HMMA / BMMA / QMMA)"
+    ]
+  },
+  "softwareContext": {
+    "framework": "cuBLAS / CUTLASS",
+    "stability": "stable_principle"
+  },
+  "stem": "Regarding mixed-precision GEMM on NVIDIA Tensor Cores (e.g., FP16 or BF16 inputs with an FP32 accumulator), which of the following statements are TRUE? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Storing weights and activations in FP16/BF16 halves memory footprint and doubles memory bandwidth utilization relative to FP32 for the load path."
+    },
+    {
+      "id": "B",
+      "text": "Because the accumulator is FP32, the compute throughput of mixed-precision GEMM matches pure FP32 GEMM on Tensor Cores."
+    },
+    {
+      "id": "C",
+      "text": "The accumulator dtype (FP32) determines the effective precision of the running sum, mitigating overflow and catastrophic cancellation compared to FP16/BF16 accumulation."
+    },
+    {
+      "id": "D",
+      "text": "Downcasting the FP32 accumulator to FP16/BF16 on write introduces a rounding error per output element that can affect training stability if not accounted for."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): bandwidth halving is central to Tensor Core speed-up. B (Wrong): mixed-precision Tensor Core is 8-16\u00d7 faster than FP32 GEMM. C (Correct): accumulator dtype drives numerical stability. D (Correct): downcast rounding is a real, per-element error source.",
+  "optionExplanations": {
+    "A": "Correct: bandwidth halving is central to Tensor Core speed-up.",
+    "B": "Wrong: mixed-precision Tensor Core is 8-16\u00d7 faster than FP32 GEMM.",
+    "C": "Correct: accumulator dtype drives numerical stability.",
+    "D": "Correct: downcast rounding is a real, per-element error source."
+  },
+  "assumptions": [
+    "The GEMM uses standard cuBLAS or CUTLASS Tensor Core kernels."
+  ],
+  "nonImplications": [
+    "Does not imply FP32 accumulator eliminates all numerical concerns \u2014 subnormal handling and non-associative order still matter.",
+    "Does not imply switching output to FP32 always improves accuracy meaningfully \u2014 many workloads see negligible difference."
+  ],
+  "misconceptionTags": [
+    "mixed_precision_same_speed_as_fp32",
+    "output_dtype_free"
+  ],
+  "distractorRationales": {
+    "B": "Ignores Tensor Core throughput advantage."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Tensor Core mixed-precision GEMM semantics",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Mixed-precision training",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Mixed-precision Tensor Core GEMM numerical properties and bandwidth",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/H/H-ACCUM-007.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

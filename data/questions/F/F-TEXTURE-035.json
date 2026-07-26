@@ -1,0 +1,94 @@
+{
+  "id": "F-TEXTURE-035",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Texture and __ldg (read-only) path",
+  "learningObjective": "Understand what the texture / read-only cache path provides and when it is beneficial.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Kepler and newer (Kepler introduced read-only path; texture cache older)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "read-only cache / __ldg intrinsic; texture object API"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about the CUDA texture / read-only cache path (accessed via `__ldg`, texture objects, or `__restrict__` const pointers) is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The texture cache is faster than shared memory for all access patterns; users should therefore always convert `__shared__` allocations to texture-bound arrays for peak performance."
+    },
+    {
+      "id": "B",
+      "text": "The read-only path routes global-memory loads through a separate cache (historically the texture cache) that is optimized for read-only, spatially-local data; it can improve L1 pressure and bandwidth for read-only inputs (e.g., weight matrices), and is triggered by `__ldg` or by loading through `const T* __restrict__` pointers on Kepler and later."
+    },
+    {
+      "id": "C",
+      "text": "`__ldg` is a synchronous host-side intrinsic that pre-copies data from device global memory to host DRAM; using it inside a kernel produces undefined behavior."
+    },
+    {
+      "id": "D",
+      "text": "The read-only path bypasses coherence; using it on data that another kernel wrote in the same stream will always return stale values, so it should only be used for compile-time-constant arrays."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "The read-only data path routes loads through a cache designed for read-only access (historically shared with the texture unit; on modern GPUs unified with L1 to varying degrees). It reduces pressure on the main L1 for read-only inputs and is triggered explicitly by `__ldg(ptr)` or implicitly when the compiler proves a pointer is read-only (e.g., `const T* __restrict__`). It is beneficial for weights and other broadcast/spatially-local reads. Choice B overstates: the texture cache is not universally faster than SMEM. Choice C confuses `__ldg` with a host API. Choice D wrongly claims coherence problems within the standard CUDA memory model.",
+  "optionExplanations": {
+    "A": "Wrong: SMEM is a distinct, generally faster on-chip memory.",
+    "B": "Correct: read-only path via `__ldg` / `const __restrict__` on Kepler+.",
+    "C": "Wrong: `__ldg` is a device intrinsic.",
+    "D": "Wrong: no stale-value coherence issue within a stream."
+  },
+  "assumptions": [
+    "Kepler+ architectures where `__ldg` is available."
+  ],
+  "nonImplications": [
+    "Does not imply the read-only path is always faster; for write-heavy or streaming data, L1/L2 paths are appropriate.",
+    "Does not imply texture objects and __ldg are equivalent; texture objects also offer addressing modes and normalization."
+  ],
+  "misconceptionTags": [
+    "texture_replaces_smem_myth",
+    "ldg_host_api_myth"
+  ],
+  "distractorRationales": {
+    "A": "Overstates texture cache vs SMEM.",
+    "C": "Confuses device intrinsic with host API.",
+    "D": "Fabricates a coherence problem."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Read-Only Data Cache; __ldg; texture object API",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Read-only cache usage guidance",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-TEXTURE-035.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

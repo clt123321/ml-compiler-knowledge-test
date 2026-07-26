@@ -1,0 +1,47 @@
+{
+  "questionId": "K-ONNXVER-017",
+  "learningObjective": "Distinguish the ONNX IR (file format) version from the operator opset version, and identify a common source of load-time incompatibility.",
+  "canonicalClaims": [
+    {
+      "claim": "ONNX has two version axes: the IR version (model protobuf format) and the opset version (operator schemas). Both can independently cause load-time incompatibility, so diagnostics must inspect both.",
+      "conditions": [
+        "The consumer stack has explicit min/max supported IR and opset versions.",
+        "The model is well-formed protobuf."
+      ],
+      "nonImplications": [
+        "Does not imply mismatch is always fatal; some runtimes are forward-compatible within ranges.",
+        "Does not imply upgrading ONNX library resolves runtime-side constraints."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Versioning" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "IR version = opset version.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are separate axes with independent evolution.",
+      "sourceOrEvidence": "ONNX Versioning document"
+    },
+    {
+      "claim": "IR version exists only for training checkpoints.",
+      "errorType": "definition_confusion",
+      "whyWrong": "All ONNX ModelProto instances carry ir_version.",
+      "sourceOrEvidence": "onnx.proto"
+    },
+    {
+      "claim": "Bumping opset by +1 always resolves version errors.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The bottleneck could be the runtime, not the exporter; and the specific incompatible op may not be in the new opset.",
+      "sourceOrEvidence": "ONNX Runtime compatibility notes"
+    },
+    {
+      "claim": "IR version is unrelated to file format.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That is exactly what IR version governs.",
+      "sourceOrEvidence": "ONNX specification"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

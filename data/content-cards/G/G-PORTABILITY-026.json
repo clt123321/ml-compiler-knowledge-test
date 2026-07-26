@@ -1,0 +1,56 @@
+{
+  "questionId": "G-PORTABILITY-026",
+  "learningObjective": "Identify the correct scope of a 'performance portability' claim and the conditions under which it can fail.",
+  "canonicalClaims": [
+    {
+      "claim": "Performance portability is a claim about a compiler / scheduler's ability to *generate* competitive kernels across multiple targets given per-target tuning, not a claim that one artifact runs on all targets at peak.",
+      "conditions": [
+        "The compared algorithm is held constant across targets.",
+        "Baselines on each target are chosen honestly (typically vendor libraries).",
+        "Retuning effort per target is documented."
+      ],
+      "nonImplications": [
+        "Does not imply portability is unattainable — it can be documented within a defined scope.",
+        "Does not imply retuning cost is negligible."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "Cross-target evaluation" },
+        { "ref": "PAPER:halide", "locator": "Portability via rescheduling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A single schedule string that runs across CPU, NVIDIA GPU, and AMD GPU without change is what defines performance portability.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Portability is about the framework's retargeting capability, not about a single un-retuned artifact.",
+      "sourceOrEvidence": "Halide / TVM design docs"
+    },
+    {
+      "claim": "Performance portability claims can ignore the baseline; the compiler's output speed alone is enough.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Without a strong baseline (vendor library), the claim is uninformative; a naive baseline inflates any compiler's apparent portability.",
+      "sourceOrEvidence": "Benchmarking best practices"
+    },
+    {
+      "claim": "Same-architecture-family chips (e.g., all Ampere) share optimal schedules; retuning within the family is unnecessary.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Per-chip differences (register file, SM count, memory bandwidth) can flip winners; within-family retuning is standard.",
+      "sourceOrEvidence": "Autotuner practice across A100/A30/A10"
+    },
+    {
+      "claim": "Silently swapping the algorithm (e.g., using FP16 GEMM on GPU vs. FP32 on CPU) is a fair way to demonstrate portability.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Algorithm swap changes what is being compared; portability requires holding the algorithm constant.",
+      "sourceOrEvidence": "Benchmarking methodology critique"
+    }
+  ],
+  "implementationFacts": [
+    "TVM's cross-target evaluation methodology reports per-target autotuning effort and baseline used.",
+    "MLIR-based systems achieve portability via retargeting through generic dialects (Linalg, Vector) and target-specific lowering."
+  ],
+  "performanceScenarios": [
+    "A stencil workload tuned per-target reaches 70-90% of vendor peak across CPU and GPU; the same schedule un-retuned reaches 20-40%."
+  ],
+  "versionSensitivity": "stable_principle"
+}

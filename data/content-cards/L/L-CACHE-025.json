@@ -1,0 +1,47 @@
+{
+  "questionId": "L-CACHE-025",
+  "learningObjective": "Interpret L1/L2 cache hit-rate metrics in Nsight Compute and decide whether the metric points to a real optimization opportunity or is expected for the workload.",
+  "canonicalClaims": [
+    {
+      "claim": "A single-pass streaming kernel over data much larger than L2 will naturally have a low L2 hit rate; cache-blocking cannot help without cross-element reuse to expose. Low L2 hit rate does not always indicate an optimization opportunity.",
+      "conditions": [
+        "Working set exceeds L2 capacity.",
+        "Access pattern has no data reuse."
+      ],
+      "nonImplications": [
+        "Does not imply blocking is useless in general (GEMM/attention have reuse).",
+        "Does not imply cache metrics are uninformative."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Working-set vs cache size" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Cache blocking always helps kernels with low L2 hit rate.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Blocking helps only when there is reuse to expose.",
+      "sourceOrEvidence": "PMPP text; roofline analysis"
+    },
+    {
+      "claim": "Low DRAM throughput = compute-bound.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Low DRAM can also mean high cache hit rate serving reads.",
+      "sourceOrEvidence": "Nsight Compute SoL"
+    },
+    {
+      "claim": "L2 can be disabled via cudaFuncSetAttribute CU_CTX_CACHE_L2_NONE.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No such API exists.",
+      "sourceOrEvidence": "CUDA runtime API"
+    },
+    {
+      "claim": "Higher L2 hit rate always means better performance.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It correlates with locality but interacts with working-set size and compute intensity.",
+      "sourceOrEvidence": "PMPP roofline analysis"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

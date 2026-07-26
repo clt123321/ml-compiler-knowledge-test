@@ -1,0 +1,49 @@
+{
+  "questionId": "E-XLASHP-022",
+  "learningObjective": "Understand XLA's static-first orientation and mechanisms for dynamic shape (dynamic_* ops, bucketing).",
+  "canonicalClaims": [
+    {
+      "claim": "XLA is fundamentally static-shape-oriented; each computation is specialized for concrete shapes. StableHLO's `dynamic_*` ops carry runtime shape operands to reduce re-specialization; production serving systems commonly mitigate re-compilation cost via shape bucketing/padding.",
+      "conditions": ["Static shape default; dynamic_* ops in StableHLO."],
+      "nonImplications": [
+        "Does not imply dynamic_* ops are as fast as static counterparts.",
+        "Does not imply padding is always cheaper than re-compiling."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "Dynamic ops; shape handling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "XLA removes static shape annotations to support dynamic shape.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Static shape remains the primary path; dynamic_* ops are an addition, not a replacement.",
+      "sourceOrEvidence": "StableHLO spec"
+    },
+    {
+      "claim": "Shape bucketing changes the numerical result of a model.",
+      "errorType": "wrong_condition",
+      "whyWrong": "With proper masking, bucketing to a larger shape is numerically equivalent to running the exact shape.",
+      "sourceOrEvidence": "General serving practice"
+    },
+    {
+      "claim": "Dynamic shape is free in XLA; there is no performance penalty.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Dynamic ops often generate more general code (bounds checks, conditional codegen) that can be slower.",
+      "sourceOrEvidence": "StableHLO / XLA docs"
+    },
+    {
+      "claim": "Every shape change forces re-compilation regardless of the ops used.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Programs using `dynamic_*` ops can accept a range of shapes without re-compilation.",
+      "sourceOrEvidence": "StableHLO spec"
+    }
+  ],
+  "implementationFacts": [
+    "Static-first passes: fusion, buffer assignment, layout assignment.",
+    "Bucketing typical granularities: powers of 2, or serving-tuned bins."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

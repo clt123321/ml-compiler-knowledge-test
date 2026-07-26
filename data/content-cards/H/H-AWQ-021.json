@@ -1,0 +1,54 @@
+{
+  "questionId": "H-AWQ-021",
+  "learningObjective": "Explain AWQ's central technique: identifying salient channels via activation magnitude and applying per-channel scaling to protect them.",
+  "canonicalClaims": [
+    {
+      "claim": "AWQ identifies ~1% of weight channels as 'salient' based on activation magnitude from a calibration set, then applies a searched per-channel scaling factor that inflates salient weights before INT4 quantization (giving them more effective quantization resolution); the activations of the preceding op absorb the inverse scaling for mathematical equivalence.",
+      "conditions": [
+        "The target layer is a linear layer preceded by an op that can absorb per-channel scaling (e.g., LayerNorm affine).",
+        "A calibration activation set is available for the salience computation."
+      ],
+      "nonImplications": [
+        "Does not imply AWQ dominates GPTQ; empirical accuracies are close and workload-dependent.",
+        "Does not imply activation calibration is entirely unused — it identifies salient channels offline."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:awq", "locator": "Sections 3-4: salient channels and per-channel scaling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AWQ and GPTQ are the same algorithm expressed differently; they produce identical INT4 weights.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AWQ uses activation-magnitude-based per-channel scaling; GPTQ uses second-order Hessian-based per-column updates. Distinct algorithms with different weights.",
+      "sourceOrEvidence": "AWQ and GPTQ papers"
+    },
+    {
+      "claim": "AWQ requires INT4 Tensor Cores on the deployment GPU.",
+      "errorType": "hardware_leak",
+      "whyWrong": "AWQ's runtime dequants INT4 weights to FP16 in registers and uses FP16 Tensor Cores; no INT4 Tensor Core is required.",
+      "sourceOrEvidence": "AWQ deployment guide"
+    },
+    {
+      "claim": "AWQ's 'salient' channels are identified by weight magnitude, not activation magnitude.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AWQ explicitly argues that activation magnitude, not weight magnitude, identifies salience — weights that see large activations dominate the output.",
+      "sourceOrEvidence": "AWQ paper Section 3"
+    },
+    {
+      "claim": "AWQ is a QAT technique that fine-tunes weights during training.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AWQ is PTQ; no training-loop modification is required.",
+      "sourceOrEvidence": "AWQ paper abstract"
+    }
+  ],
+  "implementationFacts": [
+    "AWQ searches for a scalar α in [0, 1] governing per-channel scaling magnitude.",
+    "The per-channel scaling is fused into the preceding op's affine (LayerNorm gamma or linear bias) to avoid runtime overhead."
+  ],
+  "performanceScenarios": [
+    "LLaMA-7B W4A16 AWQ: perplexity within 0.2 of FP16 with 4× weight compression."
+  ],
+  "versionSensitivity": "stable_principle"
+}

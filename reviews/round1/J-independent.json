@@ -1,0 +1,188 @@
+{
+  "module": "llm_inference",
+  "code": "J",
+  "reviewer": "primary-review-3",
+  "reviewedAt": "2026-07-27",
+  "answers": [
+    {
+      "id": "J-CBATCH-004",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Continuous / iteration-level batching (Orca, vLLM): at every model-forward iteration the scheduler rebuilds the batch — new requests can join, finished requests can leave — no need to wait for the whole batch to complete. Keeps GPU utilized under variable output lengths. A (per-request streams) mischaracterizes the mechanism. C (non-autoregressive draft) is speculative decoding, unrelated. D (uniform progress required) is the opposite of continuous batching (that's static batching)."
+    },
+    {
+      "id": "J-CBPROP-022",
+      "independentAnswer": ["A", "D"],
+      "confidence": "high",
+      "rationale": "A: HoL blocking removal is the primary benefit — short requests exit early. D: aggregate throughput improves but per-request TPOT vs batch-1-alone can be slightly worse due to interference/batch-step lengthening. B is wrong: batching AMORTIZES weight HBM per token across users but each batched step takes longer; TPOT of a single request when batched with others is typically ≥ batch-1 TPOT for that request alone (unless batch-1 is compute-under-utilized). C is wrong: dense transformers benefit greatly from continuous batching."
+    },
+    {
+      "id": "J-CHUNKPRE-008",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Chunked prefill's real motivation (vLLM 0.4+, SGLang, TRT-LLM 0.9+): long prefills block/interfere with concurrent decode requests, spiking TPOT. Splitting prefill into chunks (e.g., 512 tokens) allows each chunk to share a forward-iteration with decode requests → bounded per-token latency for decode. B (HBM for activations) is a minor consideration, not the primary motivation. C (cross-GPU splitting) confuses chunked prefill with context parallelism. D (tile-size tuning) is not the primary purpose."
+    },
+    {
+      "id": "J-CUDAGRAPH-015",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Correct: CUDA Graphs capture-and-replay eliminates most per-kernel launch overhead for LLM decode (many small kernels). The critical limitation is that captured shape/memory layout must match — batch composition changes require different graphs. A (kernel reordering) is wrong. B (automatic fusion) is wrong — CUDA Graphs do NOT fuse kernels. C is wrong — decode BENEFITS from CUDA Graphs precisely BECAUSE decode has many small kernels with high launch overhead relative to their duration."
+    },
+    {
+      "id": "J-DECDIAG-026",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "Profile: 26 GB/step weight read at ~2 TB/s ≈ 13 ms — memory-bound decode. A: batching amortizes the same 26 GB weight read → per-request TPOT drops (correct direction). C: CUDA Graph eliminates ~10% launch-gap fraction (mild but real). D: INT4 weight-only cuts weight HBM ~4x → dominant cost falls proportionally, TPOT drops toward the KV/compute ceiling. B is wrong: 22% SM util is a SYMPTOM of memory-boundedness (SMs stall waiting for weight loads), NOT a sign of undersubscribed compute — adding tensor-core math kernels doesn't help a BW-bound kernel."
+    },
+    {
+      "id": "J-DIAG-021",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: P99 TTFT >> P50 with 12% preemption rate → queueing / preempt-and-resume tail (canonical diagnosis). B: 25% decode utilization + 45 ms/token TPOT → memory-BW-bound; more compute density won't reduce TPOT directly. D: 85% KV usage + preemption → KV-capacity-limited batching; MQA/GQA/KV-quant/shorter context are the direct levers. C is wrong: 92% prefill compute utilization indicates COMPUTE-bound, not memory-bound — increasing batch size for prefill would not help a compute-saturated phase."
+    },
+    {
+      "id": "J-DISAG-029",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: KV transfer between pools adds a per-request floor on TTFT, mitigated by NVLink/InfiniBand — correct. C: decode nodes shielded from prefill interference → better TPOT under mixed load (DistServe/SplitWise motivation). D: correct — the ability to size each pool for its own workload can reduce total GPU count vs a co-located pool that must satisfy both metrics. B is wrong: KV is transferred from prefill pool to decode pool, so KV cache is not eliminated — decode pool still stores/reads KV."
+    },
+    {
+      "id": "J-DISAGG-019",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Canonical motivation for DistServe/SplitWise/TRT-LLM disagg: prefill is compute-bound (large seq_len → high arithmetic intensity), decode is memory-BW bound. Separating pools lets each be provisioned/scheduled independently, at cost of one KV transfer per request. A (different models per phase) is not the standard motivation. C (FP32 CPU prefill) is nonsense. D (security isolation) is not the primary motivation."
+    },
+    {
+      "id": "J-DYNBATCH-005",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Textbook head-of-line blocking under static batching: single long request (800 tokens) blocks the whole batch, wasting SM cycles once shorter requests finish. Continuous batching fixes it by rebuilding the batch each iteration. B (KV quant) doesn't address HoL blocking; the utilization pattern is not primarily a KV-BW issue. C (compute-bound) is wrong: 13% utilization = few-request decode, not compute-bound. D (launch overhead) doesn't explain the sustained 13% util pattern across hundreds of steps."
+    },
+    {
+      "id": "J-EP-014",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "EP (Expert Parallelism): different experts on different devices; token-to-expert routing requires all-to-all shuffle. SP (Sequence Parallelism, as in Megatron-LM): shards intermediate activations along the sequence dim inside a TP region (e.g., after norm/dropout), requiring AllGather (in) and ReduceScatter (out) around the sharded region. B is a confusion of both. C (both same, AllReduce like TP) is wrong. D (EP is training-only, SP shards KV) is wrong."
+    },
+    {
+      "id": "J-FAIRTHR-030",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: fair token-level scheduler prevents monopolization of decode iterations — correct. B: chunked prefill interleaves tenant B's long prefills with tenant A's decode → TPOT stays near steady-state — this is the canonical use case. D: per-tenant KV admission quotas cap the KV footprint one tenant can consume, preventing another tenant's preemption spikes. C is wrong: serializing tenants collapses aggregate throughput dramatically (defeats continuous batching)."
+    },
+    {
+      "id": "J-FRAG-018",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Textbook external fragmentation: contiguous per-sequence slabs sized to max_new_tokens reserve up-front, leaving unused capacity within each slab (internal waste, 26 GB) and scattered non-contiguous free space (2 GB) that cannot fit a 300 MB contiguous slab. Paged KV cache (vLLM PagedAttention) fixes exactly this with fixed-size blocks + indirection. A (accounting bug) is wrong. B (compute-bound OOM) is nonsense. C (race condition) is not indicated by the pattern."
+    },
+    {
+      "id": "J-FUSION-016",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Canonical fusion set in vLLM / TRT-LLM / SGLang: QKV projection (single GEMM), RMSNorm (with epilogue on adjacent linear or as fused kernel), SwiGLU (silu on gate * up as one kernel), FlashAttention/PagedAttention (QK^T + softmax + PV in one kernel), fused sampling (temperature + top-k/top-p + sampling in one). A (no fusion) is wrong — production stacks aggressively fuse. B (fuse full transformer block) is not typical because attention and MLP have different tile designs. C (fuse entire model) is nonsense."
+    },
+    {
+      "id": "J-KVCAP-007",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Per-token KV = 2 * L * H_kv * d * 2 bytes = 2*32*8*128*2 = 131,072 B = 128 KB. With ~46 GB available: 46*1024³/131072 ≈ 376,832 tokens. At 2000 tokens/seq → ~188 concurrent; at 32K tokens → ~11 concurrent. A miscalculates per-token as 256 KB. B forgets 'per layer' factor L=32. D says KV is fixed by architecture and doesn't scale with seq_len — wrong (KV is per-token)."
+    },
+    {
+      "id": "J-LONGCTX-025",
+      "independentAnswer": ["A", "C"],
+      "confidence": "high",
+      "rationale": "A: attention read grows with context length (KV cache grows), and at long context this rivals weight-BW cost per decode step — canonical long-context bottleneck. C: KV memory ~ context length; at fixed HBM, doubling context halves max concurrent batch → throughput cut. B is wrong (prefill DOES scale with prompt length; TTFT is FA quadratic-in-P). D is wrong (KV size DOES affect per-step latency via attention read time)."
+    },
+    {
+      "id": "J-OOM-028",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "B: FP8/INT8 KV cuts KV bytes ~2x, doubling batch capacity — direct lever. C: reducing max_concurrent_batch trades peak throughput for lower preemption / better tail — valid trade. D: prefix caching reuses shared prefill KV across requests with shared system prompts — direct KV savings. A is wrong: switching TP→PP does NOT replicate KV across stages — PP shards LAYERS across devices, so each stage stores only its subset of layers' KV (per-GPU KV per token is (L/P)*H_kv*d = same order as TP=P shards H_kv=P heads); it does not give 8x more KV capacity per stage. The claim 'PP provides 8x more KV capacity' is factually wrong."
+    },
+    {
+      "id": "J-PAGED-006",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "PagedAttention (Kwon et al. 2023): fixed-size blocks (e.g., 16 tokens/block) + per-sequence block table mapping logical positions to physical blocks. Eliminates both external fragmentation (blocks are all the same size, freely allocated) and internal reservation of unused space (block-granular allocation). A (hash table) is wrong. B (virtual memory growing slab) is wrong. C (quantization pages) is wrong."
+    },
+    {
+      "id": "J-PAGEDATT-020",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "PagedAttention kernel: block-table lookup resolves each logical KV position to physical block address, then loads the block into SMEM and runs the same online-softmax + tiled attention math as FlashAttention. Table lookup is per block (not per element) — small overhead. B (scatter-gather to temp buffer) is wrong (would defeat the purpose). C (approximate/sparse attention) is wrong (PA is exact). D (host memory via UVA) is wrong (blocks stay in HBM)."
+    },
+    {
+      "id": "J-PAGEDDES-024",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: block sharing enables prefix caching (same physical blocks across requests) and beam-search fork points — this is a signature PagedAttention capability. C: PA is compatible with FA-style tiled softmax; block-table lookup is per-block overhead. D: fixed-size blocks with per-sequence block table; internal waste per sequence bounded by block_size-1 tokens. B is wrong: 'paged' refers to memory pages/blocks, not lossy compression."
+    },
+    {
+      "id": "J-PDCOMP-001",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Canonical: prefill of P tokens has AI proportional to P on QKV/MLP GEMMs → compute-bound on modern GPUs. Decode at batch-1 is batch-1 GEMV per linear layer → ~1 flop/byte → memory-BW bound. A (both memory-bound) is wrong. B (reversed) is wrong. D (same intensity) is wrong."
+    },
+    {
+      "id": "J-PP-013",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "PP partitions layers into P contiguous groups. In inference decode, a single-request forward passes sequentially through all P stages → per-request latency NOT reduced (only memory shared). Throughput improves only with multiple in-flight requests keeping all stages busy; imbalanced stages create bubbles. B (PP as attention-head parallelism) is wrong (that's TP). C (no bubble at all) is wrong (imbalance/first-request bubble always exists). D (each stage holds full model) is wrong (that's data parallelism)."
+    },
+    {
+      "id": "J-PREFIX-009",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Prefix caching (vLLM, SGLang radix-cache, TRT-LLM prompt cache): stores KV cache blocks from previously computed positions; reuses them for new requests whose prompts have identical token-id prefix. Reuse is only exact when the tokens match (any diff invalidates from the divergence point onward). Cuts / eliminates prefill of the shared prefix → cuts TTFT. A (stores softmax outputs) is wrong — KV cache blocks are stored, not softmax outputs. C (text-level string cache) is wrong. D (embedding vector nearest-neighbor approximation) is wrong — this is NOT approximate."
+    },
+    {
+      "id": "J-SCHED-017",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Under KV pressure, vLLM-style schedulers preempt one or more ongoing sequences — either drop their KV (recompute on resume) or swap to host memory — freeing KV blocks for new prefills. Preempted requests resume when capacity is available. A (rewrite older KV in-place) would corrupt those sequences. C (compact fragmented blocks) is not vLLM's approach (paged already avoids fragmentation). D (reject with 503) is not the default behavior when preemption is available."
+    },
+    {
+      "id": "J-SPECAR-011",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "The problem statement provides the arithmetic: E[accepted prefix] ≈ 2.94, +1 target-sample = 3.94 tokens per 20 ms verification cycle = 0.20 tokens/ms. Baseline: target-only = 10 ms/token = 0.10 tokens/ms. Speedup ≈ 2x. Acceptance rate p is the dominant lever; ceiling is bounded by draft/target cost ratio. A (speedup = 1/(1-p)) is wrong (ignores k and draft cost). B (exactly k) is wrong (ignores acceptance). D (draft-target overlap, no draft cost) is wrong when they share the same GPU."
+    },
+    {
+      "id": "J-SPECDEC-010",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Canonical speculative decoding (Leviathan et al. 2023, Chen et al. 2023): smaller/faster draft proposes k tokens autoregressively; target runs one forward on k+1 positions in parallel; accept a prefix by rejection sampling against target logits per position. Accepted prefix has EXACTLY target's distribution (proven). A (target as joint prob threshold) is wrong. B (INT4 quantized draft) is nonsense. D (target parallel over k, all from same hidden state) is wrong (draft is autoregressive, target verifies)."
+    },
+    {
+      "id": "J-SPECPROP-023",
+      "independentAnswer": ["B", "D"],
+      "confidence": "high",
+      "rationale": "B: batch-1 memory-bound decode benefits most (target's k-token verification is essentially free since it's still BW-bound on weights); at large batch when target is compute-bound the extra verification is not free — canonical trade-off. D: proper rejection sampling yields the same distribution as target-only sampling — no quality loss (Leviathan Theorem 3.5). A is wrong ('always speedup by k+1' overclaim). C is wrong (draft and target do NOT need to share weights; that's Medusa/EAGLE-style but not classical spec dec)."
+    },
+    {
+      "id": "J-TP-012",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Megatron-LM TP: column-parallel W_up (each device computes x @ W_up_shard producing 1/T of intermediate columns), row-parallel W_down (each device multiplies its intermediate slice by its 1/T rows of W_down). A single AllReduce sums partial down-outputs — this is the standard column-then-row pattern that requires ONE communication per MLP (and separately per attention). A (only W_down sharded) is wrong. B (two AllGathers) is wrong. C (no communication) is wrong."
+    },
+    {
+      "id": "J-TPOT-003",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "TPOT (Time Per Output Token, inter-token latency) is the average wall-clock time between consecutive output tokens after the first, per request. Excludes TTFT. Total latency ≈ TTFT + (M-1)*TPOT. A includes TTFT amortization (that's a different metric, sometimes 'per-token latency including prefill'). B is a server-level metric. D is prefill-per-token, not TPOT."
+    },
+    {
+      "id": "J-TTFT-002",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "TTFT = arrival to first available token; in this timeline ~210 ms (from T0 to T0+210 ms), dominated by 182 ms of prefill of the 1024-token prompt. Mitigations: chunked prefill, prefix caching, tensor parallelism for prefill compute. A (TTFT = decode time) is wrong. B (TTFT only queueing) is wrong. D (TTFT = TPOT) is wrong."
+    },
+    {
+      "id": "J-TVL-027",
+      "independentAnswer": ["A", "C"],
+      "confidence": "high",
+      "rationale": "A: at large batch, workload transitions from memory-BW-bound to compute-bound → diminishing throughput returns, growing TPOT — canonical batch-size curve. C: batching amortizes weight-HBM read → aggregate throughput grows, but each batched step takes slightly longer (extra compute, extra attention I/O) → per-request TPOT rises mildly. B is wrong (arbitrary batch DOESN'T reduce per-request TPOT; opposite). D is wrong (throughput ≠ 1/latency in general — a queueing / batching system has independent throughput and latency curves)."
+    }
+  ]
+}

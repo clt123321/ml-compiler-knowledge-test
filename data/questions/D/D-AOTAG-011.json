@@ -1,0 +1,95 @@
+{
+  "id": "D-AOTAG-011",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "AOTAutograd joint forward+backward graph",
+  "learningObjective": "Explain what AOTAutograd captures beyond the forward graph and how the joint (forward+backward) graph is used.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Consider the compiled model below with backward enabled. Which statement most accurately describes what AOTAutograd captures for this program?",
+  "codeSnippet": "import torch\n\nclass M(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.w = torch.nn.Parameter(torch.randn(64, 64, device=\"cuda\"))\n    def forward(self, x):\n        return (x @ self.w).relu()\n\nmodel = M()\nmodel_c = torch.compile(model)\n\nx = torch.randn(32, 64, device=\"cuda\", requires_grad=True)\ny = model_c(x)\ny.sum().backward()\n\n# Under the hood, AOTAutograd traces a joint forward+backward graph so that the\n# backward can be compiled together with the forward.",
+  "options": [
+    {
+      "id": "A",
+      "text": "AOTAutograd is a runtime scheduler that decides which ops run on GPU vs. CPU; it does not produce any graph and it is orthogonal to torch.compile. Under this reading, AOTAutograd is a runtime scheduler that decides which ops run on GPU vs. CPU based on live device pressure; it does not produce any graph and is orthogonal to torch.compile's own compilation pipeline."
+    },
+    {
+      "id": "B",
+      "text": "AOTAutograd traces only the forward graph; the backward is always executed eagerly through PyTorch's autograd engine op-by-op, and no fused/compiled backward is produced."
+    },
+    {
+      "id": "C",
+      "text": "AOTAutograd captures a joint forward+backward graph by re-running the forward under a tracer that records both directions, then partitions it into forward and backward subgraphs handed to Inductor for compilation."
+    },
+    {
+      "id": "D",
+      "text": "AOTAutograd rewrites the model source code by parsing Python AST and inserting `backward()` calls; the resulting model can no longer be used in eager mode without recompilation. In this account, AOTAutograd rewrites the model's Python source code by parsing the AST and inserting `backward()` calls at each aten op; the resulting rewritten model can no longer be used in eager mode without a subsequent recompilation step."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "AOTAutograd traces the forward under a tracer that also records the operations needed for the backward, producing a joint (fw+bw) FX graph. It then partitions the graph into forward and backward parts (deciding which activations to save vs. recompute) and hands each to Inductor for compilation. This is what enables a compiled backward pass in torch.compile, distinct from eager op-by-op autograd. It is not a runtime scheduler and does not manipulate Python source.",
+  "optionExplanations": {
+    "A": "Wrong: not a device scheduler.",
+    "B": "Wrong: the whole point of AOTAutograd is to capture the backward too.",
+    "C": "Correct: standard description of AOTAutograd's joint-graph + partitioner pipeline.",
+    "D": "Wrong: no Python-source rewriting occurs."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 semantics.",
+    "The compiled function is called in a context where autograd is active."
+  ],
+  "nonImplications": [
+    "Does not imply the compiled backward is always faster than eager; graph-break-heavy models may not benefit.",
+    "Does not imply the partitioner's recompute decisions are always optimal."
+  ],
+  "misconceptionTags": [
+    "backward_always_eager_under_aot",
+    "aot_autograd_source_rewrite"
+  ],
+  "distractorRationales": {
+    "A": "Wrong role.",
+    "B": "Ignores the joint-graph capture.",
+    "D": "Wrong mechanism (source rewriting)."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "AOTAutograd and joint graph partitioning",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "AOTAutograd overview",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-AOTAG-011.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "H-DEQ-029",
+  "learningObjective": "Given a W4A16 kernel snippet, identify the correct dequantization sequence: unpack INT4 → convert → scale.",
+  "canonicalClaims": [
+    {
+      "claim": "The standard W4A16 dequant-in-register sequence is: load packed INT4 bytes, unpack via nibble sign-extension into signed int, convert to FP16, multiply by the group's FP16 scale, then feed to an FP16 Tensor Core matmul. Storage is INT4 (4× less HBM traffic vs FP16); compute uses FP16 Tensor Cores.",
+      "conditions": [
+        "Symmetric per-group quantization (z=0).",
+        "FP16 or BF16 Tensor Core is available.",
+        "Weights are packed as two INT4 per byte."
+      ],
+      "nonImplications": [
+        "Does not imply the dequant adds zero cost; it is small but non-zero.",
+        "Does not imply asymmetric per-group quantization uses the same sequence — a zero-point subtraction is inserted."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:awq", "locator": "W4A16 kernel description" },
+        { "ref": "PAPER:gptq", "locator": "W4A16 deployment" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "W4A16 uses INT4 Tensor Cores directly, and the FP16 cast in the code is a no-op.",
+      "errorType": "hardware_leak",
+      "whyWrong": "The FP16 cast is a real conversion instruction; the matmul is FP16 Tensor Core, not INT4 Tensor Core.",
+      "sourceOrEvidence": "Marlin / ExLlama kernel implementations"
+    },
+    {
+      "claim": "Applying the scale before FP16 conversion produces the correct result via bit-pattern interpretation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Mixing integer and FP16 without explicit conversion produces undefined bit patterns; the conversion is essential.",
+      "sourceOrEvidence": "CUDA numeric types"
+    },
+    {
+      "claim": "The scale is applied once per output element at the end of the K-loop, rather than per group.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Per-group scales are applied per K-block of the group_size, not once per output; otherwise multiple scales would need to fuse into one, losing per-group precision.",
+      "sourceOrEvidence": "AWQ / GPTQ per-group scale design"
+    },
+    {
+      "claim": "The dequant cost dominates the W4A16 kernel runtime.",
+      "errorType": "overgeneralization",
+      "whyWrong": "In bandwidth-bound regimes, dequant is <10% of the kernel time; HBM loads dominate.",
+      "sourceOrEvidence": "Marlin kernel profiling"
+    }
+  ],
+  "implementationFacts": [
+    "Marlin uses fused unpack+dequant+scale sequences with careful instruction scheduling.",
+    "ExLlama v2 uses a similar dequant-in-register pattern with per-group scales."
+  ],
+  "performanceScenarios": [
+    "W4A16 on A100 typically achieves 90%+ of theoretical bandwidth for weight loads on standard LLM sizes."
+  ],
+  "versionSensitivity": "stable_principle"
+}

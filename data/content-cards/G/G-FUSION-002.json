@@ -1,0 +1,56 @@
+{
+  "questionId": "G-FUSION-002",
+  "learningObjective": "Identify when producer-consumer fusion of a pointwise op into a reduction is illegal or unprofitable due to reuse patterns.",
+  "canonicalClaims": [
+    {
+      "claim": "Vertical fusion of a producer with a consumer is semantics-preserving, but when the producer has multiple downstream consumers, the compiler faces a trade-off: recompute the producer inside the fused region (extra FLOPs) or keep it materialized (loses fusion's memory benefit).",
+      "conditions": [
+        "Producer is pure (no side effects).",
+        "Producer is not an explicit output of the graph."
+      ],
+      "nonImplications": [
+        "Does not imply fusion is illegal in multi-consumer cases; only that it requires a policy choice.",
+        "Does not imply recompute is always worse than materialization."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "Section 3, operator fusion" },
+        { "ref": "PAPER:halide", "locator": "Schedule primitives compute_at / store_at" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A shape-changing consumer (e.g., reduction) blocks fusion of a pointwise producer.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Pointwise-into-reduction is a standard fusion pattern in TVM, XLA, and TorchInductor; shape change of the output does not affect legality.",
+      "sourceOrEvidence": "TVM paper; TorchInductor fusion doc"
+    },
+    {
+      "claim": "Producer-consumer fusion is legal only when the producer function is bijective so the original tensor can be reconstructed.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Fusion inlines the producer; it does not require inverting it. Multi-consumer cases are handled by recompute or duplicate materialization.",
+      "sourceOrEvidence": "Halide compute_at semantics"
+    },
+    {
+      "claim": "Fusion is always beneficial when it is legal, because it reduces memory traffic.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Register pressure, spill, reduced parallelism, or forced recomputation can make fused kernels slower than the unfused pair.",
+      "sourceOrEvidence": "TorchInductor scheduler heuristics"
+    },
+    {
+      "claim": "Fusion of pointwise-into-reduction violates SSA form unless the reduction is on the last axis.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SSA governs value assignment, not loop-axis choice; reduction-axis position affects layout/coalescing, not SSA.",
+      "sourceOrEvidence": "MLIR / TensorIR lowering docs"
+    }
+  ],
+  "implementationFacts": [
+    "TVM Relax fuse-ops pass classifies ops as kInjective / kReduction / kOpaque etc. and applies pattern rules.",
+    "TorchInductor scheduler keeps producers unfused when a second consumer exists and recompute cost is high."
+  ],
+  "performanceScenarios": [
+    "When `f(A) = A * A` (cheap) and `T` is large, recompute-and-fuse saves HBM traffic even with duplicated FLOPs.",
+    "When `f` is expensive (e.g., softmax) and multiple consumers exist, materialize once and share."
+  ],
+  "versionSensitivity": "stable_principle"
+}

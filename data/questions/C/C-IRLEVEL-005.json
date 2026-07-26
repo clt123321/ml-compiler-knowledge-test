@@ -1,0 +1,102 @@
+{
+  "id": "C-IRLEVEL-005",
+  "type": "multiple",
+  "module": "graph_tensor_ir",
+  "subtopic": "Operator-level IR vs. Loop / Tensor-expression IR",
+  "learningObjective": "Distinguish the abstractions and capabilities of graph-/operator-level IR (e.g., XLA HLO, ONNX) from loop/tensor-expression-level IR (e.g., TVM TensorIR, MLIR linalg/affine).",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following statements correctly distinguish operator-level IR (e.g., XLA HLO, ONNX) from loop-/tensor-expression-level IR (e.g., TVM TensorIR, MLIR linalg or affine)? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Loop-level IRs are strictly required to make graph-level fusion decisions such as which pairs of ops to fuse, because operator-level IRs cannot express fusion of any kind and depend on lowering to loop dialects first."
+    },
+    {
+      "id": "B",
+      "text": "Loop-level IRs support tiling, unrolling, and vectorization at the IR level, whereas operator-level IRs delegate such transformations to a lower-level compiler or kernel library."
+    },
+    {
+      "id": "C",
+      "text": "Operator-level IRs can carry static tensor shape and dtype annotations on SSA-like values without exposing loop structure, enabling shape-based rewrites at the graph level."
+    },
+    {
+      "id": "D",
+      "text": "Operator-level IRs represent computations as coarse-grained ops (matmul, softmax, layernorm) with implicit iteration; loop-level IRs make loops, iteration variables, and memory indexing explicit."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "A: Operator-level IRs use op abstractions with implicit loops (matmul, conv); loop-level IRs make iteration explicit (for-loops, index expressions). B is false: HLO and TVM Relax both perform graph/operator-level fusion (producer-consumer, epilogue) without exposing loops; fusion is not restricted to loop IRs. C: Tile/unroll/vectorize are canonically loop-IR transformations (affine, linalg tiling passes, TensorIR schedules). D: HLO and ONNX carry per-value shape/dtype annotations natively.",
+  "optionExplanations": {
+    "A": "Incorrect: operator-level fusion is a well-established capability (XLA HLO fusion, TensorFlow's grappler, TVM Relax operator fusion).",
+    "B": "Correct: loop-level transformations (tile, unroll, vectorize, parallelize) require explicit iteration to name.",
+    "C": "Correct: HLO and ONNX both use static shape/dtype annotations on SSA-like values.",
+    "D": "Correct: this is the canonical distinction between the two levels."
+  },
+  "assumptions": [
+    "The comparison is between typical instances of each IR level (HLO for operator-level; TensorIR / MLIR linalg for loop-level), acknowledging that some frameworks bridge both."
+  ],
+  "nonImplications": [
+    "Does not imply that operator-level and loop-level IRs cannot coexist in the same compiler; MLIR's dialect layering explicitly supports both.",
+    "Does not imply that loop-level IR is 'better'; it is more expressive for transformations but less compact for coarse-grained op patterns."
+  ],
+  "misconceptionTags": [
+    "fusion_requires_loop_ir",
+    "operator_ir_no_annotations"
+  ],
+  "distractorRationales": {
+    "A": "Confuses fusion with loop-level transformations; graph-level fusion is real."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:mlir",
+      "locator": "MLIR paper: dialects and layering",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "TVM: graph-level and tensor-level IR",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "StableHLO ops carry shapes and dtypes",
+      "supports": [
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-IRLEVEL-005.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

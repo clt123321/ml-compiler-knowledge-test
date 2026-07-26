@@ -1,0 +1,97 @@
+{
+  "id": "L-WARMUP-005",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Benchmark warmup / First-run cost",
+  "learningObjective": "Explain the sources of the very different timings between a single-run measurement and the amortized mean of a many-run loop, and describe a correct benchmarking discipline.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.0+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "A user benchmarks a matmul with CUDA events. The first single-run timing is 43.2 ms, but a subsequent 100-run mean is 3.4 ms per iteration. Which explanation is best supported and what is the correct benchmarking practice?",
+  "codeSnippet": "import torch\n\nx = torch.randn(4096, 4096, device=\"cuda\")\nw = torch.randn(4096, 4096, device=\"cuda\")\n\nstart = torch.cuda.Event(enable_timing=True)\nend   = torch.cuda.Event(enable_timing=True)\n\n# Single run\nstart.record()\ny = x @ w\nend.record()\ntorch.cuda.synchronize()\nprint(f\"single-run: {start.elapsed_time(end):.3f} ms\")\n\n# 100 runs\nstart.record()\nfor _ in range(100):\n    y = x @ w\nend.record()\ntorch.cuda.synchronize()\nprint(f\"100-run mean: {start.elapsed_time(end) / 100:.3f} ms\")\n\n# Output:\n#   single-run: 43.2 ms\n#   100-run mean: 3.4 ms",
+  "profileData": "single-run: 43.2 ms; 100-run mean: 3.4 ms",
+  "options": [
+    {
+      "id": "A",
+      "text": "`start.elapsed_time(end)` returns the cumulative time between events, not the last kernel; the 100-run mean is thus miscomputed by dividing by 100 and cannot be interpreted as per-iteration cost in any meaningful way."
+    },
+    {
+      "id": "B",
+      "text": "First-run cost includes one-time setup (cuBLAS handle init, algo selection/autotune, kernel loading); benchmark should warm up and report a robust statistic (median) over remaining runs."
+    },
+    {
+      "id": "C",
+      "text": "Modern GPUs cache kernel results across launches; the 2nd through 100th runs return the same output without recomputation, so the loop measurement effectively times cache lookup latency rather than actual matmul execution."
+    },
+    {
+      "id": "D",
+      "text": "The 100-run version invokes `torch.compile` automatically after 10 iterations and benefits from a fused kernel that the single run does not use, since PyTorch's runtime silently promotes hot loops to compiled variants for throughput."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "The single-run cost is dominated by one-time initialization: on the first cuBLAS matmul, PyTorch may allocate a cuBLAS handle, run algorithm heuristics or autotune, and load the kernel binary. Subsequent runs skip these costs and reflect steady-state execution time. Correct benchmark practice: warm up several iterations, synchronize, then time a batch of runs and report a robust statistic (median, or e.g., p50 / p95 over multiple batches).",
+  "optionExplanations": {
+    "A": "Wrong: `elapsed_time(end)` returns the interval between two recorded events; dividing by 100 is meaningful when the events bracket 100 iterations.",
+    "B": "Correct: describes the standard warmup pattern and recommended reporting statistic.",
+    "C": "Wrong: GPUs do not cache tensor results; each launch recomputes the matmul.",
+    "D": "Wrong: `torch.compile` is not invoked implicitly by a loop; the loop runs the same eager matmul each iteration."
+  },
+  "assumptions": [
+    "PyTorch's default cuBLAS backend is used, not TensorRT or a custom kernel.",
+    "There is no explicit `torch.compile` in the code."
+  ],
+  "nonImplications": [
+    "Does not imply that a first-run cost is a bug; it is a normal cost that a warmup absorbs.",
+    "Does not imply that the mean is always the best statistic; percentile-based reporting is often preferable for tail-sensitive workloads."
+  ],
+  "misconceptionTags": [
+    "result_cache_myth",
+    "compile_implicit_on_loop"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim about `elapsed_time` semantics.",
+    "C": "Fabricates a nonexistent result cache.",
+    "D": "Fabricates an implicit torch.compile trigger."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Timing methodology and warmup discussion",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "Warmup and iteration reporting guidance",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "First-run vs steady-state benchmark discrepancy for CUDA matmul",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-WARMUP-005.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,49 @@
+{
+  "questionId": "J-DYNBATCH-005",
+  "learningObjective": "Distinguish dynamic (request-level) batching from continuous (iteration-level) batching and diagnose a workload that suffers head-of-line blocking.",
+  "canonicalClaims": [
+    {
+      "claim": "Static (request-level) batching suffers head-of-line blocking with variable output lengths: the batch holds until the longest request finishes, wasting SM parallelism on nearly-empty batches. Continuous (iteration-level) batching removes this by rebatching per iteration.",
+      "conditions": [
+        "Output length variance is significant across the batch.",
+        "Scheduler decides batch composition per model-forward iteration."
+      ],
+      "nonImplications": [
+        "Does not imply continuous batching solves all imbalance.",
+        "Does not require any particular KV cache layout (paged or contiguous)."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:orca", "locator": "Sec 3" },
+        { "ref": "DOC:vllm", "locator": "Scheduler design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "KV cache quantization solves head-of-line blocking.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Quantization addresses bandwidth, not batch composition.",
+      "sourceOrEvidence": "Orca paper Sec 3"
+    },
+    {
+      "claim": "CUDA Graphs eliminate head-of-line blocking.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "CUDA Graphs amortize launch overhead but the batch composition remains static.",
+      "sourceOrEvidence": "vLLM scheduler design"
+    },
+    {
+      "claim": "Speculative decoding solves head-of-line blocking.",
+      "errorType": "scope_error",
+      "whyWrong": "Spec decoding accelerates per-request decode but does not let other requests leave the batch.",
+      "sourceOrEvidence": "Orca vs SpecDec comparison"
+    }
+  ],
+  "implementationFacts": [
+    "Continuous batching is core to vLLM, SGLang, and TRT-LLM's inflight batching.",
+    "It composes with chunked prefill to interleave prefill and decode without long stalls."
+  ],
+  "performanceScenarios": [
+    "Chat workloads with mixed short/long outputs benefit most from iteration-level batching."
+  ],
+  "versionSensitivity": "stable_principle"
+}

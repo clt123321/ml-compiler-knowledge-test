@@ -1,0 +1,49 @@
+{
+  "questionId": "F-RACE-034",
+  "learningObjective": "Identify a shared-memory race caused by missing __syncthreads between write and cross-thread read.",
+  "canonicalClaims": [
+    {
+      "claim": "In a CUDA block, when different threads write to and read from shared memory, `__syncthreads()` between the write and the cross-thread read is required to guarantee visibility; otherwise a data race produces undefined values. Lockstep-within-warp is not a portable substitute on modern (Volta+) GPUs.",
+      "conditions": ["Multi-warp block or cross-warp read; Volta+ target."],
+      "nonImplications": [
+        "Does not imply small blocks always expose the race in testing.",
+        "Does not imply __syncthreads fences global memory."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Shared Memory synchronization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Threads in a warp execute in lockstep, so intra-warp SMEM reads are always safe.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Volta+ ITS breaks strict lockstep; and cross-warp reads always race without sync.",
+      "sourceOrEvidence": "Volta whitepaper"
+    },
+    {
+      "claim": "Shared memory is zero-initialized at kernel entry.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SMEM is uninitialized; users must write before read.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "The runtime automatically inserts a barrier before shared-memory reads.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No automatic barriers; user is responsible.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "atomicAdd inside SMEM eliminates the need for __syncthreads.",
+      "errorType": "scope_error",
+      "whyWrong": "Atomics prevent write-write races but not the ordering with subsequent reads.",
+      "sourceOrEvidence": "CUDA guide"
+    }
+  ],
+  "implementationFacts": [
+    "__syncthreads includes __threadfence_block-level fence.",
+    "compute-sanitizer racecheck detects SMEM races."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

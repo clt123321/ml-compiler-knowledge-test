@@ -1,0 +1,97 @@
+{
+  "id": "I-REDUCE-015",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "Reduction / Warp shuffle vs shared-memory tree",
+  "learningObjective": "Compare warp-shuffle intra-warp reductions with shared-memory tree reductions for a per-block sum.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Kepler or newer (shuffles), Volta+ for __shfl_sync",
+    "device": "GPU",
+    "requiredFeatures": [
+      "warp-level shuffle intrinsics"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA",
+    "stability": "stable_principle"
+  },
+  "stem": "A CUDA kernel needs to sum an array of length N per thread block (block size 256, 8 warps of 32 threads). Which implementation strategy is standard and correct?",
+  "codeSnippet": "// Per-thread partial: each thread reads N/256 elements and accumulates locally into `sum`.\n// Then reduce across the block.\n\n// Strategy X: intra-warp reduce with __shfl_down_sync, one lane writes to SMEM,\n// then one warp reduces the 8 SMEM values with another shfl-down.\n\n// Strategy Y: recursive shared-memory tree with 8 __syncthreads() rounds.\n\n// Strategy Z: block-wide atomicAdd from every thread.",
+  "options": [
+    {
+      "id": "A",
+      "text": "Strategy Y is preferred: shared-memory tree with __syncthreads() barriers is the most portable and typically fastest option because it avoids shuffle latency, and the cost of 8 barriers is amortized over N reads."
+    },
+    {
+      "id": "B",
+      "text": "Strategy X is preferred: __shfl_down_sync reduces within a warp in log2(32) = 5 cycles without SMEM or barriers, then the 8 warp-level partial sums are written to SMEM and reduced by one warp with another shuffle. This is the standard 'warp-shuffle + shared' pattern and is faster than a pure SMEM tree."
+    },
+    {
+      "id": "C",
+      "text": "Strategy Z (atomicAdd from every thread) is preferred: modern GPUs have hardware-level atomic aggregation that makes this the fastest path; it also avoids the need for shared memory and barriers entirely."
+    },
+    {
+      "id": "D",
+      "text": "All three strategies produce bit-identical results in FP32 because the number of additions is the same; the choice is purely stylistic and has no measurable performance impact."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "The canonical CUDA block-reduce pattern is (1) each thread accumulates its partial sum, (2) reduce within a warp using __shfl_down_sync (log2(32) = 5 steps, no SMEM, no barrier), (3) lane 0 of each warp writes its partial to SMEM, (4) one __syncthreads(), (5) the first warp loads the 8 SMEM values and reduces again with __shfl_down_sync. This is faster than a pure SMEM tree because shuffles have lower latency than SMEM round-trips, and it uses far less SMEM. atomicAdd from every thread is contention-prone and much slower for dense reductions.",
+  "optionExplanations": {
+    "A": "Wrong: pure SMEM tree needs multiple __syncthreads() and is slower than the shuffle-based pattern.",
+    "B": "Correct: the standard warp-shuffle + SMEM combo.",
+    "C": "Wrong: high-contention block-wide atomicAdd is slow for dense reductions.",
+    "D": "Wrong: FP addition is non-associative; different reduction orders produce different rounding."
+  },
+  "assumptions": [
+    "Reduction is over FP32 or integer values; the strategy generalizes to FP16 with FP32 accumulate.",
+    "Block size is a multiple of 32 (warpSize)."
+  ],
+  "nonImplications": [
+    "Does not imply that shuffles are always faster; a very large per-thread partial that is already in registers dominates whichever cross-thread strategy is chosen.",
+    "Does not imply that atomicAdd is always bad; for sparse or one-value-per-warp write-back, atomics are fine."
+  ],
+  "misconceptionTags": [
+    "smem_tree_optimal_myth",
+    "block_atomicadd_myth",
+    "fp_associative_myth"
+  ],
+  "distractorRationales": {
+    "A": "Overstates SMEM tree.",
+    "C": "Overstates atomicAdd.",
+    "D": "Wrong claim about FP associativity."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Ch. 10 — parallel reduction",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Warp-level primitives / __shfl_down_sync",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Block-wide sum reduction pattern on CUDA GPUs",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-REDUCE-015.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

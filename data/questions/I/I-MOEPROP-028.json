@@ -1,0 +1,95 @@
+{
+  "id": "I-MOEPROP-028",
+  "type": "multiple",
+  "module": "core_ops_attention",
+  "subtopic": "MoE / Compute, parameter, and imbalance properties",
+  "learningObjective": "Distinguish correct claims about MoE compute/parameter efficiency and imbalance from common misconceptions.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "A top-2 MoE model with E=8 experts replaces a dense FFN block. Select all correct statements. (Choose all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "MoE inference is always memory-bandwidth bound because every forward pass must load all E experts' weights from HBM; expert parallelism does not help because it only distributes the weight-loading cost, not the parameter footprint."
+    },
+    {
+      "id": "B",
+      "text": "The total parameter count scales linearly with E (all E experts have their own weight matrices), and the compute per token scales with E as well because the router must compute a gating score against every expert."
+    },
+    {
+      "id": "C",
+      "text": "Total parameter count scales linearly with E, but compute per token is roughly constant in E (top-k activated) plus a small O(E) gating cost. This is why MoE gives parameter-to-flop leverage."
+    },
+    {
+      "id": "D",
+      "text": "In serving, load imbalance across experts is a real problem: with random routing the variance of tokens-per-expert scales as sqrt(B*N/E), which can cause hot experts to bottleneck the batched matmul. Capacity limits or expert-parallel load-balancing are needed."
+    }
+  ],
+  "correctAnswers": [
+    "C",
+    "D"
+  ],
+  "explanation": "Options C, D are correct; options A, B are incorrect. A (Wrong): expert parallelism does help by distributing weights. B (Wrong): overstates compute cost. C (Correct): parameter scales with E, activated compute stays at O(k). D (Correct): routing skew is a real serving problem.",
+  "optionExplanations": {
+    "A": "Wrong: expert parallelism does help by distributing weights.",
+    "B": "Wrong: overstates compute cost.",
+    "C": "Correct: parameter scales with E, activated compute stays at O(k).",
+    "D": "Correct: routing skew is a real serving problem."
+  },
+  "assumptions": [
+    "Top-k MoE with k << E.",
+    "Routing is roughly balanced under normal training; imbalance is a corner case, not the norm."
+  ],
+  "nonImplications": [
+    "Does not imply MoE is always faster than dense at equal parameter count; imbalance and communication overheads can eat the win.",
+    "Does not imply MoE quality equals dense at equal parameter count; it usually differs."
+  ],
+  "misconceptionTags": [
+    "moe_compute_scales_with_E",
+    "moe_ep_useless_myth"
+  ],
+  "distractorRationales": {
+    "A": "Denies EP's practical benefits.",
+    "B": "Overstates compute cost."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "MoE — parameter/compute leverage",
+      "supports": [
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "MoE serving and expert parallelism",
+      "supports": [
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "MoE compute/parameter/routing properties",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-MOEPROP-028.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,48 @@
+{
+  "questionId": "I-FLASHIO-006",
+  "learningObjective": "Compare HBM traffic patterns between naive attention (materialized S = QK^T) and FlashAttention (block-tiled, streamed).",
+  "canonicalClaims": [
+    {
+      "claim": "Naive attention that materializes S = QK^T in HBM has Ω(N^2) HBM traffic for S alone; FlashAttention keeps S on-chip and has HBM traffic O(N^2 d / M), where M is on-chip memory per SM, so its I/O falls below the naive baseline as N grows.",
+      "conditions": [
+        "Baseline actually stores S in HBM (unfused softmax).",
+        "SMEM/register file M >= size of a Q-tile plus a K/V-tile."
+      ],
+      "nonImplications": [
+        "Does not imply FLOP count changes; forward FLOPs remain O(N^2 d).",
+        "Does not imply that every 'naive' implementation writes S to HBM; some fuse it partially."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Sec 3.2 IO complexity" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FlashAttention increases HBM traffic; its benefit is register/SMEM economy.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The paper's central result is that HBM I/O is reduced, not increased.",
+      "sourceOrEvidence": "FlashAttention paper Sec 3.2"
+    },
+    {
+      "claim": "FlashAttention's win is fewer FLOPs.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Forward FLOPs are unchanged; backward FLOPs slightly increase due to recomputation.",
+      "sourceOrEvidence": "FlashAttention paper Sec 3.2"
+    },
+    {
+      "claim": "HBM traffic of naive attention scales as O(N d), the same as loading Q, K, V.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Naive attention writes and re-reads S of size N^2, which dominates I/O.",
+      "sourceOrEvidence": "FlashAttention paper Sec 3.2"
+    }
+  ],
+  "implementationFacts": [
+    "Typical FA tile sizes: B_r = B_c = 128 on Ampere; larger on Hopper.",
+    "The Q loop is outer; each Q tile is loaded once per K/V pass, or vice versa depending on FA v1 vs v2 loop order."
+  ],
+  "performanceScenarios": [
+    "For long context (N in tens of thousands), the O(N^2) S traffic saved by FA dominates any secondary cost."
+  ],
+  "versionSensitivity": "stable_principle"
+}

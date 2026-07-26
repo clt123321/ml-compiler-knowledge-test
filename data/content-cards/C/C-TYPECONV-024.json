@@ -1,0 +1,55 @@
+{
+  "questionId": "C-TYPECONV-024",
+  "learningObjective": "Understand what a TypeConverter's `addSourceMaterialization`/`addTargetMaterialization` do in MLIR dialect conversion, and why they matter for cross-type IR boundaries.",
+  "canonicalClaims": [
+    {
+      "claim": "During MLIR Dialect Conversion, the driver inserts `builtin.unrealized_conversion_cast` at boundaries where converted values meet unconverted ops; TypeConverter materialization callbacks provide real ops (e.g., bufferization.to_tensor / to_memref) to replace those casts. A successful conversion leaves no unrealized casts behind.",
+      "conditions": [
+        "The pass uses MLIR's Dialect Conversion driver.",
+        "The TypeConverter is registered for the relevant type pairs and provides materializations."
+      ],
+      "nonImplications": [
+        "Does not imply materializations are free; some insert copies.",
+        "Does not imply that leaving unrealized casts is acceptable in production IR."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-dialect-conversion", "locator": "Materialization hooks" },
+        { "ref": "DOC:mlir-langref", "locator": "unrealized_conversion_cast" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Materialization hooks are debug-only.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are essential to resolving temporary casts into real IR.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Materialization renames SSA values by textual substitution.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Materialization inserts real ops.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "TensorMemRefConverter is a separate framework from Dialect Conversion.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TypeConverter within Dialect Conversion covers arbitrary type pairs.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Leaving unrealized_conversion_cast in final IR is normal.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Persistent unrealized casts usually indicate incomplete or misconfigured conversion.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    }
+  ],
+  "implementationFacts": [
+    "`addConversion`, `addSourceMaterialization`, `addTargetMaterialization`, `addArgumentMaterialization` on TypeConverter",
+    "Partial vs. full conversion govern whether unrealized casts are permitted at pass exit"
+  ],
+  "performanceScenarios": [
+    "Well-designed materializations minimize copies at type boundaries; poorly designed ones leak allocations."
+  ],
+  "versionSensitivity": "stable_principle"
+}

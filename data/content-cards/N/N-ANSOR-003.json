@@ -1,0 +1,50 @@
+{
+  "questionId": "N-ANSOR-003",
+  "learningObjective": "Explain the design intent of Ansor's task scheduler for allocating autotuning budget across subgraphs.",
+  "canonicalClaims": [
+    {
+      "claim": "Ansor's task scheduler allocates a global autotuning time budget across the subgraphs (tasks) of a full model based on their current measured latency contribution and their estimated marginal improvement, so that time is spent on the subgraphs whose speedups matter most for end-to-end latency rather than distributing budget uniformly.",
+      "conditions": [
+        "End-to-end latency is the objective (not per-task speedup in isolation).",
+        "Tasks have differing runtime contributions and differing improvement potentials."
+      ],
+      "nonImplications": [
+        "Does not imply that the scheduler ignores per-task quality; it prunes tasks whose marginal improvement is small relative to their share of end-to-end time.",
+        "Does not imply that a task with the largest raw latency is always tuned first — a task with small latency but large marginal potential may still receive budget."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "§5 task scheduler for end-to-end optimization" }
+      ]
+    },
+    {
+      "claim": "Uniform-budget baselines (equal time per subgraph) waste tuning effort on subgraphs that already run near-optimally or contribute little to end-to-end time.",
+      "conditions": [
+        "The workload has heterogeneous per-subgraph runtimes."
+      ],
+      "nonImplications": [
+        "Does not imply uniform budget is always worst; on very small models it can be competitive."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "§5 comparison against uniform-budget baselines" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The Ansor task scheduler distributes budget uniformly across all tasks so that every operator receives the same number of measurements.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The paper argues explicitly against uniform allocation and introduces the scheduler as its remedy."
+    },
+    {
+      "claim": "The task scheduler picks tasks by highest peak speedup measured so far; tasks whose peak has plateaued are dropped immediately.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The scheduler weighs marginal improvement against the task's share of end-to-end latency; plateauing alone does not drop a task if its runtime share is dominant."
+    },
+    {
+      "claim": "The Ansor task scheduler's speedups reported in the paper generalize to any end-to-end deep-learning workload on any hardware; the exact percentages are the community consensus.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The paper's numbers are for specific models on specific GPUs/CPUs; treating them as universal violates the paper-scope discipline."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

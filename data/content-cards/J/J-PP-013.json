@@ -1,0 +1,50 @@
+{
+  "questionId": "J-PP-013",
+  "learningObjective": "Explain how pipeline parallelism shards a model across devices and what causes pipeline bubbles.",
+  "canonicalClaims": [
+    {
+      "claim": "PP partitions layers into P contiguous groups, one per device. Single-request forward is sequential across stages, so per-request latency is not reduced; throughput improves via concurrent in-flight requests. Imbalanced stages create bubbles.",
+      "conditions": [
+        "Layer-wise partition.",
+        "Stages can execute concurrently on different requests."
+      ],
+      "nonImplications": [
+        "Does not imply zero bubble in inference.",
+        "Does not imply PP is redundant when the model fits on one device."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "PP design" },
+        { "ref": "DOC:vllm", "locator": "PP support" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PP replicates the model on each device.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That is data parallelism; PP shards layers across devices.",
+      "sourceOrEvidence": "GPipe / PipeDream"
+    },
+    {
+      "claim": "PP reduces per-request latency by a factor of P.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Single-request forward is sequential; latency is not reduced (slightly increased).",
+      "sourceOrEvidence": "PP design papers"
+    },
+    {
+      "claim": "PP has zero bubble in inference because there is no backward pass.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Imbalanced stage compute and inter-stage transfer still cause bubbles.",
+      "sourceOrEvidence": "PipeDream analysis"
+    }
+  ],
+  "implementationFacts": [
+    "Micro-batching is used to keep stages busy: multiple micro-batches flow through simultaneously.",
+    "Inter-stage transfer is a small fraction of stage compute for typical LLM decode."
+  ],
+  "performanceScenarios": [
+    "PP is essential when the model exceeds a single device's memory; often combined with TP within a node.",
+    "PP scales across nodes better than TP because inter-stage traffic is small (activations per micro-batch)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "C-LINALG-030",
+  "learningObjective": "Interpret an MLIR linalg.generic op's indexing maps and iterator types and identify which claims about its semantics are correct.",
+  "canonicalClaims": [
+    {
+      "claim": "`linalg.generic` describes a structured iteration: `iterator_types` classifies each iterator (parallel, reduction, window, etc.), `indexing_maps` expresses how each tensor is accessed as an affine function of the iterator tuple, and the scalar body specifies per-iteration computation with `linalg.yield` returning the new output element.",
+      "conditions": [
+        "The op is written in MLIR's linalg dialect per LangRef.",
+        "The tensor types are compatible with the indexing maps."
+      ],
+      "nonImplications": [
+        "Does not imply linalg.generic is the fastest way to express any op; specialized linalg ops exist.",
+        "Does not imply reduction ordering is unique under FP arithmetic."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "linalg dialect" },
+        { "ref": "PAPER:mlir", "locator": "Structured ops" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "linalg.generic cannot express reductions.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Reduction iterators are supported natively.",
+      "sourceOrEvidence": "MLIR linalg docs"
+    },
+    {
+      "claim": "indexing_maps and iterator_types are optional annotations that the compiler infers.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are required to define the op's iteration space and access pattern.",
+      "sourceOrEvidence": "MLIR linalg docs"
+    },
+    {
+      "claim": "The scalar body executes once per output element, not per (m, n, k) triple.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The body executes per iteration in the full iteration space; reductions accumulate into the output.",
+      "sourceOrEvidence": "MLIR linalg docs"
+    },
+    {
+      "claim": "`linalg.yield` returns the entire output tensor.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`linalg.yield` returns the new scalar value of the output element for the current iteration.",
+      "sourceOrEvidence": "MLIR linalg docs"
+    }
+  ],
+  "implementationFacts": [
+    "linalg.generic supports parallel and reduction iterators",
+    "indexing_maps are affine maps over the iterator tuple",
+    "Named ops (linalg.matmul, linalg.conv2d) desugar to linalg.generic with specific maps"
+  ],
+  "performanceScenarios": [
+    "linalg.generic is the layer where tiling and vectorization are typically applied via linalg transform ops."
+  ],
+  "versionSensitivity": "stable_principle"
+}

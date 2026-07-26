@@ -1,0 +1,48 @@
+{
+  "questionId": "K-ALLOC-008",
+  "learningObjective": "Explain why deep-learning runtimes use a caching memory allocator (a pool of previously freed device blocks) instead of calling cudaMalloc/cudaFree per tensor.",
+  "canonicalClaims": [
+    {
+      "claim": "A caching allocator pools freed device blocks in size-classed buckets and reuses them, avoiding the microsecond-to-millisecond cost and cross-stream synchronization implied by cudaMalloc/cudaFree, at the cost of managing fragmentation.",
+      "conditions": [
+        "Workload performs frequent allocations/frees per step.",
+        "The runtime has visibility into all device allocations to coordinate reuse."
+      ],
+      "nonImplications": [
+        "Does not imply zero fragmentation.",
+        "Does not imply memory can never be returned to the OS; empty-cache APIs exist."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "cudaMalloc synchronization" },
+        { "ref": "DOC:cuda-best", "locator": "Memory pool best practices" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "cudaMalloc returns memory that must be initialized before use.",
+      "errorType": "definition_confusion",
+      "whyWrong": "cudaMalloc'd memory is usable as a kernel argument; contents are uninitialized but usable.",
+      "sourceOrEvidence": "CUDA Runtime API reference"
+    },
+    {
+      "claim": "There is a 1024-allocation limit per process.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No such limit exists in the CUDA runtime; the limit is device memory.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Caching allocators eliminate fragmentation.",
+      "errorType": "overgeneralization",
+      "whyWrong": "They mitigate fragmentation but cannot eliminate it; long-running workloads may still OOM due to fragmentation.",
+      "sourceOrEvidence": "PyTorch caching allocator documentation"
+    },
+    {
+      "claim": "cudaFree is free.",
+      "errorType": "performance_confusion",
+      "whyWrong": "cudaFree synchronizes and is expensive; that's why runtimes cache blocks.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

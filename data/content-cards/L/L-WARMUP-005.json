@@ -1,0 +1,56 @@
+{
+  "questionId": "L-WARMUP-005",
+  "learningObjective": "Explain the sources of the very different timings between a single-run measurement and the amortized mean of a many-run loop, and describe a correct benchmarking discipline.",
+  "canonicalClaims": [
+    {
+      "claim": "First-run kernel timings on CUDA include one-time initialization costs (cuBLAS handle setup, algorithm heuristics/autotune, lazy kernel loading, cache priming); a correct benchmark warms up a few iterations, then times a batch of iterations and reports a robust statistic like median.",
+      "conditions": [
+        "The library in use has lazy initialization (cuBLAS/cuDNN/Triton typical behavior).",
+        "The benchmark environment is otherwise steady (no thermal throttling within the measurement window)."
+      ],
+      "nonImplications": [
+        "Does not imply that the first-run cost is a bug — it is expected behavior.",
+        "Does not imply that mean is always the correct reporting statistic; percentile-based reporting captures tail behavior better."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Warmup and timing methodology" },
+        { "ref": "DOC:torch-profiler", "locator": "Benchmarking best practices" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`start.elapsed_time(end)` returns the duration of only the last operation before `end`, so dividing by 100 is meaningless.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`elapsed_time` returns the wall time between the two recorded events; if 100 ops are between them, dividing by 100 gives per-op mean.",
+      "sourceOrEvidence": "PyTorch cuda.Event docs"
+    },
+    {
+      "claim": "GPU caches tensor results across launches; the 2nd through 100th runs are 'free' because the answer is cached.",
+      "errorType": "definition_confusion",
+      "whyWrong": "GPUs do not cache computation results; each launch recomputes from inputs.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "PyTorch invokes `torch.compile` automatically after several iterations, so a hot loop is measuring a compiled kernel.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`torch.compile` is opt-in; a plain matmul loop runs the eager cuBLAS matmul every iteration.",
+      "sourceOrEvidence": "torch.compile documentation"
+    },
+    {
+      "claim": "First-run cost is proportional to input size, so smaller inputs eliminate it.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "First-run overhead is dominated by initialization and heuristics, largely independent of input size.",
+      "sourceOrEvidence": "cuBLAS documentation on handle initialization"
+    }
+  ],
+  "implementationFacts": [
+    "cuBLAS handle initialization on first use in a process",
+    "cuBLAS/cuDNN heuristic algorithm selection on first observed shape",
+    "Kernel binary lazy loading (increases on first invocation)"
+  ],
+  "performanceScenarios": [
+    "In serving benchmarks, cold-start latency is a real product metric; separately reporting cold (first) and hot (steady-state) latencies is standard practice."
+  ],
+  "versionSensitivity": "stable_principle"
+}

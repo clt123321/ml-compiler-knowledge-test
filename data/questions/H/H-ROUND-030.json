@@ -1,0 +1,90 @@
+{
+  "id": "H-ROUND-030",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "Rounding modes / RNE vs stochastic",
+  "learningObjective": "Distinguish round-half-to-even (RNE) from stochastic rounding and identify when each is used.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Two commonly discussed rounding modes for quantization are round-half-to-even (RNE) and stochastic rounding. Which pair correctly describes them?",
+  "options": [
+    {
+      "id": "A",
+      "text": "RNE and stochastic rounding produce the same values; the only difference is that stochastic rounding uses a random seed."
+    },
+    {
+      "id": "B",
+      "text": "RNE rounds to the nearest representable value, with exact half-way ties broken toward the even neighbor (IEEE 754 default; deterministic). Stochastic rounding rounds up or down probabilistically in proportion to distance to each neighbor, producing an unbiased estimator that is useful for training in very low precision (e.g., BF16 or FP8 gradient accumulation)."
+    },
+    {
+      "id": "C",
+      "text": "RNE always rounds down (floor); stochastic rounding always rounds up. Both are deterministic."
+    },
+    {
+      "id": "D",
+      "text": "Stochastic rounding is illegal for quantization because it produces non-deterministic outputs that violate correctness testing."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "RNE (round-half-to-even, also called banker's rounding) is the IEEE 754 default: round to nearest and break ties toward the even neighbor. Stochastic rounding assigns a probability to each of the two neighbors proportional to distance: e.g., a value 0.7 rounds to 1 with probability 0.7 and to 0 with probability 0.3. Expectation matches the true value \u2192 unbiased. Stochastic rounding is used for low-precision training (BF16/FP8 gradient accumulation, INT-only training) to preserve small gradient updates that RNE would systematically round away. Options B, C, D misdescribe or forbid.",
+  "optionExplanations": {
+    "A": "Wrong: they produce different values.",
+    "B": "Correct: standard definitions and use cases.",
+    "C": "Wrong: neither rounds always up or always down.",
+    "D": "Wrong: stochastic rounding is used in production for low-precision training."
+  },
+  "assumptions": [
+    "'Nearest' means minimum absolute distance in the target representation.",
+    "Stochastic rounding uses a per-value random draw."
+  ],
+  "nonImplications": [
+    "Does not imply stochastic rounding is uniformly superior \u2014 for inference, deterministic RNE is preferred.",
+    "Does not imply hardware always supports stochastic rounding; it is opt-in on some accelerators."
+  ],
+  "misconceptionTags": [
+    "rne_stochastic_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Denies real value difference.",
+    "C": "Confuses rounding modes with floor/ceil.",
+    "D": "Forbids a well-established technique."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Rounding modes for quantization",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "IEEE 754 rounding modes",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-ROUND-030.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

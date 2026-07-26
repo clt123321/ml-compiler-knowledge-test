@@ -1,0 +1,54 @@
+{
+  "questionId": "G-ANSOR-024",
+  "learningObjective": "Explain Ansor's central design choice of subgraph-level schedule generation with a learned cost model, and what it replaces.",
+  "canonicalClaims": [
+    {
+      "claim": "Ansor generates schedules automatically at the subgraph level via hierarchical sketches, uses a learned cost model with evolutionary search, and allocates tuning budget across subgraphs by their end-to-end runtime contribution.",
+      "conditions": [
+        "The tuning workload is expressible as a set of subgraphs decomposed from the model.",
+        "A learned cost model can be trained on measured schedules."
+      ],
+      "nonImplications": [
+        "Does not imply Ansor eliminates library kernels; high-quality library GEMMs often remain preferable.",
+        "Does not imply the task scheduler is optimal — resource allocation is an approximation."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "Abstract, Section 3, Section 5" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Ansor is a CUDA library that replaces cuBLAS/cuDNN with hand-tuned Tensor Core kernels.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Ansor is a scheduler generator, not a library; it generates schedules that lower to Tensor Core code via TVM's backend.",
+      "sourceOrEvidence": "Ansor paper abstract"
+    },
+    {
+      "claim": "Ansor runs at model-serving time, mutating kernel parameters between forward passes.",
+      "errorType": "scope_error",
+      "whyWrong": "Ansor is a compile-time system; it does not participate in per-request serving.",
+      "sourceOrEvidence": "Ansor paper Section 2"
+    },
+    {
+      "claim": "The main contribution of Ansor is a C++ reimplementation of AutoTVM's cost model.",
+      "errorType": "scope_error",
+      "whyWrong": "Ansor introduces sketch-based space, evolutionary search, and end-to-end task scheduling — not a port.",
+      "sourceOrEvidence": "Ansor paper contributions list"
+    },
+    {
+      "claim": "The task scheduler in Ansor allocates GPU threads at runtime for concurrent kernel execution.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Ansor's task scheduler allocates tuning budget across subgraphs at compile time; it is not a GPU runtime scheduler.",
+      "sourceOrEvidence": "Ansor paper Section 5"
+    }
+  ],
+  "implementationFacts": [
+    "Ansor's task scheduler estimates gradient of end-to-end latency wrt. each subgraph's tuning budget.",
+    "Sketches are ordered by cost model score and refined via evolutionary mutations."
+  ],
+  "performanceScenarios": [
+    "For a ResNet-50 on GPU, Ansor tunes ~30 unique subgraphs, weighting the heaviest conv layers with most trials."
+  ],
+  "versionSensitivity": "stable_principle"
+}

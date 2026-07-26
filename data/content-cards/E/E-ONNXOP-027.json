@@ -1,0 +1,49 @@
+{
+  "questionId": "E-ONNXOP-027",
+  "learningObjective": "Understand ONNX opset versioning as a semantic contract between producers and consumers.",
+  "canonicalClaims": [
+    {
+      "claim": "ONNX models declare specific opset versions via `opset_import`; consumers must implement the exact opset semantics to execute the model correctly. Op semantics can change across opset versions.",
+      "conditions": ["ONNX spec as documented."],
+      "nonImplications": [
+        "Does not imply every runtime must implement every version.",
+        "Does not imply each model has a single opset version; multiple domains each have their own."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Opset versioning" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Opset numbers are display-only.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They select operator semantics.",
+      "sourceOrEvidence": "ONNX spec"
+    },
+    {
+      "claim": "A runtime for opset 18 automatically implements semantics of opsets 1–17.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Runtimes must explicitly implement each version they claim to support.",
+      "sourceOrEvidence": "ONNX spec"
+    },
+    {
+      "claim": "Opset only defines file format layout, not op semantics.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It defines op semantics; file format is separate.",
+      "sourceOrEvidence": "ONNX spec"
+    },
+    {
+      "claim": "Every ONNX op has been stable since opset 1.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Attributes, new ops, and deprecations are documented across opsets.",
+      "sourceOrEvidence": "ONNX operator changelog"
+    }
+  ],
+  "implementationFacts": [
+    "`opset_import` in ModelProto lists (domain, version) pairs.",
+    "Version converters (onnx.version_converter) can move models between opsets when semantically compatible."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

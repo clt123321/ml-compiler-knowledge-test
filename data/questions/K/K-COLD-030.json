@@ -1,0 +1,93 @@
+{
+  "id": "K-COLD-030",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "Cold start and compilation cache",
+  "learningObjective": "Reason about the sources of cold-start cost (compile, load, warmup) and how compilation caches reduce them across process restarts.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "torch.compile / TensorRT / TVM",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about cold-start cost and compilation caches for compiled ML workloads are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "AOT-compiled artifacts (TensorRT plan, AOTInductor .so) eliminate the JIT compile phase entirely at cold start because compilation happened offline; process init and weight load costs still remain."
+    },
+    {
+      "id": "B",
+      "text": "Compilation caches guarantee that a cached hit produces exactly the same output tensors as a fresh compile; any bitwise difference between cached and fresh outputs is a compiler bug that must be fixed before shipping."
+    },
+    {
+      "id": "C",
+      "text": "Cold-start cost consists of several distinct phases: process init (import framework, load driver), model artifact load (weights, graph), possibly compilation (JIT lowering), and warmup (autotune, cuBLAS handle init, kernel loading). Each has a different mitigation strategy."
+    },
+    {
+      "id": "D",
+      "text": "A compilation cache stores previously compiled kernels or lowered graphs keyed by (source, shape/dtype/device, compiler-version) and hits skip the compile phase on subsequent process starts; a properly warm cache can turn a multi-minute torch.compile cold start into a fraction of that."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "Correct: A, C, D.  A: Correct: AOT removes JIT from the cold path. B: Wrong: bitwise equivalence between cached and fresh compilations is not guaranteed. C: Correct: standard decomposition of cold-start. D: Correct: compilation caches deliver large cold-start savings.",
+  "optionExplanations": {
+    "A": "Correct: AOT removes JIT from the cold path.",
+    "B": "Wrong: bitwise equivalence between cached and fresh compilations is not guaranteed.",
+    "C": "Correct: standard decomposition of cold-start.",
+    "D": "Correct: compilation caches deliver large cold-start savings."
+  },
+  "assumptions": [
+    "A production system where cold-start latency (SLI/SLO) matters.",
+    "The runtime supports some form of compilation caching."
+  ],
+  "nonImplications": [
+    "Does not imply caches are always safe across framework upgrades; version keys are essential to avoid stale hits.",
+    "Does not imply cache misses can be ignored; the first request after cache invalidation still pays the full cold-start cost."
+  ],
+  "misconceptionTags": [
+    "bitwise_cache_equality_myth"
+  ],
+  "distractorRationales": {
+    "B": "Overstates numerical guarantees of caches."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Inductor compilation cache",
+      "supports": [
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:torch-aoti",
+      "locator": "AOTInductor deployment: zero JIT cost at start",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Cold-start phases and cache impact for compiled ML workloads",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-COLD-030.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

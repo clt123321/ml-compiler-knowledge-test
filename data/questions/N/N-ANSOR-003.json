@@ -1,0 +1,86 @@
+{
+  "id": "N-ANSOR-003",
+  "type": "multiple",
+  "module": "paper_design",
+  "subtopic": "Ansor task scheduler design intent",
+  "learningObjective": "Explain the design intent of Ansor's task scheduler for allocating autotuning budget across subgraphs.",
+  "archetype": "paper_design_intent",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "GPU / CPU targets",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "Ansor / TVM MetaSchedule",
+    "stability": "stable_principle"
+  },
+  "stem": "The Ansor paper introduces a 'task scheduler' that allocates autotuning budget across the subgraphs of a full model. Which TWO of the following statements correctly describe the task scheduler's design intent, as argued in the paper?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The task scheduler distributes budget non-uniformly, favouring subgraphs whose expected marginal improvement × contribution to end-to-end latency is largest, because end-to-end wall-clock time is the objective rather than per-task speedup in isolation."
+    },
+    {
+      "id": "B",
+      "text": "The task scheduler's motivation is that a uniform-budget baseline (equal time per subgraph) wastes effort on already-optimal or low-contribution subgraphs; the scheduler exists to fix this."
+    },
+    {
+      "id": "C",
+      "text": "The task scheduler is a runtime scheduler that decides which kernel to launch at inference time; it has nothing to do with autotuning search budget."
+    },
+    {
+      "id": "D",
+      "text": "The task scheduler enforces that every task must receive at least 10% of the tuning budget so that no task is ever under-tuned."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B"
+  ],
+  "explanation": "The Ansor paper's §5 explicitly introduces the task scheduler to redirect tuning budget toward subgraphs whose end-to-end impact is largest (A), and argues against uniform allocation as a baseline (B). C confuses tuning-time scheduling with runtime execution scheduling. D fabricates a floor rule not present in the paper.",
+  "optionExplanations": {
+    "A": "Correct: non-uniform allocation driven by marginal impact on end-to-end time.",
+    "B": "Correct: the paper motivates the scheduler by the failings of uniform baselines.",
+    "C": "Wrong: the task scheduler operates during autotuning, not at inference.",
+    "D": "Wrong: no such fixed floor rule is described."
+  },
+  "assumptions": [
+    "Familiarity with Ansor paper §5.",
+    "'Task' means a subgraph carved out for scheduling in Ansor."
+  ],
+  "nonImplications": [
+    "Does not imply Ansor's specific speedup numbers generalize across workloads and hardware.",
+    "Does not imply the scheduler ignores per-task convergence; plateau detection is part of the marginal-improvement estimate."
+  ],
+  "misconceptionTags": [
+    "uniform_budget_baseline",
+    "task_scheduler_at_runtime"
+  ],
+  "distractorRationales": {
+    "C": "Confuses tuning-time vs runtime scheduling.",
+    "D": "Fabricated minimum-budget rule."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:ansor",
+      "locator": "§5 task scheduler design and comparison to uniform baseline",
+      "supports": [
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/N/N-ANSOR-003.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,91 @@
+{
+  "id": "B-DOMTREE-025",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Dominator tree properties",
+  "learningObjective": "Identify structural properties of the dominator tree and its use in SSA construction.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement correctly describes the dominator tree of a CFG and its use in SSA construction?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The dominator tree is identical to the loop nest tree; both express nested control-flow structures."
+    },
+    {
+      "id": "B",
+      "text": "The dominator tree is the transpose of the CFG; edges are reversed and used for backward analysis such as liveness."
+    },
+    {
+      "id": "C",
+      "text": "The dominator tree contains one node per phi function; edges represent phi operand relationships."
+    },
+    {
+      "id": "D",
+      "text": "The dominator tree has the CFG entry as its root; the immediate dominator of each block is its parent. SSA construction places phi functions at the dominance frontier of each definition, which is the set of blocks that are just outside the region strictly dominated by the definition's block but reachable from it."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Standard definition: the dominator tree is rooted at entry; each block's parent is its immediate dominator (idom). SSA construction (Cytron et al.) places phi functions at the dominance frontier of each definition — informally, at the 'edge' where the definition's dominance stops applying and multiple reaching definitions could merge. Options B, C, D describe unrelated structures (reverse CFG, phi graph, loop nest tree).",
+  "optionExplanations": {
+    "A": "Wrong: loop nest tree captures loop containment, distinct from dominance.",
+    "B": "Wrong: dominator tree is not a transpose of the CFG; it is a distinct tree derived from the dominance relation.",
+    "C": "Wrong: dominator tree nodes are CFG blocks, not phi functions.",
+    "D": "Correct: rooted at entry, parent = immediate dominator; SSA uses dominance frontier for phi placement."
+  },
+  "assumptions": [
+    "CFG has a single entry block; dominance is defined with respect to it.",
+    "SSA construction follows the Cytron et al. algorithm."
+  ],
+  "nonImplications": [
+    "Does not imply computing the dominator tree is expensive; Lengauer-Tarjan is nearly linear.",
+    "Does not imply the dominator tree fully captures control dependence; control dependence uses post-dominance."
+  ],
+  "misconceptionTags": [
+    "domtree_vs_reversecfg",
+    "domtree_vs_loopnest"
+  ],
+  "distractorRationales": {
+    "A": "Confuses dominator tree with loop nest tree.",
+    "B": "Confuses dominator tree with reverse CFG.",
+    "C": "Confuses nodes with phi functions."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Dominator tree and SSA construction chapter",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Dominator tree and dominance frontier chapter",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-DOMTREE-025.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

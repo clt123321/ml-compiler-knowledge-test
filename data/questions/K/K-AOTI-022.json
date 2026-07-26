@@ -1,0 +1,92 @@
+{
+  "id": "K-AOTI-022",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "AOTInductor artifact",
+  "learningObjective": "Explain what AOTInductor produces (a self-contained shared library that runs a compiled PyTorch model without a Python runtime) and how that differs from torch.compile in JIT mode.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch AOTInductor",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement best describes what AOTInductor produces and how it differs from the default JIT torch.compile flow?",
+  "options": [
+    {
+      "id": "A",
+      "text": "AOTInductor ahead-of-time compiles an exported PyTorch model into a self-contained shared library (plus the generated kernels) that can be loaded and invoked from C++ without a Python interpreter or the Inductor compiler present at runtime; JIT torch.compile compiles on first call and requires Python + Inductor at run time."
+    },
+    {
+      "id": "B",
+      "text": "AOTInductor is a re-implementation of the CUDA driver API; it lets torch.compile bypass cuBLAS and cuDNN by JIT-compiling all matmuls on the fly at each inference call."
+    },
+    {
+      "id": "C",
+      "text": "AOTInductor is a smaller runtime that replaces Python entirely; it JIT-compiles PyTorch models at process start using an embedded MicroPython interpreter, producing the same kernels as torch.compile but launching them from within a compiled binary."
+    },
+    {
+      "id": "D",
+      "text": "AOTInductor produces a Python-only artifact (a `.pyc` file) that still requires Python at runtime; the only difference from JIT torch.compile is that graph capture happens ahead of time while codegen happens on the first call."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "AOTInductor is the AOT compilation path for torch.compile: given an `torch.export`-produced graph, AOTInductor emits a shared library (.so) containing the generated kernels and a C-ABI entry point. The library is deployable without Python and without the Inductor compiler at run time. JIT torch.compile, by contrast, compiles lazily and depends on Python + Inductor at the deployment site.",
+  "optionExplanations": {
+    "A": "Correct: matches the AOTInductor design as described in the PyTorch docs.",
+    "B": "Wrong: AOTInductor does not replace CUDA driver APIs.",
+    "C": "Wrong: no embedded Python interpreter; it is a native artifact.",
+    "D": "Wrong: it is not a .pyc; it is a native shared library."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 with the AOTInductor path (`torch._inductor.aot_compile` / `torch._export.aot_compile`)."
+  ],
+  "nonImplications": [
+    "Does not imply AOTInductor supports every torch.compile feature; some dynamic behaviors are restricted.",
+    "Does not imply zero build cost; users trade first-call latency for offline build time."
+  ],
+  "misconceptionTags": [
+    "aoti_needs_python_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates driver-replacement.",
+    "C": "Fabricates embedded interpreter.",
+    "D": "Wrong artifact format."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-aoti",
+      "locator": "AOTInductor overview and deployment story",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:torch-export",
+      "locator": "torch.export prerequisite for AOTInductor",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-AOTI-022.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

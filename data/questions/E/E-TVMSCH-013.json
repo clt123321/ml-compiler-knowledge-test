@@ -1,0 +1,92 @@
+{
+  "id": "E-TVMSCH-013",
+  "type": "multiple",
+  "module": "mlir_tvm_xla",
+  "subtopic": "TVM / TensorIR schedule primitives \u2014 split, bind, cache_read",
+  "learningObjective": "Reason about the effect of individual TensorIR schedule primitives on the resulting loop structure and buffer accesses.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "sm_80+ (via TensorIR CUDA codegen)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "threadIdx/blockIdx mapping"
+    ]
+  },
+  "softwareContext": {
+    "framework": "TVM",
+    "frameworkVersionScope": "TVM Unity",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "You have a TensorIR PrimFunc computing `C = A + B` with a single loop `for i in range(N)`. Which of the following schedule sequences are consistent with the semantics of TensorIR schedule primitives? (Select all that apply.)",
+  "irSnippet": "@T.prim_func\ndef vec_add(A: T.Buffer((N,), \"float32\"), B: T.Buffer((N,), \"float32\"),\n            C: T.Buffer((N,), \"float32\")):\n    for i in range(N):\n        with T.block(\"C\"):\n            vi = T.axis.spatial(N, i)\n            C[vi] = A[vi] + B[vi]",
+  "options": [
+    {
+      "id": "A",
+      "text": "`sch.vectorize(loop=i)` is guaranteed to succeed on any loop regardless of the loop's extent, alignment, or the underlying target; TensorIR will silently emit scalar code if vectorization is impossible."
+    },
+    {
+      "id": "B",
+      "text": "`sch.bind(loop=i, thread_axis='threadIdx.x')` may be applied without any prior split; this is a valid legalization that turns a single serial loop into a per-thread compute where each thread handles one element and blockDim is set to the loop's extent."
+    },
+    {
+      "id": "C",
+      "text": "`sch.split(loop=i, factors=[None, 256])` produces two nested loops `(io, ii)` with `ii` size 256 and `io` size `ceildiv(N, 256)`; then `sch.bind(io, 'blockIdx.x')` and `sch.bind(ii, 'threadIdx.x')` map the two loops to the CUDA launch grid, producing a canonical vector-add kernel."
+    },
+    {
+      "id": "D",
+      "text": "`sch.cache_read(block='C', read_buffer_index=0, storage_scope='shared')` inserts a shared-memory staging buffer between the load of `A` and its use in the C block, without changing the mathematical result."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): `vectorize` is not universally applicable; it errors when preconditions fail. B (Correct): `bind` on a single loop is legal legalization. C (Correct): canonical `split` + `bind(blockIdx, threadIdx)` GPU schedule. D (Correct): `cache_read` inserts a scoped staging buffer. General context: This is common for simple element-wise kernels; whether it is efficient is a separate concern.",
+  "optionExplanations": {
+    "A": "Wrong: `vectorize` is not universally applicable; it errors when preconditions fail.",
+    "B": "Correct: `bind` on a single loop is legal legalization.",
+    "C": "Correct: canonical `split` + `bind(blockIdx, threadIdx)` GPU schedule.",
+    "D": "Correct: `cache_read` inserts a scoped staging buffer."
+  },
+  "assumptions": [
+    "Standard TensorIR schedule primitive semantics as documented.",
+    "The reader is thinking of Unity-era TensorIR (not the pre-Unity TE `create_schedule` API)."
+  ],
+  "nonImplications": [
+    "Does not imply every valid schedule is performant; correctness and performance are separate.",
+    "Does not imply that `cache_read` always improves performance; it may hurt for tiny buffers."
+  ],
+  "misconceptionTags": [
+    "vectorize_always_ok_myth",
+    "bind_requires_split_myth"
+  ],
+  "distractorRationales": {
+    "A": "Overstates `vectorize`'s applicability."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "TensorIR schedule primitives \u2014 split, bind, cache_read, vectorize",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-TVMSCH-013.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

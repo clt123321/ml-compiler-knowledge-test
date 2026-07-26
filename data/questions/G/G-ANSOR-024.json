@@ -1,0 +1,83 @@
+{
+  "id": "G-ANSOR-024",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Ansor / Design intent",
+  "learningObjective": "Explain Ansor's central design choice of subgraph-level schedule generation with a learned cost model, and what it replaces.",
+  "archetype": "paper_design_intent",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic accelerator",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "The Ansor paper (OSDI 2020) makes several design choices that distinguish it from prior work like AutoTVM and Halide autoscheduler. Which best describes Ansor's central design intent?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Ansor searches at the level of algorithmic sketches over multi-op subgraphs, uses a learned cost model to prune candidates, and prioritizes subgraphs by their contribution to end-to-end network runtime; this removes the need for per-operator manual templates while remaining tractable via the sketch abstraction."
+    },
+    {
+      "id": "B",
+      "text": "Ansor is a compiler backend for CUDA that replaces cuBLAS and cuDNN with hand-written Tensor Core kernels; its main contribution is a superior tensor core code generator."
+    },
+    {
+      "id": "C",
+      "text": "Ansor is a runtime autotuning framework that mutates kernel launch parameters between forward passes during model serving."
+    },
+    {
+      "id": "D",
+      "text": "Ansor is a rewrite of AutoTVM's cost model in C++; the design intent is faster compile time at the cost of tuning quality."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Ansor's contributions per the OSDI 2020 paper are (i) hierarchical sketch generation that composes algorithmic templates automatically, (ii) evolutionary search + learned cost model, and (iii) task scheduler that prioritizes subgraphs by their contribution to end-to-end network runtime. The result is a system that discovers schedules for new operators without per-op templates. Option B misrepresents Ansor as a Tensor Core code generator. Option C misrepresents it as a runtime autotuner. Option D is a straw-man reimplementation claim.",
+  "optionExplanations": {
+    "A": "Correct: matches the paper's abstract and design overview.",
+    "B": "Wrong: Ansor is a scheduler generator, not a Tensor Core code generator.",
+    "C": "Wrong: Ansor operates at compile time, not per-serving-request.",
+    "D": "Wrong: Ansor is a new architecture, not a C++ port of AutoTVM."
+  },
+  "assumptions": [
+    "The reader has knowledge of the Ansor paper's abstract-level contributions."
+  ],
+  "nonImplications": [
+    "Does not imply Ansor supplants library kernels \u2014 high-quality library GEMMs often remain preferable.",
+    "Does not imply the task scheduler solves all tuning-budget issues \u2014 resource allocation across many subgraphs is still an approximation."
+  ],
+  "misconceptionTags": [
+    "ansor_replaces_cublas",
+    "ansor_runtime"
+  ],
+  "distractorRationales": {
+    "B": "Confuses Ansor with a CUDA library.",
+    "C": "Confuses Ansor with a runtime autotuner.",
+    "D": "Reduces Ansor to an implementation port."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Abstract, Section 3 (design overview), Section 5 (task scheduler)",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/G/G-ANSOR-024.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

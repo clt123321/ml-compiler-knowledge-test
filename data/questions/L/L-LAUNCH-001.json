@@ -1,0 +1,94 @@
+{
+  "id": "L-LAUNCH-001",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Launch overhead / Nsight Systems timeline diagnosis",
+  "learningObjective": "Diagnose a launch-overhead-limited workload from an Nsight Systems timeline showing many small kernels with large CPU-side gaps.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "Nsight Systems",
+    "stability": "stable_principle"
+  },
+  "stem": "A user profiles a training step with Nsight Systems and observes the timeline data shown. Which diagnosis and mitigation set is most appropriate?",
+  "profileData": "Nsight Systems timeline (aggregated, one training step):\n  Total wall time: 50 ms\n  Number of CUDA kernel launches: 1000\n  Mean kernel duration: 30 µs\n  Mean CPU-side gap between consecutive launches: 20 µs\n  Sum of kernel durations: ≈ 30 ms\n  Sum of CPU-side launch gaps: ≈ 20 ms\n  GPU utilization (Nsight measure): ≈ 60%\n  No PCIe/host-device transfers visible in the trace\n  No CPU dataloader stall visible in the trace",
+  "options": [
+    {
+      "id": "A",
+      "text": "Launch-overhead limited: ~20 ms (40%) is CPU-side dispatch between many small kernels. Mitigate with fusion, CUDA Graphs, or larger per-kernel work."
+    },
+    {
+      "id": "B",
+      "text": "The workload is compute-bound; the fix is to add more math per kernel to shift the compute-to-memory ratio, since compute-bound kernels benefit directly from higher arithmetic intensity per iteration."
+    },
+    {
+      "id": "C",
+      "text": "The workload is I/O bound (SSD/PCIe); reducing dataloader thread count will help, because the trace's 40% idle time reflects host-side dataloader blocking behind slower storage or PCIe transfer bandwidth."
+    },
+    {
+      "id": "D",
+      "text": "The workload is memory-bandwidth limited; the 40% idle time on the GPU indicates HBM is saturated in a way that stalls SM issue slots, and the correct mitigation is to shrink model weights via quantization to lower HBM pressure."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Kernel duration (30 µs) is short compared to the CPU-side gap (20 µs), and there are many launches. The 20 ms cumulative gap time matches CPU-side dispatch overhead. Neither PCIe transfers nor dataloader stalls appear. The right levers reduce launch count (fusion, torch.compile), amortize per-launch cost (CUDA Graphs), or make each kernel do more work.",
+  "optionExplanations": {
+    "A": "Correct: this matches the timeline signature of a launch-overhead-limited workload and lists the standard mitigations.",
+    "B": "Wrong: compute-bound kernels would show high SM utilization inside each kernel; the idle-between-kernels pattern points to launch overhead.",
+    "C": "Wrong: the trace shows no I/O or dataloader stalls; the gap is CPU-dispatch time.",
+    "D": "Wrong: HBM saturation would show up as high kernel duration with high memory-throughput metrics, not as CPU-side idle gaps between launches."
+  },
+  "assumptions": [
+    "Nsight's 'GPU utilization' metric here reflects the fraction of wall time during which any SM is running a kernel; 60% ≈ 30/50 ms.",
+    "The 'CPU-side gap' truly measures time between one kernel's end and the next kernel's start on the same stream, not synchronization waits."
+  ],
+  "nonImplications": [
+    "Does not imply that CUDA Graphs is always the best fix; some workloads (variable shapes, control flow) cannot easily use them.",
+    "Does not imply that fusion is always feasible; some ops have unfusable boundaries (custom ops, reductions across streams)."
+  ],
+  "misconceptionTags": [
+    "gpu_utilization_confusion",
+    "quantization_solves_launch_overhead"
+  ],
+  "distractorRationales": {
+    "B": "Wrong bottleneck class.",
+    "C": "Fabricates I/O root cause absent from the trace.",
+    "D": "Confuses HBM saturation with CPU dispatch idle."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:nsys",
+      "locator": "Nsight Systems timeline analysis and launch overhead patterns",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Kernel launch overhead and CUDA Graphs",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Launch-overhead-limited training step, 1000 kernels/step, 30 µs mean kernel, 20 µs mean gap",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-LAUNCH-001.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,85 @@
+{
+  "id": "K-ONNXSHAPE-016",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "ONNX shape inference",
+  "learningObjective": "Identify correct statements about ONNX shape inference and its role in deployment.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "ONNX",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about ONNX shape inference are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Static shape inference results are useful for downstream compilers such as TensorRT or ONNX Runtime's optimizer because they enable buffer planning, fusion decisions and kernel selection without waiting for runtime inputs."
+    },
+    {
+      "id": "B",
+      "text": "Shape inference in ONNX is a runtime-only operation performed by every consumer at load time; the exported ONNX file itself contains no shape metadata whatsoever for intermediate tensors."
+    },
+    {
+      "id": "C",
+      "text": "ONNX shape inference is a static, per-op procedure defined by each operator's schema; it propagates known input shapes and dtypes to output shapes and dtypes but can leave some dimensions symbolic when they depend on runtime tensors."
+    },
+    {
+      "id": "D",
+      "text": "ONNX shape inference always produces fully concrete integer shapes for every intermediate tensor at export time; symbolic dimensions such as `batch` are resolved by the exporter before the model is written."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C"
+  ],
+  "explanation": "A is correct: shape inference is per-op and driven by operator schemas; symbolic (named) dimensions remain when they depend on unknown quantities. C is correct: knowing shapes statically lets downstream compilers plan buffers and select kernels ahead of time. B is wrong: dynamic axes (batch, seq_len) commonly remain symbolic. D is wrong: exported ONNX models carry `value_info` shape metadata for intermediates when known.",
+  "optionExplanations": {
+    "A": "Correct: standard downstream use case.",
+    "B": "Wrong: ONNX files store shape metadata; runtime consumers may extend it but do not start empty.",
+    "C": "Correct: matches the ONNX shape-inference specification.",
+    "D": "Wrong: symbolic dims are a first-class feature and often remain post-export."
+  },
+  "assumptions": [
+    "The model uses standard ai.onnx opset ops with published schemas."
+  ],
+  "nonImplications": [
+    "Does not imply every op has full shape inference implemented; custom ops may lack it.",
+    "Does not imply inferred shapes are always tight; unions and unknowns are permitted."
+  ],
+  "misconceptionTags": [
+    "static_shape_myth",
+    "no_metadata_myth"
+  ],
+  "distractorRationales": {
+    "B": "Wrong claim about absence of metadata.",
+    "D": "Wrong claim about full concretization."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:onnx",
+      "locator": "Shape inference specification and value_info",
+      "supports": [
+        "A",
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-ONNXSHAPE-016.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

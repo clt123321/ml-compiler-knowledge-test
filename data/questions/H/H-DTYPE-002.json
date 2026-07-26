@@ -1,0 +1,92 @@
+{
+  "id": "H-DTYPE-002",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "FP16 vs BF16 / Precision vs range trade-off",
+  "learningObjective": "Explain why FP16 and BF16 trade precision against dynamic range and identify a scenario that dictates the choice.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic accelerator supporting both FP16 and BF16",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A team is training a large language model and hits gradient underflow at some layers when using FP16 with dynamic loss scaling barely keeping activations in range. Which statement about switching to BF16 is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "BF16 uses the same 5-bit exponent as FP16 with a different rounding rule; the choice is a numerical style issue with no dynamic-range effect."
+    },
+    {
+      "id": "B",
+      "text": "BF16 uses more bits than FP16, so switching increases memory footprint but eliminates the underflow entirely."
+    },
+    {
+      "id": "C",
+      "text": "BF16 uses FP32's 8-bit exponent, giving it FP32-like dynamic range and mostly removing underflow/overflow risk during training, at the cost of a coarser mantissa (7 bits vs. FP16's 10); most gradient-dynamic-range problems disappear, and loss scaling can often be simplified or removed."
+    },
+    {
+      "id": "D",
+      "text": "BF16 is a fixed-point format optimized for training; underflow is impossible because there is no exponent."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): BF16's exponent width is 8, not 5. B (Wrong): BF16 and FP16 are both 16 bits. C (Correct): matches the widely-documented BF16 rationale. D (Wrong): BF16 is floating-point. General context: BF16 shares FP32's 8-bit exponent and thus its dynamic range, at the cost of a 7-bit (vs. FP16's 10-bit) mantissa. In deep learning training, gradients often have very small magnitudes that underflow FP16's ~[6e-5, 6.5e4] range; BF16's ~[1e-38, 3e38] range accommodates them without loss scaling. The trade-off is mantissa precision, which some pathological accumulations may notice; empirically most training runs prefer BF16 when hardware supports it.",
+  "optionExplanations": {
+    "A": "Wrong: BF16's exponent width is 8, not 5.",
+    "B": "Wrong: BF16 and FP16 are both 16 bits.",
+    "C": "Correct: matches the widely-documented BF16 rationale.",
+    "D": "Wrong: BF16 is floating-point."
+  },
+  "assumptions": [
+    "The hardware supports BF16 with equivalent throughput to FP16 (true on Ampere/Hopper Tensor Cores).",
+    "The workload is a typical LLM training run with gradient scaling concerns."
+  ],
+  "nonImplications": [
+    "Does not imply BF16 always achieves final accuracy identical to FP16 or FP32; edge cases with very small updates may be affected by reduced mantissa.",
+    "Does not imply loss scaling is never needed with BF16; it is much less common but not universally unnecessary."
+  ],
+  "misconceptionTags": [
+    "bf16_more_bits",
+    "bf16_fixed_point"
+  ],
+  "distractorRationales": {
+    "A": "Confuses exponent widths.",
+    "B": "Confuses total bits with exponent design.",
+    "D": "Confuses BF16 with a fixed-point format."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Numerical formats for DNN training",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "BF16 Tensor Core support",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "BF16 vs. FP16 dynamic range in DNN training",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-DTYPE-002.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

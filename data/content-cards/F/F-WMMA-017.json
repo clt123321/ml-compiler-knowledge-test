@@ -1,0 +1,49 @@
+{
+  "questionId": "F-WMMA-017",
+  "learningObjective": "Distinguish nvcuda::wmma (C++ template API) from raw mma.sync PTX.",
+  "canonicalClaims": [
+    {
+      "claim": "nvcuda::wmma is a C++ template API providing fragment/load/store/mma primitives that compile down to `mma.sync` + `ldmatrix` PTX; raw PTX (used by CUTLASS and other libs) offers finer shape/layout control but both target the same hardware.",
+      "conditions": ["CUDA 11+ toolchain."],
+      "nonImplications": [
+        "Does not imply wmma exposes every mma shape.",
+        "Does not imply raw PTX is always faster."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Warp Matrix Functions" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "wmma and mma.sync cannot be mixed.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They can coexist; wmma lowers to PTX at compile time.",
+      "sourceOrEvidence": "CUDA docs"
+    },
+    {
+      "claim": "wmma is deprecated on Ampere and later.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It continues to be supported; lowering targets newer mma shapes.",
+      "sourceOrEvidence": "CUDA release notes"
+    },
+    {
+      "claim": "PTX mma.sync is unstable across CUDA versions.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PTX is a stable virtual ISA with documented versioning.",
+      "sourceOrEvidence": "PTX ISA doc"
+    },
+    {
+      "claim": "wmma always outperforms raw PTX because the compiler knows optimal lowering.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Library-quality raw PTX can outperform wmma for niche shapes and layouts.",
+      "sourceOrEvidence": "CUTLASS benchmarks"
+    }
+  ],
+  "implementationFacts": [
+    "wmma fragment shapes: m16n16k16 (fp16), m8n32k16, m32n8k16, etc.",
+    "CUTLASS uses raw PTX for maximum control (shape choice, register banking)."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

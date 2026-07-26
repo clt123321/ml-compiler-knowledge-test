@@ -1,0 +1,42 @@
+{
+  "questionId": "M-AR-001",
+  "learningObjective": "Distinguish the semantics of AllReduce and AllGather as collective operations over a device group.",
+  "canonicalClaims": [
+    {
+      "claim": "AllReduce combines per-rank input tensors via an associative reduction (e.g. sum) so that every rank ends with the same reduced tensor of the input's shape; AllGather concatenates per-rank inputs along a chosen axis so that every rank ends with a tensor whose total size is N times the per-rank input.",
+      "conditions": [
+        "All ranks participate with tensors of the same shape and dtype (except along the gathered axis for AllGather).",
+        "The reduction operator for AllReduce is associative (and typically commutative in practice)."
+      ],
+      "nonImplications": [
+        "AllReduce does not preserve per-rank identity: each rank's original contribution cannot be recovered from the output.",
+        "AllGather is not a reduction: it does no arithmetic on the payloads."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 warehouse-scale / collective communication primitives" },
+        { "ref": "PAPER:gspmd", "locator": "§2 collective operations reviewed for ML computation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AllReduce is just AllGather followed by a local reduction on each rank, so they have identical output shape.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The output shape differs: AllReduce output matches the per-rank input shape; AllGather output is N times larger along the gathered axis. Also, ring/tree AllReduce need not materialize the full gathered tensor on any rank."
+    },
+    {
+      "claim": "AllGather requires the payload elements to form an associative group under some operator; otherwise it is undefined.",
+      "errorType": "wrong_condition",
+      "whyWrong": "AllGather is a data-movement primitive with no arithmetic requirement on payloads."
+    },
+    {
+      "claim": "AllReduce is only defined for sum reduction; other reductions must be built as separate collectives.",
+      "errorType": "overgeneralization",
+      "whyWrong": "AllReduce is defined for any associative reduction operator (sum, max, min, product, etc.); NCCL and MPI both support several."
+    }
+  ],
+  "implementationFacts": [
+    "Ring-AllReduce is often implemented as ReduceScatter followed by AllGather, each moving (N-1)/N · S bytes per rank."
+  ],
+  "versionSensitivity": "stable_principle"
+}

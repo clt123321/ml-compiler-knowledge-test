@@ -1,0 +1,125 @@
+{
+  "id": "I-KVDF-029",
+  "type": "multiple",
+  "module": "core_ops_attention",
+  "subtopic": "KV cache dataflow / Layout and bandwidth",
+  "learningObjective": "Reason about the KV cache dataflow during a single autoregressive decode step and its interaction with attention kernels.",
+  "archetype": "systems_dataflow",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "B",
+        "H_kv",
+        "seq_len",
+        "d"
+      ],
+      [
+        "B",
+        "H_kv",
+        "d"
+      ],
+      [
+        "B",
+        "H",
+        "d"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "Consider one decode step for a batch of B sequences, each of length seq_len (varying). Select all correct statements about KV-cache dataflow inside a single attention layer. (Choose all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Because decode is memory-bandwidth bound on KV reads, KV cache quantization (e.g., FP8 or INT8 KV) is a direct lever on decode latency, subject to available dequant kernels and acceptable accuracy loss."
+    },
+    {
+      "id": "B",
+      "text": "The step writes exactly one new K entry and one new V entry per sequence (each of size H_kv * d), then reads the full cache of length seq_len for each sequence to compute attention. Write traffic is small; read traffic is dominated by seq_len."
+    },
+    {
+      "id": "C",
+      "text": "KV cache must be stored in one contiguous [B, H_kv, MAX_SEQ, d] tensor per layer to enable coalesced reads by the attention kernel; PagedAttention breaks this requirement and therefore has strictly higher HBM latency per attention step."
+    },
+    {
+      "id": "D",
+      "text": "In MQA/GQA the same K, V pair is read by multiple query heads within a token; a well-designed attention kernel keeps the loaded K/V tile in SMEM and reuses it across query heads, avoiding redundant HBM reads."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): KV quant is a direct bandwidth lever. B (Correct): standard decode-step KV pattern. C (Wrong): paged layout is not intrinsically slower per step; it addresses fragmentation. D (Correct): MQA/GQA KV reuse across Q heads.",
+  "optionExplanations": {
+    "A": "Correct: KV quant is a direct bandwidth lever.",
+    "B": "Correct: standard decode-step KV pattern.",
+    "C": "Wrong: paged layout is not intrinsically slower per step; it addresses fragmentation.",
+    "D": "Correct: MQA/GQA KV reuse across Q heads."
+  },
+  "assumptions": [
+    "Sequences of varying length are handled either as a batched-with-mask kernel or via a paged attention kernel.",
+    "Standard decoder-only causal attention."
+  ],
+  "nonImplications": [
+    "Does not imply PagedAttention has zero overhead; there is a small indirection cost.",
+    "Does not imply KV quantization is free; it needs kernels and adds accuracy risk."
+  ],
+  "misconceptionTags": [
+    "paged_slower_myth",
+    "kv_quant_free_myth"
+  ],
+  "distractorRationales": {
+    "C": "Overstates paged overhead; ignores fragmentation benefits."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 3 — PagedAttention and KV dataflow",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Attention kernel KV reuse in SMEM",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "KV cache dataflow in decode",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/I/I-KVDF-029.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

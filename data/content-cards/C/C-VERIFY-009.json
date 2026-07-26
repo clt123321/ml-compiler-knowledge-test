@@ -1,0 +1,56 @@
+{
+  "questionId": "C-VERIFY-009",
+  "learningObjective": "Explain the role of IR verification in a compiler pipeline and identify when a verifier failure indicates a bug in the transformation rather than user code.",
+  "canonicalClaims": [
+    {
+      "claim": "IR verification checks that operations satisfy their declared invariants (types, shapes, region well-formedness) so that downstream passes and backends can rely on those invariants; a verifier failure after a pass indicates that the pass broke an invariant.",
+      "conditions": [
+        "The IR framework runs verification before/after passes (default in MLIR).",
+        "The op invariants are declared via ODS/custom verifiers."
+      ],
+      "nonImplications": [
+        "Does not imply verification catches full program semantic bugs (aliasing correctness, runtime undefined behavior).",
+        "Does not imply verification failures always indicate compiler bugs; malformed front-end IR is also possible."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Op verifiers / ODS constraints" },
+        { "ref": "PAPER:mlir", "locator": "MLIR verification design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Verifier failures should be tolerated and deferred to runtime.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Verifier failures indicate IR that violates op invariants; running such IR yields undefined-in-compiler behavior, not a graceful runtime error.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "MLIR verifiers only check that the SSA graph is acyclic.",
+      "errorType": "scope_error",
+      "whyWrong": "Verifiers check op-level constraints: operand types, region structure, attribute presence, result count, and op-defined predicates.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Any verifier error blames the front-end that produced the initial IR.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "If the front-end IR was verified successfully and a later pass produces failing IR, the pass is at fault.",
+      "sourceOrEvidence": "MLIR pass infrastructure docs"
+    },
+    {
+      "claim": "IR verification and runtime shape checks are the same feature.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Verification is a compile-time check on IR well-formedness; runtime shape checks execute in the deployed binary.",
+      "sourceOrEvidence": "MLIR docs"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR runs verification after each pass by default (configurable)",
+    "ODS declares op traits and verifiers; custom verifiers are common for numerical / shape checks",
+    "Region invariants (e.g., single-block, terminator) are also enforced"
+  ],
+  "performanceScenarios": [
+    "Verifier passes are cheap relative to codegen; leaving them enabled during pipeline development catches transformation bugs early."
+  ],
+  "versionSensitivity": "stable_principle"
+}

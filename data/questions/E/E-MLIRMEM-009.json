@@ -1,0 +1,85 @@
+{
+  "id": "E-MLIRMEM-009",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "MLIR / MemRef dialect \u2014 strides, memory space, layout",
+  "learningObjective": "Interpret a strided MemRef type descriptor and understand what its layout affix encodes about memory access patterns.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider the MLIR type `memref<4x8xf32, strided<[8, 1], offset: 0>, 3>`. Which interpretation is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "A 4\u00d78 column-major FP32 buffer because the second stride is `1`; MLIR's convention is that stride `1` in the last position indicates column-major layout, and the `3` denotes an alignment-in-bytes annotation."
+    },
+    {
+      "id": "B",
+      "text": "A 4\u00d78 buffer of f32 in memory space 3 (typically GPU shared/workgroup memory), row-major (stride [8, 1]) with offset 0; the element `[i, j]` lives at linear address `i*8 + j` from the base pointer."
+    },
+    {
+      "id": "C",
+      "text": "A 4\u00d78 buffer whose stride array is contiguous FP32 counts, so element `[i, j]` lives at byte address `i*8*4 + j*4`; the memory-space integer `3` denotes a runtime allocator ID resolved lazily at first access."
+    },
+    {
+      "id": "D",
+      "text": "A 4\u00d78 tensor value in memory space 3 with a non-standard SSA numbering; the `strided<[8,1], offset:0>` clause is documentation only and does not affect the address computation, which is always row-major for `memref`."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "MLIR memref type: `memref<shape, layout, memory_space>`. `strided<[8, 1], offset: 0>` explicitly encodes the linear-index computation: element `[i, j]` at `offset + i*8 + j*1 = i*8 + j` (in element units, not bytes). Strides `[8, 1]` for a 4\u00d78 buffer is exactly the standard row-major contiguous layout. The trailing integer `3` is the memory space attribute \u2014 semantically it is a discriminator (e.g., 0 = global, 3 = shared in GPU lowerings), a static classification of which memory the buffer lives in.",
+  "optionExplanations": {
+    "A": "Wrong: [8, 1] is row-major (fastest-varying last), not column-major.",
+    "B": "Correct: row-major stride [8,1] on 4\u00d78 with memory space 3.",
+    "C": "Wrong: strides are in element units, and memory-space is a static discriminator not a runtime ID.",
+    "D": "Wrong: the strided clause is semantic, not documentation."
+  },
+  "assumptions": [
+    "MLIR memref strides are in element units unless documented otherwise.",
+    "Memory-space integer 3 is a convention used by GPU lowerings for shared memory."
+  ],
+  "nonImplications": [
+    "Does not imply memory-space integers have a globally standard meaning across all targets; they are conventionally interpreted by the lowering.",
+    "Does not imply offset must be 0; non-zero offsets appear from subviews."
+  ],
+  "misconceptionTags": [
+    "stride_byte_vs_element_confusion",
+    "memory_space_runtime_id_myth"
+  ],
+  "distractorRationales": {
+    "A": "Inverts row-major vs column-major reading.",
+    "C": "Wrong stride units and wrong memory-space model.",
+    "D": "Ignores the strided clause's semantics."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "MemRef Type \u2014 strides, offset, memory space",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-MLIRMEM-009.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

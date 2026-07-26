@@ -1,0 +1,43 @@
+{
+  "questionId": "M-COST-002",
+  "learningObjective": "Compute the per-rank bandwidth term of a ring-AllReduce for a tensor of S bytes across N ranks.",
+  "canonicalClaims": [
+    {
+      "claim": "For a ring-AllReduce of a payload of S bytes across N ranks, each rank sends and receives approximately 2·(N-1)/N · S bytes over the bandwidth-limited term, decomposed as ReduceScatter [(N-1)/N · S] followed by AllGather [(N-1)/N · S].",
+      "conditions": [
+        "The interconnect between neighbors in the ring has effective bandwidth BW (bytes/s).",
+        "Latency term α·(N-1) per phase is negligible relative to the bandwidth term for large S.",
+        "The payload is evenly divided into N chunks."
+      ],
+      "nonImplications": [
+        "Does not imply that AllReduce moves 2·S bytes per rank; the (N-1)/N factor reflects that each chunk is skipped by its owner rank.",
+        "Does not imply the cost scales as N; the bandwidth term is nearly independent of N (approaches 2S)."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6, communication primitives cost analysis" },
+        { "ref": "PAPER:gspmd", "locator": "§3 cost analysis of collective primitives used by the partitioner" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Ring-AllReduce sends N·S bytes per rank because each rank forwards the full tensor to each of the other N-1 peers.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The tensor is split into N chunks; each chunk traverses the ring once during reduce-scatter and once during all-gather, so the per-rank bandwidth cost is ~2(N-1)/N · S, not N·S."
+    },
+    {
+      "claim": "Ring-AllReduce is bandwidth-bound with cost S/BW per rank because the tensor is only transmitted once.",
+      "errorType": "wrong_condition",
+      "whyWrong": "It is transmitted twice through the ring (reduce-scatter phase and all-gather phase), giving ~2(N-1)/N · S bytes per rank."
+    },
+    {
+      "claim": "Tree-AllReduce and ring-AllReduce have identical bandwidth costs; only their latency terms differ.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Naive tree-AllReduce broadcasts back the full reduced tensor, whereas ring interleaves ReduceScatter+AllGather so that each chunk moves once per phase. Their bandwidth and latency terms differ."
+    }
+  ],
+  "performanceScenarios": [
+    "Gradient AllReduce for a 1 GB gradient bucket across 8 ranks: bandwidth term ≈ 2·(7/8)·1 GB ≈ 1.75 GB per rank."
+  ],
+  "versionSensitivity": "stable_principle"
+}

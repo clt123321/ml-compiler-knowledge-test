@@ -1,0 +1,92 @@
+{
+  "id": "B-LOOPINV-023",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Loop invariance under redefinition / edge cases",
+  "learningObjective": "Determine loop-invariance of an expression when its operands are themselves defined inside the loop via phi.",
+  "archetype": "ir_transformation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "irSnippet": "; Loop in SSA\nbb_preheader:\n  br label %bb_header\nbb_header:\n  %i    = phi i32 [0, %bb_preheader], [%i_next, %bb_body]\n  %s    = phi i32 [1, %bb_preheader], [%s_next, %bb_body]\n  %cond = icmp slt i32 %i, %N\n  br i1 %cond, label %bb_body, label %bb_exit\nbb_body:\n  %e     = mul i32 %s, 2       ; candidate loop-invariant?\n  %s_next = add i32 %s, %e     ; s_next uses e\n  %i_next = add i32 %i, 1\n  br label %bb_header\nbb_exit:\n  ret i32 %s",
+  "stem": "Is `%e = mul i32 %s, 2` loop-invariant in the loop shown, and can it be hoisted to bb_preheader?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Yes — LICM can hoist any expression whose operator (mul) is pure, regardless of the operands' definitions."
+    },
+    {
+      "id": "B",
+      "text": "Yes — since %e uses only %s and a constant, and constants are invariant, %e is trivially loop-invariant regardless of %s's definition."
+    },
+    {
+      "id": "C",
+      "text": "No — `%e` depends on `%s`, which is defined by a loop-header phi with a different value each iteration (`%s_next` from bb_body). `%s` is not loop-invariant, so `%e` is not loop-invariant either."
+    },
+    {
+      "id": "D",
+      "text": "No — LICM never applies inside a loop that uses phi nodes to carry loop-carried state."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Loop-invariance requires that all operands of the expression be themselves loop-invariant (or constants). `%s` is defined by a loop-header phi with `[1, %bb_preheader]` and `[%s_next, %bb_body]` — it takes different values each iteration, so it is loop-variant. `%e = %s * 2` is therefore also loop-variant and cannot be hoisted. Options B, C, D contain reasoning errors: constants + loop-variant operand ≠ invariant; operator purity is necessary but not sufficient; LICM does apply in the presence of phi nodes but only to genuinely invariant computations.",
+  "optionExplanations": {
+    "A": "Wrong: purity of the operator is a necessary but not sufficient condition for hoisting.",
+    "B": "Wrong: an expression is invariant only if all operands are invariant; a constant operand does not save an invariant-defined operand.",
+    "C": "Correct: %s varies across iterations (via phi + %s_next), so %e = %s * 2 also varies.",
+    "D": "Wrong: LICM operates on SSA IR with phi nodes; loop-carried state is normal, and the test for invariance considers operand-by-operand invariance."
+  },
+  "assumptions": [
+    "SSA-form IR with phi at loop header carrying loop-carried state.",
+    "Standard LICM analysis rules."
+  ],
+  "nonImplications": [
+    "Does not imply nothing in this loop can be hoisted; for instance, the constant `2` is trivially in the preheader and needs no hoisting; other invariant expressions might exist if we added them.",
+    "Does not imply loop-carried recurrences can never be optimized; strength reduction and IV optimizations exist."
+  ],
+  "misconceptionTags": [
+    "invariance_operand_by_operand",
+    "phi_prevents_licm_myth"
+  ],
+  "distractorRationales": {
+    "A": "Confuses purity with invariance.",
+    "B": "Ignores that %s is loop-variant.",
+    "D": "Falsely claims LICM cannot see through phi."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "LICM invariance test",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Loop optimization chapter",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-LOOPINV-023.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

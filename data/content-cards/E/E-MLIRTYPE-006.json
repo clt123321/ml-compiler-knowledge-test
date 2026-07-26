@@ -1,0 +1,49 @@
+{
+  "questionId": "E-MLIRTYPE-006",
+  "learningObjective": "Distinguish MLIR tensor, memref, and vector types by semantics and lowering role.",
+  "canonicalClaims": [
+    {
+      "claim": "MLIR `tensor` is a value type with SSA semantics (immutable at IR level); `memref` is a buffer type with explicit memory space, strides, offset, and potential aliasing; `vector` is a lane-level SIMD/SIMT register-shaped type.",
+      "conditions": ["Standard MLIR built-in types."],
+      "nonImplications": [
+        "Does not imply memrefs are always aliased.",
+        "Does not imply vector is only a CPU concept."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Built-in Types" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`tensor` and `memref` are interchangeable at the runtime level.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They differ semantically (value vs buffer); bufferization pass converts one to the other.",
+      "sourceOrEvidence": "MLIR bufferization doc"
+    },
+    {
+      "claim": "`vector` is the primary lowering target for `tensor`, replacing bufferization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The canonical path is tensor → memref via bufferization; vector is a distinct register-level type used inside compute kernels.",
+      "sourceOrEvidence": "MLIR lowering pipeline"
+    },
+    {
+      "claim": "Two `memref` SSA values pointing at the same buffer are guaranteed by MLIR to be non-aliasing.",
+      "errorType": "wrong_condition",
+      "whyWrong": "By default they may alias; non-aliasing needs analysis or explicit annotation.",
+      "sourceOrEvidence": "MLIR memref semantics"
+    },
+    {
+      "claim": "`tensor` types support in-place mutation via `linalg.copy_into`.",
+      "errorType": "definition_confusion",
+      "whyWrong": "At the tensor level, ops produce new SSA values; in-place mutation happens only after bufferization on memrefs.",
+      "sourceOrEvidence": "MLIR tensor and bufferization docs"
+    }
+  ],
+  "implementationFacts": [
+    "Bufferization: `-one-shot-bufferize` lowers tensor programs to memref.",
+    "vector dialect: `vector.transfer_read`, `vector.contract`, `vector.transpose`."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

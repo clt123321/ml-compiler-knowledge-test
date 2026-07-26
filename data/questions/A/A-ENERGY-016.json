@@ -1,0 +1,97 @@
+{
+  "id": "A-ENERGY-016",
+  "type": "multiple",
+  "module": "arch_perf_model",
+  "subtopic": "Energy per operation / power constraints",
+  "learningObjective": "Reason about the relative energy costs of on-chip compute vs off-chip memory access and their implications for DNN accelerator design.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic modern accelerator (~ 45nm/16nm survey figures)",
+    "device": "generic",
+    "requiredFeatures": [
+      "off-chip DRAM",
+      "on-chip SRAM"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Survey figures (Sze et al., cited widely from Horowitz's ISSCC 2014 numbers) place DRAM access energy roughly 2–3 orders of magnitude above an on-chip multiply-add. Which of the following implications are correct for accelerator/DNN energy analysis? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Reducing DRAM accesses (via on-chip data reuse, tiling, buffer sharing) is often the largest lever for energy efficiency in DNN inference, even when compute FLOPs stay constant."
+    },
+    {
+      "id": "B",
+      "text": "Quantization can reduce energy per operation on hardware that supports the lower-precision path, both by reducing bytes moved from DRAM and by reducing compute energy per MAC."
+    },
+    {
+      "id": "C",
+      "text": "Because logic is 'free', minimizing FLOPs is the primary energy lever regardless of memory access patterns."
+    },
+    {
+      "id": "D",
+      "text": "Since on-chip SRAM energy is orders of magnitude lower than DRAM, using more shared memory always reduces total energy without further conditions."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B"
+  ],
+  "explanation": "A: DRAM access dominates energy in DNN workloads; increasing on-chip reuse (weight stationary, output stationary etc.) is the primary energy optimization. B: Quantization reduces both DRAM traffic and per-MAC compute energy on hardware with matched low-precision paths (INT8, FP8 Tensor Cores). C is wrong because FLOP minimization ignores the dominant memory-energy term. D is wrong because SRAM helps only when it enables reuse; a larger on-chip buffer with poor reuse can still lose to DRAM if data is fetched fresh each time.",
+  "optionExplanations": {
+    "A": "Correct: memory access energy dominates; reuse and tiling are the primary levers.",
+    "B": "Correct: lower precision reduces bytes moved and compute energy per operation when hardware supports it.",
+    "C": "Wrong: FLOP-only optimization misses the memory-energy dominance well documented in accelerator surveys.",
+    "D": "Wrong: SRAM is only cheaper than DRAM per access; benefit requires reuse. Increasing SRAM without reuse is not a general energy win."
+  },
+  "assumptions": [
+    "Standard survey-scale relative energy figures (DRAM access ≫ SRAM access ≫ MAC).",
+    "Kernel-level accounting: energy per op includes both compute and data movement."
+  ],
+  "nonImplications": [
+    "Does not imply that DRAM energy dominates in every kernel; small tensors that fit in cache may be compute-energy-dominated.",
+    "Does not imply that quantization always saves energy; if hardware lacks the low-precision datapath, dequantization overhead can erase gains."
+  ],
+  "misconceptionTags": [
+    "flop_energy_myth",
+    "sram_always_better"
+  ],
+  "distractorRationales": {
+    "C": "Ignores memory-energy dominance.",
+    "D": "Misses the reuse condition for SRAM benefit."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Ch. 1-2, relative energy per operation and DNN accelerator design",
+      "supports": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Energy and power chapters",
+      "supports": [
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "DNN accelerator energy accounting, survey-scale relative costs",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-ENERGY-016.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

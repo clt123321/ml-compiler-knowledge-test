@@ -1,0 +1,95 @@
+{
+  "id": "D-FUNCT-013",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Functionalization of view + mutation",
+  "learningObjective": "Reason about how functionalization treats an in-place update on a view (aliased mutation).",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "The compiled function below mutates a view of `x`. Which best describes how functionalization handles the aliased mutation before Inductor codegen?",
+  "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    # x is a compiled-region input; v is a view aliased with x\n    v = x[:, 0:4]\n    v.add_(1.0)                      # in-place on the view -> mutates the underlying storage of x\n    return x.sum()\n\nx = torch.zeros(8, 8, device=\"cuda\")\ny = f(x)\n# After the call, x reflects the +1 written into columns 0..3.",
+  "options": [
+    {
+      "id": "A",
+      "text": "Functionalization models the view's mutation as an update of the underlying tensor: it produces an SSA value `x_new = torch.ops.aten.select_scatter_or_slice_scatter(x, v_new)` and threads `x_new` through subsequent ops; the compiled region returns the mutated `x` so runtime write-back preserves external semantics."
+    },
+    {
+      "id": "B",
+      "text": "Functionalization pretends the view `v` is an independent tensor, applies `add_` to it, and discards the mutation; downstream ops see the original `x`, so the returned sum reflects the pre-mutation value. Under this reading, functionalization pretends the view `v` is an independent tensor with its own storage, applies `add_` to it in a scratch buffer, and discards the resulting mutation; downstream ops see the original untouched `x`, so the returned sum reflects the pre-mutation value."
+    },
+    {
+      "id": "C",
+      "text": "Functionalization refuses to compile any function that mutates a view of an input tensor; the compile call raises an error at trace time and the user must rewrite to functional form manually. In this account, functionalization refuses to compile any function that mutates a view of an input tensor; the `torch.compile` call raises an exception at trace time, and the user must manually rewrite the pattern into a functional form before compilation succeeds."
+    },
+    {
+      "id": "D",
+      "text": "Functionalization inserts a Python-level lock around the mutation and executes it in eager mode outside the compiled region; the rest of the graph is unaffected but a graph break is reported at the `add_` site. Under this framing, functionalization inserts a Python-level lock around the offending mutation and executes it in eager mode outside the compiled region; the rest of the graph is otherwise unaffected, but a graph break is reported in the log at the site of the `add_` call."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Functionalization handles view+mutation by modeling the mutation as an update of the underlying tensor via scatter-style ops (e.g., `slice_scatter`, `select_scatter`, `index_put`). Downstream ops consume the new SSA value that reflects the update. To preserve external mutation semantics (caller's `x` sees the change), the compiled region returns the mutated tensor(s) and the runtime wrapper writes them back onto the input. This does not silently discard the mutation, does not error out, and does not fall back to eager per-op.",
+  "optionExplanations": {
+    "A": "Correct: matches how functionalization treats aliased in-place updates.",
+    "B": "Wrong: functionalization must preserve the mutation, not discard it.",
+    "C": "Wrong: view+mutation is supported by functionalization.",
+    "D": "Wrong: no per-op Python fallback is inserted."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 with AOTAutograd functionalization enabled.",
+    "The view is a valid slice with statically analyzable bounds."
+  ],
+  "nonImplications": [
+    "Does not imply every view+mutation compiles equally well; some patterns may still fail and produce graph breaks.",
+    "Does not imply the runtime write-back is free; boundary bookkeeping adds cost."
+  ],
+  "misconceptionTags": [
+    "functionalization_drops_mutation",
+    "view_mutation_forces_error"
+  ],
+  "distractorRationales": {
+    "B": "Wrong claim of discarded mutation.",
+    "C": "Wrong claim of error.",
+    "D": "Wrong mechanism (per-op Python fallback)."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Functionalization of aliased mutations",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Functionalization and mutation semantics",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-FUNCT-013.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

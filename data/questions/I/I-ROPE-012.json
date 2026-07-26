@@ -1,0 +1,102 @@
+{
+  "id": "I-ROPE-012",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "RoPE / Rotary position embedding computation",
+  "learningObjective": "Explain the elementwise rotation pattern of RoPE and where in the transformer stack it is applied.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ]
+    ],
+    "dtypes": [
+      "float16"
+    ],
+    "layouts": [
+      "contiguous"
+    ]
+  },
+  "stem": "Rotary Position Embedding (RoPE) is applied to Q and K in an attention layer. Which characterization of RoPE's computation and dataflow is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "RoPE is applied to the attention scores QK^T by adding a bias matrix whose entry (i, j) is a function of the relative position i - j; the scores are then softmaxed. Q and K themselves are unchanged."
+    },
+    {
+      "id": "B",
+      "text": "RoPE is added elementwise to Q, K, and V as a learned position embedding table indexed by position; the addition happens after the softmax so that the rotation applies to the attention weights themselves rather than to the projections."
+    },
+    {
+      "id": "C",
+      "text": "RoPE rotates pairs of feature dimensions of Q and K by position-dependent angles theta_{pos, i}; it is applied elementwise to Q and K after the QKV projection but before the QK^T score computation. RoPE is not applied to V, and each token's rotation is independent of other tokens."
+    },
+    {
+      "id": "D",
+      "text": "RoPE is a data-dependent low-rank correction applied to Q, K, V that requires a full reduction over the sequence dimension per token; this reduction is the reason RoPE is expensive to compute in decode."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "RoPE rotates pairs (q_{2i}, q_{2i+1}) and (k_{2i}, k_{2i+1}) by an angle theta_{pos, i} = pos * base^{-2i/d}, embedding position into Q and K such that <RoPE(q, m), RoPE(k, n)> depends only on m - n (relative position). It is applied after the linear projection to Q and K, before the QK^T dot product. V is not rotated. Each token's rotation is a pointwise operation that only depends on its own features and its position, so it fuses trivially with the QKV projection or the attention entry kernel.",
+  "optionExplanations": {
+    "A": "Wrong: describes ALiBi-style additive bias, not RoPE.",
+    "B": "Wrong: RoPE is a rotation, not an additive embedding, and is not applied to V or after softmax.",
+    "C": "Correct: canonical RoPE description.",
+    "D": "Wrong: RoPE is pointwise per token; no cross-token reduction."
+  },
+  "assumptions": [
+    "Standard RoPE as in RoFormer / Llama; extensions (linear/NTK scaling) modify the frequency schedule but not the rotation structure.",
+    "d is even so features can be paired."
+  ],
+  "nonImplications": [
+    "Does not imply RoPE incurs no memory cost; the rotation cos/sin tables must be loaded or precomputed.",
+    "Does not imply that RoPE cannot be interpreted as bias; the equivalence to a relative-position formulation is a derived property, not the primary implementation."
+  ],
+  "misconceptionTags": [
+    "rope_additive_myth",
+    "rope_alibi_confusion",
+    "rope_on_v_myth"
+  ],
+  "distractorRationales": {
+    "A": "Confuses with ALiBi.",
+    "B": "Confuses with learned absolute position embedding.",
+    "D": "Fabricates cross-token reduction."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Positional encoding variants",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-ROPE-012.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

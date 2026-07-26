@@ -1,0 +1,50 @@
+{
+  "questionId": "E-XLASPMD-023",
+  "learningObjective": "Understand XLA GSPMD partitioning and sharding-driven automatic parallelization.",
+  "canonicalClaims": [
+    {
+      "claim": "GSPMD partitions an HLO program annotated with sharding specifications into a single per-device SPMD program with automatically inserted collective communication (all-reduce/all-gather/reshard) where operand shardings do not match the required output sharding.",
+      "conditions": ["Sharding specs provided; device mesh defined."],
+      "nonImplications": [
+        "Does not imply GSPMD chooses shardings automatically for the user.",
+        "Does not imply the emitted collective placement is optimal."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "XLA SPMD" },
+        { "ref": "PAPER:gspmd", "locator": "GSPMD 2021" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GSPMD emits N distinct per-device programs (MPMD).",
+      "errorType": "definition_confusion",
+      "whyWrong": "SPMD means one program run on all devices; MPMD is a separate concept.",
+      "sourceOrEvidence": "GSPMD paper"
+    },
+    {
+      "claim": "GSPMD only shards parameters; activations are always replicated.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Activation sharding is common (tensor parallel, sequence parallel).",
+      "sourceOrEvidence": "GSPMD paper"
+    },
+    {
+      "claim": "Sharding decisions are made at runtime by the scheduler.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Sharding is compile-time based on annotations.",
+      "sourceOrEvidence": "GSPMD paper"
+    },
+    {
+      "claim": "GSPMD guarantees no collective communication is required.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Collectives are inserted exactly where operand/output sharding mismatch.",
+      "sourceOrEvidence": "GSPMD paper"
+    }
+  ],
+  "implementationFacts": [
+    "Sharding attribute on HLO instructions carries device mesh + tile assignment.",
+    "SPMD partitioner rewrites shape + inserts collectives."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

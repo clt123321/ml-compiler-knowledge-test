@@ -1,0 +1,93 @@
+{
+  "id": "C-TILING-011",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Tensor Expression / Compute-Schedule separation (Halide-style)",
+  "learningObjective": "Explain the Halide/TVM compute-vs-schedule separation and identify what tiling changes in the resulting loop nest.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM TensorIR / Halide-style",
+    "stability": "stable_principle"
+  },
+  "stem": "The following pseudo-schedule tiles the outer two loops of a matmul TE. Which of the following most accurately captures the effect of the schedule on the compute expression and the generated loop nest?",
+  "irSnippet": "# Compute (unchanged across schedules):\n#   C[i, j] = sum_k A[i, k] * B[k, j]  for i in [0,M), j in [0,N)\n\n# Schedule (tile i by TI=32, j by TJ=32):\ns.split(i, factor=32)  # -> i.o, i.i\ns.split(j, factor=32)  # -> j.o, j.i\ns.reorder(i.o, j.o, i.i, j.i, k)\n\n# Resulting loop nest (semantically equivalent to the compute):\nfor i.o in 0..M/32:\n  for j.o in 0..N/32:\n    for i.i in 0..32:\n      for j.i in 0..32:\n        for k in 0..K:\n          C[i.o*32 + i.i, j.o*32 + j.i] += A[i.o*32 + i.i, k] * B[k, j.o*32 + j.i]",
+  "options": [
+    {
+      "id": "A",
+      "text": "Tiling is a schedule transformation that reorders and splits the loop nest while preserving the compute expression's semantics; it does not change what is computed, only when and in what group each iteration runs, which affects locality and parallelism."
+    },
+    {
+      "id": "B",
+      "text": "Tiling is a graph-level operator-fusion pass; splitting the loops enables fusing the matmul with adjacent pointwise ops in the graph IR, which is the sole reason for using it."
+    },
+    {
+      "id": "C",
+      "text": "Tiling changes the compute definition (the arithmetic done at each output element) and therefore alters numerical results; correctness must be verified against a reference implementation. Under this reading, tiling in Halide/TVM changes the arithmetic performed at each output element by folding partial sums along the tile boundary; correctness must therefore be verified against a reference implementation after every tile-size change."
+    },
+    {
+      "id": "D",
+      "text": "Tiling replaces the matmul with a functionally equivalent sequence of small dot products via strength reduction; the loop nest form afterward is optional metadata and is often stripped before codegen. In this framing, tiling replaces a matmul with a semantically-equivalent sequence of small dot products via strength reduction; once the reduction is expressed as dot products, the loop-nest form afterwards is optional metadata often stripped before codegen."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "In the Halide/TVM design, the compute (what to compute) is separated from the schedule (how to compute it). Tiling and reordering are schedule primitives: they restructure the loop nest to improve locality, expose parallelism, or enable vectorization, without changing the underlying computation. Correctness is preserved by construction as long as the primitives obey the dependence constraints (matmul over `k` is associative-under-FP-reordering caveats, but iteration reordering across tiles of `(i,j)` is safe).",
+  "optionExplanations": {
+    "A": "Correct: this is the canonical description of Halide/TVM's schedule discipline.",
+    "B": "Wrong: tiling is loop-level scheduling. Operator fusion is a different transformation and happens at a different IR level.",
+    "C": "Wrong: tiling is a schedule primitive; it does not change the compute expression. FP reordering caveats can appear only when the reduction dim's order changes.",
+    "D": "Wrong: strength reduction reduces expensive ops to cheaper ones; that is not what tiling does."
+  },
+  "assumptions": [
+    "The reduction dim `k` is not reordered (only `i, j` are tiled), so no FP reordering concerns from tiling itself.",
+    "The schedule respects existing dependence constraints."
+  ],
+  "nonImplications": [
+    "Does not imply that tiling always improves performance; poor tile sizes can hurt locality or occupancy.",
+    "Does not imply that Halide's schedules are always better than direct hand-written kernels; the framework is a systematic way to explore the space."
+  ],
+  "misconceptionTags": [
+    "tiling_changes_semantics",
+    "tiling_is_fusion"
+  ],
+  "distractorRationales": {
+    "B": "Conflates loop-level tiling with graph-level fusion.",
+    "C": "Confuses schedule with compute; changes semantics claim is unsupported.",
+    "D": "Wrong association with strength reduction."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:halide",
+      "locator": "Compute vs. schedule separation; split/reorder/tile primitives",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "Compute description and schedule primitives",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-TILING-011.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,49 @@
+{
+  "questionId": "J-SPECAR-011",
+  "learningObjective": "Reason about how acceptance rate determines speedup in speculative decoding and where speedup is bounded.",
+  "canonicalClaims": [
+    {
+      "claim": "Under Bernoulli-independent acceptance with per-token probability p, expected accepted prefix length is (1 - p^{k+1})/(1 - p); speedup is bounded by (k+1) but the actual value depends on both p and the draft/target cost ratio.",
+      "conditions": [
+        "Draft and target costs are known.",
+        "Per-token acceptance is approximated as Bernoulli independent."
+      ],
+      "nonImplications": [
+        "Does not imply larger k is always better; variance grows and diminishing returns kick in.",
+        "Does not imply draft can run in parallel with target on the critical path."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:specdecode", "locator": "Sec 4" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Speculative decoding gives fixed k× speedup.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Actual acceptance is <k on average when p<1.",
+      "sourceOrEvidence": "Leviathan et al. Sec 4"
+    },
+    {
+      "claim": "Speedup only depends on p, not on k.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both k and p appear in the expected-prefix formula.",
+      "sourceOrEvidence": "Leviathan et al. Sec 4"
+    },
+    {
+      "claim": "Draft model runs in parallel with target model on the same GPU.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Draft is sequential per step; some pipelining is possible but does not eliminate draft cost.",
+      "sourceOrEvidence": "Standard implementations"
+    }
+  ],
+  "implementationFacts": [
+    "k is typically 3-8; larger k adds variance and diminishing returns.",
+    "Medusa and EAGLE replace an external draft model with additional heads on the target for cheaper drafting."
+  ],
+  "performanceScenarios": [
+    "Speedup is largest when target is bandwidth-bound (decode) and draft is a fraction of target cost.",
+    "Speedup diminishes when p is low or when draft is not much cheaper than target."
+  ],
+  "versionSensitivity": "stable_principle"
+}

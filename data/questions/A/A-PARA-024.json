@@ -1,0 +1,98 @@
+{
+  "id": "A-PARA-024",
+  "type": "multiple",
+  "module": "arch_perf_model",
+  "subtopic": "Parallelism taxonomy (ILP / DLP / TLP)",
+  "learningObjective": "Distinguish instruction-level, data-level and thread-level parallelism, and identify architectural mechanisms exposing each form.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "modern out-of-order CPU + SIMT GPU",
+    "device": "generic",
+    "requiredFeatures": [
+      "OoO issue window (ILP)",
+      "SIMD lanes (DLP)",
+      "multi-core / multi-thread (TLP)"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following statements correctly connect a parallelism level (ILP / DLP / TLP) to an architectural mechanism? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "DLP (data-level parallelism) is exposed by SIMD/SIMT execution: the same operation is applied across many data elements simultaneously by vector lanes or warp threads."
+    },
+    {
+      "id": "B",
+      "text": "TLP (thread-level parallelism) is exposed by multi-core CPUs, SMT/hyperthreading, and GPU warps: multiple independent control streams run in parallel."
+    },
+    {
+      "id": "C",
+      "text": "ILP, DLP and TLP are mutually exclusive: a program can exhibit only one of the three at a time, so architectures must choose which one to exploit at compile time."
+    },
+    {
+      "id": "D",
+      "text": "ILP (instruction-level parallelism) is exposed by out-of-order execution, register renaming, and superscalar issue: independent instructions overlap in the pipeline of one core."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
+  "explanation": "A: OoO cores exploit independent instructions in a single thread's dynamic stream. B: SIMD lanes and SIMT warps apply the same operation across elements. C: multi-core CPUs, SMT (e.g., Intel HT), and GPU warp-level parallelism are all TLP mechanisms. D is false: modern systems routinely combine all three (e.g., a GPU: SIMT DLP within warp + TLP across warps/blocks + ILP within each thread via pipeline).",
+  "optionExplanations": {
+    "A": "Correct: SIMD lanes and SIMT warps are canonical DLP.",
+    "B": "Correct: multi-core, SMT, and GPU threads all instantiate TLP.",
+    "C": "Wrong: modern architectures combine all three simultaneously.",
+    "D": "Correct: ILP mechanisms include OoO, renaming, superscalar issue."
+  },
+  "assumptions": [
+    "Comparison of general-purpose parallel architectures (CPU OoO cores, GPUs)."
+  ],
+  "nonImplications": [
+    "Does not imply the amount of each is unlimited; each has architectural budgets (issue width, SIMD width, thread count).",
+    "Does not imply exploiting one form always benefits another; ILP can degrade TLP if per-thread resources rise."
+  ],
+  "misconceptionTags": [
+    "parallelism_mutual_exclusion",
+    "ilp_dlp_tlp_confusion"
+  ],
+  "distractorRationales": {
+    "C": "Falsely assumes mutual exclusion of parallelism forms."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 3-4, ILP, DLP, TLP overview",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Introduction: GPU parallelism combining DLP and TLP",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/A/A-PARA-024.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

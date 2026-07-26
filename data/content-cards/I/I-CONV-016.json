@@ -1,0 +1,50 @@
+{
+  "questionId": "I-CONV-016",
+  "learningObjective": "Compare direct convolution and im2col-based GEMM convolution in terms of memory and compute.",
+  "canonicalClaims": [
+    {
+      "claim": "im2col-GEMM does not reduce convolution FLOPs; it reshapes the input by replicating each pixel R*S times so a standard GEMM computes the convolution, at the cost of extra memory and HBM traffic. Direct convolution keeps the input in place but requires a custom kernel that carefully reuses overlapping input.",
+      "conditions": [
+        "Standard 2D convolution with non-trivial kernel size.",
+        "im2col materializes the lowered [N*H_out*W_out, C*R*S] matrix."
+      ],
+      "nonImplications": [
+        "Does not imply im2col is always faster; shape-dependent.",
+        "Does not equate to Winograd, which changes FLOP count via linear transforms."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Convolution kernels" },
+        { "ref": "BOOK:sze-eff", "locator": "Convolution dataflow taxonomy" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "im2col reduces FLOPs by eliminating redundant multiplications along the receptive field.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It rearranges data; FLOP count is invariant.",
+      "sourceOrEvidence": "PMPP Ch. 8"
+    },
+    {
+      "claim": "im2col reduces memory by reshaping input in place.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "It replicates each input pixel R*S times, increasing memory.",
+      "sourceOrEvidence": "cuDNN documentation"
+    },
+    {
+      "claim": "Direct convolution and im2col-GEMM produce different FLOP counts.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FLOPs are the same; they differ in memory and kernel structure.",
+      "sourceOrEvidence": "Convolution algorithm analysis"
+    }
+  ],
+  "implementationFacts": [
+    "Implicit-GEMM avoids the explicit im2col materialization while preserving GEMM tile structure (cuDNN's default for many shapes).",
+    "Winograd reduces FLOPs but has numerical implications and typically works only for small kernels (3x3)."
+  ],
+  "performanceScenarios": [
+    "im2col + cuBLAS often wins on wide, well-shaped convolutions where GEMM is tensor-core-friendly.",
+    "Direct convolution is preferred for depthwise / small-channel-count kernels where GEMM shapes are unfriendly."
+  ],
+  "versionSensitivity": "stable_principle"
+}

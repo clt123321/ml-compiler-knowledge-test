@@ -1,0 +1,50 @@
+{
+  "questionId": "B-DOM-004",
+  "learningObjective": "Distinguish dominance and post-dominance relations and identify implications for SSA construction and code motion.",
+  "canonicalClaims": [
+    {
+      "claim": "D dominates N iff every path from the entry to N passes through D; P post-dominates N iff every path from N to the exit passes through P. Dominance forms a tree rooted at entry; post-dominance forms a tree rooted at exit and is the dual over the reverse CFG.",
+      "conditions": [
+        "CFG has a distinguished entry; post-dominance requires a distinguished exit (may be synthesized for functions with multiple returns).",
+        "Standard textbook definitions."
+      ],
+      "nonImplications": [
+        "Does not imply dominance equals post-dominance except in trivial CFGs.",
+        "Does not imply the dominator tree includes unreachable code."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Dominance chapter" },
+        { "ref": "BOOK:appel", "locator": "Dominator computation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Dominance and post-dominance are equivalent for any CFG.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are duals on reverse CFG; they generally differ except in trivial linear CFGs.",
+      "sourceOrEvidence": "EAC3 dominance chapter"
+    },
+    {
+      "claim": "Post-dominance does not require a distinguished exit; it works for arbitrary CFGs.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Post-dominance is defined with respect to an exit; if the function has multiple returns, a synthesized virtual exit is added.",
+      "sourceOrEvidence": "Appel, dominator algorithms"
+    },
+    {
+      "claim": "The dominator tree includes unreachable code.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Unreachable code has no path from entry; it is outside the reachable CFG and outside the dominator tree.",
+      "sourceOrEvidence": "EAC3 dominator computation"
+    }
+  ],
+  "implementationFacts": [
+    "Lengauer-Tarjan dominator algorithm runs in nearly linear time.",
+    "Dominance frontier is used in Cytron et al. SSA construction algorithm.",
+    "Control dependence is computed from post-dominance: block B is control-dependent on block A if A has successors, one of which post-dominates B and one does not."
+  ],
+  "performanceScenarios": [
+    "LICM uses dominance to prove a loop-invariant expression can be safely hoisted; post-dominance is used to prove a value is used unconditionally."
+  ],
+  "versionSensitivity": "stable_principle"
+}

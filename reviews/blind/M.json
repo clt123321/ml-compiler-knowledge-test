@@ -1,0 +1,666 @@
+{
+  "module": "distributed",
+  "code": "M",
+  "label": "分布式、通信编译与异构执行",
+  "generatedAt": "2026-07-26",
+  "count": 15,
+  "questions": [
+    {
+      "id": "M-A2A-004",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "All-to-All / MoE dispatch",
+      "learningObjective": "Identify All-to-All as the collective that permutes per-rank shards and its canonical role in MoE dispatch.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-GPU cluster",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "An expert-parallel Mixture-of-Experts layer places each expert on a distinct rank. During the forward pass, every rank must send each of its tokens to the rank that owns the routed expert, and later return the transformed token to the origin rank. Which collective correctly describes this dispatch/combine pattern and its semantics?",
+      "options": [
+        {
+          "id": "A",
+          "text": "AllReduce (sum): every rank sums the routing probabilities across all ranks so that each expert receives the aggregate contribution of every token in the global batch."
+        },
+        {
+          "id": "B",
+          "text": "AllGather: every rank broadcasts its full token buffer to every peer so that each expert can locally scan its assigned tokens."
+        },
+        {
+          "id": "C",
+          "text": "Broadcast from rank 0: rank 0 collects tokens, distributes them to the experts on all other ranks, and gathers the results back."
+        },
+        {
+          "id": "D",
+          "text": "All-to-All: every rank sends a distinct per-destination shard (the tokens routed to that destination's expert) and receives a distinct per-source shard from every peer; no reduction is performed."
+        }
+      ],
+      "assumptions": [
+        "One expert per rank (or a bijection between ranks and expert groups).",
+        "Tokens have already been sorted by destination rank before the collective."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-AR-001",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "AllReduce vs AllGather semantics",
+      "learningObjective": "Distinguish the semantics of AllReduce and AllGather as collective operations over a device group.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "N ranks each hold a tensor T_i of identical shape S. After the collective, each rank must observe a specific result. Which statement correctly distinguishes AllReduce (sum) from AllGather along a new leading axis?",
+      "options": [
+        {
+          "id": "A",
+          "text": "After AllReduce and after AllGather, every rank holds a tensor of shape [N, *S]; AllReduce differs only in that it also multiplies each slice by 1/N so that a subsequent local sum yields the reduction."
+        },
+        {
+          "id": "B",
+          "text": "After AllReduce (sum), every rank holds a tensor of shape S equal to Σ_i T_i; after AllGather, every rank holds a tensor of shape [N, *S] containing all T_i stacked."
+        },
+        {
+          "id": "C",
+          "text": "After AllReduce (sum), every rank holds a tensor of shape [N, *S] equal to the concatenation of the T_i; after AllGather, every rank holds only its own T_i annotated with the ranks of the peers."
+        },
+        {
+          "id": "D",
+          "text": "AllReduce and AllGather are semantically identical; the difference is purely an implementation choice — AllGather is a synonym used by MPI while AllReduce is the corresponding NCCL name for the same operation."
+        }
+      ],
+      "assumptions": [
+        "All ranks participate with tensors of the same shape and dtype.",
+        "The reduction operator for AllReduce is the standard element-wise sum."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-BOUNDARY-014",
+      "type": "multiple",
+      "module": "distributed",
+      "subtopic": "Compiler vs distributed runtime boundary",
+      "learningObjective": "Delineate the responsibilities of an SPMD-style compiler versus a distributed runtime (e.g. NCCL / MPI stack).",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-GPU cluster with NCCL runtime",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "GSPMD / XLA / StableHLO + NCCL",
+        "stability": "stable_principle"
+      },
+      "stem": "Which THREE of the following statements about the division of responsibilities between an SPMD-style compiler (e.g. XLA + GSPMD emitting StableHLO) and a distributed runtime (e.g. NCCL) are correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The compiler decides which collectives (AllReduce, AllGather, All-to-All, ReduceScatter) to insert and at which mesh axes, based on sharding specs; the runtime chooses the internal algorithm (ring, tree, recursive halving) at execution time."
+        },
+        {
+          "id": "B",
+          "text": "Algorithm selection, message-chunk sizes, and NIC/NVLink lane assignment inside a collective are runtime concerns and are not visible at the SPMD IR level."
+        },
+        {
+          "id": "C",
+          "text": "Fault tolerance (dead-rank detection, retry, checkpoint restore) is a runtime/framework responsibility; the SPMD compiler does not manage process lifecycle."
+        },
+        {
+          "id": "D",
+          "text": "Because the compiler needs to reason about performance, it must know each device's NVSwitch domain and PCIe topology at compile time; without this, the emitted IR is topology-incorrect."
+        }
+      ],
+      "assumptions": [
+        "Modern SPMD compiler stack (XLA + GSPMD, StableHLO) and NCCL/MPI-style runtime.",
+        "IR-level collectives are algorithm-agnostic."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-BUCKET-006",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "Gradient bucketing motivation and trade-off",
+      "learningObjective": "Explain the motivation for gradient bucketing in data-parallel training and the trade-off it induces.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-GPU cluster",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A model has ~2000 parameter tensors, most of them small (≤ 64 KB). A data-parallel runtime issues a separate AllReduce for each and observes that the collective phase is bottlenecked. Which best explains why grouping gradients into ~25 MB buckets improves performance, and what the primary trade-off is?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Bucketing eliminates the per-collective bandwidth term entirely because a fused AllReduce sends only one tensor's worth of bytes regardless of the payload; the trade-off is that the reduction becomes approximate at large bucket sizes."
+        },
+        {
+          "id": "B",
+          "text": "Bucketing is required by NCCL: NCCL only supports one AllReduce per iteration, so all gradients must be packed into a single buffer; the trade-off is code complexity."
+        },
+        {
+          "id": "C",
+          "text": "Bucketing improves gradient accuracy by summing more terms before the AllReduce averages them, reducing gradient variance; the trade-off is that it delays the optimizer step."
+        },
+        {
+          "id": "D",
+          "text": "Bucketing amortizes the per-collective latency term (α) across many small tensors, better utilizing link bandwidth; the trade-off is that the collective must wait until every tensor in the bucket is produced by backward, which shrinks the overlap window with backward compute if the bucket spans too many layers."
+        }
+      ],
+      "assumptions": [
+        "Cost model α + βS applies with a non-negligible α.",
+        "Backward proceeds output → input in layer order."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-COST-002",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "Ring-AllReduce cost model",
+      "learningObjective": "Compute the per-rank bandwidth term of a ring-AllReduce for a tensor of S bytes across N ranks.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Ring topology (e.g. NVLink ring, InfiniBand ring)",
+        "device": "generic",
+        "requiredFeatures": [
+          "symmetric point-to-point bandwidth BW between neighbors"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A tensor of S bytes is AllReduce-summed over N ranks via the ring algorithm (ReduceScatter + AllGather), on a ring where each neighbor link has effective bandwidth BW. Ignoring the fixed latency term, which expression best approximates the per-rank bandwidth-limited time?",
+      "options": [
+        {
+          "id": "A",
+          "text": "S / BW, because the tensor is only transmitted once around the ring."
+        },
+        {
+          "id": "B",
+          "text": "N · S / BW, because each rank has to forward the full tensor to every other rank."
+        },
+        {
+          "id": "C",
+          "text": "2·(N-1)/N · S / BW, from ReduceScatter (N-1)/N · S and AllGather (N-1)/N · S."
+        },
+        {
+          "id": "D",
+          "text": "log₂(N) · S / BW, because the ring implements a recursive halving reduction internally."
+        }
+      ],
+      "assumptions": [
+        "Fixed latency term α per phase is negligible relative to the bandwidth term.",
+        "Even chunking by N; edge effects of remainder chunks are ignored."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-COSTAG-011",
+      "type": "multiple",
+      "module": "distributed",
+      "subtopic": "AllGather / ReduceScatter / AllReduce cost relationships",
+      "learningObjective": "Compare the per-rank bandwidth costs of ring-AllGather, ring-ReduceScatter and ring-AllReduce and the relationships between them.",
+      "archetype": "formula_performance",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Ring topology, N ranks",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "For a total payload of S bytes on N ranks arranged as a ring, ignoring the latency term α, which THREE of the following statements about per-rank bandwidth cost are correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Ring-AllReduce cost equals the sum of ring-ReduceScatter and ring-AllGather, i.e. 2·(N-1)/N · S per rank."
+        },
+        {
+          "id": "B",
+          "text": "Ring-AllGather per rank must move N · S bytes because every rank has to see every other rank's full copy of the payload."
+        },
+        {
+          "id": "C",
+          "text": "Ring-AllGather per rank sends and receives (N-1)/N · S bytes (each rank starts with its own S/N shard and must receive the remaining (N-1)·(S/N))."
+        },
+        {
+          "id": "D",
+          "text": "Ring-ReduceScatter per rank moves (N-1)/N · S bytes, matching AllGather's per-rank cost."
+        }
+      ],
+      "assumptions": [
+        "The ring implementation is used (no tree/hypercube).",
+        "Latency term α is negligible relative to the bandwidth term.",
+        "S is evenly divisible by N."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-COSTMODEL-010",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "α + βS communication cost model",
+      "learningObjective": "Apply the α + βS communication cost model to distinguish latency-dominated from bandwidth-dominated regimes for small vs large collectives.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Point-to-point link, α = 10 μs, β = 10 GB/s (⇒ 1/β = 0.1 ns/byte)",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A collective has an effective point-to-point cost model T(S) = α + β·S with α = 10 μs and effective bandwidth 10 GB/s (β = 100 ps/byte). Consider two payloads: S1 = 1 KB and S2 = 10 MB. Which statement is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "T(1 KB) ≈ 10 ms; T(10 MB) ≈ 10 μs. Larger payloads amortize α so effectively no time is spent on very large messages, and small ones are dominated by α scaled up by S."
+        },
+        {
+          "id": "B",
+          "text": "T(1 KB) ≈ 100 ns (bandwidth-dominated at any size); T(10 MB) ≈ 1 ms. Since 10 GB/s bandwidth is high, α is negligible at all payload sizes and the cost ratio equals the byte ratio."
+        },
+        {
+          "id": "C",
+          "text": "T(1 KB) ≈ 10 μs (latency-dominated); T(10 MB) ≈ 1 ms (bandwidth-dominated). Increasing S1 tenfold to 10 KB barely changes T because α ≫ β·S in this regime."
+        },
+        {
+          "id": "D",
+          "text": "T(1 KB) ≈ 1 μs; T(10 MB) ≈ 100 s. The bandwidth term should be interpreted as S · β with β=10 GB, giving super-linear scaling with S."
+        }
+      ],
+      "assumptions": [
+        "α and β are constants over the size range considered.",
+        "No pipelining or concurrent messages."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-GSPMD-012",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "GSPMD sharding propagation",
+      "learningObjective": "Explain GSPMD's sharding-propagation design: how user annotations become a fully sharded graph.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-device cluster",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "GSPMD (XLA)",
+        "stability": "stable_principle"
+      },
+      "stem": "The GSPMD paper describes a sharding-propagation pass that turns a partially-annotated graph into a fully sharded one. What is the core design intent of propagation, as argued by the paper?",
+      "options": [
+        {
+          "id": "A",
+          "text": "To search over all possible partitioning strategies at runtime and pick the one with the lowest measured latency, so annotations serve only as a starting point for a runtime autotuner."
+        },
+        {
+          "id": "B",
+          "text": "To transform every collective into a point-to-point send/recv so that any topology can be supported, at the cost of removing NCCL AllReduce optimizations."
+        },
+        {
+          "id": "C",
+          "text": "To bypass the XLA compiler entirely and generate CUDA code directly from the sharding annotations, avoiding HLO-level intermediate representation."
+        },
+        {
+          "id": "D",
+          "text": "To eliminate the need for the user to annotate every tensor: given a small number of sharding hints, the compiler pushes constraints through operators (respecting each op's propagation rules) and inserts reshard collectives at boundaries where required and produced sharding disagree."
+        }
+      ],
+      "assumptions": [
+        "The reader is familiar with GSPMD/XLA's operator-level sharding rules.",
+        "'Annotation' means an sharding attribute attached to a tensor in HLO."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-GSPMD-013",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "GSPMD annotations as hints",
+      "learningObjective": "Understand that GSPMD treats user sharding annotations as hints that may be refined or overridden by propagation, rather than as strict per-tensor placement decisions.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-device cluster",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "GSPMD (XLA)",
+        "stability": "stable_principle"
+      },
+      "stem": "The GSPMD paper describes user sharding annotations as 'hints'. What is the design rationale for this choice, according to the paper?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Users only annotate a small number of representative tensors; the compiler propagates sharding to the rest of the graph and inserts reshard collectives where a downstream consumer requires a different sharding than upstream produced, so annotations guide but do not exhaustively specify the partitioning."
+        },
+        {
+          "id": "B",
+          "text": "Because sharding is dynamic (may change per step), the compiler treats annotations as advisory and re-selects sharding at each iteration based on measured runtime performance."
+        },
+        {
+          "id": "C",
+          "text": "GSPMD deliberately ignores user annotations on more than one tensor per op; if a user annotates multiple inputs of a matmul, the compiler will randomly pick one and drop the others to avoid conflict."
+        },
+        {
+          "id": "D",
+          "text": "The compiler treats annotations as strict placement constraints and errors out whenever the propagation cannot find a global sharding consistent with every annotation, forcing the user to re-annotate."
+        }
+      ],
+      "assumptions": [
+        "Familiarity with GSPMD paper §3.2–§3.3.",
+        "The reader distinguishes producer-sharding, consumer-required-sharding, and inserted reshards."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-MESH-008",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "Device Mesh logical vs physical",
+      "learningObjective": "Explain the role of a Device Mesh as a logical named-axis grid decoupled from the physical topology.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-node multi-GPU cluster",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "GSPMD / XLA / StableHLO",
+        "stability": "stable_principle"
+      },
+      "stem": "In GSPMD / XLA-style SPMD, a job runs on 32 GPUs organized as a Device Mesh of shape [8, 4] with named axes ('data', 'model'). Which statement about the Mesh abstraction is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The Device Mesh is a logical grid: sharding specs reference axis names, and the runtime is free to map mesh coordinates to physical devices in different ways (e.g. to align an axis with fast NVLink links)."
+        },
+        {
+          "id": "B",
+          "text": "Once axes are named 'data' and 'model', the compiler forbids sharding any tensor along the 'model' axis if it is also sharded along the 'data' axis; sharding must be exclusive to a single mesh axis."
+        },
+        {
+          "id": "C",
+          "text": "The Device Mesh is a physical topology descriptor: axes must be named to match the underlying NVLink/PCIe layout, and changing axis assignments requires physically recabling the cluster."
+        },
+        {
+          "id": "D",
+          "text": "The Mesh is a NCCL runtime object; the compiler IR does not represent it, so all mesh-related decisions happen at runtime and cannot influence which collectives are inserted."
+        }
+      ],
+      "assumptions": [
+        "Sharding specs reference mesh axes by name."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-OVERLAP-005",
+      "type": "multiple",
+      "module": "distributed",
+      "subtopic": "Communication/computation overlap preconditions",
+      "learningObjective": "Identify the preconditions under which a compiler or DDP-style runtime can overlap gradient AllReduce with the backward compute of earlier layers.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Multi-GPU node with NVLink and/or NIC",
+        "device": "GPU",
+        "requiredFeatures": [
+          "multi-stream execution",
+          "async collective launch"
+        ]
+      },
+      "softwareContext": {
+        "framework": "NCCL / DDP-style runtime",
+        "stability": "stable_principle"
+      },
+      "stem": "A data-parallel training runtime wants to overlap gradient AllReduce with the backward compute of earlier layers. Which two conditions are together sufficient for the accelerator scheduler to actually run them concurrently? (Select exactly TWO.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The accelerator has a dedicated communication core separate from its compute cores; on GPUs without such a core, overlap is impossible."
+        },
+        {
+          "id": "B",
+          "text": "The gradient AllReduce is launched on a stream distinct from the backward-compute stream, and the collective backend supports non-blocking asynchronous execution."
+        },
+        {
+          "id": "C",
+          "text": "The reduced gradient is not consumed by any op earlier than the optimizer step (or a later synchronization point), so the runtime does not have to insert a wait between the AllReduce and the ongoing backward compute."
+        },
+        {
+          "id": "D",
+          "text": "The compiler reorders the backward pass so that all AllReduce operations are executed after the entire backward compute has finished, then a single fused AllReduce is emitted."
+        }
+      ],
+      "assumptions": [
+        "Backend supports non-blocking collectives (e.g. NCCL on a separate stream).",
+        "Link bandwidth is not saturated by compute stream memory traffic."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-PIPE-015",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "Pipeline parallel bubble and microbatching",
+      "learningObjective": "Explain the pipeline-parallel bubble and how microbatching reduces it.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-GPU pipeline with P stages",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A model is split across P=8 pipeline stages, one per GPU. A training step consists of M microbatches processed in a GPipe-style schedule. Which statement about the pipeline bubble is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The bubble is exactly 1/P of total time regardless of M; it can only be removed by reducing P, which defeats the purpose of pipeline parallelism."
+        },
+        {
+          "id": "B",
+          "text": "The bubble fraction is approximately (P-1)/(P + M - 1) of total time; increasing M shrinks this fraction, at the cost of holding activations for more in-flight microbatches (or paying recomputation)."
+        },
+        {
+          "id": "C",
+          "text": "Pipeline parallelism reduces the wall-clock time of a single microbatch's forward+backward pass by a factor of P relative to single-GPU execution, so the bubble is a negligible overhead in practice."
+        },
+        {
+          "id": "D",
+          "text": "The bubble is a compiler artifact; an optimizing compiler can eliminate it completely for any P and M by fusing stages into a single kernel."
+        }
+      ],
+      "assumptions": [
+        "Stages have equal cost.",
+        "Communication is overlapped or negligible relative to stage compute."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-RS-003",
+      "type": "single",
+      "module": "distributed",
+      "subtopic": "ReduceScatter vs AllReduce",
+      "learningObjective": "Distinguish ReduceScatter from AllReduce and identify how the two compose.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Given N ranks each holding a tensor of shape S, which statement about ReduceScatter is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "ReduceScatter reduces the N tensors elementwise and delivers the full reduced tensor of shape S to rank 0 only; other ranks receive nothing."
+        },
+        {
+          "id": "B",
+          "text": "ReduceScatter is a naming alias for All-to-All when the payload contains only one element per rank; the two are semantically identical for scalar payloads."
+        },
+        {
+          "id": "C",
+          "text": "ReduceScatter is equivalent to AllGather followed by a local reduction on each rank, so it always ends with every rank holding the full reduced tensor of shape S."
+        },
+        {
+          "id": "D",
+          "text": "ReduceScatter reduces the N tensors elementwise and gives each rank a disjoint 1/N-shard of the result, so AllReduce = ReduceScatter followed by AllGather."
+        }
+      ],
+      "assumptions": [
+        "All ranks contribute tensors of identical shape and dtype.",
+        "The scatter axis divides the tensor evenly into N shards."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-SHARD-009",
+      "type": "multiple",
+      "module": "distributed",
+      "subtopic": "Reshard collectives between sharding specs",
+      "learningObjective": "Reason about the collectives that a partitioner must insert to reshard a tensor between two different sharding specifications on the same device mesh.",
+      "archetype": "systems_dataflow",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-GPU cluster with a 1-D device mesh of size N",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "GSPMD / XLA-style partitioner",
+        "stability": "stable_principle"
+      },
+      "stem": "A tensor T of shape [D0, D1] lives on an N-device 1-D mesh. Consider the following reshard requests. Which TWO of the following mappings between reshard requests and required collectives are correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "From 'sharded along D0' to 'sharded along D1' (both along the same mesh axis): the partitioner inserts a local reshape only, since the total per-rank byte count is unchanged."
+        },
+        {
+          "id": "B",
+          "text": "From 'fully replicated' to 'sharded along D0': the partitioner inserts an AllReduce (sum) followed by a local slice, in order to guarantee that no rank keeps a stale replica."
+        },
+        {
+          "id": "C",
+          "text": "From 'sharded along D0 (each rank has [D0/N, D1])' to 'fully replicated on all ranks': the partitioner inserts an AllGather along the mesh axis."
+        },
+        {
+          "id": "D",
+          "text": "From 'partial-sum on all ranks (each rank has a partially reduced [D0, D1] whose sum equals T)' to 'fully replicated': the partitioner inserts an AllReduce along the mesh axis."
+        }
+      ],
+      "assumptions": [
+        "The mesh is 1-D of size N.",
+        "Sharding is uniform (no residual)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "M-SPMD-007",
+      "type": "multiple",
+      "module": "distributed",
+      "subtopic": "SPMD vs MPMD / manual placement",
+      "learningObjective": "Distinguish SPMD-style compiler-driven parallelization (as in GSPMD) from manual multi-controller / MPMD approaches.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "Multi-device cluster",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "GSPMD (XLA)",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider GSPMD-style SPMD partitioning versus manual/MPMD-style parallelization for a large model. Which THREE of the following statements are correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "SPMD forbids per-rank differences of any kind; if any operator would have to execute differently on different ranks, the program cannot be expressed in SPMD and must fall back to MPMD."
+        },
+        {
+          "id": "B",
+          "text": "Manual / MPMD-style parallelism generally requires the user to author per-rank code paths and to explicitly place ops and issue collectives, which is more expressive but more error-prone than SPMD annotations."
+        },
+        {
+          "id": "C",
+          "text": "SPMD partitioning transforms a single-device-semantics program into a single per-rank program in which each op has been rewritten according to sharding annotations, and reshard boundaries are compiled into explicit collectives."
+        },
+        {
+          "id": "D",
+          "text": "GSPMD relies on sharding annotations that the user places on some tensors/ops; the partitioner then propagates these annotations to the rest of the graph."
+        }
+      ],
+      "assumptions": [
+        "The compiler is at least as expressive as XLA/HLO with sharding attributes.",
+        "Users understand that annotations are hints, not exhaustive specifications."
+      ],
+      "version": 1
+    }
+  ]
+}

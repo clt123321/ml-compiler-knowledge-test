@@ -1,0 +1,92 @@
+{
+  "id": "C-LOWER-007",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Multi-level lowering: linalg -> loops -> memref",
+  "learningObjective": "Understand what 'lowering' means across MLIR abstraction layers, and why lowering typically preserves semantics but changes the vocabulary used to express the computation.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "The IR is progressively lowered from linalg-on-tensor to explicit scf loops on memref. Which of the following best describes the intent of this lowering chain?",
+  "irSnippet": "// L0: linalg-on-tensor (declarative)\n%0 = linalg.matmul ins(%A, %B : tensor<MxKxf32>, tensor<KxNxf32>)\n                   outs(%C : tensor<MxNxf32>) -> tensor<MxNxf32>\n\n// L1: after bufferization -> linalg-on-memref\nlinalg.matmul ins(%A, %B : memref<MxKxf32>, memref<KxNxf32>)\n              outs(%C : memref<MxNxf32>)\n\n// L2: after conversion to scf + affine loads/stores\nscf.for %i = %c0 to %M step %c1 {\n  scf.for %j = %c0 to %N step %c1 {\n    scf.for %k = %c0 to %K step %c1 {\n      %a = memref.load %A[%i, %k] : memref<MxKxf32>\n      %b = memref.load %B[%k, %j] : memref<KxNxf32>\n      %c = memref.load %C[%i, %j] : memref<MxNxf32>\n      %m = arith.mulf %a, %b : f32\n      %s = arith.addf %c, %m : f32\n      memref.store %s, %C[%i, %j] : memref<MxNxf32>\n    }\n  }\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "Each lowering step increases the abstraction level, moving from explicit loops toward a declarative op, so that downstream backends can pattern-match higher-level intent for kernel selection. Under this reading, backends receive a declarative op like `linalg.matmul` at the last stage precisely because a declarative form encodes user intent more clearly than any explicit loop nest, allowing the backend to pick vendor-specific kernels directly."
+    },
+    {
+      "id": "B",
+      "text": "Each lowering step preserves the computation's semantics while making previously implicit structure (buffers, loops, indexing) explicit, so that later passes can apply loop-level optimizations and generate low-level code."
+    },
+    {
+      "id": "C",
+      "text": "Lowering emits new source-level Python code from the IR at each step; L2 in this example is a textual representation of the Python-callable kernel returned to the user. In this account, the memref form permits arbitrary aliasing among its operands while the tensor form forbids it, so the lowering pipeline must first prove non-aliasing of A, B, and C before it may legally introduce any store into the memref-typed C buffer."
+    },
+    {
+      "id": "D",
+      "text": "The three IR forms are semantically inequivalent: the linalg-on-tensor form allows aliasing that the memref form forbids, so the lowering is only correct when no aliasing exists between A, B, and C."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Progressive lowering in MLIR moves from higher-level abstractions (linalg on tensors: declarative, functional) to progressively lower ones (memref with explicit buffers; scf/affine with explicit loop nests; eventually LLVM). Each step preserves semantics but exposes more structure to enable later passes: bufferization exposes memory, loop conversion exposes iteration, and vectorization / tiling operate on the exposed structure. It is not raising, does not create aliasing hazards on its own, and does not produce Python source.",
+  "optionExplanations": {
+    "A": "Wrong: this is the opposite direction; lowering exposes more structure, not less.",
+    "B": "Correct: matches the standard purpose of progressive lowering in MLIR.",
+    "C": "Wrong: lowering is a compiler-internal transformation, not Python source generation.",
+    "D": "Wrong: bufferization enforces that memrefs respect the tensor-level dataflow (via analysis / annotations); the three forms are semantically equivalent when bufferization is correct."
+  },
+  "assumptions": [
+    "Bufferization has proved that the tensor-form computation can be safely realized on the given memrefs (or the compiler inserts copies to preserve semantics)."
+  ],
+  "nonImplications": [
+    "Does not imply that the loop-form IR is faster than the linalg form; performance depends on subsequent tiling / vectorization / codegen.",
+    "Does not imply that all lowerings must go through this exact chain; alternative pipelines exist (e.g., linalg-on-tensor directly to Triton/XLA)."
+  ],
+  "misconceptionTags": [
+    "lowering_direction_reversed",
+    "lowering_creates_alias"
+  ],
+  "distractorRationales": {
+    "A": "Reverses the direction of lowering.",
+    "C": "Confuses IR lowering with source-level codegen.",
+    "D": "Wrong claim about aliasing semantics of the lowering."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:mlir",
+      "locator": "Progressive lowering across dialects",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Dialect layering and lowering",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-LOWER-007.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

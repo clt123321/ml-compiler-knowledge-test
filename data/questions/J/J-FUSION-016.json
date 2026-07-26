@@ -1,0 +1,95 @@
+{
+  "id": "J-FUSION-016",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "LLM kernel fusion / Serving stack fused kernels",
+  "learningObjective": "Identify which fusions are standard in production LLM inference stacks and what each fusion saves.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any modern data-center GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "vLLM / TRT-LLM / SGLang",
+    "frameworkVersionScope": "current stable",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which set of kernel fusions is typical in a production LLM inference stack such as vLLM or TensorRT-LLM?",
+  "options": [
+    {
+      "id": "A",
+      "text": "No fusion is applied; each math op (matmul, add, softmax, silu, mul, norm) has its own kernel launched separately. This gives the profiler the cleanest boundary information and modern GPUs' launch overhead is negligible for LLM workloads."
+    },
+    {
+      "id": "B",
+      "text": "Fused full transformer block into a single CUDA kernel per layer that computes attention + MLP + residuals together; this is the standard pattern because it collapses all HBM roundtrips of intermediates into a single kernel."
+    },
+    {
+      "id": "C",
+      "text": "Fused entire model into one giant kernel per forward pass; because CUDA supports variable-shape launches, this scales to any model size without recompilation."
+    },
+    {
+      "id": "D",
+      "text": "Fused QKV projection; fused RMSNorm (or RMSNorm as GEMM epilogue on the following linear); fused SwiGLU (silu on gate output * up output); fused attention using FlashAttention/PagedAttention that combines QK^T, softmax, and PV in one kernel; fused sampling (temperature + top-k/top-p) at the end of the head."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Production LLM stacks use targeted fusion: (1) fused QKV projection (one wide GEMM); (2) fused RMSNorm (or fused as an epilogue on the next linear's input read); (3) fused SwiGLU gate*up (elementwise on the up/gate projection results); (4) fused attention (FlashAttention/PagedAttention combines QK^T, softmax, and PV in one kernel keeping S on-chip); (5) fused sampling. Full-block fusion into one kernel is not standard and would require different tile designs than the current tensor-core-friendly ones. No-fusion is a straw man.",
+  "optionExplanations": {
+    "A": "Wrong: launch overhead is a real cost, and fusion is central to production stacks.",
+    "B": "Wrong: full-block fusion is not the standard pattern (some research prototypes attempt it).",
+    "C": "Wrong: entire-model fusion is not practical or done.",
+    "D": "Correct: the actual fusion set in vLLM / TRT-LLM / SGLang."
+  },
+  "assumptions": [
+    "'Production' means widely-deployed inference stacks like vLLM, TRT-LLM, SGLang.",
+    "Fusion decisions target both HBM traffic and launch overhead."
+  ],
+  "nonImplications": [
+    "Does not imply every framework fuses identically; specific choices vary.",
+    "Does not imply fusion always yields wall-clock speedup on all shapes; some fusions are conditional."
+  ],
+  "misconceptionTags": [
+    "full_block_fusion_myth",
+    "no_fusion_myth"
+  ],
+  "distractorRationales": {
+    "A": "Ignores real launch overhead.",
+    "B": "Overstates fusion granularity.",
+    "C": "Fabricates full-model fusion."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:vllm",
+      "locator": "Kernel fusion in inference",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:trtllm",
+      "locator": "Plugin kernels and fusion",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Standard kernel fusion set in production LLM inference stacks",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-FUSION-016.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

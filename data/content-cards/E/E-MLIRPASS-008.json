@@ -1,0 +1,49 @@
+{
+  "questionId": "E-MLIRPASS-008",
+  "learningObjective": "Reason about MLIR Pass and PassManager semantics: op-scoping and pipeline nesting.",
+  "canonicalClaims": [
+    {
+      "claim": "MLIR passes declare the Op type they run on; a PassManager iterates a pass over every matching Op. Nested pass managers compose pipelines at different scopes (typically ModuleOp containing FuncOp-scoped passes).",
+      "conditions": ["Standard upstream MLIR pass infrastructure."],
+      "nonImplications": [
+        "Does not imply nested pass managers must exist; simple single-scope pipelines are allowed.",
+        "Does not imply the scope choice is arbitrary; passes rely on being called at the right level."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Pass Infrastructure" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "All MLIR passes are module-level and must walk functions manually.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Function-scoped passes (`func.func` scope) are first-class; PassManager iterates over each function automatically.",
+      "sourceOrEvidence": "MLIR Pass Infra doc"
+    },
+    {
+      "claim": "MLIR runs passes in parallel by default.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Default execution is sequential in declared order; per-op parallelism at a nested scope is opt-in.",
+      "sourceOrEvidence": "MLIR Pass Infra doc"
+    },
+    {
+      "claim": "Pass scope is only documentation.",
+      "errorType": "scope_error",
+      "whyWrong": "The framework verifies scope; a pass built for FuncOp cannot be attached to a Module-level PM without nesting.",
+      "sourceOrEvidence": "MLIR Pass Infra doc"
+    },
+    {
+      "claim": "A pass may freely modify any op in the IR regardless of scope.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Passes with `IsIsolatedFromAbove` scope may not modify ops outside their region without explicit design.",
+      "sourceOrEvidence": "MLIR Pass Infra doc"
+    }
+  ],
+  "implementationFacts": [
+    "`PassManager pm(ctx); pm.addNestedPass<func::FuncOp>(...)`",
+    "`OpPassManager<func::FuncOp>` composes function-scoped pipelines."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

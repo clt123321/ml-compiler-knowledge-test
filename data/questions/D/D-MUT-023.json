@@ -1,0 +1,95 @@
+{
+  "id": "D-MUT-023",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Mutation on a captured non-input tensor",
+  "learningObjective": "Reason about how torch.compile handles in-place mutation of an object captured from the enclosing Python scope (a non-input tensor).",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Consider a compiled function that mutates a tensor stored in a global list (not an input argument). Which best describes torch.compile's treatment of this pattern?",
+  "codeSnippet": "import torch\n\nbuffers = [torch.zeros(64, device=\"cuda\")]\n\n@torch.compile\ndef f(x):\n    buffers[0].add_(x)   # in-place update to a globally-referenced tensor\n    return x * 2.0\n\nx = torch.randn(64, device=\"cuda\")\nf(x)\n# The caller expects buffers[0] to accumulate x.",
+  "options": [
+    {
+      "id": "A",
+      "text": "Torch.compile transparently supports arbitrary Python container mutations with no cost; `buffers[0].add_(x)` is compiled into the fused Triton kernel with no additional overhead and no impact on how downstream ops are compiled."
+    },
+    {
+      "id": "B",
+      "text": "This pattern raises a compile-time error: any tensor not in the function's argument list cannot be mutated inside a compiled region under any circumstances. In this framing, this pattern raises a compile-time error: any tensor not appearing in the function's explicit argument list cannot be mutated inside a compiled region under any TorchDynamo configuration, so the code as written would fail to compile."
+    },
+    {
+      "id": "C",
+      "text": "Mutation of a captured tensor is silently dropped: `buffers[0]` remains all zeros after the call because the compiled region does not have permission to write back to the outer Python scope. Under this reading, the mutation of a captured tensor is silently dropped by the compiler: `buffers[0]` remains all zeros after the call because the compiled region does not have permission to write back to the outer Python scope through the referenced list object."
+    },
+    {
+      "id": "D",
+      "text": "Mutating a Python-list-held tensor is treated as a side effect on an externally-visible object: TorchDynamo either lifts the referenced tensor into an input of the compiled region (with a write-back at the boundary) or graph-breaks around the mutation, depending on whether the list is recognized as accessible for tracing."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Torch.compile treats non-input tensors reached through Python containers as external state. In practice Dynamo either lifts the tensor into the compiled region's inputs (with a runtime write-back to preserve external mutation semantics) or graph-breaks at the mutation, depending on what it can safely reason about. The mutation is not silently dropped and is not universally forbidden; but it does add boundary bookkeeping and can cause graph breaks in tricky cases.",
+  "optionExplanations": {
+    "A": "Wrong: it is not zero-cost; boundary bookkeeping or graph breaks apply.",
+    "B": "Wrong: mutation is not universally forbidden.",
+    "C": "Wrong: mutations are not silently dropped.",
+    "D": "Correct: describes Dynamo's handling of externally-visible tensor mutation via captured references."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 with default settings.",
+    "The list `buffers` is reachable to Dynamo's tracer via standard Python semantics."
+  ],
+  "nonImplications": [
+    "Does not imply every capture-mutation compiles cleanly; complex control flow around the mutation can graph-break.",
+    "Does not imply the mutation is free; boundary write-backs add overhead."
+  ],
+  "misconceptionTags": [
+    "capture_mutation_zero_cost",
+    "capture_mutation_silently_dropped"
+  ],
+  "distractorRationales": {
+    "A": "Understates cost.",
+    "B": "Wrong claim about universal ban.",
+    "C": "Wrong claim about silent drop."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Handling of Python side effects and captured tensors",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Side-effect handling in TorchDynamo",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-MUT-023.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

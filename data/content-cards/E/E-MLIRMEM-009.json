@@ -1,0 +1,49 @@
+{
+  "questionId": "E-MLIRMEM-009",
+  "learningObjective": "Interpret a strided MemRef type descriptor: strides, offset, memory space.",
+  "canonicalClaims": [
+    {
+      "claim": "The MLIR memref type `memref<shape, strided<[s0, s1, ...], offset: k>, mem_space>` encodes element-unit strides and offset; element `[i0, i1, ...]` lives at `k + sum(i_r * s_r)` element units from the base pointer, in the given memory space.",
+      "conditions": ["Strides are in element units, not bytes."],
+      "nonImplications": [
+        "Does not imply memory space integers have universal meaning; they are conventions of the target lowering.",
+        "Does not imply offsets are always 0; subviews commonly produce non-zero offsets."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "MemRef Type — strides, offset, memory space" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "MemRef strides are counted in bytes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Strides are in element units.",
+      "sourceOrEvidence": "MLIR LangRef"
+    },
+    {
+      "claim": "Memory-space integer is a runtime allocator ID.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a static discriminator interpreted by the lowering (e.g., GPU shared = 3).",
+      "sourceOrEvidence": "MLIR LangRef, GPU dialect docs"
+    },
+    {
+      "claim": "Strides `[8, 1]` for a 4×8 memref indicates column-major layout.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Row-major has the fastest-varying stride 1 in the last position, exactly matching [8, 1].",
+      "sourceOrEvidence": "MLIR LangRef"
+    },
+    {
+      "claim": "The `strided<>` clause is optional documentation and has no effect on addressing.",
+      "errorType": "scope_error",
+      "whyWrong": "It is semantic and used by lowering to compute element addresses.",
+      "sourceOrEvidence": "MLIR LangRef"
+    }
+  ],
+  "implementationFacts": [
+    "Default layout for `memref<AxBxf32>` is row-major with implicit strides [B, 1].",
+    "Subviews may produce non-contiguous memrefs with arbitrary stride tuples."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

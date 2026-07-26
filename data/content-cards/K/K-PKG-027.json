@@ -1,0 +1,47 @@
+{
+  "questionId": "K-PKG-027",
+  "learningObjective": "Describe what typically goes into a model deployment package (weights + graph + metadata) and why the packaging boundary matters for reproducibility.",
+  "canonicalClaims": [
+    {
+      "claim": "A production model package contains graph structure, weights with metadata, IO signatures, and pre/post-processing metadata, versioned by an archive schema; each component is required for correct deployment and reproducibility.",
+      "conditions": [
+        "Deployment must be reproducible, portable and possibly offline.",
+        "The runtime must be able to load and execute the model without additional out-of-band information."
+      ],
+      "nonImplications": [
+        "Does not imply a single-file format is mandatory; multi-file bundles are common in the LLM community.",
+        "Does not imply preprocessing must be in the compiled artifact; it may live in a companion config."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "ModelProto structure" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Only the weight tensors need to be shipped.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Graph structure and signatures are needed; runtimes cannot infer them from weights alone.",
+      "sourceOrEvidence": "ONNX ModelProto"
+    },
+    {
+      "claim": "Weights can be random-initialized at deployment.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Random weights produce random outputs; trained weights are required.",
+      "sourceOrEvidence": "Basic ML methodology"
+    },
+    {
+      "claim": "Downloading model artifacts on every start is standard practice.",
+      "errorType": "overgeneralization",
+      "whyWrong": "This couples deployment to network availability and hurts reproducibility.",
+      "sourceOrEvidence": "MLOps best practices"
+    },
+    {
+      "claim": "Pre/post-processing metadata is unnecessary because the runtime handles it.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Tokenizers, normalizers, and calibration scales are model-specific and must be shipped.",
+      "sourceOrEvidence": "Hugging Face pipeline design"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

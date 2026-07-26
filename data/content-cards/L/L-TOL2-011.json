@@ -1,0 +1,47 @@
+{
+  "questionId": "L-TOL2-011",
+  "learningObjective": "Choose a realistic tolerance when validating a BF16 GEMM+bias implementation against an FP32 reference; distinguish rounding-mode and accumulation-order effects.",
+  "canonicalClaims": [
+    {
+      "claim": "BF16 GEMMs with K in the thousands and Gaussian inputs typically differ across implementations at the ~1e-2 level due to 7-bit mantissa rounding and differences in reduction order; tolerance should be BF16-scale (atol/rtol ~1e-2), not FP32-scale.",
+      "conditions": [
+        "Inputs are moderate-magnitude Gaussian tensors.",
+        "Both implementations use FP32 accumulation for BF16 Tensor Cores."
+      ],
+      "nonImplications": [
+        "Does not imply 1e-2 is universally correct; downstream ops may need tighter or looser bounds.",
+        "Does not imply BF16 kernels are numerically 'good enough' for all downstream computations."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Mixed precision GEMM accuracy" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Upcasting outputs to FP32 after the kernel restores FP32 precision.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Precision is lost during reduction; a later cast cannot recover it.",
+      "sourceOrEvidence": "Floating-point arithmetic basics"
+    },
+    {
+      "claim": "BF16 GEMMs are bit-identical across implementations.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Different tile shapes and reduction orders produce different low-order bits.",
+      "sourceOrEvidence": "cuBLAS / cutlass GEMM design"
+    },
+    {
+      "claim": "Sorting values before comparing removes accumulation-order error.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Sorting changes which values are compared, not the underlying rounding error.",
+      "sourceOrEvidence": "Numerical analysis"
+    },
+    {
+      "claim": "Tolerance is a property of the reference implementation, not of the dtype.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Tolerance should be chosen for the numeric precision of the values being compared.",
+      "sourceOrEvidence": "torch.testing.assert_close guidance"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

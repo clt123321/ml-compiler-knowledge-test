@@ -1,0 +1,90 @@
+{
+  "id": "B-CFG-003",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Basic block / CFG definition",
+  "learningObjective": "Precisely define a basic block and identify what constitutes a valid CFG edge.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement correctly defines a basic block (BB) and the corresponding control-flow graph (CFG)?",
+  "options": [
+    {
+      "id": "A",
+      "text": "A basic block is a loop body; the CFG has one node per loop and edges represent nesting."
+    },
+    {
+      "id": "B",
+      "text": "A basic block is any sequence of instructions with no data dependency between them; the CFG is a data-flow graph over these blocks."
+    },
+    {
+      "id": "C",
+      "text": "A basic block is a function body; the CFG has one node per function and edges represent calls."
+    },
+    {
+      "id": "D",
+      "text": "A basic block is a maximal straight-line sequence of instructions with exactly one entry (the first instruction) and one exit (the last instruction, typically a branch or terminator); the CFG has an edge from BB_i to BB_j if control can flow from the terminator of BB_i to the entry of BB_j."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Textbook definition: a basic block is a maximal straight-line code sequence with a single entry (first instruction) and single exit (last instruction). CFG edges represent possible control flow between blocks (via branches, fall-throughs, and terminators). The other options misidentify BBs as data-flow constructs, functions, or loop bodies.",
+  "optionExplanations": {
+    "A": "Wrong: a loop body typically contains multiple BBs; loops are structural properties of the CFG.",
+    "B": "Wrong: BBs are defined by control flow (single entry/exit), not by data dependency.",
+    "C": "Wrong: a function typically contains many BBs; a call graph is a different structure.",
+    "D": "Correct: canonical BB and CFG definition."
+  },
+  "assumptions": [
+    "Standard textbook definition (EAC3, Dragon Book)."
+  ],
+  "nonImplications": [
+    "Does not imply that BBs cannot contain calls (they can, unless calls are treated as terminators for exception-safety analysis).",
+    "Does not imply the CFG is unique for a given program; different partitions may exist, but the maximal one is standard."
+  ],
+  "misconceptionTags": [
+    "bb_dataflow_confusion",
+    "bb_function_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Confuses BB with loop body.",
+    "B": "Confuses control-flow with data-flow analysis units.",
+    "C": "Confuses BB granularity with function."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:dragon2",
+      "locator": "Basic blocks and CFG chapter",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Basic blocks and CFG chapter",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-CFG-003.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

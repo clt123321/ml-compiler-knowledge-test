@@ -1,0 +1,113 @@
+{
+  "id": "I-SOFTMAX-003",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "Softmax / Numerical stability via max subtraction",
+  "learningObjective": "Explain why row-max subtraction is required for a numerically stable softmax and what happens when it is omitted.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any IEEE-754 GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "CUDA",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "B",
+        "N"
+      ],
+      [
+        "B",
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "The 'safe softmax' formulation is softmax(x)_i = exp(x_i - m) / sum_j exp(x_j - m) where m = max_j x_j. Which statement about this formulation is correct?",
+  "codeSnippet": "# Naive softmax\n# y_i = exp(x_i) / sum_j exp(x_j)\n\n# Safe softmax\n# m   = max_j x_j\n# e_i = exp(x_i - m)          # e_i in (0, 1]\n# y_i = e_i / sum_j e_j",
+  "options": [
+    {
+      "id": "A",
+      "text": "Subtracting m makes every exponent non-positive so exp(x_i - m) lies in (0, 1], preventing overflow when any x_i is large; the algebraic identity softmax(x) = softmax(x - c) for any constant c guarantees the result is unchanged in exact arithmetic."
+    },
+    {
+      "id": "B",
+      "text": "The subtraction shifts the outputs by exp(-m) but this factor cancels in the ratio, so mathematically both forms are equivalent and safe softmax is only needed on integer hardware without native FP exponent range."
+    },
+    {
+      "id": "C",
+      "text": "The main benefit of max subtraction is preventing underflow of the denominator; overflow of individual exp(x_i) is already handled by IEEE-754 saturation to inf which cancels in the division and yields the correct value."
+    },
+    {
+      "id": "D",
+      "text": "Max subtraction changes softmax outputs by a constant additive offset; this offset is absorbed by the following LayerNorm in transformer stacks, so safe softmax and naive softmax produce identical logits at the final output only in the presence of a downstream normalization."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "For any constant c, softmax(x - c) = softmax(x) exactly: exp(x_i - c) / sum_j exp(x_j - c) = (exp(x_i)/exp(c)) / (sum_j exp(x_j)/exp(c)) = softmax(x). Choosing c = max_j x_j makes every argument to exp non-positive, so exp(x_i - m) is in (0, 1] and cannot overflow. Without the subtraction, if any x_i is large (e.g. > 88 for FP32, > 11 for FP16), exp(x_i) overflows to inf and the ratio becomes inf/inf = NaN.",
+  "optionExplanations": {
+    "A": "Correct: identity + non-positive exponents avoid overflow.",
+    "B": "Wrong: the identity does hold, but overflow is a real hazard in finite precision; safe softmax is required on FP hardware too.",
+    "C": "Wrong: inf / inf is NaN in IEEE-754, not the correct probability; overflow is the primary concern, not underflow.",
+    "D": "Wrong: max subtraction produces identical softmax outputs in exact arithmetic; it does not shift the outputs."
+  },
+  "assumptions": [
+    "Inputs are finite floats; NaN inputs are not addressed by max subtraction.",
+    "The reduction uses appropriate precision (typically FP32 accumulate)."
+  ],
+  "nonImplications": [
+    "Does not imply that safe softmax is exact under all rounding modes; small differences from summation order still occur.",
+    "Does not imply that safe softmax removes the need for tiling on very long sequences (see online softmax)."
+  ],
+  "misconceptionTags": [
+    "softmax_algebraic_only",
+    "ieee_inf_cancels"
+  ],
+  "distractorRationales": {
+    "B": "Denies the finite-precision overflow issue.",
+    "C": "Misuses IEEE-754 inf arithmetic.",
+    "D": "Fabricates a non-existent shift."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Softmax numerical stability discussion",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Sec 3.1 — safe softmax as building block",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-SOFTMAX-003.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

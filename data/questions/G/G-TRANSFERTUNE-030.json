@@ -1,0 +1,95 @@
+{
+  "id": "G-TRANSFERTUNE-030",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Transfer tuning / When learned cost model transfers",
+  "learningObjective": "Identify preconditions under which a learned cost model or tuned schedule from one workload transfers to a new workload.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM MetaSchedule",
+    "frameworkVersionScope": "TVM 0.14 ~ 0.16",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "profileData": "Tuning history:\n  Model A tuned on A100 with 4,000 trials, achieves 0.85\u00d7 cuBLAS on GEMM kernels.\n  Transfer-tuning experiment:\n    - Cost model from A applied to Model B (GEMM shapes shifted, same dtype, same A100) \u2192 3.8\u00d7 fewer trials to reach 0.80\u00d7 cuBLAS.\n    - Cost model from A applied to Model C (Conv shapes, same A100) \u2192 NO speed-up in trial count vs. from-scratch.\n    - Cost model from A applied to Model D (GEMM shapes, different GPU H100) \u2192 NO speed-up in trial count.",
+  "stem": "The transfer-tuning experiment above shows that reusing a tuned cost model helps in some cases but not others. Which is the best-supported explanation?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Transfer tuning is guaranteed to help any workload on any hardware once the cost model has enough data; the failure cases indicate a bug in the cost model implementation."
+    },
+    {
+      "id": "B",
+      "text": "The learned cost model transfers to workloads with similar features (same op class, same dtype, same hardware); when either the op class or the hardware changes, the learned features are less applicable, so transfer provides little benefit."
+    },
+    {
+      "id": "C",
+      "text": "Transfer tuning requires the exact same tensor shapes; even minor shape differences invalidate the cost model."
+    },
+    {
+      "id": "D",
+      "text": "Cost models transfer freely across hardware because GPU features (register file, SM count) are captured symbolically; the failure on H100 must be due to a driver issue."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Learned cost models transfer within a family: same operator class, same dtype, same hardware. When features shift substantially (different op class or different hardware), the model has not seen relevant training data and its predictions degrade toward random ordering. This matches the Ansor / MetaSchedule reports on transfer tuning: intra-op-class, intra-hardware transfer works; cross-op-class and cross-hardware transfer generally does not, unless the model was specifically trained across those axes. B, C, D make untenable universal claims or blame drivers without evidence.",
+  "optionExplanations": {
+    "A": "Wrong: transfer is not unconditional.",
+    "B": "Correct: matches published transfer-tuning results.",
+    "C": "Wrong: exact shape identity is not required; shape features generalize within an op class.",
+    "D": "Wrong: hardware features are baked into the training data, not symbolically captured."
+  },
+  "assumptions": [
+    "The cost model is trained on features that include shape and dtype but do not explicitly enumerate hardware."
+  ],
+  "nonImplications": [
+    "Does not imply cross-hardware transfer is unattainable; specifically-designed multi-hardware training can achieve it.",
+    "Does not imply transfer tuning replaces from-scratch tuning \u2014 it accelerates convergence within its scope."
+  ],
+  "misconceptionTags": [
+    "transfer_tune_universal",
+    "transfer_requires_exact_shape"
+  ],
+  "distractorRationales": {
+    "A": "Overgeneralizes transfer.",
+    "C": "Confuses transfer with memorization.",
+    "D": "Attributes transfer failure to a driver bug without evidence."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Transfer-tuning experiments; cost model features",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "MetaSchedule cost model reuse",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Transfer-tuning effectiveness within an operator class and hardware",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-TRANSFERTUNE-030.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

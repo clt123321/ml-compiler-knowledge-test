@@ -1,0 +1,91 @@
+{
+  "id": "C-SHAPEINFER-029",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Shape inference in graph IR",
+  "learningObjective": "Explain what shape inference computes at the graph-IR level and its limits when dynamic shapes are involved.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic tensor compiler (ONNX / MLIR shape / Relax)",
+    "stability": "stable_principle"
+  },
+  "stem": "A graph-IR pass performs shape inference on the following computation, where `N` and `D` are symbolic and `x`, `w` are inputs. Which statement most accurately describes what shape inference can and cannot conclude?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Shape inference reliably yields concrete integer shapes for every value in the graph, even when the input contains symbolic dims; it does so by choosing the median observed value from a small warm-up run and hard-coding it."
+    },
+    {
+      "id": "B",
+      "text": "Shape inference propagates per-op shape rules from inputs to outputs; with `x: [N, D]` and `w: [D, D]`, `y = matmul(x, w)` gives `[N, D]`. Extents like `N` remain symbolic when not known statically; concretization to actual integers happens at runtime (or via specialization)."
+    },
+    {
+      "id": "C",
+      "text": "Shape inference only succeeds when all input shapes are fully static integers; introducing any symbolic dim causes the pass to abort and drop all shape annotations from the graph. Under this framing, graph IRs do not carry any static shape annotations on their SSA values; shape inference is a runtime activity performed by the executor and cannot be run at compile time."
+    },
+    {
+      "id": "D",
+      "text": "Shape inference is a runtime-only concern; graph IRs do not carry shape annotations, so no static inference is possible before the first execution. In this account, shape inference reliably yields concrete integer shapes for every value in the graph even under dynamic input, by choosing the median observed value from a small warm-up run and hard-coding it into the compiled artifact."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Graph-level shape inference propagates per-op shape rules from inputs to outputs. When inputs contain symbolic dims (as in Relax / ONNX with dynamic dims), the inferred outputs are symbolic expressions in those dims (e.g., `matmul([N,D],[D,D]) -> [N,D]`). Concretization occurs at runtime (or at specialization time). The pass does not need to abort on symbolic inputs, does not hard-code medians, and is not runtime-only.",
+  "optionExplanations": {
+    "A": "Wrong: shape inference does not invent concrete values.",
+    "B": "Correct: describes symbolic shape propagation.",
+    "C": "Wrong: shape inference handles symbolic dims by producing symbolic outputs.",
+    "D": "Wrong: graph IRs commonly carry shape annotations statically."
+  },
+  "assumptions": [
+    "The IR supports symbolic dim variables (as ONNX, Relax, or MLIR shape do)."
+  ],
+  "nonImplications": [
+    "Does not imply symbolic outputs are always resolvable to integers before runtime; sometimes constraints are needed.",
+    "Does not imply shape inference proves programs correct; it only propagates shape rules per op."
+  ],
+  "misconceptionTags": [
+    "shape_inference_fabricates_constants",
+    "shape_inference_runtime_only"
+  ],
+  "distractorRationales": {
+    "A": "Fabricates concrete numbers.",
+    "C": "Wrong claim about abort on symbolic dims.",
+    "D": "Wrong claim about graph annotations."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "Shape inference and dynamic dims",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "Symbolic shape propagation in Relax",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-SHAPEINFER-029.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

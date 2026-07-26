@@ -1,0 +1,38 @@
+{
+  "questionId": "M-GSPMD-013",
+  "learningObjective": "Understand that GSPMD treats user sharding annotations as hints that may be refined or overridden by propagation, rather than as strict per-tensor placement decisions.",
+  "canonicalClaims": [
+    {
+      "claim": "GSPMD's sharding annotations are hints attached to selected tensors; the partitioner's propagation and resolution logic may attach different (but semantically consistent) sharding to unannotated tensors and may introduce reshards even on annotated tensors when a consumer's requirement differs.",
+      "conditions": [
+        "The IR distinguishes user-provided and propagated shardings.",
+        "Consumer ops advertise their required input shardings, potentially different from producer's."
+      ],
+      "nonImplications": [
+        "Does not imply the partitioner is free to ignore user annotations arbitrarily; annotations at specific tensors are respected — reshards happen at boundaries, not by rewriting the annotated shape's sharding.",
+        "Does not imply that a single sharding assignment is always correct across the whole graph; different sub-graphs may benefit from different partitions bridged by reshards."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§3.2–§3.3 propagation rules and reshard insertion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "In GSPMD, a user sharding annotation is a rigid constraint: no operator whose input tensor is annotated may run under any other sharding.",
+      "errorType": "wrong_condition",
+      "whyWrong": "The paper explicitly discusses reshard insertion when a consumer op prefers a different sharding; the producer's annotation is honored, but downstream shardings can differ, with reshard collectives bridging the two."
+    },
+    {
+      "claim": "GSPMD chooses sharding fully automatically; the user cannot influence the partitioning.",
+      "errorType": "definition_confusion",
+      "whyWrong": "User annotations are the primary interface; propagation is a compiler service on top of them."
+    },
+    {
+      "claim": "Annotations are only allowed on entry tensors (graph inputs); GSPMD forbids annotating intermediate results.",
+      "errorType": "scope_error",
+      "whyWrong": "GSPMD supports annotations on arbitrary tensors, including intermediates, and uses them to guide propagation."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

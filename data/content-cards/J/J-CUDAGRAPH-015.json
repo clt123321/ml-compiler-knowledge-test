@@ -1,0 +1,49 @@
+{
+  "questionId": "J-CUDAGRAPH-015",
+  "learningObjective": "Explain when CUDA Graphs help LLM inference and what limitation they impose on batch composition.",
+  "canonicalClaims": [
+    {
+      "claim": "CUDA Graphs amortize per-kernel launch overhead by capturing a sequence of kernels once and replaying it many times; the trade-off is that shapes and memory layouts must match the captured version, requiring per-shape graphs.",
+      "conditions": [
+        "Kernels have static shapes at capture time.",
+        "Pointers referenced by the graph remain valid across replays."
+      ],
+      "nonImplications": [
+        "Does not fuse or reorder kernels.",
+        "Does not eliminate GPU-side compute time."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "CUDA Graphs" },
+        { "ref": "DOC:vllm", "locator": "CUDA Graph capture" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "CUDA Graphs fuse kernels into fewer hardware kernels.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They replay the same kernels; no fusion.",
+      "sourceOrEvidence": "CUDA docs"
+    },
+    {
+      "claim": "CUDA Graphs help only compute-bound workloads.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "They help when launch overhead is the bottleneck, which is common in memory-bound decode with many small kernels.",
+      "sourceOrEvidence": "vLLM benchmarks"
+    },
+    {
+      "claim": "CUDA Graphs are incompatible with continuous batching.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Frameworks capture graphs for a set of common batch sizes and fall back to eager for uncommon shapes.",
+      "sourceOrEvidence": "vLLM implementation"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM captures decode CUDA Graphs for common batch sizes (e.g., powers of two up to max batch).",
+    "For prefill, graphs are less useful because prefill kernels are larger and launch overhead is a smaller fraction."
+  ],
+  "performanceScenarios": [
+    "LLM decode with 20-50 kernels per step benefits from graphs; large prefill matmuls do not."
+  ],
+  "versionSensitivity": "stable_principle"
+}

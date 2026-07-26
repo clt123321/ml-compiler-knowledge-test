@@ -1,0 +1,94 @@
+{
+  "id": "D-DYNKW-010",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "torch.compile(dynamic=True vs. default)",
+  "learningObjective": "Contrast `torch.compile(dynamic=True)` with the default automatic-dynamic behavior and identify their trade-offs.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which comparison between `torch.compile(dynamic=True)` and the default (`dynamic=None`) behavior is most accurate?",
+  "options": [
+    {
+      "id": "A",
+      "text": "`dynamic=True` disables all compilation and forces eager execution; the default compiles once and never recompiles regardless of input shapes. In this account, `dynamic=True` disables all compilation and forces the wrapped function into eager execution for every call; the default mode compiles the function once on the first call and never recompiles it again regardless of subsequent input shapes."
+    },
+    {
+      "id": "B",
+      "text": "`dynamic=True` is a runtime flag that only affects the compile cache directory; the traced graph is identical to the default in every case, and no symbolic-shape reasoning is performed. Under this framing, `dynamic=True` is a runtime flag that only affects the compile cache's directory path on disk; the traced graph is otherwise identical to the default in every case, and no symbolic-shape reasoning is performed by the tracer under either setting."
+    },
+    {
+      "id": "C",
+      "text": "`dynamic=True` forces the tracer to treat as many dims as possible as symbolic from the very first compile; the default may first specialize on observed shapes and only promote to dynamic after several distinct sizes are seen, saving some early compile cost but risking more early recompiles."
+    },
+    {
+      "id": "D",
+      "text": "`dynamic=True` and the default produce numerically different outputs because symbolic-shape kernels use lower precision to compensate for lost specialization; users must set a tolerance when comparing. Under this reading, `dynamic=True` and the default produce numerically different outputs because symbolic-shape kernels use lower precision to compensate for the lost specialization opportunities; users must therefore set a tolerance when comparing the two modes."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "`dynamic=True` asks Dynamo to trace with symbolic shapes from the start, aiming for one graph that handles multiple sizes at the cost of missing size-specific optimizations. The default (`dynamic=None`) uses automatic dynamic: initially specialize on observed shapes, and after enough distinct sizes for a dim, promote that dim to dynamic. Neither disables compilation, neither changes numerical semantics, and both produce real traced graphs.",
+  "optionExplanations": {
+    "A": "Wrong: `dynamic=True` does not disable compilation.",
+    "B": "Wrong: `dynamic=True` changes tracing behavior, not the compile-cache directory.",
+    "C": "Correct: describes the intended contrast.",
+    "D": "Wrong: numerical behavior is the same absent op-specific caveats."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 semantics.",
+    "The user has not set opposite overrides via other flags."
+  ],
+  "nonImplications": [
+    "Does not imply `dynamic=True` is always faster; specialized kernels can outperform symbolic ones on hot shapes.",
+    "Does not imply `dynamic=True` covers all dims — some computations still specialize."
+  ],
+  "misconceptionTags": [
+    "dynamic_true_disables_compile",
+    "dynamic_true_changes_precision"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim about disabling compile.",
+    "B": "Wrong claim about cache-only effect.",
+    "D": "Wrong precision claim."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "dynamic argument semantics",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Automatic vs. explicit dynamic behavior",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-DYNKW-010.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

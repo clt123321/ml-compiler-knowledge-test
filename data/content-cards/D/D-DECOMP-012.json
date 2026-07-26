@@ -1,0 +1,56 @@
+{
+  "questionId": "D-DECOMP-012",
+  "learningObjective": "Identify the purpose and effect of ATen op decomposition in PyTorch 2's compile stack.",
+  "canonicalClaims": [
+    {
+      "claim": "PyTorch 2's compile stack applies decomposition rules (a registered decomposition table) in AOTAutograd/pre-Inductor to rewrite composite ATen ops into simpler primitives, shrinking Inductor's op vocabulary; the table is user-extensible for custom ops.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The composite op has a registered decomposition or the user provides one."
+      ],
+      "nonImplications": [
+        "Does not imply every op is fully decomposed to elementwise primitives; matmul, convolution, attention, etc. often remain opaque.",
+        "Does not imply every decomposition is faster than the composite form."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Decomposition table" },
+        { "ref": "PAPER:pytorch2", "locator": "Decompositions in compile stack" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Every ATen op is decomposed to elementwise ops before Inductor.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Matmul/conv/attention typically remain as high-level ops and go through specialized paths.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Decomposition runs after Inductor codegen.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It runs pre-Inductor to normalize the graph.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Decomposition tables are hard-coded and cannot be extended.",
+      "errorType": "scope_error",
+      "whyWrong": "Users can register custom decomps.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "Decomposition is the same as functionalization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Functionalization rewrites mutating ops into non-mutating equivalents; decomposition rewrites composites into primitives.",
+      "sourceOrEvidence": "PyTorch 2 ASPLOS"
+    }
+  ],
+  "implementationFacts": [
+    "Registered decomposition table lives in `torch._decomp`",
+    "Common decomps include layer_norm, softmax, silu, gelu",
+    "matmul/convolution/attention are typically preserved for kernel-selection paths"
+  ],
+  "performanceScenarios": [
+    "Decomposition shrinks Inductor's op vocabulary and allows fusion at a finer granularity; some ops are intentionally kept composite for hand-tuned kernels."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

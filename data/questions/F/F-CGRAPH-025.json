@@ -1,0 +1,97 @@
+{
+  "id": "F-CGRAPH-025",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / CUDA Graph \u2014 capture, instantiation, launch overhead",
+  "learningObjective": "Understand CUDA Graph's role in reducing per-launch overhead and its capture/instantiation lifecycle.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Pascal or newer (Volta+ recommended)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "CUDA Graph API"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "compilerVersionScope": "CUDA 10+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about CUDA Graphs is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "A CUDA Graph is a directed acyclic graph of GPU operations (kernels, memcpys, memsets, host callbacks) captured once (via stream capture or explicit API), instantiated to a `cudaGraphExec_t`, and then launched repeatedly with much lower per-launch CPU overhead than individually launching each op \u2014 especially valuable for short kernels where launch overhead dominates."
+    },
+    {
+      "id": "B",
+      "text": "CUDA Graphs improve every kernel's runtime GPU cost by rewriting the kernel body during instantiation; the CPU-side savings are a small side benefit."
+    },
+    {
+      "id": "C",
+      "text": "A captured graph can be launched only once per instantiation; each subsequent launch requires re-capturing the graph from a fresh stream."
+    },
+    {
+      "id": "D",
+      "text": "CUDA Graphs are equivalent to CUDA Streams; they are the same mechanism under different names, and mixing the two APIs on the same context is undefined behavior."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "CUDA Graphs let you capture a sequence of GPU ops as a DAG, instantiate it into an executable `cudaGraphExec_t`, and launch that executable many times. The main benefit is drastically reduced per-launch CPU overhead: for graphs of many short kernels, the CPU cost of setting up each launch drops from O(N) to O(1). This is especially valuable for LLM decoding (many small kernels per token) and RNN-like patterns. Graphs do not rewrite kernel bodies (no runtime GPU speedup per kernel); an instantiated graph can be launched arbitrarily many times.",
+  "optionExplanations": {
+    "A": "Correct: capture \u2192 instantiate \u2192 repeated launch; primary benefit is CPU-side.",
+    "B": "Wrong: no kernel rewriting; savings are CPU-side.",
+    "C": "Wrong: instantiated graphs can be launched many times.",
+    "D": "Wrong: streams and graphs are distinct APIs (though related)."
+  },
+  "assumptions": [
+    "Standard CUDA Graph API as documented since CUDA 10."
+  ],
+  "nonImplications": [
+    "Does not imply graphs eliminate all overhead; there is still a small per-launch cost.",
+    "Does not imply graphs help long-running kernels (which are not launch-overhead-bound)."
+  ],
+  "misconceptionTags": [
+    "cuda_graph_gpu_speedup_myth",
+    "graph_single_launch_myth"
+  ],
+  "distractorRationales": {
+    "B": "Confuses CPU-side savings with GPU-side rewriting.",
+    "C": "Wrong claim about single-shot launches.",
+    "D": "Confuses streams and graphs."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "CUDA Graphs section \u2014 capture, instantiate, launch",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "CUDA Graph chapter (4th ed)",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "CUDA Graph per-launch CPU-overhead reduction for short-kernel sequences",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-CGRAPH-025.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

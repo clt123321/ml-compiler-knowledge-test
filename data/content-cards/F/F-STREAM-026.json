@@ -1,0 +1,49 @@
+{
+  "questionId": "F-STREAM-026",
+  "learningObjective": "Understand CUDA stream and event semantics: intra-stream ordering, inter-stream overlap, event-based sync.",
+  "canonicalClaims": [
+    {
+      "claim": "Within one non-default CUDA stream, work is serialized in issue order; different streams may execute concurrently subject to hardware resources. Events (`cudaEventRecord` on one stream + `cudaStreamWaitEvent` on another) provide asynchronous cross-stream ordering without blocking the host.",
+      "conditions": ["Standard CUDA runtime; non-default streams."],
+      "nonImplications": [
+        "Does not imply any two streams always run in parallel.",
+        "Does not imply events block the host."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Streams and Events" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Non-default streams block each other by default.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are concurrent by default; overlap subject to resources.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "`cudaEventRecord` blocks the CPU until the device processes it.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is asynchronous; use `cudaEventSynchronize` to block the host.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "`cudaStreamWaitEvent` blocks the calling CPU thread.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It adds a wait to the specified stream on the device side; host is not blocked.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "The default stream (0) behaves identically to any other stream.",
+      "errorType": "version_leak",
+      "whyWrong": "Legacy default stream synchronizes with all others; per-thread default stream is another mode; behavior is compile-flag dependent.",
+      "sourceOrEvidence": "CUDA guide"
+    }
+  ],
+  "implementationFacts": [
+    "Compile flag `--default-stream per-thread` changes default-stream semantics.",
+    "Events also provide timing via `cudaEventElapsedTime`."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

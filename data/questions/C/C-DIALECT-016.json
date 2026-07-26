@@ -1,0 +1,91 @@
+{
+  "id": "C-DIALECT-016",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "MLIR: Operation / Region / Block / Value / Type",
+  "learningObjective": "Recall the core structural concepts of MLIR (Operation, Region, Block, Value, Type, Attribute) and how they relate.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider MLIR's core structural vocabulary. Which statement most accurately describes the relationship among Operation, Region, Block, and Value?",
+  "options": [
+    {
+      "id": "A",
+      "text": "An Operation may contain zero or more Regions; each Region contains a list of Blocks; each Block contains a list of Operations and defines Values (its arguments and results produced by operations within it)."
+    },
+    {
+      "id": "B",
+      "text": "Operations exist only at the top level of an MLIR module; nesting is achieved via a separate side-table mapping op ids to child operations rather than via Region containment. Under this account, ops carry Values as internal fields serialized into their attribute dictionary, and any cross-op edge is emulated by copying the value into a downstream op's operand slot rather than sharing an SSA reference."
+    },
+    {
+      "id": "C",
+      "text": "Regions and Blocks are the same concept under different names; each Value is stored as an Operation's private state and cannot be referenced across operations."
+    },
+    {
+      "id": "D",
+      "text": "Values in MLIR are Python objects owned by the parser; they are not modeled in the C++ IR and are attached to operations only for pretty-printing. Under this framing, Values are opaque handles injected by the parser to carry file and line info for diagnostics; the C++ IR routes them purely through the printer and does not consult them during pass execution."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "MLIR is built around a small set of orthogonal concepts: an Operation is the basic unit; each Operation can have zero or more Regions (e.g., a `func.func` has one region for its body, a `scf.for` has one region for the loop body); each Region contains a list of Blocks; each Block has arguments (SSA values) and a list of Operations. Values are the SSA edges: block arguments and operation results, referenced by other operations.",
+  "optionExplanations": {
+    "A": "Correct: this is the canonical MLIR structural model.",
+    "B": "Wrong: nesting is via Regions, not side-tables.",
+    "C": "Wrong: Regions and Blocks are distinct; a Region contains Blocks. Values are cross-op SSA edges.",
+    "D": "Wrong: Values are first-class in the IR, not a printing concern."
+  },
+  "assumptions": [
+    "The reference is MLIR's core Language Reference model."
+  ],
+  "nonImplications": [
+    "Does not imply that every Operation has a Region; ops with no nested computation (e.g., `arith.addf`) have zero regions.",
+    "Does not imply that every Region has multiple Blocks; single-block regions are common."
+  ],
+  "misconceptionTags": [
+    "region_block_conflation",
+    "ssa_values_not_first_class"
+  ],
+  "distractorRationales": {
+    "B": "Wrong nesting model.",
+    "C": "Merges Region and Block; misstates Value scope.",
+    "D": "Wrong claim about Value representation."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Structure of MLIR: Operation, Region, Block, Value",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "MLIR CGO'21: core IR structure",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-DIALECT-016.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

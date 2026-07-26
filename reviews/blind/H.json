@@ -1,0 +1,1595 @@
+{
+  "module": "quantization",
+  "code": "H",
+  "label": "数值表示、混合精度与模型量化",
+  "generatedAt": "2026-07-26",
+  "count": 35,
+  "questions": [
+    {
+      "id": "H-ACCUM-007",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "Accumulation precision / Mixed precision Tensor Core",
+      "learningObjective": "Enumerate the correct properties of mixed-precision Tensor Core GEMM: FP16/BF16 inputs with FP32 accumulator.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper Tensor Core",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Tensor Core (HMMA / BMMA / QMMA)"
+        ]
+      },
+      "softwareContext": {
+        "framework": "cuBLAS / CUTLASS",
+        "stability": "stable_principle"
+      },
+      "stem": "Regarding mixed-precision GEMM on NVIDIA Tensor Cores (e.g., FP16 or BF16 inputs with an FP32 accumulator), which of the following statements are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Storing weights and activations in FP16/BF16 halves memory footprint and doubles memory bandwidth utilization relative to FP32 for the load path."
+        },
+        {
+          "id": "B",
+          "text": "Because the accumulator is FP32, the compute throughput of mixed-precision GEMM matches pure FP32 GEMM on Tensor Cores."
+        },
+        {
+          "id": "C",
+          "text": "The accumulator dtype (FP32) determines the effective precision of the running sum, mitigating overflow and catastrophic cancellation compared to FP16/BF16 accumulation."
+        },
+        {
+          "id": "D",
+          "text": "Downcasting the FP32 accumulator to FP16/BF16 on write introduces a rounding error per output element that can affect training stability if not accounted for."
+        }
+      ],
+      "assumptions": [
+        "The GEMM uses standard cuBLAS or CUTLASS Tensor Core kernels."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-ACCUM-008",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Accumulation precision / Small-magnitude loss",
+      "learningObjective": "Explain the swamping / small-magnitude-loss phenomenon in low-precision accumulation and identify the standard mitigations.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic FP16 accumulator",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The naive FP16 reduction can lose small-magnitude terms after the running sum grows large. Which explanation of the phenomenon and the rewrite is CORRECT?",
+      "codeSnippet": "// Naive FP16 reduction over a large tensor\nhalf sum = 0.0;\nfor (int i = 0; i < N; ++i) {\n    sum += x[i];             // FP16 add\n}\n// Rewrite: block-parallel FP16 partial sums, final FP32 combine\nfloat sum32 = 0.0f;\nfor (int b = 0; b < N; b += BLOCK) {\n    float partial = 0.0f;    // FP32 partial\n    for (int i = b; i < min(b+BLOCK, N); ++i)\n        partial += (float)x[i];\n    sum32 += partial;\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "The issue is overflow (INF), not swamping; the rewrite's FP32 partial sums prevent overflow but not precision loss."
+        },
+        {
+          "id": "B",
+          "text": "The naive loop is fine; both implementations produce identical results because FP16 addition is associative."
+        },
+        {
+          "id": "C",
+          "text": "The rewrite is a bug: converting `x[i]` to float changes the mathematical result of the reduction, so it should be avoided in numerical code."
+        },
+        {
+          "id": "D",
+          "text": "Once the FP16 sum exceeds ~2^k, values with magnitude below ~2^(k-11) round to zero when added, because FP16's 10-bit mantissa cannot distinguish them; this is 'swamping'. The rewrite fixes it by accumulating small partial sums in FP32 and combining them at the end — most additions happen when the running total is still small."
+        }
+      ],
+      "assumptions": [
+        "N is large enough for the running sum to grow past the mantissa's precision threshold.",
+        "Input distribution has some small-magnitude entries."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-AWQ-021",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "AWQ / Design intent",
+      "learningObjective": "Explain AWQ's central technique: identifying salient channels via activation magnitude and applying per-channel scaling to protect them.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "AWQ (Lin et al., MLSys 2024) achieves state-of-the-art W4A16 accuracy on LLMs. Which statements about AWQ's design are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "AWQ identifies a small fraction (~1%) of 'salient' channels by activation magnitude on a calibration set, based on the observation that quantizing these channels causes disproportionately large output error."
+        },
+        {
+          "id": "B",
+          "text": "AWQ applies a per-channel scaling `s` (searched, not derived) that shrinks weights of salient channels before quantization and correspondingly scales activations in the preceding op; the scaled salient weights round to more accurate INT4 values."
+        },
+        {
+          "id": "C",
+          "text": "AWQ is weight-only quantization (W4A16): activations stay in FP16 and no activation calibration is needed at inference time; the scaling is fused into the preceding LayerNorm / previous op."
+        },
+        {
+          "id": "D",
+          "text": "AWQ uses a Hessian-based second-order update identical to GPTQ; the two algorithms produce the same INT4 weights."
+        },
+        {
+          "id": "E",
+          "text": "AWQ requires INT4 Tensor Core support on the deployment GPU; without it, no speed-up is possible."
+        }
+      ],
+      "assumptions": [
+        "The target layer is a linear layer preceded by an op that can absorb the diagonal scaling (e.g., LayerNorm)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-CALIB-017",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "Calibration / MinMax vs Percentile vs KL",
+      "learningObjective": "Compare MinMax, Percentile, and KL-divergence calibration for PTQ activation scales.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "For PTQ activation calibration to INT8, which of the following statements about MinMax, Percentile (e.g., 99.9%), and KL-divergence (entropy) calibration are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "MinMax is always the most accurate calibration because it never clips any true activation value."
+        },
+        {
+          "id": "B",
+          "text": "MinMax uses the observed absolute maximum activation across the calibration set as the clipping threshold; it is simplest but very sensitive to outliers that inflate the range and waste INT8 levels on rare extremes."
+        },
+        {
+          "id": "C",
+          "text": "Percentile calibration (e.g., 99.9%) discards the top 0.1% of activations, keeping the range tighter and dedicating INT8 levels to the bulk of the distribution at the cost of clipping true outliers."
+        },
+        {
+          "id": "D",
+          "text": "KL-divergence (entropy) calibration searches for a threshold that minimizes the KL divergence between the FP activation distribution and the quantized distribution; TensorRT's default INT8 calibrator uses a variant of this."
+        }
+      ],
+      "assumptions": [
+        "Symmetric per-tensor quantization; scale determined by threshold.",
+        "The calibration set is representative of inference-time activations."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-DEQ-029",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Dequantization / In-register dequant for W4A16",
+      "learningObjective": "Given a W4A16 kernel snippet, identify the correct dequantization sequence: unpack INT4 → convert → scale.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP16 Tensor Core"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton / CUDA W4A16 kernel",
+        "stability": "stable_principle"
+      },
+      "stem": "The W4A16 inner-loop pseudo-code above shows the standard 'dequant-in-register' sequence. Which is a correct description of what it does and why it works with FP16 Tensor Cores?",
+      "codeSnippet": "// Pseudo-code for W4A16 inner loop, one K-block of BLOCK_K = 128 INT4 weights per row.\n// weights_packed: two INT4 values per byte, symmetric per-group scale (group_size 128).\n// scale: shape (out_rows, K / 128), FP16.\n// Loading one 64-byte chunk (128 INT4 values).\n\nuint8_t packed[64];   // 64 bytes = 128 INT4 weights\nload_from_gmem(packed, weights_packed + row * K_bytes + kg * 64);\n\nhalf w[128];\nfor (int i = 0; i < 64; ++i) {\n    int lo = (int8_t)((packed[i] << 4) >> 4);   // sign-extend low nibble to int8 in [-8,7]\n    int hi = (int8_t)(packed[i]) >> 4;          // sign-extend high nibble\n    w[2*i    ] = __int2half_rn(lo);\n    w[2*i + 1] = __int2half_rn(hi);\n}\n// Apply per-group scale (one scalar for this entire 128-element block).\nhalf s = scale[row * (K/128) + kg];\nfor (int i = 0; i < 128; ++i) w[i] = __hmul(w[i], s);\n// w[128] is now dequantized FP16 weights; feed to FP16 Tensor Core.",
+      "options": [
+        {
+          "id": "A",
+          "text": "It uses INT4 Tensor Cores directly; the `__int2half_rn` cast is a no-op emitted by the compiler and is not executed on hardware."
+        },
+        {
+          "id": "B",
+          "text": "It unpacks two 4-bit weights per byte (sign-extending each nibble to signed int), converts to FP16, then multiplies by the group's FP16 scale to reconstruct the FP16 weight vector; the resulting FP16 vector is fed to an FP16 Tensor Core matmul. HBM traffic is reduced by ~4× vs FP16 storage while compute stays on standard FP16 Tensor Cores."
+        },
+        {
+          "id": "C",
+          "text": "It applies the scale before conversion to FP16, mixing integer arithmetic with FP16 without any explicit conversion; the final FP16 Tensor Core silently interprets the bit pattern as FP16."
+        },
+        {
+          "id": "D",
+          "text": "It performs the entire GEMM in INT4 without any conversion; the scale is applied only at the end of the K-loop, once per output element."
+        }
+      ],
+      "assumptions": [
+        "Symmetric per-group quantization (z=0).",
+        "FP16 Tensor Core available (Ampere+).",
+        "Weights packed as two INT4 per byte."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-DTYPE-001",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Floating-point formats / Exponent + mantissa",
+      "learningObjective": "Correctly report the exponent and mantissa widths of FP32, FP16, and BF16.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "IEEE 754 binary formats",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which row correctly gives the (sign, exponent, mantissa) bit widths for FP32, FP16, and BF16 respectively?",
+      "options": [
+        {
+          "id": "A",
+          "text": "FP32 = (1, 8, 23), FP16 = (1, 8, 7), BF16 = (1, 5, 10)."
+        },
+        {
+          "id": "B",
+          "text": "FP32 = (1, 8, 23), FP16 = (1, 5, 10), BF16 = (1, 8, 7)."
+        },
+        {
+          "id": "C",
+          "text": "FP32 = (1, 10, 21), FP16 = (1, 5, 10), BF16 = (1, 4, 11)."
+        },
+        {
+          "id": "D",
+          "text": "FP32 = (1, 8, 23), FP16 = (1, 5, 10), BF16 = (1, 5, 10)."
+        }
+      ],
+      "assumptions": [
+        "Standard IEEE 754 and Google BF16 conventions."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-DTYPE-002",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "FP16 vs BF16 / Precision vs range trade-off",
+      "learningObjective": "Explain why FP16 and BF16 trade precision against dynamic range and identify a scenario that dictates the choice.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic accelerator supporting both FP16 and BF16",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A team is training a large language model and hits gradient underflow at some layers when using FP16 with dynamic loss scaling barely keeping activations in range. Which statement about switching to BF16 is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "BF16 uses the same 5-bit exponent as FP16 with a different rounding rule; the choice is a numerical style issue with no dynamic-range effect."
+        },
+        {
+          "id": "B",
+          "text": "BF16 uses more bits than FP16, so switching increases memory footprint but eliminates the underflow entirely."
+        },
+        {
+          "id": "C",
+          "text": "BF16 uses FP32's 8-bit exponent, giving it FP32-like dynamic range and mostly removing underflow/overflow risk during training, at the cost of a coarser mantissa (7 bits vs. FP16's 10); most gradient-dynamic-range problems disappear, and loss scaling can often be simplified or removed."
+        },
+        {
+          "id": "D",
+          "text": "BF16 is a fixed-point format optimized for training; underflow is impossible because there is no exponent."
+        }
+      ],
+      "assumptions": [
+        "The hardware supports BF16 with equivalent throughput to FP16 (true on Ampere/Hopper Tensor Cores).",
+        "The workload is a typical LLM training run with gradient scaling concerns."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-DTYPE-003",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "TF32 / Definition and scope",
+      "learningObjective": "Correctly define TF32 and its relationship to FP32.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere and newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Tensor Core"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA / cuBLAS / cuDNN",
+        "stability": "stable_principle"
+      },
+      "stem": "TF32 (TensorFloat-32) is a numerical format used by NVIDIA Tensor Cores starting with Ampere. Which best describes TF32?",
+      "options": [
+        {
+          "id": "A",
+          "text": "TF32 is a 24-bit format used by CPU vector units for machine-learning workloads; it is unrelated to GPU Tensor Cores."
+        },
+        {
+          "id": "B",
+          "text": "TF32 is a 32-bit format equivalent to FP32; the name is a marketing rebrand with no numerical difference."
+        },
+        {
+          "id": "C",
+          "text": "TF32 is a 16-bit format identical to BF16; the '32' refers to the accumulator width."
+        },
+        {
+          "id": "D",
+          "text": "TF32 is a 19-bit internal Tensor Core input format: 1 sign, 8 exponent (FP32 range), 10 mantissa (FP16 precision). Storage remains FP32; only the Tensor Core multiplier truncates mantissa on input. Accumulation is FP32."
+        }
+      ],
+      "assumptions": [
+        "The reader is on Ampere or newer NVIDIA GPUs."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-DYN-014",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Dynamic vs. static quantization",
+      "learningObjective": "Distinguish dynamic and static activation quantization by scale computation and runtime cost.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "'Dynamic quantization' and 'static quantization' of activations differ in a specific way. Which statement is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Dynamic quantization uses a different integer format (INT4) than static quantization (INT8); the term refers to the format's dynamic range."
+        },
+        {
+          "id": "B",
+          "text": "Dynamic quantization is a synonym for QAT; static quantization is a synonym for PTQ."
+        },
+        {
+          "id": "C",
+          "text": "Dynamic quantization computes the activation scale (and zero-point) from the tensor's own statistics at each forward pass (per-tensor min/max or absmax); static quantization computes and freezes the scales offline via a calibration pass over representative inputs, so the scales are constants at runtime."
+        },
+        {
+          "id": "D",
+          "text": "Static quantization computes scales from the tensor's own statistics at each forward pass; dynamic quantization freezes them offline."
+        }
+      ],
+      "assumptions": [
+        "Standard framework terminology (TensorRT / PyTorch / TF-Lite)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-FAKE-016",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Fake quantization forward",
+      "learningObjective": "Identify a correct fake-quantization forward implementation (quantize → clamp → dequantize) used during QAT.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "stability": "stable_principle"
+      },
+      "stem": "The function above is intended as a symmetric fake-quantization forward for QAT (values quantized to the INT8 grid, then dequantized to FP, so that downstream layers see the quantization noise while gradients can still flow). Is the implementation correct and, if so, what is the standard trick required to make its gradient useful during training?",
+      "codeSnippet": "def fake_quantize_symmetric(x: torch.Tensor,\n                            scale: float,\n                            qmin: int = -127,\n                            qmax: int = 127) -> torch.Tensor:\n    # Forward: simulate INT8 quantization but keep FP values so autograd flows.\n    q = torch.round(x / scale)\n    q = torch.clamp(q, qmin, qmax)\n    x_hat = q * scale                # dequantize back to FP\n    return x_hat",
+      "options": [
+        {
+          "id": "A",
+          "text": "The forward is wrong: multiplying by `scale` after rounding produces the original `x`, so no quantization noise is introduced. The correct forward must add explicit noise."
+        },
+        {
+          "id": "B",
+          "text": "The forward is correct and no special backward trick is needed; PyTorch's autograd computes the mathematically-correct gradient of `round` (zero) and training proceeds normally."
+        },
+        {
+          "id": "C",
+          "text": "The forward is correct. The gradient of `round` and `clamp` is zero almost everywhere, so during backward the standard trick is the 'straight-through estimator' (STE): treat `d(round(x))/dx ≈ 1` (with the clamp mask applied), so gradients pass through as if the fake-quant were identity on the interior of the clamp."
+        },
+        {
+          "id": "D",
+          "text": "The forward is wrong because `torch.round` uses banker's rounding, which is incompatible with quantized inference kernels that use round-half-away-from-zero."
+        }
+      ],
+      "assumptions": [
+        "Symmetric quantization (z=0); scale > 0.",
+        "The training-time framework registers a custom backward or uses `torch.ops.aten.fake_quantize_per_tensor_affine`."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-FP8-004",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "FP8 formats / E4M3 vs E5M2",
+      "learningObjective": "Distinguish the intended uses of FP8 E4M3 and E5M2 formats and their trade-offs.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Hopper (H100/H200) and later, Ada",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP8 Tensor Core"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA / Transformer Engine",
+        "stability": "stable_principle"
+      },
+      "stem": "NVIDIA Hopper Tensor Cores support two FP8 formats: E4M3 (4-bit exponent, 3-bit mantissa) and E5M2 (5-bit exponent, 2-bit mantissa). Which of the following statements about their intended uses and trade-offs are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "E4M3 has narrower dynamic range but higher mantissa precision than E5M2; it is typically preferred for forward-pass activations and weights whose distribution is bounded and needs precision."
+        },
+        {
+          "id": "B",
+          "text": "E5M2 has wider dynamic range (5-bit exponent) but lower precision; it is typically preferred for gradients during training, whose values span a large magnitude range."
+        },
+        {
+          "id": "C",
+          "text": "Both formats have the same total bit width (8 bits including sign); the choice affects precision-vs-range, not memory footprint."
+        },
+        {
+          "id": "D",
+          "text": "Using FP8 requires no scaling factors; the format itself handles the entire dynamic range needed in DNN training."
+        },
+        {
+          "id": "E",
+          "text": "FP8 kernels are supported on Ampere Tensor Cores at the same throughput as FP16; the format was retroactively enabled on sm_80 via a driver update."
+        }
+      ],
+      "assumptions": [
+        "The FP8 formats refer to the NVIDIA/Arm/Intel 2022 specification.",
+        "The workload is a DNN training or inference pipeline on Hopper or later."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-FP8ACCUM-032",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "FP8 mul + FP32 accum on Hopper",
+      "learningObjective": "Explain FP8 matmul semantics on Hopper Tensor Cores including accumulator dtype and scaling requirements.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Hopper (sm_90, H100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP8 Tensor Core (QMMA / WGMMA)"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA / CUTLASS / Transformer Engine",
+        "frameworkVersionScope": "CUDA 12.x; TE 1.x",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "On Hopper Tensor Cores, FP8 (E4M3/E5M2) matmul is a common training precision. Which of the following statements about the FP8 GEMM numerical pipeline are TRUE? (Select all that apply.)",
+      "profileData": "Hopper H100 Tensor Core peak throughput (dense, per NVIDIA whitepaper):\n  BF16 / FP16      : ~ 989 TFLOPS\n  FP8 (E4M3, E5M2) : ~1979 TFLOPS  (~ 2×)\n  Accumulator dtype in FP8 QMMA/WGMMA: FP32.\n  Transformer Engine 'DelayedScaling' recipe: per-tensor scale factors updated with a lag over recent statistics.",
+      "options": [
+        {
+          "id": "A",
+          "text": "FP8 GEMM on H100 has approximately 2× the peak throughput of BF16 GEMM on the same hardware, but only when memory bandwidth is not the bottleneck."
+        },
+        {
+          "id": "B",
+          "text": "The FP8 accumulator is itself FP8; the small dynamic range is deliberately preserved to force early saturation, which acts as an implicit regularizer."
+        },
+        {
+          "id": "C",
+          "text": "FP8 Tensor Core matmuls use an FP32 accumulator; the per-tile accumulator is FP32 regardless of whether inputs are E4M3 or E5M2. This mitigates the very limited dynamic range of FP8 for the sum of products."
+        },
+        {
+          "id": "D",
+          "text": "Because FP8's dynamic range is small, production FP8 pipelines apply per-tensor (or per-block) scale factors that keep the values within FP8's representable range; NVIDIA's Transformer Engine automates this via its `DelayedScaling` recipe."
+        }
+      ],
+      "assumptions": [
+        "The target GPU is Hopper (sm_90) with FP8 Tensor Core support.",
+        "The workload uses NVIDIA's Transformer Engine or equivalent FP8 pipeline."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-GEMM-022",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "INT8 GEMM / Compute vs. bandwidth",
+      "learningObjective": "Identify scenarios where INT8 GEMM is NOT faster than FP16 GEMM on an Ampere-class GPU.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "INT8 and FP16 Tensor Core"
+        ]
+      },
+      "softwareContext": {
+        "framework": "cuBLAS / CUTLASS",
+        "stability": "stable_principle"
+      },
+      "stem": "On A100, INT8 GEMM has ~2× the FP16 Tensor Core throughput, yet Case 2 (M=1) shows INT8 no faster than FP16. What is the correct explanation?",
+      "profileData": "On A100 (Tensor Core INT8 peak ~ 2× FP16 peak):\n  Case 1: M=4096, N=4096, K=4096, batched=1. INT8 GEMM ≈ 0.5× FP16 GEMM runtime (compute-bound; INT8 wins).\n  Case 2: M=1, N=4096, K=4096 (GEMV / decode batch=1). INT8 kernel time ≈ FP16 kernel time (bandwidth-bound; weights dominate).",
+      "options": [
+        {
+          "id": "A",
+          "text": "The M=1 case has such low arithmetic intensity that CUDA cannot launch a grid at all; the runtimes reflect kernel-launch overhead only."
+        },
+        {
+          "id": "B",
+          "text": "INT8 Tensor Cores are disabled on A100 in cuBLAS; the observed times are FP16 in both cases."
+        },
+        {
+          "id": "C",
+          "text": "At M=1 (batch-1 decode), the kernel is bandwidth-bound: the dominant cost is loading the K×N weight matrix, which is the same size regardless of activation dtype. INT8 activations barely affect memory traffic when they represent a tiny fraction of the total bytes moved; peak-TOPS advantage of INT8 Tensor Cores cannot be realized because there is not enough compute per byte."
+        },
+        {
+          "id": "D",
+          "text": "INT8 GEMM at M=1 is slower than FP16 due to quantize/dequantize overhead in the kernel; the fix is to disable dequantization."
+        }
+      ],
+      "assumptions": [
+        "Both configurations use FP16 weight storage.",
+        "GPU has sufficient memory bandwidth headroom for FP16 weights but not compute-bound at M=1."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-GPTQ-020",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "GPTQ / Design intent",
+      "learningObjective": "Explain GPTQ's central technique: per-layer weight quantization via second-order (Hessian-inverse-based) error compensation.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "GPTQ (Frantar et al., ICLR 2023) is a PTQ algorithm that quantizes LLM weights to INT4 with small accuracy loss. Which best captures its central technique?",
+      "options": [
+        {
+          "id": "A",
+          "text": "GPTQ quantizes weights column-by-column, and after each column's quantization it updates the remaining unquantized columns using the Hessian of the per-layer reconstruction error (approximated as `H = 2 X^T X` from calibration activations); this compensates for the just-introduced quantization error and dramatically improves the fit versus naive round-to-nearest."
+        },
+        {
+          "id": "B",
+          "text": "GPTQ retrains the entire model with a straight-through estimator on the quantized weights; it is essentially QAT with a specific initializer."
+        },
+        {
+          "id": "C",
+          "text": "GPTQ uses reinforcement learning to search for optimal per-tensor scales; the 'GPT' in the name refers to a GPT-2 policy network."
+        },
+        {
+          "id": "D",
+          "text": "GPTQ is a runtime dequantization technique that computes INT4 → FP16 dequants faster than standard kernels; it does not change how weights are quantized offline."
+        }
+      ],
+      "assumptions": [
+        "The layer is a linear layer with a computable per-layer Hessian.",
+        "A calibration set of activations is available."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-GRAN-011",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "Quantization granularity / Per-tensor vs per-channel vs per-group",
+      "learningObjective": "Distinguish per-tensor, per-channel, and per-group quantization by scale/zero-point count and hardware/kernel implications.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic quantized GEMM",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "For quantizing an FP16 weight matrix `W` of shape `[out_channels, in_channels]` to INT8/INT4 for a subsequent quantized GEMM, which of the following statements about quantization granularity are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Per-tensor uses one (scale, zero-point) pair for the entire W; simplest to implement and cheapest in metadata storage but loses accuracy when different channels have very different value ranges."
+        },
+        {
+          "id": "B",
+          "text": "Per-channel (also called per-output-channel or per-row here) uses one (scale, zero-point) per row of W; the GEMM epilogue applies a different scale to each output element, adding negligible extra work per output."
+        },
+        {
+          "id": "C",
+          "text": "Per-group divides the `in_channels` axis into groups (e.g., 128 elements per group) and stores one scale per (row, group) pair; standard for W4A16 kernels where groups of 128 give a good accuracy/memory-metadata trade-off."
+        },
+        {
+          "id": "D",
+          "text": "Per-tensor is strictly more accurate than per-channel because a single scale allows Tensor Cores to run at peak throughput without any metadata handling."
+        },
+        {
+          "id": "E",
+          "text": "Per-group quantization is illegal in INT8 GEMM because the accumulator cannot mix multiple scales within one dot product."
+        }
+      ],
+      "assumptions": [
+        "The GEMM kernel is designed for the chosen granularity.",
+        "The 'in_channels' axis in this discussion corresponds to the K axis of the matmul."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-GRAN-012",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Per-channel scale broadcasting / Code",
+      "learningObjective": "Given a code snippet, identify the correct per-channel dequantization broadcast for a `[out, in]` weight quantized per-output-channel.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "out_features",
+            "in_features"
+          ],
+          [
+            "out_features"
+          ]
+        ],
+        "dtypes": [
+          "int8",
+          "float16"
+        ],
+        "layouts": [
+          "row-major",
+          "contiguous"
+        ]
+      },
+      "stem": "The intended semantics is: for each row `i` of `W_int8`, multiply the entire row by `scale[i]`. Given `W_int8.shape == (out, in)` and `scale.shape == (out,)`, does the expression `W_int8.to(torch.float16) * scale` produce the correct result under standard broadcasting rules?",
+      "codeSnippet": "# W_int8: shape (out_features, in_features), symmetric per-output-channel\n# scale:  shape (out_features,), FP16, one per row\n# Reconstruct W_fp:\nW_fp = W_int8.to(torch.float16) * scale                # broadcast form",
+      "options": [
+        {
+          "id": "A",
+          "text": "Yes. Broadcasting aligns the first axis by default, so `scale` broadcasts across rows correctly."
+        },
+        {
+          "id": "B",
+          "text": "No. Broadcasting aligns the last axis, so `scale` (shape `[out]`) would broadcast against the *last* axis of W (shape `[out, in]`), multiplying every column by `scale[j]` — this is per-input-channel, not per-output-channel. The fix is `W_int8.to(torch.float16) * scale.unsqueeze(1)` (or `.view(out, 1)`)."
+        },
+        {
+          "id": "C",
+          "text": "No. The `.to(torch.float16)` conversion is incorrect; INT8 must be dequantized via a dedicated op, not a cast."
+        },
+        {
+          "id": "D",
+          "text": "Yes, but only when `out == in`; broadcasting fails silently when shapes are different, producing incorrect results without an error."
+        }
+      ],
+      "assumptions": [
+        "Symmetric per-output-channel quantization (z=0).",
+        "Standard NumPy / PyTorch broadcasting semantics."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-INT-005",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "INT8 / INT4 dynamic range",
+      "learningObjective": "Precisely state the representable value ranges of INT8 (signed) and INT4 (signed) for symmetric quantization.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic integer arithmetic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "For symmetric quantization to signed integers, which pair correctly gives the representable range of INT8 and INT4 (using the symmetric convention that restricts the value range to be symmetric around zero, i.e., [-127, 127] and [-7, 7])?",
+      "options": [
+        {
+          "id": "A",
+          "text": "INT8 symmetric = [-128, 128]; INT4 symmetric = [-8, 8]."
+        },
+        {
+          "id": "B",
+          "text": "INT8 symmetric = [0, 255]; INT4 symmetric = [0, 15]."
+        },
+        {
+          "id": "C",
+          "text": "INT8 symmetric = [-127, 127]; INT4 symmetric = [-7, 7]."
+        },
+        {
+          "id": "D",
+          "text": "INT8 symmetric = [-128, 127]; INT4 symmetric = [-8, 7] (using the full two's-complement range)."
+        }
+      ],
+      "assumptions": [
+        "Signed integer format with symmetric quantization convention.",
+        "The framework in question uses the standard TensorRT / PyTorch symmetric-range definition."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-INT4KV-035",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "INT4 KV cache / Aggressive KV quantization",
+      "learningObjective": "Identify the trade-offs of INT4 KV cache quantization vs INT8/FP8 for LLM serving.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM / TensorRT-LLM",
+        "frameworkVersionScope": "vLLM 0.5+, TRT-LLM 0.9+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which of the following statements about aggressive INT4 KV cache quantization (relative to FP16 or INT8 KV) are TRUE? (Select all that apply.)",
+      "profileData": "KV cache footprint (LLaMA-70B, 8K context, batch=1, per token):\n  FP16 KV: ~2.5 MB per token → 20 GB per request\n  INT8 KV: ~1.25 MB per token → 10 GB per request\n  INT4 KV: ~0.65 MB per token (INT4 + per-token FP16 scales) → 5.2 GB per request\n\nLong-context QA benchmark (Needle-in-a-Haystack, 32K context, LLaMA-13B):\n  FP16 KV  : baseline accuracy\n  INT8 KV  : ≈ FP16 - 0.4%\n  INT4 KV  : ≈ FP16 - 2.1%\n\nKernel support:\n  vLLM 0.5+: INT8/FP8 KV production; INT4 KV experimental (dequant-in-register to FP16).\n  TensorRT-LLM 0.9+: INT8/FP8 KV production; INT4 KV in preview.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Kernel support for INT4 KV attention is less mature than for INT8/FP8; some production stacks support INT4 for KV storage only, dequantizing to FP16 in the attention kernel."
+        },
+        {
+          "id": "B",
+          "text": "INT4 KV cache is always at least as accurate as INT8 KV cache because more scale factors are needed and are stored per-token."
+        },
+        {
+          "id": "C",
+          "text": "INT4 KV halves the KV memory footprint again vs INT8 (4× vs FP16), enabling substantially longer contexts or higher batch sizes on the same GPU memory."
+        },
+        {
+          "id": "D",
+          "text": "INT4 KV quantization accuracy is more sensitive to context length than INT8 KV because the coarser quantization step amplifies softmax's cumulative sensitivity; long-context QA / retrieval-heavy benchmarks show larger drops than at INT8."
+        }
+      ],
+      "assumptions": [
+        "Per-token or per-head-per-token scaling for KV quantization.",
+        "Standard attention kernel with configurable KV dtype."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-KERN-028",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "Kernel availability / INT4 across GPU generations",
+      "learningObjective": "Identify which GPU generations support which quantized Tensor Core precisions and what falls back to software-emulated kernels.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Turing / Ampere / Hopper Tensor Cores",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "CUDA / cuBLAS / CUTLASS",
+        "frameworkVersionScope": "CUDA 12.x",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "For quantized inference kernels, which of the following are TRUE about hardware / kernel availability across NVIDIA GPU generations? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "INT8 Tensor Cores are supported on Turing (sm_75), Ampere (sm_80/86), Ada (sm_89), and Hopper (sm_90); INT8 GEMM is broadly available via cuBLAS / CUTLASS on all these."
+        },
+        {
+          "id": "B",
+          "text": "FP8 Tensor Cores debuted on Hopper (sm_90) and Ada (sm_89); Ampere (sm_80) does NOT support FP8 Tensor Cores, and W8A8-FP8 kernels on Ampere fall back to FP16 or software emulation."
+        },
+        {
+          "id": "C",
+          "text": "For W4A16 kernels, the INT4 weights are typically dequantized to FP16/BF16 in registers and consumed by FP16/BF16 Tensor Cores; this means W4A16 works on any GPU with FP16/BF16 Tensor Cores (Ampere+), regardless of whether that GPU has 'INT4 Tensor Core' hardware."
+        },
+        {
+          "id": "D",
+          "text": "Because INT4 was deprecated in Hopper's Tensor Cores, W4A16 kernels are slower on H100 than on A100."
+        },
+        {
+          "id": "E",
+          "text": "Any quantized precision that lacks a native Tensor Core kernel can still deliver speedup as long as the compiler can generate a software-emulated INT/FP kernel on CUDA cores."
+        }
+      ],
+      "assumptions": [
+        "Standard NVIDIA GPU generation naming (Turing sm_75, Ampere sm_80/86, Ada sm_89, Hopper sm_90)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-KVQ-025",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "KV cache quantization / Goal",
+      "learningObjective": "Precisely define the goal of KV cache quantization in LLM serving.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "vLLM / TensorRT-LLM",
+        "stability": "stable_principle"
+      },
+      "stem": "In LLM inference serving, 'KV cache quantization' primarily targets which resource?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Compressing the input token embeddings before they enter the transformer blocks."
+        },
+        {
+          "id": "B",
+          "text": "Reducing the compute cost of attention by using INT8 Tensor Cores for the KV projections."
+        },
+        {
+          "id": "C",
+          "text": "Reducing the size of the model weights loaded from HBM during decode."
+        },
+        {
+          "id": "D",
+          "text": "Reducing the memory footprint of the per-request KV cache (Key and Value tensors stored across decode steps), thereby allowing longer contexts or larger batches on the same GPU memory; and, when the attention kernel reads quantized KVs, reducing attention memory bandwidth."
+        }
+      ],
+      "assumptions": [
+        "Standard Transformer decoder with per-token K/V caches stored across decode steps."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-KVQ-026",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "KV cache INT8 / Accuracy trade-off",
+      "learningObjective": "Diagnose the accuracy trade-off of KV cache INT8 quantization in long-context LLM decoding.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic LLM inference stack",
+        "stability": "stable_principle"
+      },
+      "stem": "The experiment above shows a small accuracy drop for INT8 KV at 32K context but none at 4K. Which is the best-supported reading?",
+      "profileData": "Experiment on a 32K-context 13B LLM:\n  Baseline FP16 KV: per-request KV = 4 GB; max concurrent requests = 2 (16 GB budget).\n  INT8 KV: per-request KV = 2 GB; max concurrent requests = 4.\n  Long-context QA benchmark: FP16 KV baseline exact-match = 42.1%; INT8 KV = 41.6%.\n  Same benchmark at 4K context (short): FP16 = 74.3%; INT8 = 74.3%.",
+      "options": [
+        {
+          "id": "A",
+          "text": "KV cache quantization error accumulates over the attention softmax as the context grows; at 4K the error is negligible, but at 32K the softmax's sensitivity to small logit changes (compounded over 32K attended positions) surfaces the loss. The trade-off is favorable if the accuracy drop is acceptable and the doubled batch capacity is valuable."
+        },
+        {
+          "id": "B",
+          "text": "INT8 KV cache quantization is mathematically identical to FP16 for attention; the 0.5% drop is measurement noise."
+        },
+        {
+          "id": "C",
+          "text": "The accuracy drop at 32K is because INT8 KVs cannot represent long contexts due to a dtype range issue; using UINT8 would eliminate it."
+        },
+        {
+          "id": "D",
+          "text": "The doubled batch capacity is illusory: INT8 KV storage does not actually free GPU memory since the paged allocator still reserves FP16 slots."
+        }
+      ],
+      "assumptions": [
+        "Per-token or per-head scaling for KV quantization.",
+        "PagedAttention or equivalent memory allocator respects the actual quantized element size."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-KVQ-027",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "KV cache quantization / Attention kernel compatibility",
+      "learningObjective": "Identify the kernel-support requirements for KV cache quantization to be effective for both memory and bandwidth savings.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP16 or FP8 attention kernel"
+        ]
+      },
+      "softwareContext": {
+        "framework": "vLLM / TensorRT-LLM / FlashAttention",
+        "stability": "stable_principle"
+      },
+      "stem": "For KV cache quantization to deliver both memory-footprint and memory-bandwidth savings in attention, which of the following statements about kernel support are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "If the attention kernel is written to consume quantized KVs natively (e.g., FP8 attention on Hopper, or INT8 attention kernels), both storage AND read bandwidth are reduced without dequant overhead."
+        },
+        {
+          "id": "B",
+          "text": "Storing INT8 KVs but transposing them to FP16 in a separate kernel before attention (an eager dequant) eliminates the bandwidth savings — the same FP16 buffer is then read by the attention kernel."
+        },
+        {
+          "id": "C",
+          "text": "KV cache quantization requires the model weights to also be quantized to the same precision; mixed-precision (FP16 weights + INT8 KV) is not supported by any framework."
+        },
+        {
+          "id": "D",
+          "text": "If the attention kernel expects FP16 KVs and the storage is INT8, the kernel must dequantize INT8 → FP16 in registers on the fly; this saves KV storage but adds dequant instructions per attention step (still bandwidth-net-positive because HBM traffic drops)."
+        }
+      ],
+      "assumptions": [
+        "The attention kernel is FlashAttention-family (single-kernel over K and V) or paged-attention.",
+        "The framework supports per-token or per-block-per-token scaling."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-MEMTRAFFIC-024",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "W4A16 memory traffic / Decode analysis",
+      "learningObjective": "Compute the approximate weight-loading bandwidth saving of W4A16 vs FP16 for LLM decode.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper GPU",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic W4A16 kernel (Marlin / ExLlama / gptq_gemm)",
+        "stability": "stable_principle"
+      },
+      "stem": "Based on the memory-traffic estimate above, what is the primary reason W4A16 accelerates batch-1 LLM decode, and by roughly what factor is weight-load traffic reduced?",
+      "profileData": "Model: 7B-parameter LLM.\n  Decode step at batch=1: dominant cost = load all weights once, do FP16 matmuls.\n  FP16 weights: 7 × 10^9 × 2 B = 14 GB per decode step.\n  W4A16 weights: 7 × 10^9 × 0.5 B (INT4 packed) + per-group scales (group_size 128) ≈ 3.5 GB + ~0.11 GB scales.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Weight-load traffic doubles because per-group scales double the metadata; W4A16 is slower than FP16 for decode."
+        },
+        {
+          "id": "B",
+          "text": "Weight-load traffic is unchanged because INT4 weights are stored in FP16-sized buffers; the improvement comes purely from INT4 Tensor Core arithmetic."
+        },
+        {
+          "id": "C",
+          "text": "Weight-load traffic drops by roughly 4× (14 GB → ~3.6 GB including scales); batch-1 decode is dominated by weight loading, so decode throughput improves by close to the same factor, minus overhead from dequantization in registers."
+        },
+        {
+          "id": "D",
+          "text": "W4A16 accelerates decode by 8× because INT4 uses ¼ the bytes and per-channel scaling gives another 2×."
+        }
+      ],
+      "assumptions": [
+        "Batch-1 decode dominated by weight loading.",
+        "Group size 128 for W4A16 scales.",
+        "The dequant kernel achieves close to the theoretical bandwidth (real kernels reach 70-95%)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-MIXED-023",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "Mixed precision / Master weights / Accumulation dtype",
+      "learningObjective": "Explain the master-weight pattern in mixed-precision DNN training and the roles of the various dtypes.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP16/BF16 Tensor Core"
+        ]
+      },
+      "softwareContext": {
+        "framework": "PyTorch autocast + GradScaler",
+        "frameworkVersionScope": "PyTorch 2.0 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Standard mixed-precision (FP16 with FP32 master weights) DNN training on GPU has several dtype roles. Which of the following statements are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "For FP16 training, dynamic loss scaling multiplies the loss by a factor before backward and unscales the gradients before optimizer step; this shifts gradient magnitudes into FP16's representable range and avoids underflow."
+        },
+        {
+          "id": "B",
+          "text": "BF16 training generally does not require loss scaling because BF16's exponent range matches FP32; the master-weight pattern is optional and often omitted."
+        },
+        {
+          "id": "C",
+          "text": "The forward pass runs matmuls in FP16 on Tensor Cores; the accumulator inside each matmul is FP32; the output is cast to FP16 for the next op."
+        },
+        {
+          "id": "D",
+          "text": "The optimizer maintains a FP32 copy of the weights ('master weights') and applies updates to them; the FP32 weights are then cast to FP16 for the forward pass. This preserves accumulated small-magnitude gradients that would round to zero in FP16."
+        }
+      ],
+      "assumptions": [
+        "Standard mixed-precision training as implemented in PyTorch autocast + GradScaler or Megatron / DeepSpeed."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-OUTLIER-018",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Outliers / Per-tensor calibration failure",
+      "learningObjective": "Diagnose why per-tensor MinMax INT8 activation quantization collapses accuracy on a Transformer layer with heavy-tail activation outliers.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic INT8 GEMM",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Per-tensor MinMax INT8 quantization on this LLM layer collapses accuracy. Which explanation is most accurate?",
+      "profileData": "Per-tensor INT8 quantization of LLM linear layer input activations:\n  Activation distribution: ~99% of values within [-2, 2]; ~1% of values in [-50, 50] (channel-localized outliers).\n  MinMax calibration: threshold = 50 → scale s = 50 / 127 ≈ 0.394 → ~99% of values occupy only ~2 / 0.394 ≈ 5 out of 254 quantization levels.\n  Observed effect: post-quantization perplexity increases 3-5×.",
+      "options": [
+        {
+          "id": "A",
+          "text": "INT8 GEMM is mathematically incapable of representing LLM activations; only FP16 works."
+        },
+        {
+          "id": "B",
+          "text": "Outliers force the per-tensor MinMax scale to be dominated by rare extremes, leaving only ~5 quantization levels for the 99% of activations in [-2, 2]; the resulting resolution is inadequate. Per-channel activation quantization or techniques like SmoothQuant that shift the outlier magnitude to the weights address this."
+        },
+        {
+          "id": "C",
+          "text": "The issue is a bug in the calibration code; a correct MinMax implementation would automatically handle outliers."
+        },
+        {
+          "id": "D",
+          "text": "Per-tensor MinMax is the recommended calibration for LLMs; the perplexity increase reflects an inherent property of LLM output distributions and is unrelated to outlier handling."
+        }
+      ],
+      "assumptions": [
+        "The activation distribution matches the reported profile (99% narrow, 1% wide outliers in specific channels).",
+        "Symmetric per-tensor quantization with MinMax calibration."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-OVERFLOW-006",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "FP16 accumulation overflow / Saturation",
+      "learningObjective": "Diagnose overflow in FP16 accumulation on a long reduction and explain why FP32 accumulation is required.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere Tensor Core",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "An FP16 GEMM with K = 4096 and FP16 accumulation produces INF entries in the output. Switching to an FP32 accumulator fixes the issue. What is the correct explanation?",
+      "profileData": "Kernel: FP16 GEMM with FP16 accumulation, K = 4096.\n  Observed output: many INF values in the C matrix; ~5% of elements saturate.\n  Rework: same kernel with FP32 accumulator, downcast to FP16 on write.\n  Observed output: no INF; matches FP32 reference within 1e-3 tolerance.",
+      "options": [
+        {
+          "id": "A",
+          "text": "FP16's maximum representable magnitude is roughly 6.5×10⁴; accumulating 4096 partial products of moderate magnitude can exceed this range, producing INF. FP32's ~3.4×10³⁸ range comfortably holds the intermediate sum; downcasting to FP16 on the final write preserves the observable output precision without overflow."
+        },
+        {
+          "id": "B",
+          "text": "FP16 GEMM cannot compute anything mathematically meaningful; the fix is unrelated to overflow and is simply due to numeric library differences."
+        },
+        {
+          "id": "C",
+          "text": "The FP16 kernel had a bug in its indexing that produced random INF values; the accumulator dtype is irrelevant."
+        },
+        {
+          "id": "D",
+          "text": "The FP32 accumulator provides higher precision (23-bit mantissa), which somehow prevents overflow because higher-precision numbers cannot overflow."
+        }
+      ],
+      "assumptions": [
+        "Input magnitudes are typical for DNN GEMM (values in [-1, 10] range for both A and B).",
+        "K is large enough to allow the running sum to grow into the danger zone."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-PTQ-015",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "PTQ vs QAT",
+      "learningObjective": "Distinguish post-training quantization (PTQ) from quantization-aware training (QAT).",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "'Post-training quantization' (PTQ) and 'quantization-aware training' (QAT) refer to which distinction?",
+      "options": [
+        {
+          "id": "A",
+          "text": "PTQ is a runtime technique that quantizes model weights on-the-fly during serving; QAT precomputes quantization parameters offline."
+        },
+        {
+          "id": "B",
+          "text": "PTQ and QAT differ only in the numerical format used (PTQ = INT8, QAT = INT4); the training process is identical."
+        },
+        {
+          "id": "C",
+          "text": "PTQ quantizes only weights; QAT quantizes only activations."
+        },
+        {
+          "id": "D",
+          "text": "PTQ quantizes a pre-trained FP model without retraining, using a calibration set to determine scales; QAT inserts fake-quantization ops during training so the model learns weights that are robust to the quantization noise, typically achieving higher accuracy at low bit widths."
+        }
+      ],
+      "assumptions": [
+        "Standard framework terminology (TensorRT, PyTorch, TF-Lite)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-QAT-033",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "QAT / Straight-through estimator",
+      "learningObjective": "Explain the role of the straight-through estimator (STE) in QAT and its limitations.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In quantization-aware training (QAT), the 'straight-through estimator' (STE) is used to backprop through fake-quant ops. Which best describes STE and its limitations?",
+      "options": [
+        {
+          "id": "A",
+          "text": "STE is only used during inference to accelerate quantized kernels; it has no role during training."
+        },
+        {
+          "id": "B",
+          "text": "STE is a mathematical identity, not an approximation; the derivative of `round` inside the clamp region actually equals 1."
+        },
+        {
+          "id": "C",
+          "text": "STE approximates the derivative of `round` (which is zero almost everywhere) as identity on the interior of the clamp region, so gradients pass through the fake-quant op as if it were a no-op. This works well in practice for INT8 but becomes noisier at very low bit widths (INT2/INT3), motivating alternatives like PACT or LSQ that learn better step sizes."
+        },
+        {
+          "id": "D",
+          "text": "STE requires the loss to be differentiable everywhere including at the quantization boundaries; if any input lands exactly on a boundary, the training run must be aborted."
+        }
+      ],
+      "assumptions": [
+        "Standard QAT pipeline with fake-quant ops in the training graph."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-ROUND-030",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Rounding modes / RNE vs stochastic",
+      "learningObjective": "Distinguish round-half-to-even (RNE) from stochastic rounding and identify when each is used.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Two commonly discussed rounding modes for quantization are round-half-to-even (RNE) and stochastic rounding. Which pair correctly describes them?",
+      "options": [
+        {
+          "id": "A",
+          "text": "RNE and stochastic rounding produce the same values; the only difference is that stochastic rounding uses a random seed."
+        },
+        {
+          "id": "B",
+          "text": "RNE rounds to the nearest representable value, with exact half-way ties broken toward the even neighbor (IEEE 754 default; deterministic). Stochastic rounding rounds up or down probabilistically in proportion to distance to each neighbor, producing an unbiased estimator that is useful for training in very low precision (e.g., BF16 or FP8 gradient accumulation)."
+        },
+        {
+          "id": "C",
+          "text": "RNE always rounds down (floor); stochastic rounding always rounds up. Both are deterministic."
+        },
+        {
+          "id": "D",
+          "text": "Stochastic rounding is illegal for quantization because it produces non-deterministic outputs that violate correctness testing."
+        }
+      ],
+      "assumptions": [
+        "'Nearest' means minimum absolute distance in the target representation.",
+        "Stochastic rounding uses a per-value random draw."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-SATURATE-031",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Saturation vs wrap-around",
+      "learningObjective": "Explain the difference between saturation and wrap-around handling of out-of-range values in integer quantization.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "During INT8 quantization, a value exceeds the representable range (e.g., quantize(x/s) = 200 > 127). Which is the correct comparison of saturation vs. wrap-around handling?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Saturation and wrap-around are equivalent modulo a sign flip; both preserve the underlying signal."
+        },
+        {
+          "id": "B",
+          "text": "Saturation clamps the out-of-range value to the boundary (200 → 127); this loses information about the extreme but preserves ordinal relationships and is the mathematically-desired behavior for neural-network quantization. Wrap-around uses modular arithmetic (200 → 200-256 = -56); it turns a large positive into a moderately-negative value, which is catastrophic for signal-carrying activations."
+        },
+        {
+          "id": "C",
+          "text": "Wrap-around is the mathematically-desired behavior because it preserves the exact bit-count of the value."
+        },
+        {
+          "id": "D",
+          "text": "Saturation is only used for weights; activations always use wrap-around because it is what CUDA integer instructions default to."
+        }
+      ],
+      "assumptions": [
+        "Standard integer quantization for DNN inference; not a bit-level cryptographic use case."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-SCALE-009",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Scale / Zero point / Basic quantization mapping",
+      "learningObjective": "Precisely define the scale and zero-point of an affine quantizer and the dequantization formula.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "For an affine (asymmetric) quantizer with scale `s > 0` and zero-point `z` mapping real value `x` to integer `q`, which pair correctly gives the quantize and dequantize formulas?",
+      "options": [
+        {
+          "id": "A",
+          "text": "quantize: `q = round(x * s) + z`; dequantize: `x_hat = (q - z) / s`."
+        },
+        {
+          "id": "B",
+          "text": "quantize: `q = round(x / s) + z`; dequantize: `x_hat = (q - z) * s`."
+        },
+        {
+          "id": "C",
+          "text": "quantize: `q = round(x / s) - z`; dequantize: `x_hat = (q + z) * s`."
+        },
+        {
+          "id": "D",
+          "text": "quantize: `q = round(x + z) / s`; dequantize: `x_hat = q * s - z`."
+        }
+      ],
+      "assumptions": [
+        "Standard affine quantization convention used by ONNX / PyTorch / TensorRT."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-SMOOTH-019",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "SmoothQuant / Design intent",
+      "learningObjective": "Explain the SmoothQuant technique: migrating activation outlier magnitude to weights via a per-channel diagonal scaling.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic INT8 GEMM",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "SmoothQuant enables W8A8 quantization for LLMs where naive per-tensor activation quantization fails due to outliers. Which best describes its central technique?",
+      "options": [
+        {
+          "id": "A",
+          "text": "SmoothQuant applies a global smoothing filter to activation tensors before quantization, low-passing the outliers."
+        },
+        {
+          "id": "B",
+          "text": "SmoothQuant identifies outlier channels and casts them to FP16 while quantizing the rest to INT8; the resulting kernel is mixed-precision."
+        },
+        {
+          "id": "C",
+          "text": "SmoothQuant chooses a per-channel diagonal scaling vector `s` and rewrites `Y = XW` as `Y = (X · diag(1/s)) · (diag(s) · W)`; the activation channels are 'smoothed' (outlier magnitude reduced), while the weights absorb the migrated magnitude. Since weights are easy to per-channel-quantize but activations are usually per-tensor, this makes W8A8 tractable."
+        },
+        {
+          "id": "D",
+          "text": "SmoothQuant retrains the model with regularization that penalizes outlier activations, producing a naturally quantization-friendly network."
+        }
+      ],
+      "assumptions": [
+        "The linear layer is `Y = XW` with per-channel activation outliers along X's feature dimension.",
+        "Weights are per-channel quantized (standard for INT8 W8A8)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-SYMM-010",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "Symmetric vs. asymmetric quantization",
+      "learningObjective": "Compare symmetric and asymmetric quantization formulas, and identify why symmetric is preferred for weights but asymmetric can help for activations.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic INT8 GEMM",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The two quantizers above map an FP32 tensor to INT8 (symmetric) or UINT8 (asymmetric). Which comparison is correct?",
+      "codeSnippet": "# Symmetric per-tensor quantization to INT8\ndef quantize_sym(x: torch.Tensor) -> tuple[torch.Tensor, float]:\n    s = x.abs().max().item() / 127.0     # z = 0\n    q = torch.round(x / s).clamp(-127, 127).to(torch.int8)\n    return q, s\n\n# Asymmetric per-tensor quantization to UINT8\ndef quantize_asym(x: torch.Tensor) -> tuple[torch.Tensor, float, int]:\n    x_min, x_max = x.min().item(), x.max().item()\n    s = (x_max - x_min) / 255.0\n    z = round(-x_min / s)                # zero-point pinned to represent x=0\n    q = torch.round(x / s + z).clamp(0, 255).to(torch.uint8)\n    return q, s, z",
+      "options": [
+        {
+          "id": "A",
+          "text": "Symmetric and asymmetric quantization produce identical accuracy on all distributions; the choice is aesthetic."
+        },
+        {
+          "id": "B",
+          "text": "Symmetric quantization has z=0, so the dequantized value is `q * s` — this simplifies INT8 GEMM because there is no zero-point cross-term to compute. Asymmetric quantization uses the full [0, 255] range and captures skewed distributions (e.g., post-ReLU activations) better, at the cost of an extra bias term in the GEMM."
+        },
+        {
+          "id": "C",
+          "text": "Asymmetric quantization to UINT8 has a larger representable range than symmetric INT8, so it is always more accurate."
+        },
+        {
+          "id": "D",
+          "text": "Symmetric quantization is illegal for negative values because unsigned integers cannot represent them; only asymmetric works for signed distributions."
+        }
+      ],
+      "assumptions": [
+        "Both quantizers target 8-bit integers with standard rounding.",
+        "The subsequent GEMM implementation matches the quantization convention."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-TRTLLM-034",
+      "type": "single",
+      "module": "quantization",
+      "subtopic": "W4A16 group size / Metadata vs accuracy trade-off",
+      "learningObjective": "Reason about the trade-off between W4A16 group size, quantization accuracy, and metadata bandwidth.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "generic W4A16 kernel (AWQ / GPTQ / Marlin)",
+        "stability": "stable_principle"
+      },
+      "stem": "The perplexity trend above shows finer group sizes yield better accuracy but with rising metadata cost. Which is the correct reading of the trade-off?",
+      "profileData": "W4A16 group-size sweep on LLaMA-7B (perplexity, WikiText-2; lower is better):\n  group=32:   4.51   (metadata = ~0.5 bit/param equivalent)\n  group=64:   4.55   (metadata = ~0.25 bit/param)\n  group=128:  4.62   (metadata = ~0.125 bit/param)\n  group=256:  4.85   (metadata = ~0.0625 bit/param)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Smaller groups give more scale factors per weight matrix, letting each group's scale track a narrower value distribution — more accurate but with higher metadata bandwidth (still small relative to the weights). The right choice depends on the accuracy budget and bandwidth headroom; group=128 is a widely-used default because it captures most of the accuracy at ~3% metadata overhead."
+        },
+        {
+          "id": "B",
+          "text": "Smaller groups are always better because more scales mean more information; the metadata cost is negligible and never affects wall-clock."
+        },
+        {
+          "id": "C",
+          "text": "Larger groups are always better because they mean fewer scales to load; the accuracy differences are measurement noise."
+        },
+        {
+          "id": "D",
+          "text": "The perplexity trend is unreliable because group size cannot affect model output; the differences must be caused by different random seeds during quantization."
+        }
+      ],
+      "assumptions": [
+        "FP16 scale values (2 bytes each).",
+        "Symmetric per-group quantization; INT4 weights."
+      ],
+      "version": 1
+    },
+    {
+      "id": "H-WQUANT-013",
+      "type": "multiple",
+      "module": "quantization",
+      "subtopic": "Weight-only vs. weight-activation quantization",
+      "learningObjective": "Distinguish weight-only, W8A8, and W4A16 quantization schemes by their memory-traffic and kernel-support profiles.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper GPU",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Tensor Core INT8 and FP16"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic (TensorRT / vLLM / TGI kernels)",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider three inference quantization schemes: (i) weight-only INT4 with FP16 activations (W4A16), (ii) weight-only INT8 with FP16 activations (W8A16), (iii) full W8A8 (weights AND activations INT8). Which statements are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "In W4A16, using an INT4 Tensor Core is required for the speedup; without INT4 Tensor Core support, the scheme cannot accelerate anything."
+        },
+        {
+          "id": "B",
+          "text": "W8A16 is a compute-bound quantization scheme: it uses INT8 Tensor Cores for the matmul and therefore requires an activation calibration pass to determine INT8 activation scales."
+        },
+        {
+          "id": "C",
+          "text": "W4A16 primarily targets memory-bandwidth-bound decode where the dominant cost is loading weights; the INT4 weights halve HBM traffic vs. INT8, and dequantization to FP16 in-register keeps the compute in FP16 Tensor Cores."
+        },
+        {
+          "id": "D",
+          "text": "W8A8 targets compute-bound scenarios where an INT8 Tensor Core kernel is available and delivers higher TFLOPS than FP16; activations are quantized dynamically or with a calibrated static scale."
+        }
+      ],
+      "assumptions": [
+        "The GPU has FP16 Tensor Core support (Ampere or newer).",
+        "The kernel available for W4A16 performs dequant-in-register (typical of Marlin, ExLlama, gptq_gemm)."
+      ],
+      "version": 1
+    }
+  ]
+}

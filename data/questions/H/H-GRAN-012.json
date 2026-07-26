@@ -1,0 +1,112 @@
+{
+  "id": "H-GRAN-012",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "Per-channel scale broadcasting / Code",
+  "learningObjective": "Given a code snippet, identify the correct per-channel dequantization broadcast for a `[out, in]` weight quantized per-output-channel.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "out_features",
+        "in_features"
+      ],
+      [
+        "out_features"
+      ]
+    ],
+    "dtypes": [
+      "int8",
+      "float16"
+    ],
+    "layouts": [
+      "row-major",
+      "contiguous"
+    ]
+  },
+  "codeSnippet": "# W_int8: shape (out_features, in_features), symmetric per-output-channel\n# scale:  shape (out_features,), FP16, one per row\n# Reconstruct W_fp:\nW_fp = W_int8.to(torch.float16) * scale                # broadcast form",
+  "stem": "The intended semantics is: for each row `i` of `W_int8`, multiply the entire row by `scale[i]`. Given `W_int8.shape == (out, in)` and `scale.shape == (out,)`, does the expression `W_int8.to(torch.float16) * scale` produce the correct result under standard broadcasting rules?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Yes. Broadcasting aligns the first axis by default, so `scale` broadcasts across rows correctly."
+    },
+    {
+      "id": "B",
+      "text": "No. Broadcasting aligns the last axis, so `scale` (shape `[out]`) would broadcast against the *last* axis of W (shape `[out, in]`), multiplying every column by `scale[j]` \u2014 this is per-input-channel, not per-output-channel. The fix is `W_int8.to(torch.float16) * scale.unsqueeze(1)` (or `.view(out, 1)`)."
+    },
+    {
+      "id": "C",
+      "text": "No. The `.to(torch.float16)` conversion is incorrect; INT8 must be dequantized via a dedicated op, not a cast."
+    },
+    {
+      "id": "D",
+      "text": "Yes, but only when `out == in`; broadcasting fails silently when shapes are different, producing incorrect results without an error."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): broadcasting aligns from the last axis. B (Correct): identifies broadcasting rule and the correct fix. C (Wrong): cast + multiply is the standard symmetric-quant dequant. D (Wrong): even when out == in, the result is per-column, not per-row. General context: NumPy / PyTorch broadcasting aligns dimensions from the trailing (last) axis. `scale` with shape `[out]` broadcasts against `W`'s last axis (of size `in`), requiring `in == out`; otherwise a shape error is raised. Even when `in == out`, the intended semantics (one scale per row) is not what broadcasting does \u2014 it applies one scale per column. The fix is to reshape `scale` to `[out, 1]` via `.unsqueeze(1)` or `.view(out, 1)`, so it broadcasts across the trailing (in) axis. Option D partially recognizes the trailing-axis alignment but misdescribes the failure mode.",
+  "optionExplanations": {
+    "A": "Wrong: broadcasting aligns from the last axis.",
+    "B": "Correct: identifies broadcasting rule and the correct fix.",
+    "C": "Wrong: cast + multiply is the standard symmetric-quant dequant.",
+    "D": "Wrong: even when out == in, the result is per-column, not per-row."
+  },
+  "assumptions": [
+    "Symmetric per-output-channel quantization (z=0).",
+    "Standard NumPy / PyTorch broadcasting semantics."
+  ],
+  "nonImplications": [
+    "Does not imply the fix `scale.unsqueeze(1)` is the only correct way \u2014 `scale.view(-1, 1)` or `scale[:, None]` are equivalent.",
+    "Does not imply the runtime always raises a shape error when broadcasting fails; when `out != in`, PyTorch raises, but when `out == in`, silent incorrect broadcast occurs."
+  ],
+  "misconceptionTags": [
+    "broadcast_first_axis",
+    "quant_cast_illegal"
+  ],
+  "distractorRationales": {
+    "A": "Reverses broadcast direction.",
+    "C": "Denies valid dequant via cast+multiply.",
+    "D": "Partially correct but misdescribes silent-failure mode."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Per-channel dequantization semantics",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "PyTorch broadcasting rules",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-GRAN-012.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

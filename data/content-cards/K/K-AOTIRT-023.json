@@ -1,0 +1,47 @@
+{
+  "questionId": "K-AOTIRT-023",
+  "learningObjective": "Identify correct statements about executing an AOTInductor-compiled artifact at runtime.",
+  "canonicalClaims": [
+    {
+      "claim": "An AOTInductor artifact exposes a C-ABI entry function, bundles the generated Triton/CUDA kernels, and runs without Python and without the Inductor compiler at runtime.",
+      "conditions": [
+        "AOTInductor build succeeded and the target architecture matches the deployment device.",
+        "The caller provides device-memory pointers plus shape/stride metadata."
+      ],
+      "nonImplications": [
+        "Does not imply arbitrary shapes are supported; only pre-declared dynamic ranges are.",
+        "Does not imply a permanently frozen C ABI across all future versions."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-aoti", "locator": "AOTInductor C ABI and deployment" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AOTInductor still calls Inductor at first inference.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AOT means all lowering has happened before deployment.",
+      "sourceOrEvidence": "AOTInductor documentation"
+    },
+    {
+      "claim": "AOTInductor requires the full libtorch at deployment.",
+      "errorType": "scope_error",
+      "whyWrong": "AOTInductor is designed to avoid full libtorch; it uses a minimal C shim.",
+      "sourceOrEvidence": "AOTInductor deployment guide"
+    },
+    {
+      "claim": "Kernels are not bundled; they must be shipped separately.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Generated kernels are packaged with the artifact.",
+      "sourceOrEvidence": "AOTInductor documentation"
+    },
+    {
+      "claim": "AOTInductor supports arbitrary dynamic shapes at inference.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Only shapes declared as dynamic at build are supported.",
+      "sourceOrEvidence": "AOTInductor dynamic shape docs"
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

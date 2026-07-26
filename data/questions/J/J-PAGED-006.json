@@ -1,0 +1,95 @@
+{
+  "id": "J-PAGED-006",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Paged KV Cache / Memory abstraction",
+  "learningObjective": "Explain the paged KV cache abstraction used by vLLM's PagedAttention and its motivation.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": [
+      "sufficient HBM for KV cache"
+    ]
+  },
+  "softwareContext": {
+    "framework": "vLLM (or PagedAttention-based systems)",
+    "stability": "stable_principle"
+  },
+  "stem": "vLLM's PagedAttention introduces a paged KV cache. Which description of the abstraction and its primary motivation is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Paged KV cache stores KV entries in a hash table indexed by (request_id, position); the primary motivation is O(1) random access to individual entries, which enables sparse attention patterns not possible with contiguous storage."
+    },
+    {
+      "id": "B",
+      "text": "Paged KV cache allocates one contiguous [max_seq_len, H_kv, d] slab per request and reserves virtual memory to grow it lazily; the primary motivation is compatibility with existing FlashAttention kernels that require contiguous memory."
+    },
+    {
+      "id": "C",
+      "text": "Paged KV cache compresses KV entries by quantizing them to INT8 blockwise; the 'paging' refers to the quantization block boundaries, not to memory layout."
+    },
+    {
+      "id": "D",
+      "text": "Paged KV cache divides KV memory into fixed-size blocks (e.g., 16 tokens per block) and gives each sequence a block table mapping logical positions to physical blocks. This eliminates external fragmentation and internal reservation of unused space that would otherwise result from pre-allocating each sequence's full max-length KV."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Paged KV cache (PagedAttention, borrowing terminology from OS virtual memory) partitions KV memory into fixed-size physical blocks and gives each sequence a block table that maps logical positions to physical block indices. The motivation is memory efficiency: static per-sequence allocation of max-length KV wastes memory when actual outputs are shorter, and contiguous re-allocation causes fragmentation. Paging solves both problems and enables the sharing patterns (prefix caching, beam search) that vLLM uses.",
+  "optionExplanations": {
+    "A": "Wrong: not a hash table; not for sparse attention.",
+    "B": "Wrong: not per-request contiguous slabs; the whole point is to avoid that.",
+    "C": "Wrong: paging is a memory layout, not quantization.",
+    "D": "Correct: fixed blocks + block table, motivated by memory efficiency."
+  },
+  "assumptions": [
+    "'Paged' is used in the OS-VM sense: fixed-size blocks addressed via a page table.",
+    "Attention kernel must be aware of the block table (custom paged attention kernel)."
+  ],
+  "nonImplications": [
+    "Does not imply zero overhead; the block table adds indirection.",
+    "Does not imply the block size is universal; typical values are 8-32 tokens."
+  ],
+  "misconceptionTags": [
+    "paged_kv_hash_myth",
+    "paged_kv_quantization_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Wrong abstraction.",
+    "B": "Contradicts the whole point.",
+    "C": "Confuses paging with quantization."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 3 — PagedAttention design",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "PagedAttention architecture",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "PagedAttention memory abstraction and motivation",
+    "evidenceType": "paper_result",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/J/J-PAGED-006.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

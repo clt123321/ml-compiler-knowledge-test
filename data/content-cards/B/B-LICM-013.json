@@ -1,0 +1,51 @@
+{
+  "questionId": "B-LICM-013",
+  "learningObjective": "State the safety conditions under which a loop-invariant computation can be hoisted out of a loop.",
+  "canonicalClaims": [
+    {
+      "claim": "Loop-Invariant Code Motion (LICM) may hoist a loop-invariant expression to the preheader only when (1) it is loop-invariant, (2) hoisting preserves dominance of uses, and (3) speculative execution in the preheader introduces no new faults or observable side effects.",
+      "conditions": [
+        "The loop has a well-defined preheader dominating the loop header.",
+        "Fault/side-effect semantics of the target IR are known (e.g., division-by-zero traps).",
+        "Alias analysis suffices for hoisting loads over intervening stores."
+      ],
+      "nonImplications": [
+        "Does not imply hoisting always improves performance; register pressure and spills can offset benefits.",
+        "Does not imply LICM is only for arithmetic; loads and calls (with attributes) can also be hoisted."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "LICM safety chapter" },
+        { "ref": "DOC:llvm-langref", "locator": "speculatable attribute" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any loop-invariant expression can be hoisted without further conditions.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Hoisting an expression that may fault (division by zero, out-of-bounds load) introduces a new fault when the loop's trip count is zero; speculative-safety must be established.",
+      "sourceOrEvidence": "EAC3 LICM chapter"
+    },
+    {
+      "claim": "LICM only applies to arithmetic operations.",
+      "errorType": "scope_error",
+      "whyWrong": "Loads and calls can be hoisted with appropriate alias/attribute proof; LLVM's LICM handles all speculatable instructions.",
+      "sourceOrEvidence": "LLVM LICM documentation"
+    },
+    {
+      "claim": "Hoisting an invariant load is safe if no writes occur inside the loop.",
+      "errorType": "wrong_condition",
+      "whyWrong": "In addition, one must consider concurrent modifications (if the language allows), and safety of speculating the load itself (dereferenceable-ness, alignment).",
+      "sourceOrEvidence": "LLVM alias analysis and speculatable semantics"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM's LICM uses `isSafeToExecuteUnconditionally` to check speculative-safety.",
+    "Loop rotation may precede LICM to create a loop preheader.",
+    "For divisions, LICM requires known non-zero divisor (constant, range analysis, or `!range` metadata)."
+  ],
+  "performanceScenarios": [
+    "Hoisting expensive divisions or memory loads out of hot loops is a significant classic optimization; safety proofs are often the bottleneck."
+  ],
+  "versionSensitivity": "stable_principle"
+}

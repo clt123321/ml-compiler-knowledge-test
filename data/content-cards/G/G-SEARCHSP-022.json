@@ -1,0 +1,57 @@
+{
+  "questionId": "G-SEARCHSP-022",
+  "learningObjective": "Contrast template-based schedule search (AutoTVM) and template-free schedule search (Ansor / MetaSchedule).",
+  "canonicalClaims": [
+    {
+      "claim": "Template-based search (AutoTVM) explores parameters of a manually-authored schedule template; template-free search (Ansor / MetaSchedule) generates candidate schedules from the compute definition by composing schedule primitives, eliminating manual template authorship but enlarging the search space.",
+      "conditions": [
+        "The compute definition is expressible in the framework's DSL (TE or TensorIR).",
+        "The cost model / evolutionary loop is available to manage the enlarged space."
+      ],
+      "nonImplications": [
+        "Does not imply template-free eliminates all human input; compute definitions and cost-model features are still designed.",
+        "Does not imply template-free always converges faster."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "AutoTVM template-based search" },
+        { "ref": "PAPER:ansor", "locator": "Template-free search from compute definitions" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Template-based search learns the template from data; template-free search enumerates all schedules exhaustively.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AutoTVM templates are human-authored; Ansor uses learned cost models to *prune* the space, not to enumerate exhaustively.",
+      "sourceOrEvidence": "AutoTVM and Ansor papers"
+    },
+    {
+      "claim": "Template-free search always outperforms template-based search.",
+      "errorType": "overgeneralization",
+      "whyWrong": "On well-templated ops with limited tuning budget, template-based can match or beat template-free; the trade-off is engineering effort vs. tuning time.",
+      "sourceOrEvidence": "Ansor empirical comparison"
+    },
+    {
+      "claim": "The two approaches share the same search space; only the measurement backend differs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The very notion of the space differs: parametrized template vs. free composition of schedule primitives.",
+      "sourceOrEvidence": "TVM and Ansor design docs"
+    },
+    {
+      "claim": "Template-free search is fully automatic and requires no domain knowledge.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Domain knowledge shows up in compute definitions, cost-model feature choice, and sketch enumeration rules.",
+      "sourceOrEvidence": "Ansor sketch design"
+    }
+  ],
+  "implementationFacts": [
+    "AutoTVM ships with hand-written templates per operator (e.g., conv2d, matmul).",
+    "Ansor uses `sketch` structures that capture algorithmic skeletons and `annotation` phases for parameterization.",
+    "MetaSchedule (TVM's successor) uses the same principles applied to TensorIR."
+  ],
+  "performanceScenarios": [
+    "For a new operator without an existing template, Ansor can produce a competitive schedule without human template writing.",
+    "For a well-templated operator with tight tuning budget, AutoTVM may converge faster."
+  ],
+  "versionSensitivity": "stable_principle"
+}

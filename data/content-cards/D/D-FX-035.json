@@ -1,0 +1,56 @@
+{
+  "questionId": "D-FX-035",
+  "learningObjective": "Identify true properties of the FX Graph produced by TorchDynamo.",
+  "canonicalClaims": [
+    {
+      "claim": "The FX Graph is a Python-level IR of nodes with `op`, `target`, `args`, `kwargs` fields; after AOTAutograd it is functionalized over ATen ops. It is a DAG for a single traced pass; Python loops are unrolled or preserved via higher-order ops for control flow.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The trace succeeded without unrecoverable graph break."
+      ],
+      "nonImplications": [
+        "Does not imply all Python constructs can be captured.",
+        "Does not imply FX and TorchScript IRs are the same."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-dynamo", "locator": "FX Graph structure" },
+        { "ref": "PAPER:pytorch2", "locator": "FX Graph in PyTorch 2" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FX Graphs are machine code and not inspectable from Python.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FX Graphs are Python objects; `graph.print_tabular()` and iteration are standard.",
+      "sourceOrEvidence": "torch.fx docs"
+    },
+    {
+      "claim": "FX Graph and TorchScript IR are the same.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are distinct representations with different capabilities.",
+      "sourceOrEvidence": "torch.fx / TorchScript docs"
+    },
+    {
+      "claim": "FX Graph does not contain mutating ops in any circumstance.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Pre-AOTAutograd traces may contain in-place ops; functionalization removes them for the compiled path.",
+      "sourceOrEvidence": "PyTorch 2 ASPLOS"
+    },
+    {
+      "claim": "Python `for` loops in the source are always preserved as loop ops in FX.",
+      "errorType": "scope_error",
+      "whyWrong": "Most for-loops over Python-side ranges are unrolled during tracing; only higher-order loop ops persist as such.",
+      "sourceOrEvidence": "torch.fx docs"
+    }
+  ],
+  "implementationFacts": [
+    "FX node ops include: placeholder, call_function, call_method, call_module, get_attr, output",
+    "Post-AOTAutograd graphs are typically functional and normalized to ATen ops",
+    "Higher-order ops: torch.cond, torch._higher_order_ops.while_loop, etc."
+  ],
+  "performanceScenarios": [
+    "Reading the FX graph is a standard debugging step for graph break / recompile / fusion issues."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

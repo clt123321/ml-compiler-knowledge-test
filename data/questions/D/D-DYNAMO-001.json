@@ -1,0 +1,96 @@
+{
+  "id": "D-DYNAMO-001",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "TorchDynamo / Graph break on Python side effect",
+  "learningObjective": "Diagnose a TorchDynamo graph break caused by a Python-object side effect and describe the resulting graph-split behavior.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Given the following code and TorchDynamo log fragment, what is the most accurate description of the direct cause of the graph break and its immediate consequence?",
+  "codeSnippet": "import torch\n\nclass Ctx:\n    def __init__(self):\n        self.count = 0\n\n@torch.compile(fullgraph=False)\ndef f(x, ctx):\n    y = torch.relu(x)\n    ctx.count += 1     # Python attribute mutation on a non-tensor object\n    z = y * y\n    return z\n\n# TORCH_LOGS=\"graph_breaks\" output (excerpt):\n#   Graph break in user code at .../example.py:9\n#   Reason: STORE_ATTR on a Python object with side effects (ctx.count)\n#   Torch-Dynamo cannot trace mutation of arbitrary user objects; splitting graph here.",
+  "profileData": null,
+  "options": [
+    {
+      "id": "A",
+      "text": "The `+=` operator is unsupported on Python integers under Dynamo; rewriting as `ctx.count = ctx.count + 1` avoids the STORE_ATTR pathway and restores full-graph tracing across the offending line."
+    },
+    {
+      "id": "B",
+      "text": "Graph breaks only occur when a tensor-valued Python control-flow branch is data-dependent; a scalar attribute mutation cannot cause a graph break in any current PyTorch release, so the log entry indicates a misconfigured environment."
+    },
+    {
+      "id": "C",
+      "text": "`torch.relu` is not traceable under `fullgraph=False`; the graph break originates from `torch.relu`, not from `ctx.count`, and the log's line-number attribution is misleading due to how Dynamo reports offsets."
+    },
+    {
+      "id": "D",
+      "text": "TorchDynamo cannot trace mutations of Python attributes on arbitrary non-tensor objects; the graph splits at STORE_ATTR, `z = y * y` compiles as a separate FX subgraph, and eager Python runs the attribute update in between."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "TorchDynamo traces Python bytecode into an FX graph but cannot faithfully model arbitrary Python side effects such as mutating attributes on user-defined objects. When it encounters an untraceable STORE_ATTR (here `ctx.count += 1`), it splits the graph, compiles the segments before and after separately, and hands the offending line back to Python at runtime. This produces multiple compiled subgraphs plus eager-mode gap between them.",
+  "optionExplanations": {
+    "A": "Wrong: `+=` desugars to STORE_ATTR just as the rewrite does; the issue is object-attribute mutation, not the operator syntax.",
+    "B": "Wrong: many non-tensor Python side effects (list mutation, attribute set on user objects, prints) cause graph breaks.",
+    "C": "Wrong: `torch.relu` is a supported op; `fullgraph=False` does not disable ops.",
+    "D": "Correct: this is the standard TorchDynamo behavior — split at the untraceable bytecode, compile around it, and run the offending statement in eager Python."
+  },
+  "assumptions": [
+    "The `ctx` object is a regular Python class instance, not a tensor or a compiled module submodule.",
+    "`fullgraph=False` is used, so graph breaks are permitted (with `fullgraph=True`, this would raise an error instead)."
+  ],
+  "nonImplications": [
+    "Does not imply that the compiled subgraphs run slower than eager end-to-end; the eager step in between is small.",
+    "Does not imply that all attribute mutations cause graph breaks; mutations on registered nn.Module parameters follow different rules."
+  ],
+  "misconceptionTags": [
+    "operator_vs_side_effect_confusion",
+    "fullgraph_false_means_no_breaks"
+  ],
+  "distractorRationales": {
+    "A": "Confuses operator desugaring with side-effect handling.",
+    "B": "Falsely restricts graph-break causes to data-dependent control flow.",
+    "C": "Blames a well-supported op for the break."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Graph breaks / supported Python semantics",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "TorchDynamo bytecode transformation and side effects",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-DYNAMO-001.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

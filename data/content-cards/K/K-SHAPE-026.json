@@ -1,0 +1,48 @@
+{
+  "questionId": "K-SHAPE-026",
+  "learningObjective": "Reason about how a runtime handles dynamic (unknown-at-compile-time) shapes: symbolic dim tracking, allocator reservation, and specialization vs generalization trade-offs.",
+  "canonicalClaims": [
+    {
+      "claim": "Modern ML runtimes carry symbolic dim descriptors, declare supported shape ranges at build time, and use bucketing or optimization profiles to trade off build cost against runtime flexibility. Dynamic-shape kernels typically have some overhead compared to fully specialized ones.",
+      "conditions": [
+        "The runtime supports declared shape ranges (min/opt/max or symbolic vars).",
+        "Deployment workload has some shape variability."
+      ],
+      "nonImplications": [
+        "Does not imply the dynamic-static gap is always large.",
+        "Does not imply bucketing scales to arbitrary variability."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-export", "locator": "SymInt and dynamic dims" },
+        { "ref": "DOC:trt", "locator": "Optimization profiles" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Dynamic-shape kernels are exactly as fast as static-shape kernels.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Bounds checks, mask handling, and looser tile shapes can add overhead relative to fully specialized kernels.",
+      "sourceOrEvidence": "TensorRT / TorchInductor dynamic-shape docs"
+    },
+    {
+      "claim": "Bucketing avoids build cost.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Each bucket increases build cost; bucketing trades runtime flexibility for build cost.",
+      "sourceOrEvidence": "TensorRT optimization profile design"
+    },
+    {
+      "claim": "Inputs outside declared shape ranges are silently accepted.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Out-of-range shapes trigger fallback, recompilation, or error depending on the stack.",
+      "sourceOrEvidence": "TensorRT / torch.export docs"
+    },
+    {
+      "claim": "Symbolic dims are just Python metadata with no compile-time effect.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Symbolic dims propagate through shape inference and constrain kernel selection and memory planning.",
+      "sourceOrEvidence": "torch.export documentation"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

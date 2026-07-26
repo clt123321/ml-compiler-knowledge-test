@@ -1,0 +1,57 @@
+{
+  "questionId": "G-VECTOR-012",
+  "learningObjective": "Identify the precondition set that a compiler must satisfy to vectorize a loop safely and effectively.",
+  "canonicalClaims": [
+    {
+      "claim": "A loop is vectorizable when there is no cross-iteration WRITE dependence into the same location; cross-iteration READS of already-defined values are legal but may require shifted / unaligned loads and a tail (masked or scalar) epilogue for non-multiple trip counts.",
+      "conditions": [
+        "No loop-carried write-write or write-read dependences within the vectorization window.",
+        "The vector unit or ISA supports unaligned or shifted vector loads.",
+        "The tail block is handled explicitly (masking or scalar fallback)."
+      ],
+      "nonImplications": [
+        "Does not imply vectorization always improves performance; memory-bound loops gain little.",
+        "Does not imply zero cost for shifted loads on every ISA."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Vectorization legality" },
+        { "ref": "DOC:llvm-langref", "locator": "Loop vectorizer" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any cross-iteration read of an array is a loop-carried dependence that blocks vectorization.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Loop-carried dependences that block vectorization involve writes, not reads; reads of values written in earlier iterations (of the same loop) are true dependences only if the write is also inside the loop.",
+      "sourceOrEvidence": "Compiler textbook dependence analysis"
+    },
+    {
+      "claim": "Vectorization of a pointwise loop is illegal when FP32 multiplication is used because of non-associativity.",
+      "errorType": "scope_error",
+      "whyWrong": "Associativity concerns apply to reduction reordering, not pointwise elementwise vectorization.",
+      "sourceOrEvidence": "IEEE 754 semantics"
+    },
+    {
+      "claim": "If the array is 32-byte aligned at index 0, all vector loads are automatically aligned regardless of the shift.",
+      "errorType": "wrong_condition",
+      "whyWrong": "A shifted read (e.g., A[i-1]) starts at a different alignment offset; the compiler must emit an unaligned load or a shift/blend across two aligned loads.",
+      "sourceOrEvidence": "AVX2 / SSE alignment rules"
+    },
+    {
+      "claim": "The vectorizer will refuse any loop whose trip count is not a multiple of the vector width.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Modern vectorizers produce a masked or scalar epilogue for the tail iterations; non-multiple trip counts do not block vectorization.",
+      "sourceOrEvidence": "LLVM loop vectorizer documentation"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM's loop vectorizer inserts masked or scalar epilogue loops.",
+    "AVX2 supports 8-lane FP32; AVX-512 supports 16-lane FP32.",
+    "GPU SIMT effectively performs 32-lane vectorization at the warp level."
+  ],
+  "performanceScenarios": [
+    "A shifted stencil A[i-1] + 2*A[i] + A[i+1] vectorizes to two unaligned loads plus one aligned load + FMAs."
+  ],
+  "versionSensitivity": "stable_principle"
+}

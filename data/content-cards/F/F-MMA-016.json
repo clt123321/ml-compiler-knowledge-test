@@ -1,0 +1,49 @@
+{
+  "questionId": "F-MMA-016",
+  "learningObjective": "Understand mma.sync as warp-cooperative with register-fragment operand layout.",
+  "canonicalClaims": [
+    {
+      "claim": "Tensor Core `mma.sync` is a warp-cooperative instruction that executes one matrix multiply-add whose operand tiles are distributed across the 32 lanes' registers in a hardware-defined fragment layout; individual lanes hold only fragments.",
+      "conditions": ["Ampere+ Tensor Core / mma.sync as documented in PTX ISA."],
+      "nonImplications": [
+        "Does not imply lane-level independent MMAs.",
+        "Does not imply GMEM/SMEM can be operands directly."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "PTX mma.sync" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Each of the 32 lanes runs its own independent mma.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The mma is warp-cooperative; the tile is shared across lanes.",
+      "sourceOrEvidence": "PTX ISA"
+    },
+    {
+      "claim": "mma.sync reads directly from GMEM.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Operands must be in registers; ldmatrix loads them from SMEM.",
+      "sourceOrEvidence": "PTX ISA"
+    },
+    {
+      "claim": "ldmatrix is auto-inserted by nvcc.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Programmers/libraries emit it explicitly (CUTLASS, cuBLAS internals).",
+      "sourceOrEvidence": "CUTLASS docs"
+    },
+    {
+      "claim": "All mma shapes use the same register fragment layout.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Layout is defined per m/n/k tuple in PTX ISA.",
+      "sourceOrEvidence": "PTX ISA"
+    }
+  ],
+  "implementationFacts": [
+    "Common shapes: m16n8k8 (fp16), m16n8k16 (fp16), m16n8k16/m16n8k32 (int8), m16n8k8 (tf32).",
+    "`ldmatrix.sync` loads a 4x4/8x8 tile from SMEM into the mma fragment layout."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

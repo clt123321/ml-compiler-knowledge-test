@@ -1,0 +1,99 @@
+{
+  "id": "J-PAGEDDES-024",
+  "type": "multiple",
+  "module": "llm_inference",
+  "subtopic": "PagedAttention design / Fixed-size blocks and sharing",
+  "learningObjective": "Distinguish correct claims about PagedAttention's design and its capabilities from common misconceptions.",
+  "archetype": "systems_dataflow",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "vLLM PagedAttention",
+    "frameworkVersionScope": "vLLM 0.2+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Select all correct statements about PagedAttention's design. (Choose all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "The block-table indirection allows different sequences to share physical blocks — used to implement prefix caching (across requests) and beam-search fork points (within a request)."
+    },
+    {
+      "id": "B",
+      "text": "PagedAttention decompresses KV blocks on-the-fly from a lossy quantized format; the 'paged' name refers to lossy compression pages, not memory blocks."
+    },
+    {
+      "id": "C",
+      "text": "PagedAttention is compatible with FlashAttention-style tiled softmax: the paged attention kernel loads blocks into SMEM via the block table and runs the same online-softmax math. The paging overhead is a small per-block table lookup, not a per-element cost."
+    },
+    {
+      "id": "D",
+      "text": "PagedAttention uses fixed-size KV blocks (e.g., 16 tokens per block) and a per-sequence block table mapping logical positions to physical block indices; internal waste per sequence is bounded by block_size - 1 tokens."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): sharing enables prefix caching + beam search. B (Wrong): paging is not quantization/compression. C (Correct): block-table lookup as the only overhead vs FlashAttention. D (Correct): fixed blocks + block table + bounded internal waste.",
+  "optionExplanations": {
+    "A": "Correct: sharing enables prefix caching + beam search.",
+    "B": "Wrong: paging is not quantization/compression.",
+    "C": "Correct: block-table lookup as the only overhead vs FlashAttention.",
+    "D": "Correct: fixed blocks + block table + bounded internal waste."
+  },
+  "assumptions": [
+    "PagedAttention as in vLLM (not a hypothetical variant).",
+    "Block size is a small fixed number (8-32 tokens)."
+  ],
+  "nonImplications": [
+    "Does not imply zero overhead vs FlashAttention with contiguous KV.",
+    "Does not imply block sharing is free of correctness constraints; copy-on-write is needed when shared blocks diverge."
+  ],
+  "misconceptionTags": [
+    "paged_kv_compression_myth",
+    "paged_kv_no_sharing_myth"
+  ],
+  "distractorRationales": {
+    "B": "Confuses paging with compression."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 3 — design; Sec 4 — sharing",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "PagedAttention design",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "PagedAttention design and sharing capabilities",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-PAGEDDES-024.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

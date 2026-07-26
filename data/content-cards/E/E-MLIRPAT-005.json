@@ -1,0 +1,52 @@
+{
+  "questionId": "E-MLIRPAT-005",
+  "learningObjective": "Reason about MLIR pattern rewriting and canonicalization semantics.",
+  "canonicalClaims": [
+    {
+      "claim": "MLIR canonicalization runs a greedy pattern-rewrite driver that iterates registered folders and canonicalization patterns to a fixed point, and folds arithmetic identities such as add-zero, mul-one, sub-self, while also DCE'ing dead constants.",
+      "conditions": [
+        "The dialect provides `fold` and canonicalization patterns for the ops.",
+        "Standard `-canonicalize` pass is used."
+      ],
+      "nonImplications": [
+        "Does not imply that user-defined dialects automatically get these patterns.",
+        "Does not imply canonicalization is globally optimal; it is a local fixed point."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Canonicalization and pattern rewrite driver" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Canonicalization does not perform DCE; a separate pass is required.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The canonicalize pass includes dead-op elimination as part of its fixed-point loop.",
+      "sourceOrEvidence": "MLIR LangRef, Canonicalization"
+    },
+    {
+      "claim": "`sub %x, %x → 0` is not a canonicalization rewrite because it changes def-use.",
+      "errorType": "scope_error",
+      "whyWrong": "Canonicalization routinely rewrites def-use chains via `replaceOp`.",
+      "sourceOrEvidence": "MLIR arith dialect canonicalizers"
+    },
+    {
+      "claim": "Pattern driver applies each pattern exactly once in source order.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It applies to fixed point, revisiting ops until no rewrites fire.",
+      "sourceOrEvidence": "MLIR pattern rewrite doc"
+    },
+    {
+      "claim": "Canonicalization always improves performance.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Canonical form may not match target-specific patterns; some backends need denormalized forms.",
+      "sourceOrEvidence": "MLIR docs on canonicalization intent"
+    }
+  ],
+  "implementationFacts": [
+    "`applyPatternsAndFoldGreedily` is the greedy driver.",
+    "`arith` dialect provides fold/canonicalize hooks for arithmetic identities."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,84 @@
+{
+  "id": "G-LOOPFISS-007",
+  "type": "multiple",
+  "module": "graph_opt_schedule",
+  "subtopic": "Loop fission / Motivations and pitfalls",
+  "learningObjective": "Identify legitimate motivations for loop fission and cases where fission is counter-productive.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Loop fission (loop distribution) splits one loop body into two loops with the same iteration space. Which of the following are legitimate motivations for loop fission in a numerical / tensor pipeline? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "To improve cache behavior in a producer-consumer chain where a single loop body already fits in L1 cache and the intermediate values are reused within the same iteration."
+    },
+    {
+      "id": "B",
+      "text": "To relieve register pressure when a single loop body has too many simultaneously live scalars, at the cost of touching some intermediate arrays twice."
+    },
+    {
+      "id": "C",
+      "text": "To allow vectorization or parallelization of a subset of statements whose dependence structure permits it, while leaving unvectorizable statements in a separate loop."
+    },
+    {
+      "id": "D",
+      "text": "To enable different tile sizes or schedules for the two halves, e.g., a compute-bound half and a memory-bound half."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "Loop fission is the inverse of fusion. Legitimate uses: (A) split a register-heavy body so each half fits in the register budget without spills; (B) isolate vectorizable statements from unvectorizable ones so the vectorizer can act on one half; (C) allow independent scheduling / tiling for the two halves. (D) is the opposite of the fission use case: if a single body already fits in cache and reuses intermediates, fusion is preferred; fission would force materialization of the intermediates. (E) is wrong: fission is a semantics-preserving transformation only when the dependence graph permits it \u2014 it cannot fix bugs, only preserve behavior.",
+  "optionExplanations": {
+    "A": "Wrong: describes a case where fusion is preferred; fission would hurt cache behavior.",
+    "B": "Correct: canonical register-pressure motivation for fission.",
+    "C": "Correct: canonical vectorization motivation.",
+    "D": "Correct: canonical schedule-flexibility motivation."
+  },
+  "assumptions": [
+    "Both halves of the fission preserve the dependence graph (no forward-crossing dependences created)."
+  ],
+  "nonImplications": [
+    "Does not imply that any of these motivations always yield a net speedup; each is a candidate transformation that must be validated."
+  ],
+  "misconceptionTags": [
+    "fission_always_helps_cache",
+    "fission_can_fix_bugs"
+  ],
+  "distractorRationales": {
+    "A": "Confuses fission and fusion motivations."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Loop distribution / fission chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/G/G-LOOPFISS-007.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

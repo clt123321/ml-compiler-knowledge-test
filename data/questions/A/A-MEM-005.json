@@ -1,0 +1,98 @@
+{
+  "id": "A-MEM-005",
+  "type": "multiple",
+  "module": "arch_perf_model",
+  "subtopic": "GPU memory hierarchy / bandwidth / access rules",
+  "learningObjective": "Distinguish structural and access-pattern properties of NVIDIA GPU memory tiers (register file, shared memory, constant memory, global memory).",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "compute capability 8.0"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following statements about the A100 (sm_80) memory hierarchy are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Aggregate global-memory (HBM2e) bandwidth on the A100 board is higher than the aggregate on-chip shared-memory bandwidth summed across all SMs, since HBM stacks scale linearly with pin count and channels."
+    },
+    {
+      "id": "B",
+      "text": "Shared memory is bank-organized: warp threads accessing distinct addresses in the same bank serialize (bank conflict); global memory has no banks but obeys coalescing rules on 32/64/128 B transactions."
+    },
+    {
+      "id": "C",
+      "text": "Constant memory accesses in which all threads of a warp read the same address are broadcast, avoiding a per-thread memory transaction and delivering the value in one cycle to the whole warp."
+    },
+    {
+      "id": "D",
+      "text": "The per-SM register file (65,536 × 32-bit ≈ 256 KB) is larger than the per-SM configurable L1/shared-memory partition (up to 192 KB total on A100)."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "A: The A100 register file is 65,536 × 4 B = 256 KB per SM, whereas L1/SMEM is at most 192 KB per SM (configurable). C: Shared memory is bank-organized and conflicts serialize; global memory uses coalescing (bytes-per-transaction rules), not banks. D: Constant memory is optimized for broadcast when all threads in a warp read the same address. B is false: aggregate shared-memory bandwidth across all SMs is much higher than aggregate HBM bandwidth (SRAM ≫ HBM per-byte throughput).",
+  "optionExplanations": {
+    "A": "Incorrect: HBM bandwidth (~ 2 TB/s aggregate) is lower than the sum of per-SM shared-memory bandwidth over all 108 SMs (each SMEM partition supplies many TB/s effective).",
+    "B": "Correct: bank conflicts affect shared memory; coalescing affects global memory.",
+    "C": "Correct: constant-memory broadcast is a documented CUDA optimization.",
+    "D": "Correct: 256 KB (registers) > 192 KB (L1/SMEM)."
+  },
+  "assumptions": [
+    "sm_80 (A100) compute capability configuration.",
+    "Shared-memory bank width = 32-bit (4 bytes) per bank."
+  ],
+  "nonImplications": [
+    "Does not imply that programmers should always favor shared memory; small kernels may perform better with only register/L1 usage.",
+    "Does not imply that constant-memory broadcast is used automatically for uniform accesses to global memory."
+  ],
+  "misconceptionTags": [
+    "sram_hbm_bandwidth_direction",
+    "constant_memory_semantics"
+  ],
+  "distractorRationales": {
+    "A": "Reverses the ranking of on-chip vs. off-chip aggregate bandwidth."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Compute Capability 8.0 tables; memory hierarchy chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "GPU memory hierarchy and bank conflicts chapters",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "sm_80 architectural properties",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-MEM-005.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

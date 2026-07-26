@@ -1,0 +1,56 @@
+{
+  "questionId": "D-CUSTOM-022",
+  "learningObjective": "Understand why a custom operator must provide a meta / FakeTensor implementation to be compatible with torch.compile.",
+  "canonicalClaims": [
+    {
+      "claim": "A custom op used inside a torch.compile'd function needs a meta / FakeTensor implementation to let the tracer propagate shape/dtype/device without executing real data; without it, the tracer either graph-breaks or errors.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 with torch.library API.",
+        "The custom op is invoked via torch.ops.<lib>.<op>."
+      ],
+      "nonImplications": [
+        "Does not imply the meta impl generates Triton for the op.",
+        "Does not imply Inductor can fuse the custom op with surrounding pointwise ops; opaque custom ops usually form fusion boundaries."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Custom ops requirement" },
+        { "ref": "DOC:torch-dynamo", "locator": "FakeTensor" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Meta impl generates a Triton version of the CUDA kernel.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Meta impls only model shape/dtype; codegen is unrelated.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Meta impls are only relevant to TorchScript.",
+      "errorType": "scope_error",
+      "whyWrong": "torch.compile's tracer relies on them.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Providing a meta impl makes torch.compile skip the real CUDA kernel.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The CUDA kernel runs at execution time; the meta impl is trace-time only.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Meta impls are deprecated.",
+      "errorType": "version_leak",
+      "whyWrong": "They remain the standard mechanism in current releases.",
+      "sourceOrEvidence": "torch.library docs"
+    }
+  ],
+  "implementationFacts": [
+    "torch.library provides `impl(lib, name, dispatch_key)` for CPU, CUDA, Meta, Autograd, etc.",
+    "Meta tensors live on device='meta' and carry no data",
+    "Meta impls should be pure functions of the input shapes/dtypes/device"
+  ],
+  "performanceScenarios": [
+    "Correctly authored meta impls let torch.compile trace through custom ops without graph breaks."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

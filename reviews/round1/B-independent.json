@@ -1,0 +1,158 @@
+{
+  "module": "compiler_basics",
+  "code": "B",
+  "reviewer": "primary-review-batch1",
+  "reviewedAt": "2026-07-26",
+  "answers": [
+    {
+      "id": "B-ALIAS-007",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — 'always no-alias' is unsound and can cause miscompilation. B: true — canonical may-alias definition; conservative may-alias inhibits opts but preserves correctness. C: true — must-alias enables strong optimizations. D: true — a false no-alias is a soundness bug."
+    },
+    {
+      "id": "B-CFG-003",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Standard textbook definition: BB = maximal straight-line sequence, single entry, single exit; CFG edges follow terminator successors. Matches D. A/B/C misrepresent BB definitions."
+    },
+    {
+      "id": "B-CFOLD-009",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Constant folding evaluates ops on constant operands, must respect source semantics (overflow, IEEE-754 special cases). Matches B. A false (folding works pre-SSA). C false (folding vs propagation are related but distinct). D false (FP not associative)."
+    },
+    {
+      "id": "B-CPROP-010",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "SCCP: %x=5, %cond=(5<10)=true, bb_else marked unreachable, so φ merges only from bb_then → %y = %y1 = 6. Plain CP without reachability must merge both φ inputs → non-constant top. Matches B."
+    },
+    {
+      "id": "B-CSE-012",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Between two loads, a call that may write memory can invalidate reload. Must prove no write via alias analysis or purity attribute. Matches C. A false (default assumption is calls may write memory). B false (SSA is about register values, not memory). D false (loads can be eliminated under proper conditions)."
+    },
+    {
+      "id": "B-DATAFLOW-022",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Liveness = backward may-analysis with meet=union (live if live on SOME successor). Available expressions = forward must-analysis with meet=intersection (available if on EVERY predecessor). Matches C. B is inverted."
+    },
+    {
+      "id": "B-DCE-011",
+      "independentAnswer": ["C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — FP exceptions are observable side effects; can't always elide. B: false — DCE works in non-SSA too (with reaching-defs). C: true — DCE requires no observable side effects. D: true — unreachable code elim is distinct from DCE."
+    },
+    {
+      "id": "B-DEFUSE-006",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "SSA gives each name exactly one textual def; def-use is trivially recorded from name binding, no reaching-defs analysis needed. Matches C. A/B/D are false claims about SSA."
+    },
+    {
+      "id": "B-DOM-004",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — dominance ≠ post-dominance. B: true — unreachable code has no dominator relation to entry. C: true — canonical dominance definition and tree. D: true — post-dominance on reverse CFG with synthesized exit."
+    },
+    {
+      "id": "B-DOMTREE-025",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Dominator tree: entry at root, immediate dominator = parent, φ placement at dominance frontier. Matches D. A/B/C confuse dom tree with other structures."
+    },
+    {
+      "id": "B-ESCAPE-008",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Escape analysis: object doesn't escape its allocating function → stack-allocate / scalarize / SRoA. Matches D."
+    },
+    {
+      "id": "B-INLINE-014",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — recursive functions can be partially inlined (recursion peeling). B: true — indirect calls need devirt before inlining. C: true — inlining exposes cross-call opts. D: true — icache/register pressure/compile time tradeoffs."
+    },
+    {
+      "id": "B-INSTSEL-016",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Instruction selection = tree/DAG pattern matching with cost model to find minimum-cost cover. Multi-op instructions (FMA/LEA) match larger tiles. Matches B. A (reg alloc), C (inlining), D (scheduling) are different phases."
+    },
+    {
+      "id": "B-JITAOT-019",
+      "independentAnswer": ["B", "C"],
+      "confidence": "high",
+      "rationale": "A: false — hybrid AOT+JIT is common. B: true — JIT exploits runtime info. C: true — AOT has no warm-up. D: false — JIT can invest heavily (e.g., tier-up); not inherently less optimized (V8 top tier, HotSpot C2)."
+    },
+    {
+      "id": "B-LICM-013",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "LICM safety: loop-invariant + dominates uses (or side-effect free / speculatable) + safe in preheader. sdiv can trap on b=0 → need speculation safety (prove b≠0) or execute-once guarantee. Matches D."
+    },
+    {
+      "id": "B-LIVE-005",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Backward liveness with live-out(B)={}. live_in[I4]=({}−∅)∪{c}={c}. live_in[I3]=({c}−{c})∪{b,z}={b,z}. live_in[I2]=({b,z}−{b})∪{a}={z,a}. live_in[I1]=({z,a}−{a})∪{x,y}={x,y,z}. Matches D. C={x,y} would be wrong because z is used later at I3 and no def between I1 and I3 removes it."
+    },
+    {
+      "id": "B-LOOPINV-023",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "%s is defined by loop-header φ carrying %s_next (loop-varying). So %s is NOT loop-invariant, therefore %e = mul %s, 2 is NOT loop-invariant. Matches C. A/B ignore operand invariance. D over-generalizes."
+    },
+    {
+      "id": "B-PARTIAL-018",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Jones/Gomard/Sestoft canonical definition: specialize wrt static inputs, residual takes only dynamic inputs. Matches A."
+    },
+    {
+      "id": "B-PATTERN-017",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — pattern rewriting frameworks manage termination via priorities/cost; peephole is not automatically 'guaranteed' either. B: true — both do match-and-replace. C: true — peephole = local window, late backend, target-specific. D: true — rewrite frameworks (InstCombine, PDL) apply declarative rules with framework-managed matching."
+    },
+    {
+      "id": "B-PHI-002",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Canonical SSA merge = φ at top of merge block, one incoming per predecessor. Matches D. A (select) is a related but distinct construct and not required for SSA. B/C wrong."
+    },
+    {
+      "id": "B-REGALLOC-015",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Chaitin graph coloring: nodes=live ranges, edges=interference, K colors=phys regs, spill=to memory when K-coloring impossible. Matches D."
+    },
+    {
+      "id": "B-SEMPRES-021",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: true — UB → compiler assumes not occurring; canonical C/C++ optimizer behavior. B: false — fewer instructions can absolutely change behavior (e.g., eliminating necessary side effects). C: true — observable behavior subset is the canonical semantic-preservation definition. D: true — -ffast-math relaxes IEEE-754."
+    },
+    {
+      "id": "B-SOUND-020",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: true — soundness direction depends on intent; in bug-finding tools soundness can mean under-approximation (report only real bugs; e.g., some deductive verifiers). B: true — precision vs scalability tradeoff. C: false — soundness ≠ precision. D: true — for optimizations, sound analysis over-approximates behavior (never claims safe when it isn't)."
+    },
+    {
+      "id": "B-SSA-001",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "SSA = one textual assignment per variable + φ at merges. Matches C. A/B/D misconstrue SSA."
+    },
+    {
+      "id": "B-SSAFORM-024",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Out-of-SSA lowering: phi has parallel-copy semantics; naive sequential copies fail on swap cycles. Correct lowering uses Sreedhar/Boissinot or temp reg. Matches D."
+    }
+  ]
+}

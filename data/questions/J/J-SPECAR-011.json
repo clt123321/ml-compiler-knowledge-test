@@ -1,0 +1,87 @@
+{
+  "id": "J-SPECAR-011",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Speculative decoding / Acceptance rate and speedup",
+  "learningObjective": "Reason about how acceptance rate determines speedup in speculative decoding and where speedup is bounded.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "In a spec-decoded run with k = 5 proposals per step, the observed acceptance rate per proposed token is p = 0.7. The target forward costs ~10 ms; the draft forward costs ~2 ms per token. Which statement about expected speedup is correct?",
+  "profileData": "Setup:\n  Target forward on k+1 positions:   10 ms\n  Draft forward per token:            2 ms\n  Proposals per verification:         k = 5\n  Per-token acceptance probability:   p = 0.7 (independent Bernoulli approximation)\n\nExpected accepted prefix length ≈ (1 - p^{k+1}) / (1 - p) for Bernoulli-independent acceptance.\n  = (1 - 0.7^6) / 0.3 ≈ (1 - 0.117) / 0.3 ≈ 2.94 tokens\n  Per-verification: 1 target step (10 ms) + 5 draft steps (5 * 2 = 10 ms) = 20 ms\n  Expected accepted tokens per verification: ~2.94 + 1 (target's sample) = ~3.94\n  Baseline: target alone = 10 ms per token",
+  "options": [
+    {
+      "id": "A",
+      "text": "Speedup equals 1 / (1 - p) = 3.33x independent of k, because acceptance rate solely determines throughput; increasing k beyond 1 has no effect on wall time."
+    },
+    {
+      "id": "B",
+      "text": "Speedup is exactly k = 5x because k tokens are proposed per target forward; the acceptance rate p only affects quality, not throughput."
+    },
+    {
+      "id": "C",
+      "text": "Expected tokens per verification is ~3.94, at 20 ms per verification: ~0.20 tokens/ms. Baseline is 0.10 tokens/ms. Speedup ≈ 2x. Acceptance rate p is the dominant lever; as p → 1 speedup approaches (k+1) / (1 + draft-cost-fraction * (k+1)), bounded by the draft/target cost ratio."
+    },
+    {
+      "id": "D",
+      "text": "Because the draft forward runs in parallel with the target forward on the same GPU, there is no draft overhead in wall time and speedup is (k+1) * p ≈ 4.2x."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "With Bernoulli-independent acceptance, expected accepted prefix length is (1 - p^{k+1})/(1 - p) ≈ 2.94 tokens; the target also samples one output on rejection, giving ~3.94 tokens per verification. At 20 ms per verification (target + draft), that's 0.20 tokens/ms vs baseline 0.10 → ~2x speedup. As p → 1, speedup approaches the limit (k+1)/(1 + draft-cost-share), so both draft cost and k matter. A cheap draft (low cost) and high p push toward the asymptote.",
+  "optionExplanations": {
+    "A": "Wrong: k does affect throughput; the formula ignores k.",
+    "B": "Wrong: p < 1 shortens expected accepted prefix; k tokens are never guaranteed.",
+    "C": "Correct: right arithmetic and correct sensitivity analysis.",
+    "D": "Wrong: draft cannot run in parallel with target on the same critical path; draft is sequential per step."
+  },
+  "assumptions": [
+    "Bernoulli-independent per-token acceptance is a first-order approximation; real acceptance is position-dependent.",
+    "Draft and target run on the same GPU without overlap; some implementations overlap by pipelining, complicating the calculus."
+  ],
+  "nonImplications": [
+    "Does not imply Bernoulli independence holds exactly.",
+    "Does not imply k should always be increased; larger k raises variance and can hurt tail latency."
+  ],
+  "misconceptionTags": [
+    "specdec_speedup_k_flat",
+    "specdec_parallel_draft_myth"
+  ],
+  "distractorRationales": {
+    "A": "Ignores k dependence.",
+    "B": "Ignores acceptance probability.",
+    "D": "Fabricates parallel draft execution."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:specdecode",
+      "locator": "Sec 4 — expected token analysis",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Expected speedup of speculative decoding as a function of k, p, and draft cost",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/J/J-SPECAR-011.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

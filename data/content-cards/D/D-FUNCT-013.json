@@ -1,0 +1,56 @@
+{
+  "questionId": "D-FUNCT-013",
+  "learningObjective": "Reason about how functionalization treats an in-place update on a view (aliased mutation).",
+  "canonicalClaims": [
+    {
+      "claim": "AOTAutograd's functionalization models an in-place update on a view as a scatter-style update of the underlying tensor (`slice_scatter`, `select_scatter`, `index_put`), threading the new SSA value through downstream ops; the compiled region returns the mutated tensor so the runtime wrapper can preserve external mutation semantics.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "The view has a supported representation (slice/index)."
+      ],
+      "nonImplications": [
+        "Does not imply every view+mutation pattern compiles equally well; unusual patterns can graph-break.",
+        "Does not imply the runtime write-back is free."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:pytorch2", "locator": "Functionalization of aliased mutations" },
+        { "ref": "DOC:torch-compile", "locator": "Functionalization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Functionalization silently discards mutations on views.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "It preserves them via scatter-style rewrites.",
+      "sourceOrEvidence": "PyTorch 2 ASPLOS"
+    },
+    {
+      "claim": "AOTAutograd errors out on any view+mutation.",
+      "errorType": "scope_error",
+      "whyWrong": "View+mutation is supported via functionalization.",
+      "sourceOrEvidence": "PyTorch 2 ASPLOS"
+    },
+    {
+      "claim": "Mutations fall back to eager Python per op.",
+      "errorType": "definition_confusion",
+      "whyWrong": "There is no per-op Python fallback; functionalization stays in the compiled graph.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Runtime write-back is free.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Boundary bookkeeping (extra tensor return + write-back) has real cost.",
+      "sourceOrEvidence": "PyTorch runtime docs"
+    }
+  ],
+  "implementationFacts": [
+    "Common scatter ops: slice_scatter, select_scatter, index_put",
+    "Compiled region returns additional tensors for externally-observed mutated inputs",
+    "Runtime wrapper writes back mutated tensors onto the caller's tensors"
+  ],
+  "performanceScenarios": [
+    "Functionalization enables graph-level optimizations at the cost of extra tensor arguments and write-backs on the boundary."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

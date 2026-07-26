@@ -1,0 +1,95 @@
+{
+  "id": "E-MLIRDIA-002",
+  "type": "multiple",
+  "module": "mlir_tvm_xla",
+  "subtopic": "MLIR / Dialect, Trait, Interface",
+  "learningObjective": "Explain the roles of Dialect, Trait, and Interface in MLIR extensibility, and identify what each entity does and does not do.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "Which of the following statements about MLIR Dialects, Traits, and Interfaces are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "A Trait is compile-time metadata attached to an Op class that Pass writers can query with a static check (e.g., `SameOperandsAndResultType`, `MemoryEffects`), letting analyses and rewrites treat many Ops uniformly."
+    },
+    {
+      "id": "B",
+      "text": "An Interface is a virtual method table on Ops (or Dialects/Types), letting client code call polymorphic behavior on an Op without knowing its concrete class (e.g., `InferShapedTypeOpInterface`)."
+    },
+    {
+      "id": "C",
+      "text": "Once an Op is defined in one Dialect, it can never be aliased into another Dialect; therefore lowering between Dialects always requires cloning the Op and rebuilding all its uses from scratch, without leveraging any interface polymorphism."
+    },
+    {
+      "id": "D",
+      "text": "A Dialect is a registration namespace grouping related Operations, Types, and Attributes; different Dialects can coexist in one IRModule, enabling progressive lowering across levels of abstraction."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "D"
+  ],
+  "explanation": "Options A, B, D are correct; option C is incorrect. A (Correct): Traits are static compile-time metadata for uniform handling. B (Correct): Interfaces are virtual method dispatch on Ops/Types/Dialects. C (Wrong): dialect conversion + patterns replace Ops using rewriter APIs; interfaces enable polymorphic legalization. D (Correct): Dialects group ops/types/attrs and can coexist for progressive lowering.",
+  "optionExplanations": {
+    "A": "Correct: Traits are static compile-time metadata for uniform handling.",
+    "B": "Correct: Interfaces are virtual method dispatch on Ops/Types/Dialects.",
+    "C": "Wrong: dialect conversion + patterns replace Ops using rewriter APIs; interfaces enable polymorphic legalization.",
+    "D": "Correct: Dialects group ops/types/attrs and can coexist for progressive lowering."
+  },
+  "assumptions": [
+    "The reader is thinking about MLIR core extensibility mechanisms, not any downstream project's naming."
+  ],
+  "nonImplications": [
+    "Does not imply that Traits and Interfaces are interchangeable; Traits are static, Interfaces are virtual.",
+    "Does not imply every Dialect defines Types; some dialects only add Ops on top of built-in Types."
+  ],
+  "misconceptionTags": [
+    "trait_vs_interface",
+    "dialect_isolation_myth"
+  ],
+  "distractorRationales": {
+    "C": "Fabricates a 'clone-from-scratch' constraint; dialect conversion is the intended mechanism."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Dialects, Traits, Interfaces overview",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "MLIR CGO 2021 \u2014 extensibility section",
+      "supports": [
+        "A",
+        "B",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-MLIRDIA-002.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

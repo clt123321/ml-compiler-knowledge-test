@@ -1,0 +1,84 @@
+{
+  "id": "E-XLABUF-021",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "XLA / Buffer assignment, aliasing, in-place operations",
+  "learningObjective": "Understand XLA's buffer assignment: value \u2192 buffer mapping, aliasing, and how in-place execution is decided.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "XLA",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement about XLA's buffer assignment pass is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "XLA's buffer assignment maps HLO SSA values to physical buffers, allowing values with disjoint liveness to share the same buffer and enabling in-place execution when the compiler can prove the input value is no longer needed after the operation."
+    },
+    {
+      "id": "B",
+      "text": "Buffer assignment gives each HLO value its own dedicated buffer for the lifetime of the program; buffer reuse only happens at runtime through the memory allocator."
+    },
+    {
+      "id": "C",
+      "text": "Buffer assignment is a runtime pass executed on every step of the model; it is not part of static compilation and produces different assignments each iteration."
+    },
+    {
+      "id": "D",
+      "text": "HLO ops are always executed out-of-place; XLA does not support in-place semantics for any operation, so all elementwise updates must allocate a fresh buffer."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "XLA's Buffer Assignment is a compile-time analysis/rewriting pass that decides physical buffer layout for HLO values. It performs liveness analysis, allows disjoint values to share buffers (reducing peak memory), and lets ops execute in-place when the compiler proves the input's value is no longer used elsewhere after the op (e.g., single-use elementwise updates). This static analysis is much more effective than runtime allocator behavior alone, and the resulting buffer assignment is baked into the compiled program.",
+  "optionExplanations": {
+    "A": "Correct: static liveness + buffer sharing + in-place opportunities.",
+    "B": "Wrong: buffer sharing between disjoint-liveness values is core to the pass.",
+    "C": "Wrong: buffer assignment is a compile-time pass.",
+    "D": "Wrong: XLA does support in-place execution when analysis allows."
+  },
+  "assumptions": [
+    "Standard XLA buffer assignment as documented in the OpenXLA project."
+  ],
+  "nonImplications": [
+    "Does not imply XLA can always achieve zero-copy in-place; only when liveness allows it.",
+    "Does not imply this eliminates all runtime memory management; a runtime allocator still exists for dynamic aspects."
+  ],
+  "misconceptionTags": [
+    "buffer_assignment_runtime_myth",
+    "no_in_place_myth"
+  ],
+  "distractorRationales": {
+    "B": "Ignores buffer sharing.",
+    "C": "Confuses compile-time with runtime.",
+    "D": "Wrong claim about in-place support."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "XLA buffer assignment pass documentation",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-XLABUF-021.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

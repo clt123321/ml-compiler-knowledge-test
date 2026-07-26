@@ -1,0 +1,100 @@
+{
+  "id": "J-OOM-028",
+  "type": "multiple",
+  "module": "llm_inference",
+  "subtopic": "KV cache OOM / Diagnosis and mitigations",
+  "learningObjective": "Diagnose KV cache OOM under long-context multi-tenant serving and identify effective mitigations.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "H100 80GB or A100 80GB",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "vLLM 0.4+",
+    "frameworkVersionScope": "vLLM 0.4+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "A vLLM deployment on an 80GB GPU running Llama-3-70B (with GQA, 8 KV heads) is throwing frequent 'KV cache full' preemptions. Prompt/output stats and observed metrics: (Select all mitigations that would concretely reduce OOM/preemption rates.)",
+  "profileData": "Model: Llama-3-70B, GQA (H_kv=8, d=128, L=80), FP16 KV.\n  Per-token KV: 2 * 80 * 8 * 128 * 2 B = 320 KB.\n  Deployment: TP=8 across 8 x H100 80GB (so per-GPU KV budget ≈ (80GB - weights_per_GPU - workspace) / 8 shard).\n  Actually TP-8 means KV cache is also sharded (H_kv=8 goes to 1 KV head per GPU) → per-GPU per-token KV ≈ 40 KB.\n  Workload: 4K-token prompts, 500-token outputs on average; target concurrent batch = 128.\n  Observed: KV usage per GPU peaks at 99%, preemption rate 30%, tail TTFT p99 = 5x p50.",
+  "options": [
+    {
+      "id": "A",
+      "text": "Switch from TP=8 to PP=8: pipeline parallelism replicates KV cache across all pipeline stages (each stage stores the whole per-request KV), providing 8x more KV capacity per pipeline stage."
+    },
+    {
+      "id": "B",
+      "text": "Enable INT8 or FP8 KV cache: cuts per-token KV bytes ~2x, roughly doubling concurrent batch capacity at the cost of small accuracy loss."
+    },
+    {
+      "id": "C",
+      "text": "Reduce max_concurrent_batch (batch admission cap) so that KV pressure doesn't reach 99%: this trades peak throughput for lower preemption / better tail TTFT."
+    },
+    {
+      "id": "D",
+      "text": "Enable prefix caching if requests share long system prompts: shared prefill KV is reused across requests, cutting effective per-request KV cost for repeated prefixes."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "Options B, C, D are correct; option A is incorrect. A (Wrong): PP shards layers (each stage stores its layers' KV), it does not replicate. B (Correct): KV quant is the direct capacity lever. C (Correct): admission control trades throughput for stability. D (Correct): prefix caching reduces effective per-request KV. General context: In fact PP typically stores L/P layers' worth of KV per stage instead of L/T rows in TP.",
+  "optionExplanations": {
+    "A": "Wrong: PP shards layers (each stage stores its layers' KV), it does not replicate.",
+    "B": "Correct: KV quant is the direct capacity lever.",
+    "C": "Correct: admission control trades throughput for stability.",
+    "D": "Correct: prefix caching reduces effective per-request KV."
+  },
+  "assumptions": [
+    "Standard vLLM configuration with PagedAttention.",
+    "Prefix caching is enabled and workload has shared prefixes."
+  ],
+  "nonImplications": [
+    "Does not imply INT8 KV is quality-neutral.",
+    "Does not imply admission control is preferable to horizontal scaling; both are valid."
+  ],
+  "misconceptionTags": [
+    "pp_replicates_kv_myth",
+    "batch_admission_no_effect"
+  ],
+  "distractorRationales": {
+    "A": "Confuses PP layer-sharding with replication."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:vllm",
+      "locator": "KV cache tuning: quant, prefix caching, admission",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 4 — preemption and admission",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "KV cache OOM diagnosis and mitigations",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-OOM-028.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

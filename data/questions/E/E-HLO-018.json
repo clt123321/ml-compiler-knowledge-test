@@ -1,0 +1,85 @@
+{
+  "id": "E-HLO-018",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "XLA / HLO \u2014 semantics of a matmul-add fragment",
+  "learningObjective": "Read a small HLO fragment and identify the semantics of ops, layouts, and reductions.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "XLA / OpenXLA",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider the following HLO fragment. Which statement about its semantics is correct?",
+  "irSnippet": "HloModule fused\n\nENTRY main {\n  A = f32[128,256] parameter(0)\n  B = f32[256,64]  parameter(1)\n  C = f32[128,64]  parameter(2)\n  d = f32[128,64]  dot(A, B),\n        lhs_contracting_dims={1}, rhs_contracting_dims={0}\n  ROOT r = f32[128,64] add(d, C)\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "It computes an elementwise product `A * B` broadcasted to a rank-3 tensor; the `contracting_dims` clause is a display hint and does not affect the arithmetic since HLO's `dot` is always elementwise."
+    },
+    {
+      "id": "B",
+      "text": "It computes `r = A @ B + C` where `A @ B` contracts axis 1 of A with axis 0 of B (a standard matmul), producing an f32[128,64] result; the trailing `add` is elementwise bias/skip addition."
+    },
+    {
+      "id": "C",
+      "text": "The `add(d, C)` operation forces `d` and `C` to be broadcast to a common rank-3 shape f32[128,64,1] before summing; HLO does not permit rank-2 elementwise `add`."
+    },
+    {
+      "id": "D",
+      "text": "The `ROOT` keyword indicates that `r` will be recomputed on every call because it names the output; HLO uses `ROOT` as a re-materialization hint for memory planning, not a semantic marker of the entry return value."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "HLO's `dot` op with `lhs_contracting_dims={1}, rhs_contracting_dims={0}` is a standard rank-2 matrix multiplication: for each `(i, j)`, `d[i,j] = sum_k A[i,k] * B[k,j]`. The following elementwise `add(d, C)` produces `r[i,j] = d[i,j] + C[i,j]`. `ROOT` marks the entry computation's output value \u2014 a semantic marker, not a rematerialization hint.",
+  "optionExplanations": {
+    "A": "Wrong: HLO `dot` performs contraction, not elementwise multiplication.",
+    "B": "Correct: contracting-dim matmul + elementwise add.",
+    "C": "Wrong: elementwise add on rank-2 tensors is legal and does not force broadcast to rank-3.",
+    "D": "Wrong: `ROOT` marks the entry output, not a rematerialization hint."
+  },
+  "assumptions": [
+    "Standard HLO / StableHLO semantics as documented."
+  ],
+  "nonImplications": [
+    "Does not imply the fragment specifies a layout preference; HLO layouts are usually annotated separately.",
+    "Does not imply the two ops must be fused; that is a compiler decision downstream."
+  ],
+  "misconceptionTags": [
+    "hlo_dot_as_elementwise_myth",
+    "root_as_hint_myth"
+  ],
+  "distractorRationales": {
+    "A": "Confuses `dot` with elementwise multiply.",
+    "C": "Fabricates a rank-3 broadcast requirement.",
+    "D": "Wrong claim about `ROOT` semantics."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "StableHLO spec \u2014 dot_general / add / entry output",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-HLO-018.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

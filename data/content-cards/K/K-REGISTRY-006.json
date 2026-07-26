@@ -1,0 +1,48 @@
+{
+  "questionId": "K-REGISTRY-006",
+  "learningObjective": "Describe the role of a kernel registry (a mapping from op signature to concrete implementation) in a runtime that supports multiple backends and dtypes.",
+  "canonicalClaims": [
+    {
+      "claim": "A kernel registry is a runtime lookup table that maps op signature keys (op name, device, dtype, layout, …) to concrete implementations; the dispatcher queries it to route a call to the correct backend kernel.",
+      "conditions": [
+        "The runtime supports multiple backends and needs to route ops dynamically.",
+        "Registrations are populated at library load or plugin discovery."
+      ],
+      "nonImplications": [
+        "Does not imply the registry stores kernel binaries; it stores callable references.",
+        "Does not imply that missing registrations trigger JIT compilation; that is a separate mechanism."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "ONNX Runtime kernel registration" },
+        { "ref": "DOC:tvm-relax", "locator": "TVM PackedFunc registry" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The kernel registry is a JIT compilation cache.",
+      "errorType": "definition_confusion",
+      "whyWrong": "A JIT cache stores compiled artifacts keyed by inputs/shapes; a registry maps op signatures to implementations that already exist.",
+      "sourceOrEvidence": "TorchInductor cache vs ATen dispatcher"
+    },
+    {
+      "claim": "The registry is the cost model.",
+      "errorType": "definition_confusion",
+      "whyWrong": "A cost model predicts kernel latency; the registry routes to the implementation.",
+      "sourceOrEvidence": "Autotuning literature"
+    },
+    {
+      "claim": "The registry contains hardware information.",
+      "errorType": "scope_error",
+      "whyWrong": "Hardware descriptors (SM count, warp size) belong to a device query API, not to the op-implementation table.",
+      "sourceOrEvidence": "CUDA runtime API"
+    },
+    {
+      "claim": "Kernel registration always happens at compile time.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Many runtimes register at library load via static initializers or dynamic plugin discovery.",
+      "sourceOrEvidence": "ONNX Runtime execution provider registration"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

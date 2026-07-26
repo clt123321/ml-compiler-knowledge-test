@@ -1,0 +1,61 @@
+{
+  "questionId": "C-IRLEVEL-005",
+  "learningObjective": "Distinguish the abstractions and capabilities of graph-/operator-level IR (e.g., XLA HLO, ONNX) from loop/tensor-expression-level IR (e.g., TVM TensorIR, MLIR linalg/affine).",
+  "canonicalClaims": [
+    {
+      "claim": "Operator-level IRs abstract computations as coarse-grained ops with implicit iteration; loop-level IRs expose explicit loops and indexing, enabling per-loop transformations like tiling, unrolling, and vectorization.",
+      "conditions": ["The compiler stack maintains distinct dialects/levels for graph-level and loop-level reasoning."],
+      "nonImplications": [
+        "Does not imply that a single IR cannot mix both abstractions (MLIR does).",
+        "Does not imply that loop-level IR is always better; op-level lets pattern rewrites remain compact."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:mlir", "locator": "MLIR CGO 2021 paper" },
+        { "ref": "PAPER:tvm", "locator": "TVM OSDI 2018" }
+      ]
+    },
+    {
+      "claim": "Operator-level IRs can annotate SSA values with static shape/dtype without exposing internal loop structure.",
+      "conditions": ["Shape/dtype are part of the value type."],
+      "nonImplications": ["Does not imply that shapes must be fully static; symbolic shape is also expressible in HLO/StableHLO and Relax."],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "StableHLO type system" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Operator-level IRs cannot express fusion; all fusion decisions require a loop-level IR.",
+      "errorType": "definition_confusion",
+      "whyWrong": "XLA HLO fusion and TVM Relax operator fusion operate at the graph/operator level; loop-level IR is used for finer-grained loop-body fusion.",
+      "sourceOrEvidence": "XLA docs; TVM paper"
+    },
+    {
+      "claim": "Tiling and vectorization are graph-level transformations; they can be applied directly on operator-level IR.",
+      "errorType": "scope_error",
+      "whyWrong": "Tile/vectorize/unroll act on explicit loops; without loops named in the IR, these transformations have no target.",
+      "sourceOrEvidence": "MLIR affine/linalg tiling passes"
+    },
+    {
+      "claim": "Operator-level IRs are shape-oblivious; only loop-level IRs know shapes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "HLO, StableHLO, ONNX, and TVM Relax all annotate values with shape and dtype.",
+      "sourceOrEvidence": "StableHLO spec; ONNX spec"
+    },
+    {
+      "claim": "Loop-level IR is strictly more expressive than operator-level IR and should always be used first.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Operator-level IR is more compact for graph rewrites and dispatch; introducing loops too early inflates IR size and blocks graph-level pattern matches.",
+      "sourceOrEvidence": "TVM/Relax staged lowering philosophy"
+    }
+  ],
+  "implementationFacts": [
+    "XLA HLO / StableHLO: operator-level IR with static or symbolic shape annotations",
+    "MLIR linalg / affine: loop-level IR exposing iteration domains and access maps",
+    "TVM Relax → TensorIR: two-tier design mirroring operator-level to loop-level lowering"
+  ],
+  "performanceScenarios": [
+    "Graph-level fusion decisions typically happen at the operator level (which ops to group); loop-level fusion decisions happen when the fused pattern is lowered to explicit loops and iteration domains."
+  ],
+  "versionSensitivity": "stable_principle"
+}

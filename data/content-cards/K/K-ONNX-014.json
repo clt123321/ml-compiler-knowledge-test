@@ -1,0 +1,47 @@
+{
+  "questionId": "K-ONNX-014",
+  "learningObjective": "Distinguish ONNX as an interchange format from any specific runtime (ONNX Runtime, TensorRT importer) that consumes ONNX.",
+  "canonicalClaims": [
+    {
+      "claim": "ONNX is an open serialization format (protobuf-encoded graph over a versioned opset), not a runtime; performance is determined by whichever runtime imports and executes the ONNX file.",
+      "conditions": [
+        "The comparison is between the interchange artifact and the execution engine.",
+        "The runtime supports the model's opset version and ops."
+      ],
+      "nonImplications": [
+        "Does not imply full cross-runtime portability; op coverage varies.",
+        "Does not imply ONNX cannot be compiled AOT into another artifact."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Interchange format and opset overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "ONNX is itself a high-performance runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ONNX is a format; ONNX Runtime is a separate execution engine.",
+      "sourceOrEvidence": "onnx.ai overview"
+    },
+    {
+      "claim": "ONNX is proprietary to Microsoft.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ONNX is an open-governed project consumed by many vendors and runtimes.",
+      "sourceOrEvidence": "onnx.ai governance"
+    },
+    {
+      "claim": "ONNX JIT-compiles to Triton at load time.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ONNX is a serialized graph; it does not embed a Triton compiler.",
+      "sourceOrEvidence": "ONNX specification"
+    },
+    {
+      "claim": "Any ONNX file runs identically on every runtime.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Runtimes vary in op coverage and numerical implementations.",
+      "sourceOrEvidence": "ONNX operator compatibility notes"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

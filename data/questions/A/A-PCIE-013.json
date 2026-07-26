@@ -1,0 +1,95 @@
+{
+  "id": "A-PCIE-013",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "PCIe transfer / host-device data movement",
+  "learningObjective": "Estimate host-to-device PCIe transfer time and reason about overlap with kernel execution.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "PCIe Gen4 x16 host-GPU link",
+    "device": "GPU",
+    "requiredFeatures": [
+      "PCIe Gen4 x16 ~ 32 GB/s unidirectional practical"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A host-to-device H2D transfer of a pinned 4 GiB buffer is issued to a GPU connected via PCIe Gen4 x16 (practical unidirectional ≈ 25 GB/s in production, 32 GB/s theoretical). Ignoring driver setup overheads, roughly how long is the H2D transfer alone, and what is the implication for overlapping with a kernel that runs 40 ms on the same buffer?",
+  "options": [
+    {
+      "id": "A",
+      "text": "H2D ≈ 170 ms at 25 GB/s. Because the transfer is ~4× longer than the kernel, even perfect overlap using cudaMemcpyAsync + separate streams cannot hide the H2D behind the kernel; end-to-end time is dominated by PCIe."
+    },
+    {
+      "id": "B",
+      "text": "H2D ≈ 170 ms at 25 GB/s, but overlapping cudaMemcpyAsync with the kernel in separate streams reduces the end-to-end time to the maximum of transfer and kernel (40 ms) since the two operations execute in parallel."
+    },
+    {
+      "id": "C",
+      "text": "H2D ≈ 40 ms because PCIe Gen4 x16 practical bandwidth is ~ 100 GB/s; the kernel and transfer can each finish in 40 ms."
+    },
+    {
+      "id": "D",
+      "text": "H2D ≈ 1.7 s because PCIe transfers of pinned memory are throttled to ~ 2.5 GB/s by the OS DMA engine on typical systems."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Time = size / bandwidth. Size = 4 GiB ≈ 4.29 × 10^9 B; at 25 GB/s that is 4.29e9 / 25e9 ≈ 0.172 s ≈ 170 ms. The kernel takes 40 ms. Even with perfect stream overlap, the maximum-throughput streaming pipeline is bounded by the slower operation (PCIe here), so PCIe dominates. Overlap turns the sum into max only when the two operations are on independent resources and durations, which does not shrink either duration.",
+  "optionExplanations": {
+    "A": "Correct: at 25 GB/s the 4 GiB transfer is ~170 ms, dominating the kernel's 40 ms; overlap turns the sum into the max (still ~170 ms), so PCIe is the wall-time bottleneck.",
+    "B": "Wrong reasoning: overlap gives max(H2D, kernel) = 170 ms in this case, not 40 ms; the option incorrectly picks the kernel time.",
+    "C": "Wrong: PCIe Gen4 x16 practical is ~25 GB/s, not 100 GB/s (that is roughly NVLink territory).",
+    "D": "Wrong: 2.5 GB/s is roughly USB 3 territory or pageable-memory pathological rates; pinned PCIe Gen4 x16 achieves ~25 GB/s in production."
+  },
+  "assumptions": [
+    "Pinned host memory so DMA runs at PCIe-limited rate.",
+    "Practical PCIe Gen4 x16 unidirectional bandwidth ~ 25 GB/s (below the 32 GB/s theoretical due to protocol overhead).",
+    "Transfer size 4 GiB = 4.294 × 10^9 bytes."
+  ],
+  "nonImplications": [
+    "Does not imply the transfer is unfixable; strategies include chunked pipelining, keeping weights resident, or NVLink for multi-GPU replication.",
+    "Does not imply cudaMemcpyAsync is useless; overlap still saves time whenever there is other work to run during the transfer."
+  ],
+  "misconceptionTags": [
+    "overlap_shrinks_transfer_myth",
+    "pcie_bandwidth_confusion"
+  ],
+  "distractorRationales": {
+    "B": "Confuses max(a,b) with min(a,b) in overlap accounting.",
+    "C": "Overestimates PCIe Gen4 x16 practical bandwidth by 4×.",
+    "D": "Underestimates PCIe Gen4 x16 by 10×."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Host-device data transfers, pinned memory and PCIe considerations",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Interconnect chapters, PCIe bandwidth accounting",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "PCIe Gen4 x16 pinned H2D, 4 GiB payload",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-PCIE-013.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

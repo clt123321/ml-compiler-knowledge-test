@@ -1,0 +1,49 @@
+{
+  "questionId": "E-HLO-018",
+  "learningObjective": "Read an HLO fragment and identify dot / contraction semantics and elementwise add.",
+  "canonicalClaims": [
+    {
+      "claim": "HLO's `dot` with `lhs_contracting_dims={k}` and `rhs_contracting_dims={0}` performs matrix multiplication contracting those axes; a subsequent elementwise `add` sums two same-shape tensors; `ROOT` marks the entry computation's return value.",
+      "conditions": ["Standard HLO / StableHLO semantics."],
+      "nonImplications": [
+        "Does not imply layout is specified in this fragment.",
+        "Does not imply fusion; that is a compiler pass decision."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "dot_general / add / entry" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "HLO `dot` is elementwise multiplication.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a contraction (matmul when both operands are rank-2 with single contracting dims).",
+      "sourceOrEvidence": "StableHLO spec"
+    },
+    {
+      "claim": "Rank-2 elementwise `add` in HLO requires broadcast to rank-3.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Same-shape rank-2 elementwise add is legal.",
+      "sourceOrEvidence": "StableHLO spec"
+    },
+    {
+      "claim": "`ROOT` is a re-materialization/memory hint.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`ROOT` marks the output value of an HLO computation.",
+      "sourceOrEvidence": "HLO / StableHLO docs"
+    },
+    {
+      "claim": "HLO ops always fuse when adjacent in source order.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Fusion is a compiler pass with its own policy.",
+      "sourceOrEvidence": "XLA docs"
+    }
+  ],
+  "implementationFacts": [
+    "`dot_general` is the general form; `dot` is the rank-2 special case.",
+    "Elementwise ops require identical shape (broadcast is a separate op)."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

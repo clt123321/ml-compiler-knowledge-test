@@ -1,0 +1,109 @@
+{
+  "id": "A-ILP-030",
+  "type": "multiple",
+  "module": "arch_perf_model",
+  "subtopic": "Little's Law / ILP + MLP requirements for latency hiding",
+  "learningObjective": "Apply Little's Law at the instruction/memory level to reason about the concurrency required to fully hide arithmetic and memory latency.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "warp scheduler",
+      "outstanding memory requests per SM"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "profileData": "Kernel X (memory-bound, single outstanding load per warp): occupancy 100%, HBM throughput 40% of peak. Kernel Y (memory-bound, 8 outstanding loads per warp): occupancy 25%, HBM throughput 90% of peak. Both target A100, N=32M elements.",
+  "stem": "Consider a memory-bound GPU kernel. Which of the following statements correctly apply Little's Law to reasoning about latency hiding? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Low occupancy can still saturate HBM if each active warp issues many in-flight loads simultaneously (high memory-level parallelism per warp), because Little's Law counts total outstanding requests, not warp count."
+    },
+    {
+      "id": "B",
+      "text": "Once occupancy reaches 100%, latency hiding is guaranteed regardless of per-thread memory-level parallelism."
+    },
+    {
+      "id": "C",
+      "text": "For compute latency (arithmetic pipeline), Little's Law analogously requires enough independent instructions in flight per warp scheduler; ILP within a warp complements TLP across warps to hide compute-pipeline latency."
+    },
+    {
+      "id": "D",
+      "text": "To fully hide DRAM latency, the SM must maintain enough outstanding memory requests such that Little's Law (concurrency = bandwidth × latency) is satisfied; this is why kernels need many warps and each warp needs multiple outstanding loads."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "A: This is the standard application of Little's Law to memory-level parallelism (MLP) on GPUs. B: Volkov and others show that low-occupancy kernels can saturate HBM if each warp has enough outstanding loads; occupancy is one way to achieve concurrency, not the only way. C is wrong: 100% occupancy without per-warp MLP still cannot saturate DRAM if each warp issues at most one outstanding load. D: ILP hides arithmetic pipeline latency analogously — a compute pipeline with L cycles of latency needs L independent instructions in flight to be fully utilized.",
+  "optionExplanations": {
+    "A": "Correct: low-occupancy high-MLP kernels can saturate memory (Volkov's classic result).",
+    "B": "Wrong: occupancy alone does not guarantee latency hiding; per-warp MLP matters.",
+    "C": "Correct: ILP + TLP combine to hide compute-pipeline latency.",
+    "D": "Correct: Little's Law for MLP; total outstanding requests = BW × latency."
+  },
+  "assumptions": [
+    "Kernel is bandwidth or latency limited on either memory or arithmetic pipelines.",
+    "Warp scheduler can issue independent instructions from a warp when ready."
+  ],
+  "nonImplications": [
+    "Does not imply low-occupancy kernels are always fine; when per-warp MLP is limited (e.g., data-dependent loads), occupancy is the fallback.",
+    "Does not imply that any technique alone (ILP, TLP, MLP) suffices; realistic kernels mix all three."
+  ],
+  "misconceptionTags": [
+    "occupancy_is_all_you_need",
+    "little_law_scope"
+  ],
+  "distractorRationales": {
+    "B": "Overgeneralizes occupancy as a sufficient condition for latency hiding."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Little's Law and memory-level parallelism",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Latency hiding via MLP and occupancy",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Occupancy and MLP considerations",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GPU latency hiding via combined MLP/ILP/TLP; Little's Law application",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-ILP-030.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "C-SHAPEINFER-029",
+  "learningObjective": "Explain what shape inference computes at the graph-IR level and its limits when dynamic shapes are involved.",
+  "canonicalClaims": [
+    {
+      "claim": "Graph-level shape inference propagates per-op shape rules from inputs to outputs; when input shapes contain symbolic dims, output shapes are symbolic expressions in those dims. Concretization to integers happens at runtime or via specialization.",
+      "conditions": [
+        "The IR supports symbolic dims / dynamic shape annotations.",
+        "The op set provides shape rules per operator."
+      ],
+      "nonImplications": [
+        "Does not imply all symbolic outputs collapse to integers before runtime; some remain symbolic.",
+        "Does not imply shape inference detects all shape mismatches; op-specific verifiers may still find them."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "Dynamic shape / bounds" },
+        { "ref": "DOC:tvm-relax", "locator": "Symbolic shape" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Shape inference fabricates concrete numbers from observed inputs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It only propagates shape rules; observed inputs are used at runtime, not to invent compile-time constants.",
+      "sourceOrEvidence": "ONNX / MLIR shape docs"
+    },
+    {
+      "claim": "Shape inference is runtime-only.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Graph IRs commonly perform static shape inference at compile time.",
+      "sourceOrEvidence": "ONNX / StableHLO docs"
+    },
+    {
+      "claim": "Any symbolic dim causes the pass to abort and drop shape annotations.",
+      "errorType": "scope_error",
+      "whyWrong": "Modern IRs handle symbolic dims natively.",
+      "sourceOrEvidence": "Relax / StableHLO"
+    },
+    {
+      "claim": "Shape inference proves the program semantically correct.",
+      "errorType": "scope_error",
+      "whyWrong": "It only propagates shape rules; semantic correctness requires broader analyses.",
+      "sourceOrEvidence": "ONNX docs"
+    }
+  ],
+  "implementationFacts": [
+    "ONNX: shape inference over Opset ops",
+    "MLIR: shape dialect / op interfaces for shape inference",
+    "TVM Relax: symbolic shape propagation via TVMScript / Relax types"
+  ],
+  "performanceScenarios": [
+    "Downstream fusion and layout passes rely on inferred shapes; better shape info yields tighter kernel selection."
+  ],
+  "versionSensitivity": "stable_principle"
+}

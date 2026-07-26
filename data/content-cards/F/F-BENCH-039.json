@@ -1,0 +1,50 @@
+{
+  "questionId": "F-BENCH-039",
+  "learningObjective": "Reason about correctness testing (tolerance-based) and honest steady-state benchmarking (warmup + sync + CUDA events).",
+  "canonicalClaims": [
+    {
+      "claim": "Reliable Triton kernel benchmarking requires (i) warmup runs, (ii) `cudaDeviceSynchronize` before and after the timed region, and (iii) CUDA events for GPU-side timing. Correctness testing compares against a reference with tolerance appropriate to the dtype and op (e.g., `torch.testing.assert_close`).",
+      "conditions": ["CUDA async execution model; FP arithmetic is not bit-reproducible in general."],
+      "nonImplications": [
+        "Does not imply CUDA events are the only timing method.",
+        "Does not imply steady-state is the only metric; compile time should also be reported."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Timing methodology" },
+        { "ref": "DOC:triton", "locator": "Triton benchmarking utilities" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`time.time()` on a single launch is a reliable microbenchmark.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Async launches skew the measurement; single-shot has high variance.",
+      "sourceOrEvidence": "CUDA best practices"
+    },
+    {
+      "claim": "JIT compile / autotune time should be included in per-iteration latency.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "One-time compile cost is separately reported, not amortized into per-iter numbers.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "Bitwise comparison (`torch.equal`) is the correct correctness check for FP kernels.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FP kernels are order-dependent; tolerance-based comparison is required.",
+      "sourceOrEvidence": "IEEE-754 non-associativity"
+    },
+    {
+      "claim": "Warmup runs are unnecessary because Triton kernels have no lazy state.",
+      "errorType": "wrong_condition",
+      "whyWrong": "GPU clock ramp, cache warm-up, and driver/runtime state all benefit from warmup.",
+      "sourceOrEvidence": "GPU perf literature"
+    }
+  ],
+  "implementationFacts": [
+    "`torch.cuda.Event(enable_timing=True)` + `event.elapsed_time(other_event)`.",
+    "`triton.testing.do_bench` provides a convenient wrapper."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

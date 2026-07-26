@@ -1,0 +1,91 @@
+{
+  "id": "M-A2A-004",
+  "type": "single",
+  "module": "distributed",
+  "subtopic": "All-to-All / MoE dispatch",
+  "learningObjective": "Identify All-to-All as the collective that permutes per-rank shards and its canonical role in MoE dispatch.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "Multi-GPU cluster",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "An expert-parallel Mixture-of-Experts layer places each expert on a distinct rank. During the forward pass, every rank must send each of its tokens to the rank that owns the routed expert, and later return the transformed token to the origin rank. Which collective correctly describes this dispatch/combine pattern and its semantics?",
+  "options": [
+    {
+      "id": "A",
+      "text": "AllReduce (sum): every rank sums the routing probabilities across all ranks so that each expert receives the aggregate contribution of every token in the global batch."
+    },
+    {
+      "id": "B",
+      "text": "AllGather: every rank broadcasts its full token buffer to every peer so that each expert can locally scan its assigned tokens."
+    },
+    {
+      "id": "C",
+      "text": "Broadcast from rank 0: rank 0 collects tokens, distributes them to the experts on all other ranks, and gathers the results back."
+    },
+    {
+      "id": "D",
+      "text": "All-to-All: every rank sends a distinct per-destination shard (the tokens routed to that destination's expert) and receives a distinct per-source shard from every peer; no reduction is performed."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "MoE dispatch requires a permutation of tokens across ranks (each destination rank gets only the tokens routed to its expert), which is exactly All-to-All's semantics. AllReduce would destroy per-token identity; AllGather would replicate every token on every rank (N× memory), which is wasteful and semantically wrong for routing; broadcast from rank 0 creates a bottleneck and is not what expert-parallel frameworks implement.",
+  "optionExplanations": {
+    "A": "Wrong: MoE dispatch needs per-token routing, not a reduction across ranks.",
+    "B": "Wrong: AllGather would replicate every token on every rank; experts would receive tokens not routed to them.",
+    "C": "Wrong: rank-0-only broadcast serializes the pattern and does not match any modern MoE implementation.",
+    "D": "Correct: All-to-All permutes disjoint shards without reduction, which matches MoE dispatch and combine."
+  },
+  "assumptions": [
+    "One expert per rank (or a bijection between ranks and expert groups).",
+    "Tokens have already been sorted by destination rank before the collective."
+  ],
+  "nonImplications": [
+    "Does not imply that All-to-All is always the fastest dispatch (top-k routing produces uneven shard sizes and can suffer load imbalance).",
+    "Does not imply that a subsequent All-to-All for the combine step doubles the bandwidth cost per token linearly with N."
+  ],
+  "misconceptionTags": [
+    "allgather_for_moe",
+    "allreduce_for_routing"
+  ],
+  "distractorRationales": {
+    "A": "Confuses dispatch (permutation) with reduction.",
+    "B": "Confuses permutation with N-way replication.",
+    "C": "Ignores the parallel nature of expert-parallel dispatch."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:gspmd",
+      "locator": "§ discussion of All-to-All patterns for expert-parallel workloads",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 6 collective communication primitives",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-A2A-004.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

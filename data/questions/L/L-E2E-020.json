@@ -1,0 +1,93 @@
+{
+  "id": "L-E2E-020",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "End-to-end vs microbenchmark",
+  "learningObjective": "Distinguish end-to-end latency from microbenchmark latency and identify when a microbenchmark speedup does not translate to end-to-end speedup.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "A team reports a 4.7× speedup on a fused LayerNorm+bias microbenchmark and concludes the end-to-end model inference will speed up by 4.7×. Which critique is most accurate?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Kernel and end-to-end speedups can differ substantially: only the fraction of end-to-end time actually spent in that kernel is affected by the microbenchmark improvement (Amdahl's law). If LayerNorm is 5% of end-to-end time, a 4.7× kernel speedup translates into at most ≈ 4% end-to-end improvement, not 4.7×."
+    },
+    {
+      "id": "B",
+      "text": "The microbenchmark speedup is an underestimate: fusing LayerNorm with adjacent bias unlocks cache reuse in following ops as well, so the end-to-end speedup is typically 2-3× larger than the microbenchmark number."
+    },
+    {
+      "id": "C",
+      "text": "Since the microbenchmark speedup is 4.7×, the end-to-end speedup will be exactly 4.7× minus the launch-overhead constant of 5 µs times the number of layers; for typical 32-layer models this gives ≈ 4.6× end-to-end."
+    },
+    {
+      "id": "D",
+      "text": "The 4.7× is correct because kernel-level speedups compose multiplicatively into end-to-end speedup as long as at least one op is sped up; the only limit is the Amdahl fraction of the sped-up op, and LayerNorm is a mainstream op so its fraction is always high."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "End-to-end speedup follows Amdahl's law: if the optimized op consumes fraction f of end-to-end time and is sped up by k, the end-to-end speedup is at most 1 / ((1-f) + f/k). For a small f the achievable end-to-end speedup is bounded well below k. Options A, B, C fabricate compositional or additive relationships that don't hold.",
+  "optionExplanations": {
+    "A": "Correct: Amdahl's law bounds the end-to-end improvement.",
+    "B": "Wrong: cross-op cache effects exist but typically shrink, not amplify, the reported gain in end-to-end.",
+    "C": "Wrong: no such fixed launch-overhead subtraction rule.",
+    "D": "Wrong: kernel and end-to-end speedups do not compose multiplicatively without weighting by time fraction."
+  },
+  "assumptions": [
+    "The microbenchmark measures the kernel in isolation, not with surrounding realistic context.",
+    "The end-to-end pipeline includes many other kernels."
+  ],
+  "nonImplications": [
+    "Does not imply LayerNorm optimization is useless; even a small end-to-end gain matters at scale.",
+    "Does not imply Amdahl is the only concern; batch effects and cross-op memory traffic can also cause divergence."
+  ],
+  "misconceptionTags": [
+    "kernel_vs_e2e_confusion",
+    "additive_speedup_myth"
+  ],
+  "distractorRationales": {
+    "B": "Overstates cross-op cache amplification.",
+    "C": "Fabricates fixed-cost subtraction.",
+    "D": "Ignores Amdahl."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Amdahl's law and end-to-end speedup",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Kernel-level vs application-level performance analysis",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Kernel-level microbenchmark speedup vs end-to-end speedup under Amdahl's law",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-E2E-020.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

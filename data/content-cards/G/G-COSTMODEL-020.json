@@ -1,0 +1,56 @@
+{
+  "questionId": "G-COSTMODEL-020",
+  "learningObjective": "Enumerate factors that make a static analytical cost model differ from measured wall-clock runtime.",
+  "canonicalClaims": [
+    {
+      "claim": "Static analytical cost models built on op counts and shape arithmetic systematically diverge from measured runtime because they omit backend register allocation / spill decisions, cache and TLB context effects, and low-level hardware phenomena such as bank conflicts and memory-controller queuing.",
+      "conditions": [
+        "The cost model is built solely from source-level features (op counts, tensor shapes).",
+        "Measurements are taken after standard warmup and averaging."
+      ],
+      "nonImplications": [
+        "Does not imply analytical models are useless; they effectively prune the search space.",
+        "Does not imply learned models fully close the gap."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "Learned cost model motivation" },
+        { "ref": "PAPER:tvm", "locator": "AutoTVM ranking rationale" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Once warmup is complete, the cost model equals the measurement, so no gap exists.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Even after warmup, backend spills, cache context, and hardware queuing remain outside a source-level analytical model.",
+      "sourceOrEvidence": "Ansor Section 4"
+    },
+    {
+      "claim": "Cost-model divergence is caused by JIT-warmup effects and disappears once the first N runs are discarded.",
+      "errorType": "scope_error",
+      "whyWrong": "Warmup is a measurement-methodology issue, not a source of model-vs-measurement divergence.",
+      "sourceOrEvidence": "Benchmark methodology guidance"
+    },
+    {
+      "claim": "Analytical cost models can be made exact if built on the same precision as the hardware.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Numerical precision of the model has no bearing on missing modelling of backend and hardware effects.",
+      "sourceOrEvidence": "Ansor paper"
+    },
+    {
+      "claim": "Measurement-based ranking is inherently unreliable due to noise; static cost models are strictly more trustworthy.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Well-designed measurement (multiple runs, median) is more accurate than analytical cost for real hardware; static models are cheaper but less accurate.",
+      "sourceOrEvidence": "AutoTVM and Ansor empirical results"
+    }
+  ],
+  "implementationFacts": [
+    "Ansor trains an XGBoost / MLP cost model on measured runtimes to guide the search.",
+    "MetaSchedule (in TVM) similarly uses a learned cost model over TensorIR features.",
+    "AutoTVM uses measurement-based ranking with a trained proposal model."
+  ],
+  "performanceScenarios": [
+    "For GEMM tiles, a purely FLOPs+bytes model may rank a spill-inducing candidate optimistically; measurement re-ranks it."
+  ],
+  "versionSensitivity": "stable_principle"
+}

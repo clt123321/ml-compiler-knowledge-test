@@ -1,0 +1,98 @@
+{
+  "id": "L-DYNREG-013",
+  "type": "multiple",
+  "module": "profiling_debug",
+  "subtopic": "Dynamic shape regression detection",
+  "learningObjective": "Diagnose dynamic-shape performance regressions in compiled workloads from a mix of graph-break/recompile logs and per-shape latency data.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch (torch.compile)",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "A torch.compile-wrapped inference service handles requests of varying seq_len. In production, latency has become erratic. The following profiler output is captured. Which conclusions are supported? (Select all that apply.)",
+  "profileData": "Per-request torch.compile trace (500 requests, various seq_len):\n  Seq_len distribution: 128, 256, 384, 512, 640, 768, 896, 1024 (roughly uniform)\n  torch._dynamo.utils.count_calls_to_compile: 8 recompiles (one per unique seq_len)\n  torch._dynamo.config.cache_size_limit: default (8)\n  Median latency:  4.2 ms  (steady state after warmup)\n  p95 latency:     42.6 ms\n  p99 latency:     58.1 ms\n  First-time-seen seq_len latencies:  350 - 900 ms\n  Recompile reason in logs: \"tensor size mismatch, previous s0 = 128, new s0 = 256\" (× 7)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Enabling dynamic shapes (e.g., `torch.compile(dynamic=True)` or `torch._dynamo.mark_dynamic`) would allow one compiled graph to cover multiple seq_lens, converting the recompile spikes into a single warmup cost and stabilizing p95/p99."
+    },
+    {
+      "id": "B",
+      "text": "The `cache_size_limit` of 8 is currently being fully consumed and the FX cache is thrashing on the present 8-shape workload; each of the 8 shapes is being evicted and recompiled every invocation, which is why recompilation is being observed."
+    },
+    {
+      "id": "C",
+      "text": "The recompile latencies (~350–900 ms) are counted inside the per-request latency measurement, so the p95/p99 are dominated by compile-time cost, not actual GPU execution. Removing the compile cost by pre-warming all seq_lens or enabling dynamic shapes would fix the tail."
+    },
+    {
+      "id": "D",
+      "text": "The 8 recompiles correspond to shape-specialized graphs — one per unique seq_len — because dynamic shape was not enabled (or a guard forced specialization); the p99 spikes correspond to first-time-seen shapes paying the JIT cost."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): dynamic-shape compile addresses the root cause. B (Wrong): with exactly 8 distinct shapes and cache_size_limit=8, the cache is at capacity but NOT evicting — each shape's compiled artifact is still resident, so no thrashing/eviction is occurring. Recompilation being observed must therefore come from a different cause (guard failures on non-shape state, dynamic=True disabled, or a Python-level cache miss unrelated to size_limit). The \"currently thrashing\" claim is factually wrong given the present state. C (Correct): JIT cost is inside the request latency for first-time-seen shapes. D (Correct): matches the guard-based recompile behavior. General context: If shape diversity were higher, C's concern would be legitimate, but the specific data given here does not evidence eviction — the observed pattern is one-time recompile cost, not thrashing.",
+  "optionExplanations": {
+    "A": "Correct: dynamic-shape compile addresses the root cause.",
+    "B": "Wrong: with exactly 8 distinct shapes and cache_size_limit=8, the cache is at capacity but NOT evicting — each shape's compiled artifact is still resident, so no thrashing/eviction is occurring. Recompilation being observed must therefore come from a different cause (guard failures on non-shape state, dynamic=True disabled, or a Python-level cache miss unrelated to size_limit). The \"currently thrashing\" claim is factually wrong given the present state.",
+    "C": "Correct: JIT cost is inside the request latency for first-time-seen shapes.",
+    "D": "Correct: matches the guard-based recompile behavior."
+  },
+  "assumptions": [
+    "Static-shape torch.compile mode (no explicit dynamic=True or mark_dynamic).",
+    "cache_size_limit default in 2.3~2.5 is around 8."
+  ],
+  "nonImplications": [
+    "Does not imply dynamic=True has no drawbacks; guards and shape-generic kernels can be slower per iteration.",
+    "Does not imply larger cache_size_limit is always the right fix; it hides but does not eliminate compile cost."
+  ],
+  "misconceptionTags": [
+    "cache_thrash_scapegoat"
+  ],
+  "distractorRationales": {
+    "B": "Concern would apply to a different data regime; not supported by these numbers."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Dynamic shapes and cache_size_limit",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Guards, shape specialization, recompilation",
+      "supports": [
+        "A",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "torch.compile inference with static-shape guards under varying seq_len",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-DYNREG-013.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

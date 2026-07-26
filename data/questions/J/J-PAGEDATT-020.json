@@ -1,0 +1,97 @@
+{
+  "id": "J-PAGEDATT-020",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "PagedAttention kernel / Block-table indirection",
+  "learningObjective": "Explain how a PagedAttention kernel differs from a FlashAttention kernel and what block-table indirection costs at execution time.",
+  "archetype": "systems_dataflow",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "SMEM sufficient for KV tile"
+    ]
+  },
+  "softwareContext": {
+    "framework": "vLLM (PagedAttention)",
+    "frameworkVersionScope": "vLLM 0.2+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "The PagedAttention kernel differs from a standard FlashAttention kernel primarily in how it accesses KV cache. Which characterization is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "PagedAttention resolves each logical KV position to a physical block address via the per-sequence block table, then loads the block into SMEM and runs the same online-softmax + tiled attention math as FlashAttention. The extra cost is a table lookup per block (small), not per element; SMEM staging and math dataflow are essentially unchanged."
+    },
+    {
+      "id": "B",
+      "text": "PagedAttention performs a scatter operation over the full KV cache to gather scattered blocks into a temporary contiguous buffer before running the attention math; the gather step is bandwidth-heavy and the primary source of PagedAttention overhead."
+    },
+    {
+      "id": "C",
+      "text": "PagedAttention runs a completely different attention algorithm (approximate sparse attention) because contiguous access is required for exact softmax; the 'paged' name refers to a windowed truncation of the attention that skips distant tokens."
+    },
+    {
+      "id": "D",
+      "text": "PagedAttention keeps the entire KV cache in host memory (paged in via zero-copy CUDA UVA) and only pulls in the currently needed positions per attention step; the block table is an operating-system-style page table mapping virtual to host addresses."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "PagedAttention (vLLM) is a kernel variant of FlashAttention/exact attention that adds one level of indirection: for each KV block position needed in the current tile, the kernel reads the block table to find the physical block address in HBM. The block is then loaded into SMEM and the attention math (online softmax + tiled QK^T + PV) proceeds as in FlashAttention. The lookup overhead is per block (typically 16 tokens per block), not per element, so it is amortized well.",
+  "optionExplanations": {
+    "A": "Correct: block-table lookup + otherwise-standard FlashAttention math.",
+    "B": "Wrong: no gather-to-contiguous step; blocks are loaded directly.",
+    "C": "Wrong: PagedAttention is exact, not approximate.",
+    "D": "Wrong: KV lives in HBM, not host memory; page table maps virtual position to HBM address."
+  },
+  "assumptions": [
+    "PagedAttention v1/v2 as in vLLM.",
+    "Block table is a small per-sequence array in HBM."
+  ],
+  "nonImplications": [
+    "Does not imply zero indirection cost; there is a small overhead measurable in microbenchmarks.",
+    "Does not imply PagedAttention is universally slower or faster than contiguous FlashAttention per step; measured latency is very close."
+  ],
+  "misconceptionTags": [
+    "paged_attn_scatter_myth",
+    "paged_attn_approximate_myth"
+  ],
+  "distractorRationales": {
+    "B": "Fabricates a scatter step.",
+    "C": "Denies exactness.",
+    "D": "Confuses paged storage location."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 3 — PagedAttention kernel design",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "PagedAttention v1/v2 kernels",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "PagedAttention kernel structure vs FlashAttention",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-PAGEDATT-020.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

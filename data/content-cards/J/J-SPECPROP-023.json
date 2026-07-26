@@ -1,0 +1,48 @@
+{
+  "questionId": "J-SPECPROP-023",
+  "learningObjective": "Distinguish correct claims about speculative decoding from common overclaims.",
+  "canonicalClaims": [
+    {
+      "claim": "Speculative decoding with proper rejection sampling preserves the target's sampling distribution exactly; its wall-clock win is largest when target-model decode is memory-bandwidth bound (batch-1) and shrinks when the target is compute-bound (large batch).",
+      "conditions": [
+        "Draft/target share vocab.",
+        "Rejection sampling implemented correctly."
+      ],
+      "nonImplications": [
+        "Does not imply guaranteed speedup.",
+        "Does not require draft-target weight sharing."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:specdecode", "locator": "Sec 3-4" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Speculative decoding gives a fixed (k+1)× speedup.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "The bound is (k+1)×; actual varies with p and draft cost.",
+      "sourceOrEvidence": "Leviathan et al. Sec 4"
+    },
+    {
+      "claim": "Draft and target must share weights.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Only vocab/tokenization must match; drafts are typically much smaller unrelated models.",
+      "sourceOrEvidence": "Standard implementations"
+    },
+    {
+      "claim": "Speculative decoding changes the output distribution.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Rejection sampling makes it distribution-preserving.",
+      "sourceOrEvidence": "Leviathan et al. Sec 3"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM, TRT-LLM, SGLang all implement speculative decoding with configurable draft models.",
+    "EAGLE / Medusa use hidden-state prediction / additional heads as ultra-cheap drafts."
+  ],
+  "performanceScenarios": [
+    "Batch-1 chatbot workloads see the largest wins; high-throughput batched serving sees smaller wins."
+  ],
+  "versionSensitivity": "stable_principle"
+}

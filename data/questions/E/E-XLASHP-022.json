@@ -1,0 +1,86 @@
+{
+  "id": "E-XLASHP-022",
+  "type": "multiple",
+  "module": "mlir_tvm_xla",
+  "subtopic": "XLA / Static vs dynamic shape handling",
+  "learningObjective": "Understand XLA's static-shape orientation and how dynamic shape is handled (bucketing, dynamic dims, StableHLO dynamic ops).",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "XLA / StableHLO",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about static vs dynamic shape handling in XLA / StableHLO are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "StableHLO includes `dynamic_*` ops (e.g., `dynamic_reshape`, `dynamic_slice`, `real_dynamic_slice`) that let programs represent computations whose shapes depend on runtime values without requiring re-compilation for every value."
+    },
+    {
+      "id": "B",
+      "text": "XLA achieves dynamic-shape support by removing all shape annotations from HLO; static shapes are only used for debug logging and are not required by any optimization pass."
+    },
+    {
+      "id": "C",
+      "text": "Serving systems using XLA often mitigate re-compilation cost by shape bucketing / padding: routing many similar shapes to a small fixed set of pre-compiled shape configurations."
+    },
+    {
+      "id": "D",
+      "text": "XLA is fundamentally static-shape-oriented: each HLO computation is specialized for concrete shapes at compile time, so shape changes typically trigger a fresh compilation (potentially very costly if unbounded)."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): dynamic_* ops exist for genuine dynamic-shape programs. B (Wrong): static shape is preserved and drives many optimizations. C (Correct): bucketing is a real-world serving mitigation. D (Correct): XLA is static-first.",
+  "optionExplanations": {
+    "A": "Correct: dynamic_* ops exist for genuine dynamic-shape programs.",
+    "B": "Wrong: static shape is preserved and drives many optimizations.",
+    "C": "Correct: bucketing is a real-world serving mitigation.",
+    "D": "Correct: XLA is static-first."
+  },
+  "assumptions": [
+    "XLA / StableHLO static-first orientation as documented."
+  ],
+  "nonImplications": [
+    "Does not imply XLA cannot handle any dynamic shape.",
+    "Does not imply dynamic ops are always as fast as static ones."
+  ],
+  "misconceptionTags": [
+    "xla_no_static_shape_myth",
+    "xla_infinite_recompile_myth"
+  ],
+  "distractorRationales": {
+    "B": "Wrong claim that static shape is discarded."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:stablehlo",
+      "locator": "StableHLO dynamic_* ops; static-shape orientation",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-XLASHP-022.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,50 @@
+{
+  "questionId": "J-FRAG-018",
+  "learningObjective": "Diagnose external fragmentation in a contiguous per-sequence KV allocator vs paged allocation.",
+  "canonicalClaims": [
+    {
+      "claim": "Contiguous per-sequence KV slabs sized to max_new_tokens cause both internal waste (reserved but not-yet-used positions) and external fragmentation (freed slabs of varying sizes leave non-contiguous holes). PagedAttention eliminates external fragmentation via fixed-size block + block-table indirection.",
+      "conditions": [
+        "Per-sequence slabs allocated up-front at max_new_tokens size.",
+        "Sequences have varying max_new_tokens and lifetimes."
+      ],
+      "nonImplications": [
+        "Does not imply paged KV has zero waste (small internal waste per sequence remains).",
+        "Does not imply paging solves scheduling problems by itself."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 2 motivation" },
+        { "ref": "DOC:vllm", "locator": "PagedAttention" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "OOM with free memory reported is always an accounting bug.",
+      "errorType": "definition_confusion",
+      "whyWrong": "External fragmentation legitimately produces this pattern.",
+      "sourceOrEvidence": "vLLM paper Sec 2"
+    },
+    {
+      "claim": "KV OOM is a data-race between scheduler and allocator.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fragmentation is deterministic given allocation policy.",
+      "sourceOrEvidence": "Memory allocator theory"
+    },
+    {
+      "claim": "TP helps KV OOM by making decode faster.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "TP shards weights and slightly shrinks per-GPU KV footprint by factor T, but does not address fragmentation.",
+      "sourceOrEvidence": "PagedAttention motivation"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM's PagedAttention allocates 16-token blocks; residual internal waste is bounded by 15 tokens per sequence.",
+    "External fragmentation was measured as ~60-80% memory waste in prior systems in the vLLM paper."
+  ],
+  "performanceScenarios": [
+    "Heterogeneous max_new_tokens is the worst case for contiguous allocation.",
+    "Paged allocation is essentially the OS virtual-memory analog applied to KV cache."
+  ],
+  "versionSensitivity": "stable_principle"
+}

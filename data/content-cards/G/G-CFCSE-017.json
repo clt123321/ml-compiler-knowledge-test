@@ -1,0 +1,55 @@
+{
+  "questionId": "G-CFCSE-017",
+  "learningObjective": "Given a small IR fragment, identify which classical optimization (constant folding, CSE, DCE) is applied and confirm semantic preservation.",
+  "canonicalClaims": [
+    {
+      "claim": "Constant folding evaluates compile-time-known operand computations; CSE merges syntactically equivalent pure computations on identical operands; DCE removes values with no consumer and no observable side effect. All three are semantics-preserving on pure IR fragments.",
+      "conditions": [
+        "Operations involved are pure (no side effects).",
+        "Operand equality is decidable syntactically or via value numbering."
+      ],
+      "nonImplications": [
+        "Does not imply CSE can span arbitrarily large scopes; passes typically operate within a function or basic block group.",
+        "Does not imply DCE can remove any unused op — side-effecting ops (e.g., I/O, atomics) are preserved."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Constant folding / CSE / DCE chapters" },
+        { "ref": "DOC:llvm-langref", "locator": "Optimization passes reference" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "SSA form prohibits a single value from being used more than once, so CSE would create SSA violations.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SSA requires single-definition, not single-use; a value can have arbitrarily many uses.",
+      "sourceOrEvidence": "SSA formal definition (Cytron et al.)"
+    },
+    {
+      "claim": "DCE is unsafe because removing any operation might violate side-effect ordering.",
+      "errorType": "wrong_condition",
+      "whyWrong": "DCE removes only pure, unused ops; side-effecting ops are marked as always live.",
+      "sourceOrEvidence": "Engineering a Compiler DCE chapter"
+    },
+    {
+      "claim": "Constant folding requires both operands to be numerical literals; folding a symbolic constant like `%c6` requires a separate propagation pass.",
+      "errorType": "scope_error",
+      "whyWrong": "Constant folding operates on any operation whose operands' compile-time values are known; those may come from prior folds or propagation.",
+      "sourceOrEvidence": "Compiler textbook constant propagation"
+    },
+    {
+      "claim": "CSE and constant folding must be applied in a fixed order; running CSE before folding is incorrect.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The two passes are typically iterated to a fixed point; either order eventually converges.",
+      "sourceOrEvidence": "LLVM pipeline design"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM: `-instcombine`, `-gvn`, `-dce`, `-adce` implement variants of these optimizations.",
+    "MLIR: canonicalization patterns include folding, CSE (`-cse`), and DCE."
+  ],
+  "performanceScenarios": [
+    "In graph-level tensor IR, constant folding subsumes 'freezing' weights into computed tensors."
+  ],
+  "versionSensitivity": "stable_principle"
+}

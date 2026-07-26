@@ -1,0 +1,49 @@
+{
+  "questionId": "E-XLABUF-021",
+  "learningObjective": "Understand XLA's Buffer Assignment: value-to-buffer mapping, liveness-based sharing, in-place execution.",
+  "canonicalClaims": [
+    {
+      "claim": "XLA's Buffer Assignment is a compile-time pass that assigns HLO values to physical buffers, uses liveness analysis to let disjoint-lifetime values share buffers, and enables in-place execution when analysis proves the input value is no longer needed after the op.",
+      "conditions": ["Static HLO program with tractable liveness analysis."],
+      "nonImplications": [
+        "Does not imply zero-copy is always achievable.",
+        "Does not imply runtime allocation vanishes; dynamic allocations still exist."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "XLA buffer assignment doc" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Buffer assignment happens at runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a compile-time pass; the assignment is baked into the compiled artifact.",
+      "sourceOrEvidence": "XLA docs"
+    },
+    {
+      "claim": "Each HLO value gets its own dedicated buffer for the program lifetime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Buffer sharing between disjoint-liveness values is a primary optimization.",
+      "sourceOrEvidence": "XLA docs"
+    },
+    {
+      "claim": "XLA never executes ops in-place.",
+      "errorType": "definition_confusion",
+      "whyWrong": "In-place execution is enabled when static analysis permits.",
+      "sourceOrEvidence": "XLA docs"
+    },
+    {
+      "claim": "Buffer sharing is unsafe because of concurrent execution.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Sharing is only allowed when liveness ranges are disjoint.",
+      "sourceOrEvidence": "XLA docs"
+    }
+  ],
+  "implementationFacts": [
+    "Buffer donation: caller can donate input buffers for in-place reuse via program parameters.",
+    "In-place ops include dynamic_update_slice under favorable liveness."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

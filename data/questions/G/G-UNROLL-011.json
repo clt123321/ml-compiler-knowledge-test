@@ -1,0 +1,92 @@
+{
+  "id": "G-UNROLL-011",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Loop unrolling / When it hurts",
+  "learningObjective": "Recognize scenarios where loop unrolling degrades rather than improves performance.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic CPU / GPU",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Loop unrolling is often described as a 'free' optimization that reduces loop-overhead instructions. Which situation most clearly illustrates when unrolling is counter-productive?",
+  "options": [
+    {
+      "id": "A",
+      "text": "A loop with data-dependent memory accesses; unrolling never helps because the CPU cannot prefetch data-dependent addresses."
+    },
+    {
+      "id": "B",
+      "text": "A tight inner loop with a very small trip count (e.g., 4); unrolling by the exact trip count is illegal because it duplicates side effects and violates SSA form."
+    },
+    {
+      "id": "C",
+      "text": "A GPU kernel where the compiler cannot statically determine the trip count; unrolling is impossible in that case, so no performance question arises."
+    },
+    {
+      "id": "D",
+      "text": "A tight inner loop over a large array where the loop-overhead instructions (increment, compare, branch) already fit within a single instruction issue slot per iteration; unrolling 8\u00d7 triples the object-code size, evicts hot code from the L1 instruction cache, and materially slows the surrounding function."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Option D is correct; options A, B, C are incorrect. A (Wrong): unrolling can expose ILP even under data-dependent accesses. B (Wrong): full unroll of small fixed trip counts is legal and standard. C (Wrong): statically-unknown trip counts prevent unrolling, but the question is about when it hurts, not when it's impossible. D (Correct): code-bloat and I-cache pressure are the classic anti-unrolling scenarios. General context: The canonical downside of unrolling is code bloat leading to instruction-cache pressure and, on GPUs, higher register pressure and spills. When the loop body is already small enough that overhead is negligible relative to the body's work, aggressive unrolling only inflates code size without a compensating throughput gain.",
+  "optionExplanations": {
+    "A": "Wrong: unrolling can expose ILP even under data-dependent accesses.",
+    "B": "Wrong: full unroll of small fixed trip counts is legal and standard.",
+    "C": "Wrong: statically-unknown trip counts prevent unrolling, but the question is about when it hurts, not when it's impossible.",
+    "D": "Correct: code-bloat and I-cache pressure are the classic anti-unrolling scenarios."
+  },
+  "assumptions": [
+    "The 'unrolled 8\u00d7' body substantially increases the number of instructions in the outer function.",
+    "The I-cache and register file have finite capacity."
+  ],
+  "nonImplications": [
+    "Does not imply unrolling is generally bad; a moderate unroll factor (2-4) often helps for reduction and pointer chase loops.",
+    "Does not imply the compiler cannot back off; production compilers use heuristics based on I-cache and register budgets."
+  ],
+  "misconceptionTags": [
+    "unroll_free_lunch",
+    "unroll_illegal_small_trip"
+  ],
+  "distractorRationales": {
+    "A": "Overgeneralizes 'never helps' for data-dependent accesses.",
+    "B": "Confuses full-unroll (legal) with a fictitious SSA violation.",
+    "C": "Confuses impossibility with performance harm."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Loop unrolling: benefits and code-size trade-off",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Register pressure and unrolling guidance",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Instruction-cache pressure from aggressive unrolling",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-UNROLL-011.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

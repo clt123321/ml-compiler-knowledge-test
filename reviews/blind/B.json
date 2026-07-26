@@ -1,0 +1,1083 @@
+{
+  "module": "compiler_basics",
+  "code": "B",
+  "label": "编译器基础与程序分析",
+  "generatedAt": "2026-07-26",
+  "count": 25,
+  "questions": [
+    {
+      "id": "B-ALIAS-007",
+      "type": "multiple",
+      "module": "compiler_basics",
+      "subtopic": "Alias analysis / soundness",
+      "learningObjective": "Identify sound and unsound assumptions in alias analysis and their effect on downstream optimizations.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following statements about alias analysis in a compiler are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Any imprecise alias analysis can be safely replaced by 'always no-alias' because most optimizations conservatively re-verify the aliasing before applying."
+        },
+        {
+          "id": "B",
+          "text": "A sound alias analysis is a may-analysis: when it says two pointers 'may alias', the compiler must assume they could point to the same location. A conservative may-alias answer never breaks correctness but may inhibit optimizations."
+        },
+        {
+          "id": "C",
+          "text": "A must-alias answer is strictly stronger than may-alias: 'p and q must alias' means every execution has *p and *q referring to the same location, enabling optimizations like store-to-load forwarding across the pointers."
+        },
+        {
+          "id": "D",
+          "text": "Reporting 'no-alias' when two pointers actually may alias is a soundness bug in alias analysis; downstream passes (e.g., CSE, LICM) can miscompile programs based on the false no-alias claim."
+        }
+      ],
+      "assumptions": [
+        "Standard alias-analysis framework (may-alias / no-alias / must-alias)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-CFG-003",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Basic block / CFG definition",
+      "learningObjective": "Precisely define a basic block and identify what constitutes a valid CFG edge.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement correctly defines a basic block (BB) and the corresponding control-flow graph (CFG)?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A basic block is a loop body; the CFG has one node per loop and edges represent nesting."
+        },
+        {
+          "id": "B",
+          "text": "A basic block is any sequence of instructions with no data dependency between them; the CFG is a data-flow graph over these blocks."
+        },
+        {
+          "id": "C",
+          "text": "A basic block is a function body; the CFG has one node per function and edges represent calls."
+        },
+        {
+          "id": "D",
+          "text": "A basic block is a maximal straight-line sequence of instructions with exactly one entry (the first instruction) and one exit (the last instruction, typically a branch or terminator); the CFG has an edge from BB_i to BB_j if control can flow from the terminator of BB_i to the entry of BB_j."
+        }
+      ],
+      "assumptions": [
+        "Standard textbook definition (EAC3, Dragon Book)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-CFOLD-009",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Constant folding",
+      "learningObjective": "Distinguish constant folding from constant propagation and identify when folding is legal.",
+      "archetype": "ir_transformation",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Constant folding transforms the IR shown above by evaluating arithmetic on compile-time constants. Which statement about constant folding is correct?",
+      "irSnippet": "; Before folding\n%a = add i32 3, 4\n%b = mul i32 %a, 2\n%c = add i32 %b, 5\n\n; After constant folding\n%c = i32 19",
+      "options": [
+        {
+          "id": "A",
+          "text": "Constant folding requires SSA form; a non-SSA IR cannot support folding because reaching definitions are ambiguous."
+        },
+        {
+          "id": "B",
+          "text": "Constant folding evaluates operations whose operands are all compile-time constants at compile time, producing a new constant. It must respect the source semantics for overflow, rounding, and floating-point edge cases (NaN, infinity) — otherwise it can change program behavior."
+        },
+        {
+          "id": "C",
+          "text": "Constant folding is identical to constant propagation; both refer to substituting known values into use sites."
+        },
+        {
+          "id": "D",
+          "text": "Constant folding may reorder floating-point operations freely because IEEE-754 arithmetic is associative."
+        }
+      ],
+      "assumptions": [
+        "IR represents integer and/or floating-point operations with well-defined semantics."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-CPROP-010",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Sparse Conditional Constant Propagation (SCCP)",
+      "learningObjective": "Explain how SCCP achieves greater precision than plain constant propagation by combining constant propagation with reachability analysis.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Sparse Conditional Constant Propagation (SCCP) achieves better precision than plain constant propagation by tracking both constant lattice values and edge reachability. Which statement about SCCP's advantage over plain constant propagation on the code above is correct?",
+      "irSnippet": "; Original SSA CFG snippet\nbb_entry:\n  %x = i32 5\n  %cond = icmp slt i32 %x, 10\n  br i1 %cond, label %bb_then, label %bb_else\nbb_then:\n  %y1 = add i32 %x, 1     ; reachable\n  br label %bb_merge\nbb_else:\n  %y2 = mul i32 %x, %unknown ; NOT reachable per SCCP\n  br label %bb_merge\nbb_merge:\n  %y = phi i32 [%y1, %bb_then], [%y2, %bb_else]",
+      "options": [
+        {
+          "id": "A",
+          "text": "SCCP is identical to plain constant propagation in this example; the difference only appears in loops."
+        },
+        {
+          "id": "B",
+          "text": "SCCP infers %cond = true (since 5 < 10), marks the bb_else edge as unreachable, and treats the φ as effectively %y = %y1 = 6; plain constant propagation, unaware of reachability, must merge %y1 and %y2 into a non-constant top."
+        },
+        {
+          "id": "C",
+          "text": "Plain constant propagation would already conclude %y = 6 by ignoring the else branch heuristically; SCCP is unnecessary for this pattern."
+        },
+        {
+          "id": "D",
+          "text": "SCCP marks bb_then as unreachable because plain propagation cannot decide which branch runs, and the algorithm defaults to the else path."
+        }
+      ],
+      "assumptions": [
+        "SSA form; canonical SCCP algorithm (Wegman & Zadeck)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-CSE-012",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Common Subexpression Elimination / availability",
+      "learningObjective": "Identify when CSE is legal given side effects and availability.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The IR performs two loads from the same pointer %p, with a `call @sink` between them that may write to memory. A naive CSE would replace the second load with the first. Which statement is correct?",
+      "irSnippet": "; Before CSE\n%a = load i32, i32* %p    ; Load L1\ncall void @sink(i32 %a)   ; may write memory\n%b = load i32, i32* %p    ; Load L2\n\n; Naive CSE would replace %b with %a; is this legal?",
+      "options": [
+        {
+          "id": "A",
+          "text": "CSE is legal here because compilers assume by default that function calls are pure unless explicitly marked otherwise."
+        },
+        {
+          "id": "B",
+          "text": "CSE is always legal for loads from the same pointer in SSA form because SSA ensures the pointer value is unchanged."
+        },
+        {
+          "id": "C",
+          "text": "CSE cannot legally replace L2 with %a unless the compiler proves that @sink does not write to the memory pointed to by %p (via alias analysis or a nomemory/readonly attribute). Otherwise the two loads may observe different values and CSE would change semantics."
+        },
+        {
+          "id": "D",
+          "text": "CSE is illegal in principle because loads are side-effecting operations that can never be eliminated."
+        }
+      ],
+      "assumptions": [
+        "IR represents loads and calls with distinguishable memory effects.",
+        "Standard SSA semantics for register values, non-SSA memory model."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-DATAFLOW-022",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Data-flow lattice / meet-over-paths",
+      "learningObjective": "Explain the meet operator and lattice ordering choice for a canonical data-flow analysis.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In classical data-flow analysis, the meet operator combines information at a join point (multiple predecessor paths). Which pairing of analysis and meet operator is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both liveness and available expressions use union; the direction (forward/backward) is what distinguishes them."
+        },
+        {
+          "id": "B",
+          "text": "Liveness uses intersection because a variable must be live on all paths to be considered live; available expressions use union to be sound."
+        },
+        {
+          "id": "C",
+          "text": "Liveness (may-analysis, backward): meet = union — a variable is live-in at a block if it is live-in on some successor. Available expressions (must-analysis, forward): meet = intersection — an expression is available at a block only if it is available on every predecessor path."
+        },
+        {
+          "id": "D",
+          "text": "Neither analysis uses a meet operator; both are point-to-point dataflow computations without merging."
+        }
+      ],
+      "assumptions": [
+        "Standard textbook dataflow framework (Dragon Book, EAC3)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-DCE-011",
+      "type": "multiple",
+      "module": "compiler_basics",
+      "subtopic": "Dead Code Elimination boundaries",
+      "learningObjective": "Distinguish dead code elimination from unreachable code elimination and identify soundness conditions.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about Dead Code Elimination (DCE) and its relationship to unreachable code elimination are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "DCE can safely remove any pure computation whose result is unused, even if the computation may throw a floating-point exception, because unused values are always safe to elide."
+        },
+        {
+          "id": "B",
+          "text": "DCE requires SSA to be applicable; non-SSA IRs cannot support DCE because reaching definitions are ambiguous."
+        },
+        {
+          "id": "C",
+          "text": "DCE removes instructions whose results are not used and that have no observable side effects (no memory writes, no I/O, no exceptions). An instruction that writes to memory or calls a function that may have side effects cannot be removed by DCE, even if its return value is unused."
+        },
+        {
+          "id": "D",
+          "text": "Unreachable code elimination removes basic blocks that no execution path can reach from the entry; this is distinct from DCE, which operates on live/dead value analysis within reachable code."
+        }
+      ],
+      "assumptions": [
+        "Program semantics may include observable side effects such as FP exceptions and I/O.",
+        "Standard IR with distinguishable pure vs side-effecting operations."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-DEFUSE-006",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Def-use chain in SSA",
+      "learningObjective": "Explain why def-use chains are trivial to compute in SSA compared to non-SSA IR.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In SSA form, why are def-use chains typically simpler and cheaper to compute than in a non-SSA IR?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because SSA prohibits loops, def-use chains cannot cross backedges."
+        },
+        {
+          "id": "B",
+          "text": "Because SSA merges phi values at runtime into a single memory slot, the def-use graph collapses to a linear list."
+        },
+        {
+          "id": "C",
+          "text": "Because each SSA name has exactly one textual definition, every use points unambiguously to that unique def; there is no reaching-definitions problem to solve to associate uses with their defs."
+        },
+        {
+          "id": "D",
+          "text": "Because SSA form guarantees that any use is reachable from every def, making the chains trivially total."
+        }
+      ],
+      "assumptions": [
+        "Standard SSA form (Cytron et al.)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-DOM-004",
+      "type": "multiple",
+      "module": "compiler_basics",
+      "subtopic": "Dominance / post-dominance / dominator tree",
+      "learningObjective": "Distinguish dominance and post-dominance relations and identify implications for SSA construction and code motion.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about dominance and post-dominance in a CFG with a distinguished entry are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Dominance and post-dominance are the same relation; the two are equivalent for any well-formed CFG."
+        },
+        {
+          "id": "B",
+          "text": "Dominance implies reachability from the entry, so unreachable code is not part of any dominator subtree and is typically removed before SSA construction."
+        },
+        {
+          "id": "C",
+          "text": "Block D dominates block N (written D dom N) iff every path from the entry to N passes through D; the dominance relation forms a tree rooted at the entry block."
+        },
+        {
+          "id": "D",
+          "text": "Block P post-dominates block N iff every path from N to the exit passes through P; post-dominance uses a reverse CFG and requires a distinguished exit (which may need to be synthesized for functions with multiple returns)."
+        }
+      ],
+      "assumptions": [
+        "CFG has a distinguished entry; for post-dominance, an exit (possibly synthesized) is added.",
+        "Standard textbook definitions from EAC3, Appel."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-DOMTREE-025",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Dominator tree properties",
+      "learningObjective": "Identify structural properties of the dominator tree and its use in SSA construction.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement correctly describes the dominator tree of a CFG and its use in SSA construction?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The dominator tree is identical to the loop nest tree; both express nested control-flow structures."
+        },
+        {
+          "id": "B",
+          "text": "The dominator tree is the transpose of the CFG; edges are reversed and used for backward analysis such as liveness."
+        },
+        {
+          "id": "C",
+          "text": "The dominator tree contains one node per phi function; edges represent phi operand relationships."
+        },
+        {
+          "id": "D",
+          "text": "The dominator tree has the CFG entry as its root; the immediate dominator of each block is its parent. SSA construction places phi functions at the dominance frontier of each definition, which is the set of blocks that are just outside the region strictly dominated by the definition's block but reachable from it."
+        }
+      ],
+      "assumptions": [
+        "CFG has a single entry block; dominance is defined with respect to it.",
+        "SSA construction follows the Cytron et al. algorithm."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-ESCAPE-008",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Escape analysis",
+      "learningObjective": "Precisely define escape analysis and identify what optimizations it enables.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement most precisely describes escape analysis and the optimizations it enables?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Escape analysis identifies variables that need to be stored in registers rather than memory; it drives register allocation."
+        },
+        {
+          "id": "B",
+          "text": "Escape analysis proves that a variable is used outside a loop; the compiler then hoists its computation via LICM."
+        },
+        {
+          "id": "C",
+          "text": "Escape analysis proves that a function does not throw exceptions; the compiler then removes exception-handling code paths."
+        },
+        {
+          "id": "D",
+          "text": "Escape analysis proves that a heap-allocated object's lifetime is bounded by its allocating function (does not escape via return, thread, or stored reference); the compiler can then stack-allocate it, scalarize its fields, or eliminate it entirely (scalar replacement of aggregates)."
+        }
+      ],
+      "assumptions": [
+        "Language supports heap-allocated objects (e.g., Java, Go, or C++ with new/delete).",
+        "Standard escape-analysis definitions (Choi et al., Blanchet)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-INLINE-014",
+      "type": "multiple",
+      "module": "compiler_basics",
+      "subtopic": "Inlining trade-offs",
+      "learningObjective": "Identify the benefits and costs of function inlining and the conditions when it may be inhibited.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about function inlining as a compiler optimization are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Recursive functions cannot be inlined at all; the compiler always emits them as separate call sites."
+        },
+        {
+          "id": "B",
+          "text": "Indirect / virtual calls typically require devirtualization (via type information or profiling) before they can be inlined, since the target is not statically known."
+        },
+        {
+          "id": "C",
+          "text": "Inlining eliminates the call/return overhead and enables intraprocedural optimizations (constant propagation, CSE, LICM) to see across the previous call boundary."
+        },
+        {
+          "id": "D",
+          "text": "Aggressive inlining can hurt performance by inflating instruction cache footprint (icache misses), increasing register pressure, and slowing compile time; heuristics balance size and estimated benefit."
+        }
+      ],
+      "assumptions": [
+        "Standard compiler with an inlining heuristic (size/benefit model)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-INSTSEL-016",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Instruction selection / tree pattern matching",
+      "learningObjective": "Explain instruction selection as pattern-tiling of an IR tree against target-instruction templates.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic target ISA",
+        "device": "generic",
+        "requiredFeatures": [
+          "target ISA with multi-operation instructions (e.g., LEA, FMA)"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement most precisely describes instruction selection via tree/DAG pattern matching?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Instruction selection assigns virtual registers to physical registers using a greedy algorithm; it precedes register allocation."
+        },
+        {
+          "id": "B",
+          "text": "The IR (or its expression trees) is tiled with patterns matching target instructions; each tile carries a cost, and the selector finds a minimum-cost covering. Multi-operation instructions (e.g., LEA, FMA) match larger tiles and typically win over sequences of simpler tiles."
+        },
+        {
+          "id": "C",
+          "text": "Instruction selection is the process of choosing which functions to inline; it operates at the call graph level."
+        },
+        {
+          "id": "D",
+          "text": "Instruction selection linearizes basic blocks into a schedule that minimizes pipeline stalls."
+        }
+      ],
+      "assumptions": [
+        "Target ISA is expressible via a set of instruction patterns with costs.",
+        "IR is in a form amenable to tiling (typically DAG or tree)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-JITAOT-019",
+      "type": "multiple",
+      "module": "compiler_basics",
+      "subtopic": "JIT vs AOT compilation",
+      "learningObjective": "Compare JIT and AOT compilation on optimization opportunities, deployment characteristics, and cold-start behavior.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements correctly compare Just-in-Time (JIT) and Ahead-of-Time (AOT) compilation? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "JIT and AOT are mutually exclusive: a compilation pipeline can be either JIT or AOT but not combine both."
+        },
+        {
+          "id": "B",
+          "text": "JIT compilation can exploit runtime information (observed types, hot call sites, actual input shapes) to specialize code adaptively; AOT lacks this dynamic profile unless PGO or similar techniques feed profiles back before deployment."
+        },
+        {
+          "id": "C",
+          "text": "AOT produces deployable artifacts with no compilation cost at runtime, avoiding warm-up latency; JIT amortizes compile time across program execution and thus has a warm-up phase."
+        },
+        {
+          "id": "D",
+          "text": "JIT is inherently less optimized than AOT because it must be fast to compile; AOT compilers can spend arbitrary time on optimization."
+        }
+      ],
+      "assumptions": [
+        "Standard definitions of JIT and AOT in modern language runtimes and ML frameworks."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-LICM-013",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Loop Invariant Code Motion safety conditions",
+      "learningObjective": "State the safety conditions under which a loop-invariant computation can be hoisted out of a loop.",
+      "archetype": "ir_transformation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The expression `%inv = sdiv i32 %a, %b` is loop-invariant. Under LICM, which conditions must hold for it to be safe to hoist `%inv` to the loop preheader?",
+      "irSnippet": "; Original loop (SSA CFG)\n; Loop header: bb_header\n; Loop body: bb_body containing:\n;   %inv = sdiv i32 %a, %b     ; loop-invariant in %a, %b\n;   %use = add i32 %inv, %i\n; Loop preheader: bb_preheader (dominates the loop; single predecessor of header)\n; Loop backedge closes bb_body -> bb_header.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Hoisting requires unrolling the loop first to prove the operation executes at least once."
+        },
+        {
+          "id": "B",
+          "text": "The instruction just needs to be loop-invariant; hoisting is always safe because the value would have been computed inside the loop anyway."
+        },
+        {
+          "id": "C",
+          "text": "Only pure instructions with side-effect-free operations (add, sub, mul) can be hoisted; divisions must remain in the loop regardless of invariance."
+        },
+        {
+          "id": "D",
+          "text": "(1) The instruction is loop-invariant (operands defined outside the loop or themselves loop-invariant). (2) It dominates every use inside the loop, or has no side effects when speculated. (3) Its execution is safe in the preheader (no fault, no observable side effect) — for `sdiv`, this typically means %b is provably non-zero, otherwise hoisting can introduce a divide-by-zero that never occurred in the original loop body."
+        }
+      ],
+      "assumptions": [
+        "Standard LICM as described in EAC3 and LLVM's implementation.",
+        "SSA-based analysis of loop structure with a well-defined preheader."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-LIVE-005",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Liveness analysis (backward data-flow)",
+      "learningObjective": "Compute liveness at a program point given standard live-in / live-out equations.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Using standard liveness data-flow equations (live_in[I] = (live_out[I] − def[I]) ∪ use[I]), which variables are live immediately BEFORE instruction I1?",
+      "irSnippet": "; Consider block B with the following instructions in order:\nB:\n  I1:  a := x + y      ; def a; use x, y\n  I2:  b := a * 2      ; def b; use a\n  I3:  c := b + z      ; def c; use b, z\n  I4:  return c        ; use c\n; Live-out at end of B: {} (this is a function's return block, no successor).",
+      "options": [
+        {
+          "id": "A",
+          "text": "{x, y, z, a, b, c}"
+        },
+        {
+          "id": "B",
+          "text": "{a, b, c}"
+        },
+        {
+          "id": "C",
+          "text": "{x, y}"
+        },
+        {
+          "id": "D",
+          "text": "{x, y, z}"
+        }
+      ],
+      "assumptions": [
+        "Standard live variables analysis with use/def sets per instruction.",
+        "No aliasing complications (each variable is a distinct SSA-like name)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-LOOPINV-023",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Loop invariance under redefinition / edge cases",
+      "learningObjective": "Determine loop-invariance of an expression when its operands are themselves defined inside the loop via phi.",
+      "archetype": "ir_transformation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Is `%e = mul i32 %s, 2` loop-invariant in the loop shown, and can it be hoisted to bb_preheader?",
+      "irSnippet": "; Loop in SSA\nbb_preheader:\n  br label %bb_header\nbb_header:\n  %i    = phi i32 [0, %bb_preheader], [%i_next, %bb_body]\n  %s    = phi i32 [1, %bb_preheader], [%s_next, %bb_body]\n  %cond = icmp slt i32 %i, %N\n  br i1 %cond, label %bb_body, label %bb_exit\nbb_body:\n  %e     = mul i32 %s, 2       ; candidate loop-invariant?\n  %s_next = add i32 %s, %e     ; s_next uses e\n  %i_next = add i32 %i, 1\n  br label %bb_header\nbb_exit:\n  ret i32 %s",
+      "options": [
+        {
+          "id": "A",
+          "text": "Yes — LICM can hoist any expression whose operator (mul) is pure, regardless of the operands' definitions."
+        },
+        {
+          "id": "B",
+          "text": "Yes — since %e uses only %s and a constant, and constants are invariant, %e is trivially loop-invariant regardless of %s's definition."
+        },
+        {
+          "id": "C",
+          "text": "No — `%e` depends on `%s`, which is defined by a loop-header phi with a different value each iteration (`%s_next` from bb_body). `%s` is not loop-invariant, so `%e` is not loop-invariant either."
+        },
+        {
+          "id": "D",
+          "text": "No — LICM never applies inside a loop that uses phi nodes to carry loop-carried state."
+        }
+      ],
+      "assumptions": [
+        "SSA-form IR with phi at loop header carrying loop-carried state.",
+        "Standard LICM analysis rules."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-PARTIAL-018",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Partial evaluation / specialization",
+      "learningObjective": "Precisely characterize partial evaluation and identify a canonical use case.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement most precisely defines partial evaluation as a compilation technique?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Partial evaluation specializes a program with respect to some subset of its inputs known at specialization time (static inputs); the residual program takes only the remaining (dynamic) inputs and behaves equivalently to the original on any completion of the static inputs. Constant folding, template specialization, and shape specialization in ML compilers are instances."
+        },
+        {
+          "id": "B",
+          "text": "Partial evaluation is a fault-tolerance mechanism that recovers from partial execution failures by re-running only the incomplete portion."
+        },
+        {
+          "id": "C",
+          "text": "Partial evaluation is a name for lazy evaluation in functional programming; expressions are evaluated only when their values are needed."
+        },
+        {
+          "id": "D",
+          "text": "Partial evaluation is a synonym for peephole optimization; both simplify local subexpressions."
+        }
+      ],
+      "assumptions": [
+        "Standard definition per Jones, Gomard, Sestoft (Partial Evaluation and Automatic Program Generation)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-PATTERN-017",
+      "type": "multiple",
+      "module": "compiler_basics",
+      "subtopic": "Pattern rewriting vs peephole",
+      "learningObjective": "Distinguish rewrite-based (declarative) pattern matching from ad-hoc peephole optimization.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about pattern rewriting vs peephole optimization are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Peephole optimization is guaranteed to terminate; pattern rewriting is inherently divergent unless a cost model bounds it."
+        },
+        {
+          "id": "B",
+          "text": "Rewrite frameworks and peephole optimizers are conceptually related — both match a pattern and replace with an equivalent alternative — but differ in scope, expressiveness, and typical position in the compilation pipeline."
+        },
+        {
+          "id": "C",
+          "text": "Peephole optimization inspects a small local window of instructions (e.g., 2–3 adjacent instructions) and applies rewrites without global information; it operates late in the backend and is largely target-specific."
+        },
+        {
+          "id": "D",
+          "text": "Pattern rewriting frameworks (e.g., LLVM InstCombine, MLIR PDL/Rewrite, TVM Relax rewrite) apply declarative rewrite rules to IR patterns; the framework handles matching, termination, and cost-driven ordering, and the rules can be target-independent or target-specific."
+        }
+      ],
+      "assumptions": [
+        "Standard compiler pipeline with distinct optimization phases (front-end, mid-end, backend)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-PHI-002",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Phi node placement at CFG merges",
+      "learningObjective": "Determine correct phi placement and semantics at a control-flow merge involving multiple predecessors.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In the CFG shown, block bb_merge has two predecessors bb_then and bb_else, each defining a version of x (%x1 in bb_then, %x2 in bb_else). Which is the correct SSA representation of the merged value used in bb_merge?",
+      "irSnippet": "; Non-SSA source (pseudo)\n; if (cond) { x = a; } else { x = b; }\n; return x;\n\n; Candidate SSA lowerings:\nbb_entry:\n  br i1 %cond, label %bb_then, label %bb_else\nbb_then:\n  %x1 = ... %a\n  br label %bb_merge\nbb_else:\n  %x2 = ... %b\n  br label %bb_merge\nbb_merge:\n  ; ??? phi placement\n  ret i32 %x_merged",
+      "options": [
+        {
+          "id": "A",
+          "text": "Insert `%x_merged = select i1 %cond, i32 %x1, i32 %x2` at the top of bb_merge; select instructions replace φ nodes and are the canonical SSA construct for merging values."
+        },
+        {
+          "id": "B",
+          "text": "Emit both %x1 and %x2 in bb_merge and let the register allocator pick which physical register holds the merged value at runtime; no φ is needed because SSA is only about textual assignments in the source block."
+        },
+        {
+          "id": "C",
+          "text": "Duplicate bb_merge into two copies (one for each predecessor) so no merge exists; SSA cannot represent a value that has different definitions along different paths without CFG duplication."
+        },
+        {
+          "id": "D",
+          "text": "Insert `%x_merged = phi i32 [%x1, %bb_then], [%x2, %bb_else]` at the beginning of bb_merge; the φ selects %x1 when control flow arrives from bb_then and %x2 when it arrives from bb_else."
+        }
+      ],
+      "assumptions": [
+        "Both bb_then and bb_else complete and reach bb_merge; no exceptions or aborts.",
+        "LLVM IR conventions (phi at block top, block-annotated incoming values)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-REGALLOC-015",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Register allocation via graph coloring",
+      "learningObjective": "Explain the graph-coloring formulation of register allocation, including the meaning of interference and spilling.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic scalar target with K physical registers",
+        "device": "generic",
+        "requiredFeatures": [
+          "fixed K-color register file"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In the classical graph-coloring formulation of register allocation, what do the nodes, edges, K colors, and 'spill' correspond to?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Nodes = instructions. Edges = data dependencies. K colors = pipeline stages. Spill = pipeline stall."
+        },
+        {
+          "id": "B",
+          "text": "Nodes = basic blocks. Edges = CFG edges. K colors = number of basic blocks the register allocator can process in parallel. Spill = block-level rearrangement."
+        },
+        {
+          "id": "C",
+          "text": "Nodes = phi nodes. Edges = phi operands. K colors = SSA versions of a variable. Spill = eliminate a phi."
+        },
+        {
+          "id": "D",
+          "text": "Nodes = live ranges (virtual registers). Edges = interference (two live ranges are live simultaneously and therefore cannot share a physical register). K colors = number of physical registers. Spill = assign a live range to memory because coloring with K colors is impossible; spilled uses/defs become loads/stores."
+        }
+      ],
+      "assumptions": [
+        "Non-SSA IR at register-allocation time (SSA is typically destructed first, though SSA-based allocation variants exist).",
+        "Fixed K physical registers on the target."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-SEMPRES-021",
+      "type": "multiple",
+      "module": "compiler_basics",
+      "subtopic": "Semantic preservation in optimization",
+      "learningObjective": "Identify what semantic preservation guarantees a compiler optimization must uphold and where common flags relax it.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about semantic preservation in compiler optimization are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "For undefined behavior (UB) in the source language (e.g., signed overflow in C, out-of-bounds access), the compiler is free to assume UB does not occur; optimizations may exploit this to eliminate branches or code paths, which can produce surprising behavior when UB does occur."
+        },
+        {
+          "id": "B",
+          "text": "Semantic preservation is always trivially satisfied by any optimization that reduces the number of instructions; fewer instructions cannot possibly change behavior."
+        },
+        {
+          "id": "C",
+          "text": "An optimization is semantics-preserving if the optimized program has an observable-behavior set that is a subset of the source program's observable-behavior set (under the source language's semantics), typically allowing implementation-defined behaviors and some nondeterminism."
+        },
+        {
+          "id": "D",
+          "text": "Flags like `-ffast-math` explicitly relax IEEE-754 semantics (associativity, NaN/Inf handling), allowing reassociation and other transformations that are not strictly semantics-preserving; using them may change numerical results."
+        }
+      ],
+      "assumptions": [
+        "Standard C/C++ semantics with defined observable behavior; language variants with different semantic models may allow different optimizations."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-SOUND-020",
+      "type": "multiple",
+      "module": "compiler_basics",
+      "subtopic": "Soundness of static analysis",
+      "learningObjective": "Distinguish sound and precise analyses and identify the direction of over-/under-approximation.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about soundness and precision in static compiler analyses are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "A sound analysis in a bug-finding context can be an under-approximation: it may miss some bugs (false negatives) but reports only true bugs (no false positives). The direction of soundness depends on the analysis's intent."
+        },
+        {
+          "id": "B",
+          "text": "Precision measures how close the analysis result is to the ideal answer; a maximally precise analysis is not always tractable, so most analyses trade precision for scalability."
+        },
+        {
+          "id": "C",
+          "text": "Soundness and precision are equivalent: a sound analysis is always precise, and vice versa."
+        },
+        {
+          "id": "D",
+          "text": "A sound analysis over-approximates behavior for compiler optimizations: it never claims 'safe to transform' unless the transformation is truly safe. Its errors are conservative — foregoing legal optimizations, not enabling illegal ones."
+        }
+      ],
+      "assumptions": [
+        "Standard abstract-interpretation framing (Cousot & Cousot lattices)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-SSA-001",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "SSA form definition",
+      "learningObjective": "Precisely characterize the defining property of SSA (Static Single Assignment) form and distinguish it from related notions.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement correctly defines Static Single Assignment (SSA) form?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Each variable is stored in a distinct memory location; SSA is a memory-layout property enforced by the register allocator."
+        },
+        {
+          "id": "B",
+          "text": "Every variable is written exactly once at runtime along every execution path; loops therefore cannot be represented in SSA without unrolling."
+        },
+        {
+          "id": "C",
+          "text": "Every variable in the intermediate representation is textually assigned in exactly one program statement, and phi (φ) functions are inserted at control-flow join points to merge different reaching definitions from predecessor blocks."
+        },
+        {
+          "id": "D",
+          "text": "SSA requires all variables to be constants, since 'single assignment' means a value is fixed at compile time."
+        }
+      ],
+      "assumptions": [
+        "Standard SSA as defined in Cytron et al. and canonical compiler textbooks."
+      ],
+      "version": 1
+    },
+    {
+      "id": "B-SSAFORM-024",
+      "type": "single",
+      "module": "compiler_basics",
+      "subtopic": "Out-of-SSA translation / phi lowering",
+      "learningObjective": "Explain how out-of-SSA translation lowers phi functions into copies at predecessor blocks and identify the swap/lost-copy problem.",
+      "archetype": "ir_transformation",
+      "difficulty": 4,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "During out-of-SSA translation, a compiler lowers phi functions into copies at predecessor block ends. Which statement about this lowering is correct, particularly regarding the swap / lost-copy issue?",
+      "irSnippet": "; SSA before out-of-SSA:\nbb_merge:\n  %a = phi i32 [%x, %P1], [%y, %P2]\n  %b = phi i32 [%y, %P1], [%x, %P2]\n\n; Naive lowering inserts at end of each predecessor:\n; In %P1: a := x; b := y\n; In %P2: a := y; b := x\n; but if we later assign both phis to the same physical register class, sequential copies may lose values.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Modern optimizers avoid out-of-SSA lowering entirely by preserving phi nodes into machine code emission."
+        },
+        {
+          "id": "B",
+          "text": "Out-of-SSA lowering trivially inserts one move per phi at the merge block; no predecessor-side changes are needed."
+        },
+        {
+          "id": "C",
+          "text": "Out-of-SSA lowering requires all phi functions to be first converted to `select` instructions; only then can the code generator produce copies."
+        },
+        {
+          "id": "D",
+          "text": "Naive sequential copy insertion at predecessor ends can be incorrect when multiple phis form a cycle (e.g., swap: %a and %b exchange values). Correct lowering must schedule copies to respect the parallel-copy semantics of phi (all phis fire simultaneously), typically using a temporary register or scheduling algorithms like Sreedhar's or Boissinot's."
+        }
+      ],
+      "assumptions": [
+        "Standard SSA and out-of-SSA algorithms (Sreedhar, Boissinot).",
+        "Target machine code lacks a native phi instruction."
+      ],
+      "version": 1
+    }
+  ]
+}

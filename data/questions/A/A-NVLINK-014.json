@@ -1,0 +1,96 @@
+{
+  "id": "A-NVLINK-014",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "NVLink vs PCIe / inter-GPU collectives",
+  "learningObjective": "Compare NVLink and PCIe bandwidth for inter-GPU communication and reason about ring-AllReduce throughput.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "H100 SXM5 with NVLink 4.0 fabric",
+    "device": "GPU",
+    "requiredFeatures": [
+      "NVLink 4.0 per-GPU ~900 GB/s bidirectional"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "profileData": "Ring-AllReduce of a 1 GiB FP16 tensor across 8 H100 SXM5 nodes fully connected by NVLink 4.0. Same experiment across 8 H100 PCIe cards on PCIe Gen4 x16.",
+  "stem": "You have two 8-GPU setups: (i) H100 SXM5 with NVLink 4.0 (per-GPU aggregate ≈ 900 GB/s bidirectional) and (ii) H100 PCIe cards on PCIe Gen4 x16 (≈ 25 GB/s per-direction between neighbors, no NVLink). You run ring-AllReduce on a 1 GiB FP16 tensor. Which comparison is closest to correct in the bandwidth-bound regime?",
+  "options": [
+    {
+      "id": "A",
+      "text": "NVLink is roughly 1–2 orders of magnitude faster than PCIe here because ring-AllReduce is limited by the slowest inter-GPU link; NVLink's ~900 GB/s bidirectional per GPU vs PCIe's ~25 GB/s per direction dominates the collective time."
+    },
+    {
+      "id": "B",
+      "text": "Both complete in the same time because ring-AllReduce total bytes are dominated by the sum, independent of link technology."
+    },
+    {
+      "id": "C",
+      "text": "PCIe is faster because CPU-mediated routing bypasses the NVLink handshake overhead, giving lower latency for tensors above 512 MiB."
+    },
+    {
+      "id": "D",
+      "text": "NVLink and PCIe give the same throughput per direction; only bidirectional aggregate differs and AllReduce uses one direction at a time."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Ring-AllReduce sends 2(P−1)/P × N bytes per link at bandwidth-limited steady state, where N is tensor size and P is number of GPUs. The runtime is roughly N / effective_link_BW. With NVLink 4.0's ~900 GB/s bidirectional aggregate per GPU vs PCIe Gen4 x16's ~25 GB/s per direction, the effective inter-GPU bandwidth differs by more than an order of magnitude. So NVLink completes the collective substantially faster. Options A, C, D contain factual or reasoning errors.",
+  "optionExplanations": {
+    "A": "Correct: for a bandwidth-bound ring, NVLink's link BW is roughly 10–30× PCIe's, giving a corresponding wall-time advantage.",
+    "B": "Wrong: bandwidth-bound collective time is proportional to bytes / link BW; identical time would require identical BW.",
+    "C": "Wrong: PCIe with CPU-mediated routing is slower, not faster, and NVLink does not require a per-transfer handshake that would offset its bandwidth advantage.",
+    "D": "Wrong: NVLink's per-direction bandwidth already exceeds PCIe's by an order of magnitude; the bidirectional aggregate is not the only difference."
+  },
+  "assumptions": [
+    "Ring-AllReduce in the bandwidth-bound regime (tensor large enough that latency terms are negligible).",
+    "PCIe topology has no NVLink or NVSwitch fabric between GPUs.",
+    "NVLink 4.0 per-GPU aggregate ~ 900 GB/s bidirectional (H100 SXM5 typical published number)."
+  ],
+  "nonImplications": [
+    "Does not imply NVLink is always 10–30× faster; small message sizes are latency-bound, where the gap may narrow.",
+    "Does not imply the exact speedup ratio; effective BW is affected by NCCL algorithm, topology, and buffer chunking."
+  ],
+  "misconceptionTags": [
+    "allreduce_bw_confusion",
+    "cpu_mediation_myth"
+  ],
+  "distractorRationales": {
+    "B": "Ignores link bandwidth in bandwidth-bound analysis.",
+    "C": "Fabricated CPU-bypass advantage.",
+    "D": "Understates PCIe/NVLink per-direction BW gap."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Interconnect and collective communication chapters",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Multi-GPU and NVLink discussion",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "8-GPU H100 ring-AllReduce, 1 GiB FP16 tensor, bandwidth-bound regime",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-NVLINK-014.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

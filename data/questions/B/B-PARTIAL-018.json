@@ -1,0 +1,90 @@
+{
+  "id": "B-PARTIAL-018",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Partial evaluation / specialization",
+  "learningObjective": "Precisely characterize partial evaluation and identify a canonical use case.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement most precisely defines partial evaluation as a compilation technique?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Partial evaluation specializes a program with respect to some subset of its inputs known at specialization time (static inputs); the residual program takes only the remaining (dynamic) inputs and behaves equivalently to the original on any completion of the static inputs. Constant folding, template specialization, and shape specialization in ML compilers are instances."
+    },
+    {
+      "id": "B",
+      "text": "Partial evaluation is a fault-tolerance mechanism that recovers from partial execution failures by re-running only the incomplete portion."
+    },
+    {
+      "id": "C",
+      "text": "Partial evaluation is a name for lazy evaluation in functional programming; expressions are evaluated only when their values are needed."
+    },
+    {
+      "id": "D",
+      "text": "Partial evaluation is a synonym for peephole optimization; both simplify local subexpressions."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Partial evaluation, introduced by Yoshihiko Futamura and refined by Neil Jones et al., specializes a program with respect to static input values, producing a residual program that depends only on the dynamic (unknown) inputs. Constant folding is a limited instance; more powerful cases include compiler generation (Futamura projections), template specialization in C++, and shape specialization in ML compilers (recompiling for a fixed input shape). Options B, C, D confuse partial evaluation with unrelated concepts.",
+  "optionExplanations": {
+    "A": "Correct: standard definition with canonical instances.",
+    "B": "Wrong: fault-tolerance is unrelated to partial evaluation.",
+    "C": "Wrong: lazy evaluation is a runtime strategy, not a compilation-time specialization.",
+    "D": "Wrong: peephole is a local optimization; partial evaluation is a program specialization technique."
+  },
+  "assumptions": [
+    "Standard definition per Jones, Gomard, Sestoft (Partial Evaluation and Automatic Program Generation)."
+  ],
+  "nonImplications": [
+    "Does not imply partial evaluation always produces faster code; specialization may increase code size and compile time.",
+    "Does not imply partial evaluation is only for constant inputs; more sophisticated variants (online, offline PE) handle richer static structure."
+  ],
+  "misconceptionTags": [
+    "pe_vs_lazy_confusion",
+    "pe_vs_peephole_confusion"
+  ],
+  "distractorRationales": {
+    "B": "Fabricated fault-tolerance meaning.",
+    "C": "Conflates PE with lazy evaluation.",
+    "D": "Conflates PE with peephole."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Program specialization / partial evaluation discussion",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "BOOK:dragon2",
+      "locator": "Program specialization sections",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-PARTIAL-018.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,1386 @@
+{
+  "module": "graph_opt_schedule",
+  "code": "G",
+  "label": "图优化 / 循环变换 / 调度 / 自动调优",
+  "generatedAt": "2026-07-26",
+  "count": 30,
+  "questions": [
+    {
+      "id": "G-ANSOR-024",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Ansor / Design intent",
+      "learningObjective": "Explain Ansor's central design choice of subgraph-level schedule generation with a learned cost model, and what it replaces.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic accelerator",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The Ansor paper (OSDI 2020) makes several design choices that distinguish it from prior work like AutoTVM and Halide autoscheduler. Which best describes Ansor's central design intent?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Ansor searches at the level of algorithmic sketches over multi-op subgraphs, uses a learned cost model to prune candidates, and prioritizes subgraphs by their contribution to end-to-end network runtime; this removes the need for per-operator manual templates while remaining tractable via the sketch abstraction."
+        },
+        {
+          "id": "B",
+          "text": "Ansor is a compiler backend for CUDA that replaces cuBLAS and cuDNN with hand-written Tensor Core kernels; its main contribution is a superior tensor core code generator."
+        },
+        {
+          "id": "C",
+          "text": "Ansor is a runtime autotuning framework that mutates kernel launch parameters between forward passes during model serving."
+        },
+        {
+          "id": "D",
+          "text": "Ansor is a rewrite of AutoTVM's cost model in C++; the design intent is faster compile time at the cost of tuning quality."
+        }
+      ],
+      "assumptions": [
+        "The reader has knowledge of the Ansor paper's abstract-level contributions."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-AUTOTUNE-021",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Autotuning / Measurement methodology",
+      "learningObjective": "Diagnose why an autotuner's best-config picks differ across runs and identify the primary contributor.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "generic sm_80 / sm_90 with default clock governor",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM AutoTVM / MetaSchedule",
+        "frameworkVersionScope": "TVM 0.14 ~ 0.16",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "An autotuner picks different 'best' configs across two consecutive runs. Single-config replay shows both configs measure at 0.42 ± 0.03 ms. Which is the most likely root cause and appropriate fix?",
+      "profileData": "Run A of autotuner (100 trials): best config = C1 at 0.42 ms; C2 comes second at 0.44 ms.\nRun B (same code, same GPU, immediately after Run A): best config = C2 at 0.42 ms; C1 second at 0.45 ms.\nSingle-config replay: each of C1 and C2 individually measures at 0.42 ± 0.03 ms across 20 replays.",
+      "options": [
+        {
+          "id": "A",
+          "text": "The autotuner is using a broken random seed; setting the seed to a fixed value will make C1 and C2 report identical runtimes."
+        },
+        {
+          "id": "B",
+          "text": "The GPU driver has a memory leak; upgrading the driver will fix the non-determinism."
+        },
+        {
+          "id": "C",
+          "text": "The kernels have a genuine algorithmic difference that only manifests every other launch; C1 and C2 are actually different optima at odd- and even-numbered invocations."
+        },
+        {
+          "id": "D",
+          "text": "Measurement noise is on the same order as the runtime gap between C1 and C2. Any winner-take-all comparison is dominated by variance; the fix is to increase repetitions per trial and use a robust statistic (e.g., median of medians) or an equivalence band."
+        }
+      ],
+      "assumptions": [
+        "No background workload runs on the same GPU during measurement.",
+        "GPU clock governor is default (not locked)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-BUDGET-029",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "Compilation budget / Runtime speedup trade-off",
+      "learningObjective": "Reason about the trade-off between compilation-time budget and end-to-end wall-clock savings across serving scenarios.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A compiler exposes a knob 'tuning budget' (compilation time spent tuning) that trades off against runtime speed. Which statements about the trade-off are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "For a one-off ad-hoc experiment (compile, run once, discard), tuning budget must be short; a slow compile that saves runtime only matters if runtime dominates."
+        },
+        {
+          "id": "B",
+          "text": "Recompilation on shape changes (e.g., under `torch.compile` with recompiles enabled) can inflate the effective 'compile budget' well beyond the initial compile; the effective budget is per unique shape combination the runtime sees."
+        },
+        {
+          "id": "C",
+          "text": "Tuning budget only affects the compiler and is orthogonal to serving latency; end-to-end latency is unaffected by tuning budget once the artifact is compiled."
+        },
+        {
+          "id": "D",
+          "text": "For a model served millions of times per day, a longer tuning budget (hours) is easily amortized over serving lifetime; the wall-clock saving per request compounds."
+        }
+      ],
+      "assumptions": [
+        "The tuner and cost model behave as documented (convergent search)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-CFCSE-017",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Constant folding / CSE / DCE / IR rewrite",
+      "learningObjective": "Given a small IR fragment, identify which classical optimization (constant folding, CSE, DCE) is applied and confirm semantic preservation.",
+      "archetype": "ir_transformation",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which sequence of classical optimizations transforms the 'Before' IR into the 'After' IR, and is the rewrite semantics-preserving?",
+      "irSnippet": "// Before\n%c1 = const 2\n%c2 = const 3\n%t1 = mul %c1, %c2       // = 6\n%t2 = mul %c1, %c2       // = 6\n%t3 = add %x, %t1\n%t4 = add %x, %t2\n%unused = mul %x, %x     // never used later\nreturn %t3, %t4\n\n// After\n%c6  = const 6\n%tsum = add %x, %c6\nreturn %tsum, %tsum",
+      "options": [
+        {
+          "id": "A",
+          "text": "Only constant folding is applied; the duplicate `add %x, %c6` values are not detected because CSE cannot fold across use points, and `%unused` is retained since DCE would violate side-effect ordering."
+        },
+        {
+          "id": "B",
+          "text": "Constant folding fuses `%t1 = mul 2, 3` into `%c6 = const 6`; CSE identifies `%t3` and `%t4` as syntactically equivalent `add %x, %c6` and collapses them to one value; DCE removes `%unused`. All three preserve semantics."
+        },
+        {
+          "id": "C",
+          "text": "The rewrite is illegal: returning `%tsum` twice from a function violates SSA form because a single value cannot flow to two return slots."
+        },
+        {
+          "id": "D",
+          "text": "Loop-invariant code motion is applied to hoist `mul %c1, %c2` out of the loop; CSE and DCE are unrelated to this particular rewrite."
+        }
+      ],
+      "assumptions": [
+        "`mul` and `add` are pure operations without side effects.",
+        "The return signature is a tuple that can hold two references to the same SSA value."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-COSTMODEL-020",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "Cost model / Real measurement gap",
+      "learningObjective": "Enumerate factors that make a static analytical cost model differ from measured wall-clock runtime.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic accelerator",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Modern autotuning frameworks (Ansor, MetaSchedule, AutoTVM) use cost models to prune the search space before actual measurement. Which of the following make a static analytical cost model DIVERGE from the measured wall-clock runtime? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The compiler's static model uses the same numerical precision as the target hardware; there is no divergence possible in principle."
+        },
+        {
+          "id": "B",
+          "text": "Register spills that are hard to predict from source-level operation counts; the true register allocation is decided later by the backend (ptxas, LLVM)."
+        },
+        {
+          "id": "C",
+          "text": "Cache and TLB hit-rate variability caused by neighbour kernels, previous benchmark iterations, or OS scheduling that a purely analytical model cannot see."
+        },
+        {
+          "id": "D",
+          "text": "Warmup effects such as JIT compilation, lazy kernel loading, and GPU clock ramp-up that dominate the first few measurements."
+        }
+      ],
+      "assumptions": [
+        "The analytical model is built on op counts, shape, and memory-traffic estimates only.",
+        "Measurements are taken after standard warmup and averaged/medianed."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-001",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Operator fusion / Vertical vs. horizontal vs. epilogue",
+      "learningObjective": "Distinguish vertical (producer-consumer) fusion, horizontal fusion, and epilogue fusion by their data-flow patterns.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In deep-learning compilers, three commonly discussed fusion patterns are 'vertical', 'horizontal', and 'epilogue' fusion. Which description matches all three correctly?",
+      "options": [
+        {
+          "id": "A",
+          "text": "All three refer to launching multiple CUDA kernels concurrently on separate streams; the names only differ by which kernel finishes first in the timeline."
+        },
+        {
+          "id": "B",
+          "text": "Vertical fusion means merging operators executed on different devices; horizontal fusion means merging operators of the same type across the batch dimension; epilogue fusion means merging the backward pass into the forward pass."
+        },
+        {
+          "id": "C",
+          "text": "Vertical fusion merges a producer with its consumer along the data-flow edge; horizontal fusion merges independent operators that share the same input or launch dimensions; epilogue fusion attaches a lightweight elementwise op onto the tail of a heavy compute op such as GEMM."
+        },
+        {
+          "id": "D",
+          "text": "Vertical fusion is loop-level fusion of nested loops; horizontal fusion is basic-block CSE within a single operator; epilogue fusion is compile-time constant folding of the final output."
+        }
+      ],
+      "assumptions": [
+        "The three names are used in their standard compiler-community sense."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-002",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Operator fusion / Producer-consumer legality",
+      "learningObjective": "Identify when producer-consumer fusion of a pointwise op into a reduction is illegal or unprofitable due to reuse patterns.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A compiler considers fusing producer `T = f(A)` (pointwise) into consumer `Y = reduce_sum(T, axis=1)`. It observes that `T` is also consumed by a second, independent op `Z = g(T)` (pointwise). Which statement about this vertical fusion is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Fusion is always legal and always beneficial because vertical fusion is semantics-preserving by construction; the compiler simply inlines `f` inside the reduction loop."
+        },
+        {
+          "id": "B",
+          "text": "Fusion is legal only if `f` is bijective; otherwise the compiler cannot recover the original `T` for the second consumer."
+        },
+        {
+          "id": "C",
+          "text": "Fusion is illegal because a reduction changes the shape of `T` and pointwise ops cannot be fused into shape-changing ops."
+        },
+        {
+          "id": "D",
+          "text": "Fusion into the reduction is legal (semantics preserved), but if `T` remains materialized for the second consumer `Z`, the fused kernel will re-execute `f` for each element inside the reduction while `Z` still reads the original `T`; the compiler must either duplicate the compute or forgo the fusion."
+        }
+      ],
+      "assumptions": [
+        "Both `f` and `g` are pure (no side effects).",
+        "The tensor `T` is not marked as an explicit output."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-003",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "Operator fusion / Fusion boundary",
+      "learningObjective": "Enumerate boundary conditions that block or complicate operator fusion in a deep-learning compiler.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following are legitimate fusion-boundary conditions that a deep-learning compiler must respect? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The producer and consumer are placed on different devices (e.g., CPU producer, GPU consumer); crossing the device boundary requires an explicit copy op and cannot be absorbed into a single kernel."
+        },
+        {
+          "id": "B",
+          "text": "The producer performs an in-place mutation of a tensor that is aliased by another live consumer; fusing across such a mutation would violate the observed side-effect ordering."
+        },
+        {
+          "id": "C",
+          "text": "The producer and consumer have iteration spaces of very different rank/extent (e.g., a 4D pointwise op followed by a scalar reduction to a 0-D tensor); the compiler must decide whether a common loop nest is expressible."
+        },
+        {
+          "id": "D",
+          "text": "The producer's output tensor is explicitly marked as a graph output that the caller reads; fusing away its materialization would violate the API contract."
+        },
+        {
+          "id": "E",
+          "text": "The producer and consumer both use FP32 accumulation; fusing FP32 ops is forbidden because register pressure always grows unboundedly."
+        },
+        {
+          "id": "F",
+          "text": "The producer is a pointwise op and the consumer is a pointwise op with the same shape; sharing an iteration space and being pure, they must not be fused because pointwise-pointwise fusion is disallowed."
+        }
+      ],
+      "assumptions": [
+        "The IR distinguishes device placement, mutation/aliasing, and graph outputs."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-004",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Operator fusion / GEMM epilogue",
+      "learningObjective": "Given a GEMM followed by a pointwise chain, decide which fusion form (epilogue vs. separate kernel) is expressible and legal.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Tensor Core FP16/BF16 MMA"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic (CUTLASS / cuBLAS / TensorIR)",
+        "stability": "stable_principle"
+      },
+      "stem": "The IR above shows a GEMM followed by a bias-add and GELU, and a proposed rewrite that folds them into a matmul epilogue. Which condition is required for the rewrite to be legal AND to deliver the intended memory-traffic benefit?",
+      "irSnippet": "// Before fusion\n%c = matmul(%a, %b)          : tensor<M x K> * tensor<K x N> -> tensor<M x N>\n%d = add(%c, %bias)          : tensor<M x N>\n%e = gelu(%d)                : tensor<M x N>\n\n// After epilogue fusion (candidate rewrite)\n%e = matmul_epilogue(%a, %b, %bias)\n     { epilogue = [add_bias, gelu] }\n     : (tensor<M x K>, tensor<K x N>, tensor<N>) -> tensor<M x N>\n",
+      "options": [
+        {
+          "id": "A",
+          "text": "The rewrite is always legal because bias-add and GELU are pointwise; the memory benefit is automatic and independent of how the compute op streams its output."
+        },
+        {
+          "id": "B",
+          "text": "The GEMM implementation must expose an epilogue slot that writes each output tile only after applying the pointwise chain in registers; without this, the pointwise ops still read/write the full M×N output via DRAM and no traffic is saved."
+        },
+        {
+          "id": "C",
+          "text": "The rewrite is legal only if `bias` has shape `[M, N]` (same as the GEMM output); a broadcast `[N]` bias cannot be fused into an epilogue."
+        },
+        {
+          "id": "D",
+          "text": "The rewrite is legal only when M×N is a multiple of the warp size, otherwise the epilogue introduces a tail block that violates SSA form."
+        }
+      ],
+      "assumptions": [
+        "The GEMM is implemented by a library or generated kernel that supports epilogue fusion.",
+        "Bias and GELU are pure and side-effect free."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-005",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Operator fusion / Register-pressure regression",
+      "learningObjective": "Recognize a scenario where operator fusion increases register pressure and causes spill-driven slowdown.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 4,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "compute capability 8.0"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic",
+        "stability": "stable_principle"
+      },
+      "stem": "A compiler fuses a 4-op pointwise chain with a downstream reduction into a single kernel on sm_80. Nsight Compute and ptxas outputs are above. The fused kernel is slower. Which is the best-supported explanation?",
+      "profileData": "Before fusion (two kernels):\n  kernel_A (pointwise chain, 4 ops)   : 32 regs/thread, occupancy 100%,  0.42 ms\n  kernel_B (reduction)                : 40 regs/thread, occupancy  75%, 0.31 ms\n  total: 0.73 ms + ~0 ms launch overhead per kernel\n\nAfter vertical fusion (single kernel):\n  fused_AB                            : 96 regs/thread, occupancy 25%, register spills reported by ptxas: 48 bytes/thread\n  total: 1.15 ms",
+      "options": [
+        {
+          "id": "A",
+          "text": "Fusion is buggy: producing correct results but running slower is a code-generation bug that must be reported to the compiler backend."
+        },
+        {
+          "id": "B",
+          "text": "The reduction kernel was already memory-bound before fusion; adding pointwise math strictly reduces its runtime because the pointwise ops are 'free' inside a memory-bound region."
+        },
+        {
+          "id": "C",
+          "text": "The fused kernel's live-range union pushed register usage to 96 regs/thread and induced spills; occupancy dropped to 25% and the spill-driven local-memory traffic exceeds the DRAM traffic saved by not materializing the intermediate."
+        },
+        {
+          "id": "D",
+          "text": "The two-kernel version benefited from asynchronous kernel launch overlap on the default stream; fusion serialized the ops on the CPU launch queue."
+        }
+      ],
+      "assumptions": [
+        "Block size and grid size are held constant across the two configurations.",
+        "ptxas spill report reflects local-memory usage backed by the memory hierarchy."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-HALIDE-025",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Halide / Compute-schedule separation",
+      "learningObjective": "Explain Halide's separation of algorithm (compute) from schedule and why the design choice matters for performance portability.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The Halide paper (PLDI 2013) is famous for separating a program's algorithm (the pure functional description of what to compute) from its schedule (the description of how to compute it — loop order, tiling, storage granularity, parallelism). Which best captures the paper's design intent behind this separation?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The separation matches the mathematical distinction between compilable and interpretable programs; algorithms are compiled while schedules are interpreted at runtime."
+        },
+        {
+          "id": "B",
+          "text": "The separation was introduced only to enable static type checking of the algorithm at compile time; performance was a secondary consideration."
+        },
+        {
+          "id": "C",
+          "text": "The separation was designed to allow multiple algorithms to share the same schedule; the schedule is the reusable artifact."
+        },
+        {
+          "id": "D",
+          "text": "Because a single algorithm admits many valid schedules with vastly different performance, and the best schedule depends on hardware and problem size, separating the two lets a programmer or autoscheduler explore schedules without changing the correctness-critical algorithm; the same algorithm becomes portable across CPUs, GPUs, and DSPs by rescheduling."
+        }
+      ],
+      "assumptions": [
+        "The algorithm is expressible in Halide's pure functional style."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-INDUCTOR-027",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "TorchInductor scheduler / Fusion decisions",
+      "learningObjective": "Given a TorchInductor scheduler log, explain why two pointwise ops were not fused.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "PyTorch TorchInductor",
+        "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The TorchInductor scheduler log above shows a pointwise chain fused but the subsequent reduction not fused with it. Given only this log, what is the most accurate reading of the scheduler's decision?",
+      "profileData": "TORCH_LOGS=+inductor output (excerpt):\n  scheduler: fusing pointwise_add and pointwise_mul into single kernel (ok)\n  scheduler: NOT fusing (pointwise_mul_output) with (reduction_sum):\n      reason = 'consumer produces different output shape and reduces over inner axis;\n                fusing would force reduction to broadcast pointwise input,\n                producing >2× the memory traffic'\n  final kernel plan: 2 kernels (fused_pointwise, reduction_sum)",
+      "options": [
+        {
+          "id": "A",
+          "text": "TorchInductor considered fusing the reduction with the pointwise chain, but the analysis found that fusion would force the reduction inner loop to re-read the pointwise inputs (broadcast), inflating memory traffic; the scheduler applied a heuristic that treats added memory traffic as a fusion cost."
+        },
+        {
+          "id": "B",
+          "text": "TorchInductor cannot fuse pointwise ops with reductions at all; this is a permanent limitation of the scheduler."
+        },
+        {
+          "id": "C",
+          "text": "The scheduler always separates reductions from pointwise ops when the reduction is over the inner axis, because reduction-over-inner-axis is semantically illegal to fuse."
+        },
+        {
+          "id": "D",
+          "text": "The scheduler is memory-optimal by construction; the log demonstrates that any fusion decision it makes must reduce memory traffic."
+        }
+      ],
+      "assumptions": [
+        "The log is representative of the TorchInductor scheduler's decision process in the specified version range."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-KERNSEL-019",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Kernel selection",
+      "learningObjective": "Precisely define compile-time kernel selection and identify its inputs.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In deep-learning compilers, 'kernel selection' typically refers to which activity?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Choosing the physical filename of the shared library that will provide the CUDA runtime; this happens at link time and is independent of the model."
+        },
+        {
+          "id": "B",
+          "text": "Choosing, for each operator instance in the graph, a concrete implementation (library call, generated kernel, or fused template) based on operator type, shape, dtype, layout, and target hardware — with an optional cost model or measurement-based ranking."
+        },
+        {
+          "id": "C",
+          "text": "Choosing whether to run each iteration of a loop on the CPU or GPU based on runtime input size, decided at every launch by the executor."
+        },
+        {
+          "id": "D",
+          "text": "Choosing which weights of the model to prune before compilation; kernel selection is another name for structured pruning."
+        }
+      ],
+      "assumptions": [
+        "The compiler operates over a graph where op-instances are already assigned concrete shape/dtype/layout attributes.",
+        "A catalog of kernel candidates exists per op-type."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-LAYOUT-014",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Layout transformation / NCHW vs. NHWC on GPU",
+      "learningObjective": "Explain why an NCHW → NHWC layout transformation can improve GPU convolution performance and identify the precondition for the transformation to pay off.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper Tensor Core",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Tensor Core FP16/BF16 conv kernels"
+        ]
+      },
+      "softwareContext": {
+        "framework": "cuDNN / CUTLASS",
+        "stability": "stable_principle"
+      },
+      "stem": "Switching the tensor layout from NCHW to NHWC for a Conv2D on Ampere doubles Tensor Core utilization in the profile above. Which explanation is most accurate?",
+      "profileData": "Kernel: FP16 Conv2D on ResNet block, N=32, C=256, H=W=56, K=256, R=S=3.\n  Under NCHW: cuDNN chooses IMPLICIT_GEMM_PRECOMP, Tensor Core utilization ~40%.\n  Under NHWC:  cuDNN chooses NHWC_TENSOR_OP,       Tensor Core utilization ~85%.",
+      "options": [
+        {
+          "id": "A",
+          "text": "NHWC changes the mathematical result of the convolution, but the difference is within FP16 tolerance; the higher utilization comes from doing less numerical work."
+        },
+        {
+          "id": "B",
+          "text": "NHWC uses less memory than NCHW because it interleaves channels, so it fits better in shared memory."
+        },
+        {
+          "id": "C",
+          "text": "NHWC places the channel dimension as the fastest-varying axis, matching Tensor Core / im2col-tile access patterns and enabling cuDNN's NHWC Tensor Core kernels; NCHW places channel as a strided outer axis, which those Tensor Core kernels do not support directly."
+        },
+        {
+          "id": "D",
+          "text": "NCHW is a deprecated layout on Ampere and later; cuDNN silently converts NCHW to NHWC internally, adding a permutation kernel that costs the reported utilization gap."
+        }
+      ],
+      "assumptions": [
+        "The workload uses FP16/BF16 Tensor Core-capable kernels.",
+        "cuDNN's algorithm chooser follows its documented layout preferences."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-LOOPFISS-007",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "Loop fission / Motivations and pitfalls",
+      "learningObjective": "Identify legitimate motivations for loop fission and cases where fission is counter-productive.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Loop fission (loop distribution) splits one loop body into two loops with the same iteration space. Which of the following are legitimate motivations for loop fission in a numerical / tensor pipeline? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "To improve cache behavior in a producer-consumer chain where a single loop body already fits in L1 cache and the intermediate values are reused within the same iteration."
+        },
+        {
+          "id": "B",
+          "text": "To relieve register pressure when a single loop body has too many simultaneously live scalars, at the cost of touching some intermediate arrays twice."
+        },
+        {
+          "id": "C",
+          "text": "To allow vectorization or parallelization of a subset of statements whose dependence structure permits it, while leaving unvectorizable statements in a separate loop."
+        },
+        {
+          "id": "D",
+          "text": "To enable different tile sizes or schedules for the two halves, e.g., a compute-bound half and a memory-bound half."
+        }
+      ],
+      "assumptions": [
+        "Both halves of the fission preserve the dependence graph (no forward-crossing dependences created)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-LOOPFUSE-006",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Loop fusion / Legality by dependence",
+      "learningObjective": "Determine whether two adjacent loops with a producer-consumer dependence can be legally fused into a single loop nest.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "CPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "The proposed fusion above tries to combine a producer loop and a consumer loop into one. Is the fused loop semantically equivalent to the original, and why?",
+      "irSnippet": "// Before fusion\nfor i in 0..N:\n    B[i] = f(A[i])                // producer loop\nfor i in 0..N:\n    C[i] = g(B[i-1], B[i], B[i+1])  // consumer with cross-iteration reads\n\n// Proposed fused loop\nfor i in 0..N:\n    B[i] = f(A[i])\n    C[i] = g(B[i-1], B[i], B[i+1])   // reads B[i-1], B[i], B[i+1]",
+      "options": [
+        {
+          "id": "A",
+          "text": "No — inside iteration `i`, the fused body reads `B[i+1]`, which has not been produced yet by iteration `i+1`; the fusion violates the flow dependence from producer to consumer."
+        },
+        {
+          "id": "B",
+          "text": "Yes — because both loops have the same trip count `N`, fusion is always legal regardless of the access pattern."
+        },
+        {
+          "id": "C",
+          "text": "Yes — because the two original loops iterate in the same order, fusion preserves semantics as long as all reads and writes touch the same array."
+        },
+        {
+          "id": "D",
+          "text": "No — fusion is illegal because the two loops write to different arrays (`B` and `C`); fusion requires the write target to be identical."
+        }
+      ],
+      "assumptions": [
+        "Boundary conditions for `i=0` and `i=N-1` are handled or ignored for this analysis.",
+        "`f` and `g` are pure functions of their inputs."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-MEMPLAN-015",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Memory planning / Buffer reuse",
+      "learningObjective": "Precisely define compiler-driven memory planning and buffer reuse for tensor programs and distinguish it from runtime allocation.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "In a static tensor-program compiler (e.g., XLA, TVM Relax, TensorRT), 'memory planning' with 'buffer reuse' refers to which activity?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The compiler renames tensor variables via SSA renaming; each rename triggers a distinct buffer, and 'reuse' means the code generator emits fewer distinct variable names."
+        },
+        {
+          "id": "B",
+          "text": "The runtime allocator caches recently-freed GPU buffers and hands them out to subsequent allocations to avoid the cost of cudaMalloc; this is the entire scope of memory planning."
+        },
+        {
+          "id": "C",
+          "text": "The compiler always allocates one buffer per unique tensor identity; 'buffer reuse' refers to sharing that buffer across multiple training iterations of the same model."
+        },
+        {
+          "id": "D",
+          "text": "The compiler analyzes tensor lifetimes across the graph, groups tensors whose lifetimes do not overlap, and assigns them to the same underlying storage buffer, producing a static allocation plan that the runtime executes without per-op malloc/free."
+        }
+      ],
+      "assumptions": [
+        "The compiler has global visibility over the tensor program's data-flow graph.",
+        "Tensor sizes and lifetimes are known at compile time (static shapes or bounded dynamic shapes)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-METASCHED-023",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "MetaSchedule / Design intent",
+      "learningObjective": "Identify the design motivations behind MetaSchedule / Ansor's approach to schedule search.",
+      "archetype": "paper_design_intent",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic accelerator",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM MetaSchedule",
+        "frameworkVersionScope": "TVM 0.14 ~ 0.16",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The MetaSchedule / Ansor design line replaced hand-written schedule templates with an automatic pipeline. Which of the following are TRUE about the design motivations of that line? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Manual per-operator templates are labor-intensive and do not generalize across new operator variants (e.g., new attention patterns, fused kernels), motivating an automatic sketch-generation stage."
+        },
+        {
+          "id": "B",
+          "text": "A learned cost model is more predictive of measured runtime than a purely analytical model built on op counts and shape features alone, especially for GPU kernels where spills and bank conflicts matter."
+        },
+        {
+          "id": "C",
+          "text": "The search space must be broken into a small number of algorithmic 'sketches' followed by numerical parameter annotation, so evolutionary search operates in a well-structured space rather than an unconstrained sequence of schedule primitives."
+        },
+        {
+          "id": "D",
+          "text": "The system should replace real-hardware measurement with pure static analysis to eliminate measurement noise."
+        },
+        {
+          "id": "E",
+          "text": "MetaSchedule sacrifices tuning quality for compile time; on any workload, a compiler with a manual template achieves better final kernels than MetaSchedule."
+        }
+      ],
+      "assumptions": [
+        "The comparison is made under equivalent tuning budgets."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-PARALLEL-013",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "Parallelization / Legality",
+      "learningObjective": "Enumerate the dependence conditions under which a loop can be parallelized across iterations.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following are TRUE preconditions for a compiler to legally parallelize a loop's iterations (e.g., `#pragma omp parallel for`, or emit them as independent CUDA threads/blocks)? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "For a reduction (e.g., `s += a[i]`), the reduction operator is treated as associative/commutative so that partial results can be combined in any order, or the language exposes an explicit `reduction(...)` clause."
+        },
+        {
+          "id": "B",
+          "text": "The loop body must be entirely branch-free; any conditional inside the loop makes parallelization illegal."
+        },
+        {
+          "id": "C",
+          "text": "No two distinct iterations write to the same memory location (no output dependence)."
+        },
+        {
+          "id": "D",
+          "text": "No iteration reads a location that a different iteration writes (no true / anti dependence across iterations)."
+        }
+      ],
+      "assumptions": [
+        "Statements have no external I/O or non-reentrant side effects.",
+        "Reductions, when present, use an associative combiner or an explicit reduction clause."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-PORTABILITY-026",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "Performance portability / Scope of claims",
+      "learningObjective": "Identify the correct scope of a 'performance portability' claim and the conditions under which it can fail.",
+      "archetype": "concept_boundary",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "cross-vendor CPU / GPU / accelerator",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A compiler team claims that its scheduler achieves 'performance portability' across CPU, NVIDIA GPU, and AMD GPU targets for a workload. Which of the following are TRUE about the scope and preconditions of such a claim? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The claim's fairness depends on baseline choice: comparing the compiler's output to a vendor-tuned library on each target is more informative than comparing to a naive baseline."
+        },
+        {
+          "id": "B",
+          "text": "As long as the framework reports the same peak Tensor Core utilization percentage across all three targets, the claim holds regardless of whether the underlying algorithm (e.g., FP16 GEMM vs. FP32 GEMM) differs between targets."
+        },
+        {
+          "id": "C",
+          "text": "The claim requires that a comparable per-target schedule search or tuning was performed; a single schedule string cannot be optimal across three targets without retuning or target-specific specializations."
+        },
+        {
+          "id": "D",
+          "text": "'Portability' here refers to the framework's ability to *generate* good schedules across targets, not to a single artifact running on all three; retargeting the compiler is part of portability."
+        }
+      ],
+      "assumptions": [
+        "The compared framework and baselines target the same numerical algorithm."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-RECOMP-016",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "Recomputation / Activation checkpointing",
+      "learningObjective": "Distinguish the situations in which recomputation (activation checkpointing) is a net win from those where it is not.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic accelerator",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Activation recomputation (a.k.a. gradient / activation checkpointing) trades extra forward FLOPs at backward time for reduced peak activation memory. Which of the following statements about the trade-off are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Recomputation is a net win when the peak activation memory (before checkpointing) exceeds the device budget and prevents a larger batch size or sequence length that would raise end-to-end throughput more than the recompute FLOPs cost."
+        },
+        {
+          "id": "B",
+          "text": "Recomputing a cheap operator (e.g., elementwise activation) whose activation tensor is large is generally favorable, since the FLOPs added are small relative to the memory saved."
+        },
+        {
+          "id": "C",
+          "text": "Recomputing an operator whose forward is compute-bound and whose activation is small (e.g., a heavy GEMM with a tiny output) is usually favorable, because the compiler gains ILP."
+        },
+        {
+          "id": "D",
+          "text": "Recomputation changes the mathematical output of the forward and backward passes; users must accept a small accuracy drop."
+        },
+        {
+          "id": "E",
+          "text": "Selective (per-op) recomputation policies can outperform whole-block checkpointing by choosing to recompute only the ops with the highest memory-per-FLOPs ratio."
+        }
+      ],
+      "assumptions": [
+        "Recomputation reruns the forward function deterministically enough to reproduce the cached value.",
+        "The end-to-end throughput metric accounts for both FLOPs and memory-limited batch/context growth."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-REORDER-010",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Loop reordering / GEMM ikj vs. ijk",
+      "learningObjective": "Compare two loop orderings of a naive GEMM for their locality behavior and identify which is legal and preferred on a row-major layout.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic CPU cache",
+        "device": "CPU",
+        "requiredFeatures": [
+          "row-major memory layout"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Two loop orderings of naive GEMM are shown. All matrices are row-major FP32. Compared to Order 1 (ijk), which correctly describes Order 2 (ikj)?",
+      "irSnippet": "// Order 1: i-j-k\nfor i in 0..M:\n  for j in 0..N:\n    for k in 0..K:\n      C[i,j] += A[i,k] * B[k,j]      // inner loop walks k: A row-wise (unit stride), B column-wise (stride N)\n\n// Order 2: i-k-j\nfor i in 0..M:\n  for k in 0..K:\n    for j in 0..N:\n      C[i,j] += A[i,k] * B[k,j]      // inner loop walks j: B[k,:] unit stride, C[i,:] unit stride, A[i,k] is a scalar in the inner loop",
+      "options": [
+        {
+          "id": "A",
+          "text": "Order 2 is not semantically equivalent to Order 1 because it accumulates into `C[i,j]` in a different order; floating-point non-associativity makes the two answer matrices different."
+        },
+        {
+          "id": "B",
+          "text": "Order 2 is semantically equivalent but has worse locality: unit-stride writes to `C` cost more than unit-stride reads from `B`, so Order 1 remains preferred on row-major."
+        },
+        {
+          "id": "C",
+          "text": "Order 2 is illegal because it introduces a loop-carried dependence on `C[i,j]` that did not exist in Order 1; the reordering violates SSA form."
+        },
+        {
+          "id": "D",
+          "text": "Order 2 is semantically equivalent (same +='s over the same triples) and has better spatial locality on row-major storage: the innermost loop reads `B[k,:]` and writes `C[i,:]` with unit stride, unlike Order 1 which strides through `B` by N."
+        }
+      ],
+      "assumptions": [
+        "Row-major storage for all three matrices.",
+        "FP non-associativity is treated as a numerical concern, not a correctness concern for GEMM."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-SEARCHSP-022",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Template-based vs. template-free schedule search",
+      "learningObjective": "Contrast template-based schedule search (AutoTVM) and template-free schedule search (Ansor / MetaSchedule).",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "AutoTVM (template-based) and Ansor (template-free) both search for a good schedule of a tensor program, but they differ in what constitutes the search space. Which contrast is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both approaches use the same search space; the only difference is the choice of measurement backend (simulator vs. real hardware)."
+        },
+        {
+          "id": "B",
+          "text": "Template-based search learns the template from data; template-free search enumerates all schedules exhaustively."
+        },
+        {
+          "id": "C",
+          "text": "Template-based search requires the developer to write a schedule template with parameter placeholders (tile size, unroll factor, thread bindings); the search explores parameter combinations of a fixed template. Template-free search generates candidate schedules by combining schedule primitives directly from the tensor expression, requiring no manual template but enlarging the search space."
+        },
+        {
+          "id": "D",
+          "text": "Template-free search always outperforms template-based search on every workload; the two are strictly dominated."
+        }
+      ],
+      "assumptions": [
+        "The two systems are compared with equivalent compilation and measurement budgets in principle.",
+        "The operators being tuned admit valid schedule templates."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-SHAPESPEC-018",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "Shape specialization / Dynamic shape",
+      "learningObjective": "Contrast fully shape-specialized compilation with dynamic-shape compilation and identify the trade-offs each incurs.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Consider a compiler that must handle both fully shape-specialized compilation (one compiled artifact per shape combination) and dynamic-shape compilation (one artifact valid across a shape range). Which of the following statements are TRUE? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Shape-specialized artifacts can apply optimizations that require known constants (e.g., loop-tripcount-dependent unrolling, tile sizes tuned to exact dimensions) that a dynamic-shape artifact cannot use for the same code path."
+        },
+        {
+          "id": "B",
+          "text": "Dynamic-shape artifacts trade some per-shape performance for reduced compilation time and reduced storage of many specialized kernels; symbolic shapes let the compiler emit one kernel with runtime-dispatched tail handling."
+        },
+        {
+          "id": "C",
+          "text": "Fully shape-specialized compilation is always faster at runtime because it avoids all runtime dispatch, even for shapes seen only once during serving."
+        },
+        {
+          "id": "D",
+          "text": "Dynamic-shape compilation is semantically incorrect for models with shape-dependent numerics (e.g., a broadcast that depends on the runtime shape); shape specialization is required for correctness."
+        },
+        {
+          "id": "E",
+          "text": "A hybrid strategy — bucket runtime shapes into a small number of buckets and specialize each — can capture much of the per-shape speed while bounding compile time and cache size."
+        }
+      ],
+      "assumptions": [
+        "The compiler supports both modes and can bucket if desired."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-TILE-008",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Tiling / Cache-blocking sizing",
+      "learningObjective": "Compute the largest square tile size for a GEMM inner kernel so that the three FP32 tiles fit within a target L1/SMEM budget.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic CPU/GPU cache-blocking analysis",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "A GEMM inner kernel `C_tile += A_tile * B_tile` uses square tiles of size `T×T` (FP32) for all three matrices. The target on-chip buffer (L1 cache line budget or GPU shared memory partition) available for this kernel is 48 KB. What is the largest tile size `T` (integer) such that the three tiles fit simultaneously in the 48 KB budget?",
+      "options": [
+        {
+          "id": "A",
+          "text": "T = 96. Three 96×96 FP32 tiles occupy 3 × 96² × 4 = 110,592 bytes; caches typically allow 2× overcommit so 96 fits."
+        },
+        {
+          "id": "B",
+          "text": "T = 32. Three 32×32 FP32 tiles occupy 3 × 32² × 4 = 12,288 bytes; anything larger overflows 48 KB."
+        },
+        {
+          "id": "C",
+          "text": "T = 128. Three 128×128 FP32 tiles occupy 3 × 128² × 4 = 196,608 bytes, which is the standard 48 KB × 4-way associativity assumption."
+        },
+        {
+          "id": "D",
+          "text": "T = 64. Three 64×64 FP32 tiles occupy 3 × 64² × 4 = 49,152 bytes = 48 KB exactly."
+        }
+      ],
+      "assumptions": [
+        "The three tiles are the sole occupants of the 48 KB budget.",
+        "FP32 is 4 bytes.",
+        "Register-file spills and reuse patterns are ignored for this sizing exercise."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-TILE-009",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Tiling / Too-small vs. too-large trade-offs",
+      "learningObjective": "Diagnose why an autotuner-chosen tile size regressed on a new shape and identify the trade-off that triggered it.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM MetaSchedule",
+        "frameworkVersionScope": "TVM 0.14 ~ 0.16",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "An autotuned GEMM tile of block=128×128 is optimal at M=N=K=4096 but regresses to 34% TC utilization at M=N=K=1024. Retuning with block=64×64 recovers to 71%. Which trade-off is the primary cause?",
+      "profileData": "Original tuned config: block=128×128, warp=64×64. Peak on M=N=K=4096: 82% TC utilization.\nSame config on M=N=K=1024 shape: 34% TC utilization, only 8 blocks in grid, ~ 24 SMs idle on A100 (108 SMs).\nTest of block=64×64 config on M=N=K=1024: 71% TC utilization, 256 blocks, all SMs busy.",
+      "options": [
+        {
+          "id": "A",
+          "text": "At the smaller shape, the 128×128 tile produces too few grid blocks to fill all 108 SMs on A100; parallelism, not per-tile arithmetic intensity, becomes the bottleneck."
+        },
+        {
+          "id": "B",
+          "text": "The 128×128 tile causes register spills at smaller shapes; smaller tiles avoid the spill and recover throughput."
+        },
+        {
+          "id": "C",
+          "text": "A100 Tensor Cores require tile sizes that are exact multiples of 128 in each dimension; 1024 is not a valid choice for 128 tiles."
+        },
+        {
+          "id": "D",
+          "text": "The autotuner overfit to M=4096 hardware calibration; the same 128×128 tile is still optimal at 1024 but Nsight Compute misreports utilization on small grids."
+        }
+      ],
+      "assumptions": [
+        "No split-K is enabled in the original config.",
+        "Tensor Core M×N×K = 16×16×16 (or larger) is compatible with both 64×64 and 128×128 blocks."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-TRANSFERTUNE-030",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Transfer tuning / When learned cost model transfers",
+      "learningObjective": "Identify preconditions under which a learned cost model or tuned schedule from one workload transfers to a new workload.",
+      "archetype": "performance_diagnosis",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM MetaSchedule",
+        "frameworkVersionScope": "TVM 0.14 ~ 0.16",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "The transfer-tuning experiment above shows that reusing a tuned cost model helps in some cases but not others. Which is the best-supported explanation?",
+      "profileData": "Tuning history:\n  Model A tuned on A100 with 4,000 trials, achieves 0.85× cuBLAS on GEMM kernels.\n  Transfer-tuning experiment:\n    - Cost model from A applied to Model B (GEMM shapes shifted, same dtype, same A100) → 3.8× fewer trials to reach 0.80× cuBLAS.\n    - Cost model from A applied to Model C (Conv shapes, same A100) → NO speed-up in trial count vs. from-scratch.\n    - Cost model from A applied to Model D (GEMM shapes, different GPU H100) → NO speed-up in trial count.",
+      "options": [
+        {
+          "id": "A",
+          "text": "Transfer tuning is guaranteed to help any workload on any hardware once the cost model has enough data; the failure cases indicate a bug in the cost model implementation."
+        },
+        {
+          "id": "B",
+          "text": "The learned cost model transfers to workloads with similar features (same op class, same dtype, same hardware); when either the op class or the hardware changes, the learned features are less applicable, so transfer provides little benefit."
+        },
+        {
+          "id": "C",
+          "text": "Transfer tuning requires the exact same tensor shapes; even minor shape differences invalidate the cost model."
+        },
+        {
+          "id": "D",
+          "text": "Cost models transfer freely across hardware because GPU features (register file, SM count) are captured symbolically; the failure on H100 must be due to a driver issue."
+        }
+      ],
+      "assumptions": [
+        "The cost model is trained on features that include shape and dtype but do not explicitly enumerate hardware."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-TVMSCHED-028",
+      "type": "multiple",
+      "module": "graph_opt_schedule",
+      "subtopic": "TensorIR / Schedule primitives",
+      "learningObjective": "Identify the legality preconditions of common TensorIR / TVM schedule primitives.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM TensorIR / MetaSchedule",
+        "frameworkVersionScope": "TVM 0.14 ~ 0.16",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which of the following statements about the TensorIR schedule primitives above are TRUE? (Select all that apply.)",
+      "irSnippet": "# TensorIR schedule primitives (simplified)\ni, j, k = sch.get_loops(block)\nio, ii = sch.split(i, factors=[None, 32])       # split loop i into outer and inner\nsch.reorder(io, k, ii, j)                        # reorder loops (must preserve dependences)\nsch.vectorize(ii)                                # vectorize the inner-32 loop\nsch.bind(io, 'blockIdx.x')                       # map to a GPU block dimension\nsch.parallel(k)                                  # parallelize k across threads",
+      "options": [
+        {
+          "id": "A",
+          "text": "`bind` to `blockIdx.x` is legal for any loop; TVM will emit correct code even if the loop has cross-iteration writes into shared state."
+        },
+        {
+          "id": "B",
+          "text": "`split` is always legal because it only relabels the iteration space; the composition `factors=[None, 32]` decomposes `i` into `i = io * 32 + ii` and does not require dependence analysis."
+        },
+        {
+          "id": "C",
+          "text": "`reorder` is legal only when the new order does not violate any dependence in the loop nest; TVM's schedule primitive rejects reorderings that would reverse a true dependence."
+        },
+        {
+          "id": "D",
+          "text": "`vectorize` requires that the target loop's iterations are independent (no cross-iteration write dependence) and that the loop's trip count is compatible with the target's vector width."
+        }
+      ],
+      "assumptions": [
+        "The TensorIR block metadata correctly describes reads and writes.",
+        "The scheduler enforces primitive preconditions."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-UNROLL-011",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Loop unrolling / When it hurts",
+      "learningObjective": "Recognize scenarios where loop unrolling degrades rather than improves performance.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic CPU / GPU",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "stem": "Loop unrolling is often described as a 'free' optimization that reduces loop-overhead instructions. Which situation most clearly illustrates when unrolling is counter-productive?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A loop with data-dependent memory accesses; unrolling never helps because the CPU cannot prefetch data-dependent addresses."
+        },
+        {
+          "id": "B",
+          "text": "A tight inner loop with a very small trip count (e.g., 4); unrolling by the exact trip count is illegal because it duplicates side effects and violates SSA form."
+        },
+        {
+          "id": "C",
+          "text": "A GPU kernel where the compiler cannot statically determine the trip count; unrolling is impossible in that case, so no performance question arises."
+        },
+        {
+          "id": "D",
+          "text": "A tight inner loop over a large array where the loop-overhead instructions (increment, compare, branch) already fit within a single instruction issue slot per iteration; unrolling 8× triples the object-code size, evicts hot code from the L1 instruction cache, and materially slows the surrounding function."
+        }
+      ],
+      "assumptions": [
+        "The 'unrolled 8×' body substantially increases the number of instructions in the outer function.",
+        "The I-cache and register file have finite capacity."
+      ],
+      "version": 1
+    },
+    {
+      "id": "G-VECTOR-012",
+      "type": "single",
+      "module": "graph_opt_schedule",
+      "subtopic": "Vectorization / Preconditions",
+      "learningObjective": "Identify the precondition set that a compiler must satisfy to vectorize a loop safely and effectively.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "generic CPU / GPU vector unit",
+        "device": "CPU",
+        "requiredFeatures": [
+          "8-lane FP32 vector unit (e.g., AVX2 or GPU SIMT)"
+        ]
+      },
+      "softwareContext": {
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ],
+        "strides": [
+          [
+            1
+          ],
+          [
+            1
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "stem": "The loop above is a candidate for 8-lane FP32 SIMD vectorization on an AVX2-like unit. Which is the correct summary of its vectorizability?",
+      "codeSnippet": "// Candidate loop for 8-lane FP32 vectorization\nfor (int i = 0; i < N; i++) {\n    C[i] = A[i] * B[i] + A[i-1];   // A[i-1] introduces a cross-iteration read\n}\n// A, B, C are FP32 contiguous, aligned to 32 bytes at index 0",
+      "options": [
+        {
+          "id": "A",
+          "text": "The loop is trivially vectorizable: `A[i-1]` and `A[i]` reads are independent, so 8 consecutive iterations can execute in parallel with no data reorganization."
+        },
+        {
+          "id": "B",
+          "text": "Vectorization is legal (no cross-iteration write dependence, only reads), but the compiler must handle two extras: an unaligned or shifted load for `A[i-1]` (vector-shift or unaligned move), and a tail block for iterations where `N mod 8 != 0`."
+        },
+        {
+          "id": "C",
+          "text": "The loop cannot be vectorized because reading `A[i-1]` in iteration `i` creates a loop-carried dependence via the read of a value written in a hypothetical earlier iteration; the vectorizer must serialize the loop."
+        },
+        {
+          "id": "D",
+          "text": "The loop cannot be vectorized because FP32 multiplication is not associative; vector reductions must always use FP64 to preserve precision."
+        }
+      ],
+      "assumptions": [
+        "Boundary at `i=0` is handled elsewhere or `A[-1]` is defined.",
+        "Vector unit supports unaligned or shifted loads."
+      ],
+      "version": 1
+    }
+  ]
+}

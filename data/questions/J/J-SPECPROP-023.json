@@ -1,0 +1,87 @@
+{
+  "id": "J-SPECPROP-023",
+  "type": "multiple",
+  "module": "llm_inference",
+  "subtopic": "Speculative decoding properties / Correctness and scope",
+  "learningObjective": "Distinguish correct claims about speculative decoding from common overclaims.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Select all correct statements about speculative decoding. (Choose all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Speculative decoding always speeds up inference by a factor of (k+1) — the number of proposed tokens plus one — regardless of the draft model's quality or the workload characteristics."
+    },
+    {
+      "id": "B",
+      "text": "Speculative decoding is most beneficial when the target model is memory-bandwidth bound (batch-1 decode), because the extra k-token verification is essentially free compared to a single-token forward. It is less beneficial at large batch when the target is already compute-bound."
+    },
+    {
+      "id": "C",
+      "text": "Speculative decoding requires the draft and target models to share weights (be identically initialized) so that rejection sampling has an easy path to bit-exact agreement; using unrelated models breaks the algorithm's correctness guarantees."
+    },
+    {
+      "id": "D",
+      "text": "When implemented with proper rejection sampling against the target model's logits, the sequences produced by speculative decoding have exactly the same distribution as target-only sampling — no quality loss."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
+  "explanation": "Options B, D are correct; options A, C are incorrect. A (Wrong): ignores acceptance rate and draft cost. B (Correct): memory-bound target maximizes the win. C (Wrong): draft can be arbitrary; only vocab needs to match. D (Correct): sampling distribution preserved.",
+  "optionExplanations": {
+    "A": "Wrong: ignores acceptance rate and draft cost.",
+    "B": "Correct: memory-bound target maximizes the win.",
+    "C": "Wrong: draft can be arbitrary; only vocab needs to match.",
+    "D": "Correct: sampling distribution preserved."
+  },
+  "assumptions": [
+    "'Speculative decoding' refers to Leviathan et al. 2023 style rejection sampling.",
+    "Draft and target share vocab and tokenization."
+  ],
+  "nonImplications": [
+    "Does not imply speedup is guaranteed; low acceptance rate can wipe out the win.",
+    "Does not imply that alternative variants (Medusa, EAGLE) share every property; they use different draft mechanisms but similar acceptance logic."
+  ],
+  "misconceptionTags": [
+    "specdec_fixed_speedup_myth",
+    "specdec_weight_share_myth"
+  ],
+  "distractorRationales": {
+    "A": "Ignores acceptance rate and draft cost.",
+    "C": "Fabricates a weight-sharing requirement."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:specdecode",
+      "locator": "Sec 3 — correctness; Sec 4 — analysis",
+      "supports": [
+        "B",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Speculative decoding correctness and scope of benefit",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-SPECPROP-023.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

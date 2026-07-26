@@ -1,0 +1,57 @@
+{
+  "questionId": "F-COALESCE-002",
+  "learningObjective": "Identify the impact of a large stride on effective global-memory bandwidth utilization in a warp-wide load.",
+  "canonicalClaims": [
+    {
+      "claim": "When lanes of a warp access global memory with stride S in the element index, each L1/L2 sector transaction delivers roughly one useful element per S; effective bandwidth utilization is approximately 1/S of peak until reads spread over multiple sectors.",
+      "conditions": [
+        "L1/L2 sector granularity ≥ warp's per-lane load size × warp size (32 threads on NVIDIA).",
+        "No SW-level reordering (e.g., swizzling) has been introduced to re-coalesce."
+      ],
+      "nonImplications": [
+        "Does not imply that stride > 1 always kills bandwidth to 0; if the stride keeps requests within a small number of sectors, some bandwidth is still delivered.",
+        "Does not imply that stride is intrinsic to the algorithm; often a layout change (transpose, permute) can restore coalescing."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Coalesced access chapter" },
+        { "ref": "BOOK:pmpp4", "locator": "Memory coalescing chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Strided global-memory access causes bank conflicts.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Bank conflicts are a shared-memory concept; global memory has coalescing/sectoring instead.",
+      "sourceOrEvidence": "CUDA Best Practices, memory chapter"
+    },
+    {
+      "claim": "Applying a mask to `tl.load` eliminates the bandwidth penalty of strided access.",
+      "errorType": "scope_error",
+      "whyWrong": "Masking removes OOB traffic; among valid lanes, the sectoring loss is unchanged.",
+      "sourceOrEvidence": "Triton language reference"
+    },
+    {
+      "claim": "Triton's `cp.async` transparently coalesces strided accesses.",
+      "errorType": "overgeneralization",
+      "whyWrong": "`cp.async` hides latency by overlapping compute and copy; it does not increase the number of useful bytes per sector transaction.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, cp.async section"
+    },
+    {
+      "claim": "For FP32 with warp size 32, any stride < 32 has no measurable impact on bandwidth utilization.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Even stride 2 doubles the number of sectors touched and typically halves effective bandwidth for streaming reads.",
+      "sourceOrEvidence": "PMPP4 memory chapter"
+    }
+  ],
+  "implementationFacts": [
+    "sm_80 typical L2/L1 sector: 32 B, transactions grouped to 128 B",
+    "Warp of 32 threads accessing FP32 with stride 1 fits into 128 B (fully coalesced)",
+    "Warp accessing FP32 with stride S spans up to 32*S bytes"
+  ],
+  "performanceScenarios": [
+    "Strided reads are common in gather/scatter patterns; refactoring the layout (or performing a coalesced load into SMEM followed by transpose) restores coalescing.",
+    "Naive matrix transposes suffer from strided writes; the standard SMEM-tile pattern (with padding to avoid bank conflicts) converts stride into contiguity at the SMEM level."
+  ],
+  "versionSensitivity": "stable_principle"
+}

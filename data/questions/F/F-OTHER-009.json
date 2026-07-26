@@ -1,0 +1,103 @@
+{
+  "id": "F-OTHER-009",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "Triton / tl.load `other` parameter semantics",
+  "learningObjective": "Reason precisely about the semantics of the `other` argument in `tl.load` and its interaction with masking and downstream reductions.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "Triton runtime"
+    ]
+  },
+  "softwareContext": {
+    "framework": "Triton",
+    "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "N"
+      ]
+    ],
+    "dtypes": [
+      "float32"
+    ],
+    "layouts": [
+      "contiguous"
+    ]
+  },
+  "stem": "You want to compute the *maximum* value of an FP32 tensor `x` of length N via a per-block reduction in Triton. Which value should be passed to `other` in `tl.load` at the tail to preserve correctness?",
+  "codeSnippet": "import triton\nimport triton.language as tl\nimport math\n\n@triton.jit\ndef block_max(x_ptr, out_ptr, N,\n              BLOCK: tl.constexpr):\n    pid = tl.program_id(0)\n    offs = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offs < N\n    x = tl.load(x_ptr + offs, mask=mask, other=???)\n    m = tl.max(x, axis=0)          # per-block max\n    tl.atomic_max(out_ptr, m)      # atomic reduction to a single output\n\n# out is initialized to -inf before launch\n# Launch: grid = (cdiv(N, BLOCK),), BLOCK = 1024, N arbitrary",
+  "options": [
+    {
+      "id": "A",
+      "text": "`other=0.0`: matches the identity for `sum`, and Triton reuses the same identity for both `sum` and `max` reductions so it is safe here too."
+    },
+    {
+      "id": "B",
+      "text": "`other=-float('inf')` (negative infinity): masked-off tail lanes contribute the identity for `max`, so they do not bias the per-block maximum upward or downward."
+    },
+    {
+      "id": "C",
+      "text": "`other=float('inf')` (positive infinity): filling with the largest float ensures tail lanes never depress the maximum, guaranteeing correctness of a `max` reduction."
+    },
+    {
+      "id": "D",
+      "text": "`other=x_ptr[0]`: repeating the first element on the tail keeps the domain of `tl.max` closed under the loaded values, avoiding out-of-domain floats like inf/NaN."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "For a reduction, the `other` value must be the reduction's identity so that masked-off lanes do not perturb the result. Additive identity is `0`; multiplicative identity is `1`; **max identity is \u2212\u221e**; min identity is +\u221e. So for a `tl.max` reduction, `other=-float('inf')` is correct: any real element beats it. `other=0.0` (choice B) is wrong when the true maximum is negative: a masked lane would then win with 0.0. `other=+inf` (choice C) is obviously wrong: it dominates any real value. `x_ptr[0]` (choice D) is unsafe: if `x_ptr[0] > true tail max`, it can bias the reduction upward.",
+  "optionExplanations": {
+    "A": "Wrong: 0.0 is the identity for sum, not max; fails when the true max is negative.",
+    "B": "Correct: \u2212\u221e is the identity for max.",
+    "C": "Wrong: +\u221e dominates any real value and would give an incorrect maximum.",
+    "D": "Wrong: `x_ptr[0]` is data-dependent and can bias the result."
+  },
+  "assumptions": [
+    "IEEE-754 FP32 with support for \u00b1inf.",
+    "`tl.max` returns the maximum of the input tile."
+  ],
+  "nonImplications": [
+    "Does not imply that all reductions must use `other`; loops that don't mask can avoid it.",
+    "Does not imply +inf is never the right choice; for `tl.min` reductions, +inf is the correct identity."
+  ],
+  "misconceptionTags": [
+    "reduction_identity_confusion",
+    "zero_as_universal_identity"
+  ],
+  "distractorRationales": {
+    "A": "Confuses sum-identity with max-identity.",
+    "C": "Fills with the max value itself, dominating real data.",
+    "D": "Uses data-dependent fill that can bias the reduction."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:triton",
+      "locator": "tl.load other parameter; tl.max reduction semantics",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-OTHER-009.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

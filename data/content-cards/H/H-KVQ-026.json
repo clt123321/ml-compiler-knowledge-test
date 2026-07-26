@@ -1,0 +1,56 @@
+{
+  "questionId": "H-KVQ-026",
+  "learningObjective": "Diagnose the accuracy trade-off of KV cache INT8 quantization in long-context LLM decoding.",
+  "canonicalClaims": [
+    {
+      "claim": "KV cache quantization introduces per-element error that softmax attention amplifies over long contexts; observed accuracy drops are typically small (~0.5% or less) at 32K context and can be traded for larger batch capacity or longer context.",
+      "conditions": [
+        "The attention softmax normalizes over all context positions.",
+        "The KV quantization scheme (per-token, per-head) is reasonable — extremely coarse scales would produce larger drops."
+      ],
+      "nonImplications": [
+        "Does not imply INT8 KV is safe for every workload; retrieval-heavy or long-form reasoning may see larger drops.",
+        "Does not imply FP8 KV is always better than INT8 KV; depends on distribution."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "KV cache quantization guide" },
+        { "ref": "BOOK:sze-eff", "locator": "Attention numerical sensitivity" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "INT8 KV cache quantization is bit-exact with FP16 KV cache.",
+      "errorType": "definition_confusion",
+      "whyWrong": "INT8 loses precision; even with per-token scaling, the quantized KV differs from the FP16 KV element-wise.",
+      "sourceOrEvidence": "Basic quantization theory"
+    },
+    {
+      "claim": "The accuracy drop at long context is due to INT8's range being insufficient for long-context activations.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Per-token/per-head scaling handles the range issue; the drop comes from softmax's cumulative sensitivity to logit noise across many positions.",
+      "sourceOrEvidence": "TensorRT-LLM KV quant analysis"
+    },
+    {
+      "claim": "KV cache quantization does not free GPU memory because the allocator still reserves FP16 slots.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Paged attention allocators respect the actual quantized element size; memory savings are real.",
+      "sourceOrEvidence": "vLLM / PagedAttention implementation"
+    },
+    {
+      "claim": "Using UINT8 instead of INT8 for KV quantization eliminates the accuracy drop.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Signed vs unsigned changes the value range mapping (via zero-point), not the quantization noise floor per element.",
+      "sourceOrEvidence": "Symmetric vs asymmetric quantization theory"
+    }
+  ],
+  "implementationFacts": [
+    "TensorRT-LLM supports INT8 KV with per-token / per-head scaling.",
+    "vLLM 0.4+ supports INT8 and FP8 KV cache modes.",
+    "FP8 KV is often preferred over INT8 on Hopper due to native FP8 attention support."
+  ],
+  "performanceScenarios": [
+    "Doubling batch capacity from 2 to 4 for a memory-constrained server can raise throughput by ~1.8× (batching amortization is not linear)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

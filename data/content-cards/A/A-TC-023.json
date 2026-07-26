@@ -1,0 +1,49 @@
+{
+  "questionId": "A-TC-023",
+  "learningObjective": "Compare the arithmetic density (FLOP per cycle per SM) of NVIDIA Tensor Core FP16 vs FP32 SIMT paths, and reason about when each dominates.",
+  "canonicalClaims": [
+    {
+      "claim": "On A100 SXM, dense FP16 Tensor Core peak throughput is approximately 16× the FP32 CUDA-core peak (312 TFLOP/s vs 19.5 TFLOP/s), so compute-bound kernels that can adopt FP16 Tensor Cores may approach a 16× ideal speedup; memory-bound kernels see much smaller gains.",
+      "conditions": [
+        "Kernel is compute-bound (AI > ridge point for the target path).",
+        "Precision can safely be reduced to FP16 with matching accumulation strategy.",
+        "Kernel uses Tensor Cores, not the FP16 scalar path in CUDA cores."
+      ],
+      "nonImplications": [
+        "Does not imply any kernel automatically reaches 16× speedup.",
+        "Does not imply comparable ratios apply to all architectures; H100 and later revise the numbers."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Compute Capability 8.0 Tensor Core throughput" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP16 Tensor Core is roughly 2× FP32 CUDA-core throughput.",
+      "errorType": "hardware_leak",
+      "whyWrong": "The ratio is ~16× on A100, not 2×. 2× is closer to the SIMT FP16 vs FP32 pathway.",
+      "sourceOrEvidence": "NVIDIA A100 whitepaper"
+    },
+    {
+      "claim": "Sparse Tensor Core peak is what appears in the 312 TFLOP/s figure.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "The 312 TFLOP/s A100 SXM figure is dense. Sparse (2:4) FP16 gives 624 TFLOP/s.",
+      "sourceOrEvidence": "NVIDIA A100 whitepaper"
+    },
+    {
+      "claim": "Using FP16 Tensor Cores yields ~16× end-to-end speedup on any DNN workload.",
+      "errorType": "kernel_vs_e2e_confusion",
+      "whyWrong": "End-to-end speedup depends on the mix of memory-bound vs compute-bound ops; memory-bound ops are limited by HBM bandwidth, which is unchanged.",
+      "sourceOrEvidence": "Roofline analysis; mixed-precision training papers"
+    }
+  ],
+  "implementationFacts": [
+    "A100 SXM dense: FP32 CUDA ≈ 19.5 TFLOP/s; FP16 Tensor Core ≈ 312 TFLOP/s; BF16 similar to FP16.",
+    "H100 SXM5 FP16 Tensor Core dense ≈ 989 TFLOP/s; FP8 dense ≈ 1979 TFLOP/s."
+  ],
+  "performanceScenarios": [
+    "Mixed-precision training on A100 achieves 3–6× kernel speedup on GEMM-dominant workloads and less on memory-bound layers."
+  ],
+  "versionSensitivity": "stable_principle"
+}

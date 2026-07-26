@@ -1,0 +1,109 @@
+{
+  "id": "F-RACE-034",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Race conditions on shared memory",
+  "learningObjective": "Identify a race condition in a CUDA kernel that writes and reads shared memory without adequate synchronization.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any current NVIDIA architecture",
+    "device": "GPU",
+    "requiredFeatures": [
+      "shared memory; __syncthreads"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        256
+      ]
+    ],
+    "dtypes": [
+      "float32"
+    ],
+    "layouts": [
+      "contiguous"
+    ]
+  },
+  "stem": "The kernel below is intended to compute `y[tid] = x[tid-1] + x[tid]` (with `y[0] = x[0]`) using shared memory. Identify the correctness issue.",
+  "codeSnippet": "// blockDim.x = 256; input `x`, output `y` (both length 256)\n__global__ void shifted_add(const float* x, float* y) {\n    __shared__ float smem[256];\n    int tid = threadIdx.x;\n    smem[tid] = x[tid];\n    // (missing __syncthreads() here?)\n    if (tid == 0) y[tid] = smem[tid];\n    else          y[tid] = smem[tid - 1] + smem[tid];\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "Without a `__syncthreads()` between the write `smem[tid] = x[tid]` and the read `smem[tid - 1]`, there is a race: thread `tid` may read `smem[tid - 1]` before thread `tid - 1` has written it. The fix is to insert `__syncthreads()` immediately after the shared-memory store."
+    },
+    {
+      "id": "B",
+      "text": "There is no race because thread `tid` only reads `smem[tid]` and `smem[tid - 1]`; both writes come from thread `tid - 1` and thread `tid`, which are in the same warp for `tid < 32` and therefore execute in lockstep."
+    },
+    {
+      "id": "C",
+      "text": "The kernel is incorrect because `__shared__ float smem[256]` requires an explicit `__syncthreads()` at kernel entry to initialize the shared memory to zero."
+    },
+    {
+      "id": "D",
+      "text": "The write `smem[tid] = x[tid]` is atomic per lane, so no synchronization is needed; the CUDA runtime automatically inserts a barrier before any subsequent shared-memory read."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Classic SMEM race: writes by different threads (`smem[tid] = x[tid]`) must be visible before any thread reads a value written by a different thread (`smem[tid - 1]`). Without `__syncthreads()`, thread `tid` may reach the read before thread `tid - 1` has performed its write, producing undefined values. Lockstep-within-warp is not sufficient on Volta+ (ITS) and not guaranteed as a portable assumption; the correct fix is `__syncthreads()`. Choice C fabricates a zero-init requirement; SMEM is uninitialized. Choice D denies the shared-memory data race.",
+  "optionExplanations": {
+    "A": "Correct: missing __syncthreads causes SMEM read-before-write race.",
+    "B": "Wrong: lockstep-within-warp is not portable; and cross-warp reads still race.",
+    "C": "Wrong: SMEM is not zero-initialized.",
+    "D": "Wrong: no automatic barrier is inserted."
+  },
+  "assumptions": [
+    "blockDim.x = 256 (multi-warp block).",
+    "Modern NVIDIA GPU with ITS behavior."
+  ],
+  "nonImplications": [
+    "Does not imply all missing __syncthreads always produce wrong results; small blocks may seem to work by accident.",
+    "Does not imply __syncthreads is a memory fence for global memory; it is per-block SMEM/register fence."
+  ],
+  "misconceptionTags": [
+    "warp_lockstep_myth",
+    "smem_auto_barrier_myth"
+  ],
+  "distractorRationales": {
+    "B": "Relies on non-portable lockstep behavior.",
+    "C": "Fabricates SMEM zero-init requirement.",
+    "D": "Denies the race condition."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Shared Memory \u2014 synchronization and memory model",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Shared memory and synchronization chapter",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-RACE-034.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

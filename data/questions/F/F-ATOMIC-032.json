@@ -1,0 +1,115 @@
+{
+  "id": "F-ATOMIC-032",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Atomic operations \u2014 semantics and contention",
+  "learningObjective": "Reason about CUDA atomic operations: correctness and the performance impact of contention on hot addresses.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "hardware atomicAdd for FP32"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "N"
+      ],
+      [
+        1
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "Consider two CUDA reduction kernels: (X) each thread does `atomicAdd(&out[0], x[i])` for one element; (Y) each thread block reduces its region locally via shared-memory tree then does one `atomicAdd(&out[0], partial)`. Which statement about their behavior is correct?",
+  "codeSnippet": "// (X) One atomic per thread\n__global__ void reduce_atomic_per_thread(const float* x, float* out, int N) {\n    int i = blockIdx.x * blockDim.x + threadIdx.x;\n    if (i < N) atomicAdd(&out[0], x[i]);\n}\n\n// (Y) Block-local tree reduction + one atomic per block\n__global__ void reduce_block_then_atomic(const float* x, float* out, int N) {\n    __shared__ float smem[256];\n    int tid = threadIdx.x;\n    int i = blockIdx.x * blockDim.x + tid;\n    smem[tid] = (i < N) ? x[i] : 0.0f;\n    __syncthreads();\n    for (int s = blockDim.x/2; s > 0; s >>= 1) {\n        if (tid < s) smem[tid] += smem[tid + s];\n        __syncthreads();\n    }\n    if (tid == 0) atomicAdd(&out[0], smem[0]);\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "Both kernels are correct; kernel (X) suffers heavy contention because thousands of threads target the same address, serializing at the atomic unit \u2014 kernel (Y) reduces this to one atomic per block (potentially 1000x fewer) while giving the same result modulo FP32 non-associativity."
+    },
+    {
+      "id": "B",
+      "text": "Kernel (X) is incorrect because `atomicAdd` returns the old value at that address, so calling it in a loop without capturing the return breaks the reduction; only (Y) produces the true sum."
+    },
+    {
+      "id": "C",
+      "text": "Kernel (Y) is unnecessarily complex; on Ampere+ the hardware atomic unit has infinite bandwidth for FP32 `atomicAdd`, so (X) and (Y) have identical throughput."
+    },
+    {
+      "id": "D",
+      "text": "Kernel (Y) is incorrect because the shared-memory tree reduction requires `__syncwarp()` inside the loop; only `__syncthreads()` at block boundaries would leave lanes with stale values and produce an off-by-one sum."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "Both kernels are functionally correct (same mathematical sum modulo FP non-associativity); the difference is contention. Kernel (X) issues N `atomicAdd` calls to a single address, serializing at the atomic unit \u2014 this is the canonical anti-pattern. Kernel (Y) reduces contention by factor of blockDim.x (typically 256), giving orders-of-magnitude better throughput on large N. Choice B misreads `atomicAdd` semantics (the return value is optional; it still commits the add). Choice C fabricates infinite atomic bandwidth. Choice D misdescribes `__syncthreads` behavior \u2014 it does provide the required synchronization; extra `__syncwarp` is unnecessary here.",
+  "optionExplanations": {
+    "A": "Correct: (X) contention-serialized; (Y) block-local reduction + one atomic wins.",
+    "B": "Wrong: `atomicAdd` commits the add regardless of return capture.",
+    "C": "Wrong: hardware atomic bandwidth is finite.",
+    "D": "Wrong: `__syncthreads()` is sufficient for block-wide SMEM sync."
+  },
+  "assumptions": [
+    "FP32 hardware atomicAdd on sm_80+.",
+    "N is large enough that contention matters (>= 1024)."
+  ],
+  "nonImplications": [
+    "Does not imply atomics should never be used; they are correct for infrequent updates.",
+    "Does not imply block-tree reductions are always fastest; warp-shuffle reductions are usually faster than SMEM-tree for the last stages."
+  ],
+  "misconceptionTags": [
+    "atomic_infinite_bandwidth_myth",
+    "atomicadd_return_required_myth"
+  ],
+  "distractorRationales": {
+    "B": "Wrong claim that return value is required.",
+    "C": "Fabricates atomic-unit bandwidth.",
+    "D": "Wrong claim about __syncthreads insufficiency."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Atomic Functions \u2014 semantics and contention",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Reduction and atomics chapter",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Atomic contention vs block-tree reduction contention",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-ATOMIC-032.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

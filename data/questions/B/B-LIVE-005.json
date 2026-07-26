@@ -1,0 +1,92 @@
+{
+  "id": "B-LIVE-005",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Liveness analysis (backward data-flow)",
+  "learningObjective": "Compute liveness at a program point given standard live-in / live-out equations.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "irSnippet": "; Consider block B with the following instructions in order:\nB:\n  I1:  a := x + y      ; def a; use x, y\n  I2:  b := a * 2      ; def b; use a\n  I3:  c := b + z      ; def c; use b, z\n  I4:  return c        ; use c\n; Live-out at end of B: {} (this is a function's return block, no successor).",
+  "stem": "Using standard liveness data-flow equations (live_in[I] = (live_out[I] − def[I]) ∪ use[I]), which variables are live immediately BEFORE instruction I1?",
+  "options": [
+    {
+      "id": "A",
+      "text": "{x, y, z, a, b, c}"
+    },
+    {
+      "id": "B",
+      "text": "{a, b, c}"
+    },
+    {
+      "id": "C",
+      "text": "{x, y}"
+    },
+    {
+      "id": "D",
+      "text": "{x, y, z}"
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Backward liveness. Live-out of I4 = {}. live_in[I4] = ({} − {}) ∪ {c} = {c}. live_out[I3] = {c}; live_in[I3] = ({c} − {c}) ∪ {b, z} = {b, z}. live_out[I2] = {b, z}; live_in[I2] = ({b, z} − {b}) ∪ {a} = {a, z}. live_out[I1] = {a, z}; live_in[I1] = ({a, z} − {a}) ∪ {x, y} = {x, y, z}. So live-in of I1 = {x, y, z}.",
+  "optionExplanations": {
+    "A": "Wrong: it includes definitions (a, b, c) that are killed before I1 (they don't exist yet at that program point).",
+    "B": "Wrong: {a, b, c} are defined values, not live-in variables before I1.",
+    "C": "Wrong: this omits z, which is used by I3 and must be live before I1 since it is not defined between I1 and I3.",
+    "D": "Correct: applying backward equations yields {x, y, z}."
+  },
+  "assumptions": [
+    "Standard live variables analysis with use/def sets per instruction.",
+    "No aliasing complications (each variable is a distinct SSA-like name)."
+  ],
+  "nonImplications": [
+    "Does not imply liveness alone drives register allocation; interference graph construction combines liveness with allocation heuristics.",
+    "Does not imply liveness is unique across analyses; may-live vs must-live variants differ in precision."
+  ],
+  "misconceptionTags": [
+    "liveness_forward_confusion",
+    "def_included_in_live_in"
+  ],
+  "distractorRationales": {
+    "A": "Confuses def with live-in.",
+    "B": "Treats defined variables as live-in.",
+    "C": "Fails to propagate liveness of z back through blocks."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Data-flow analysis chapter, liveness section",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Liveness analysis chapter",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-LIVE-005.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

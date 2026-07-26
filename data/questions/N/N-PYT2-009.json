@@ -1,0 +1,93 @@
+{
+  "id": "N-PYT2-009",
+  "type": "single",
+  "module": "paper_design",
+  "subtopic": "End-to-end vs kernel-level speedup interpretation",
+  "learningObjective": "Distinguish end-to-end model speedup from kernel-level speedup when interpreting the PyTorch 2 paper's `torch.compile` results.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "GPU (evaluation targets in the paper)",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch 2 / torch.compile / TorchInductor",
+    "frameworkVersionScope": "PyTorch 2.x as reported in the paper",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "The PyTorch 2 paper reports end-to-end speedups under `torch.compile` on TorchBench-style benchmarks. A reader sees an Inductor-generated Triton kernel that is 3× faster than the eager kernel and infers 'the whole model runs 3× faster'. Which statement most accurately characterizes the reasoning error?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The reader's error is that Triton kernels never provide speedup over eager on GPUs; the observed 3× must be a measurement artifact and should be discarded."
+    },
+    {
+      "id": "B",
+      "text": "The reader correctly identifies end-to-end speedup; kernel-level speedup and model-level speedup are always identical when the same benchmark suite is used."
+    },
+    {
+      "id": "C",
+      "text": "The reader conflates kernel-level and end-to-end speedup. Amdahl's law limits the end-to-end benefit to the fraction of runtime spent in the accelerated kernel; host-side overhead, graph breaks, and non-compiled subgraphs cap the observable end-to-end speedup below the per-kernel factor."
+    },
+    {
+      "id": "D",
+      "text": "The reader confuses forward and backward pass; end-to-end speedup is defined only for backward-pass time, not the whole model."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Kernel-level speedup does not equal end-to-end speedup: by Amdahl's law, end-to-end improvement is bounded by the fraction of time the accelerated kernel occupies. In `torch.compile` workloads that fraction is further reduced by host-side Python overhead, graph breaks that force eager fallback, and non-compiled subgraphs. The other options mis-characterize either the relationship (B), the empirical fact (C), or the scope of the metric (D).",
+  "optionExplanations": {
+    "A": "Wrong: Triton kernels can and do provide speedups; the error is generalization, not measurement.",
+    "B": "Wrong: kernel and end-to-end speedups are not equal in general.",
+    "C": "Correct: Amdahl-bound argument for kernel vs end-to-end speedup.",
+    "D": "Wrong: end-to-end speedup covers full-model time, not backward-only."
+  },
+  "assumptions": [
+    "Familiarity with the PyTorch 2 paper's evaluation methodology.",
+    "Amdahl's law understanding."
+  ],
+  "nonImplications": [
+    "Does not imply Triton kernels are ineffective; they can substantially accelerate certain kernels.",
+    "Does not imply that the paper's numbers apply to arbitrary hardware/models."
+  ],
+  "misconceptionTags": [
+    "kernel_vs_e2e_speedup"
+  ],
+  "distractorRationales": {
+    "A": "Falsely dismisses observed kernel speedup.",
+    "B": "Denies Amdahl's law.",
+    "D": "Confused scope of end-to-end metric."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "§ evaluation methodology and end-to-end speedup reporting",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "torch.compile behavior: graph breaks, eager fallback",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/N/N-PYT2-009.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

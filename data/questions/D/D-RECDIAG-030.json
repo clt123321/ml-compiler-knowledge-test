@@ -1,0 +1,96 @@
+{
+  "id": "D-RECDIAG-030",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Excessive recompilation diagnosis",
+  "learningObjective": "Diagnose a scenario in which torch.compile recompiles repeatedly and identify the correct remediation approach.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "A training loop shows dozens of recompiles per epoch. The user checked shapes and confirms they are constant, and the model class is not being redefined. The recompile log excerpt is shown. Which remediation is best supported by the log?",
+  "codeSnippet": "# TORCH_LOGS=\"recompiles\" (representative excerpt across iterations):\n#   Recompiling function forward\n#     triggered by the following guard failure(s):\n#       - guard on user-defined class attribute L['self'].dropout_p changed from 0.1 to 0.2\n#   ... (repeats with varying dropout_p values across steps) ...\n\n# The user sets self.dropout_p from a scheduler each step for curriculum training.\n\nimport torch\n\nclass M(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.linear = torch.nn.Linear(64, 64)\n        self.dropout_p = 0.1\n    def forward(self, x):\n        return torch.nn.functional.dropout(self.linear(x), self.dropout_p, self.training)",
+  "profileData": "Compile cache thrashing: a new compiled variant produced whenever dropout_p changes; each recompile takes seconds and dominates step time.",
+  "options": [
+    {
+      "id": "A",
+      "text": "Increase the number of allowed recompiles via `torch._dynamo.config.cache_size_limit = 1000` and continue; the compile cache will simply grow to hold each variant."
+    },
+    {
+      "id": "B",
+      "text": "Disable torch.compile entirely with `torch.compile(mode='reduce-overhead')`, which is documented to skip Python-value guards. Under this framing, the fix is to increase the number of allowed recompiles via `torch._dynamo.config.cache_size_limit = 1000` and continue running as before; the in-memory compile cache will simply grow to hold each distinct dropout_p variant, and cache hit rate will improve."
+    },
+    {
+      "id": "C",
+      "text": "Move the varying value (`dropout_p`) out of a specialized guard by passing it as a tensor argument to the forward (e.g., `torch.tensor(dropout_p)`), so Dynamo does not specialize on its Python value; alternatively, use a control-flow op that treats it dynamically. This preserves correctness while eliminating the per-value recompiles."
+    },
+    {
+      "id": "D",
+      "text": "Rename `dropout_p` to `_dropout_p` (underscore prefix); TorchDynamo skips guards on names starting with an underscore by convention. Under this account, the correct remediation is to rename `dropout_p` to `_dropout_p` with an underscore prefix; TorchDynamo skips installing guards on names starting with an underscore by convention, so the varying attribute would no longer participate in the compile cache key."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "The log points to a Python-scalar guard on a class attribute (`dropout_p`) whose value changes each step. Dynamo specialized on the observed Python value; when the value changes, the guard fails and a new variant compiles. The correct fix is to pass the varying value in as a tensor argument (so it becomes graph input, not a specialization key), or otherwise ensure the compiled region treats it as dynamic. Merely raising the cache size limit hides the symptom while paying the recompile cost every step; `mode='reduce-overhead'` does not skip Python-value guards; and no underscore-prefix convention exists.",
+  "optionExplanations": {
+    "C": "Correct: right diagnosis (Python-scalar specialization) and right fix (pass as tensor / dynamic).",
+    "A": "Wrong: papering over the problem; recompile cost still dominates.",
+    "B": "Wrong claim about reduce-overhead skipping guards.",
+    "D": "Wrong: no underscore convention exists."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 defaults.",
+    "The user is willing to change the model's API slightly to accept the varying scalar as an input."
+  ],
+  "nonImplications": [
+    "Does not imply every Python-scalar guard is easy to remove; some ops still specialize.",
+    "Does not imply the fix eliminates all recompiles; other guards may still fire."
+  ],
+  "misconceptionTags": [
+    "cache_size_limit_hides_recompile",
+    "underscore_skips_guards"
+  ],
+  "distractorRationales": {
+    "A": "Hides the symptom.",
+    "B": "Wrong mode behavior.",
+    "D": "Fabricated convention."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Guards on Python-scalar attributes; passing as tensor input",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Reducing recompilation cost",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-RECDIAG-030.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

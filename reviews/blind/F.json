@@ -1,0 +1,2430 @@
+{
+  "module": "cuda_triton_kernel",
+  "code": "F",
+  "label": "CUDA / Triton / GPU Kernel",
+  "generatedAt": "2026-07-26",
+  "count": 40,
+  "questions": [
+    {
+      "id": "F-ATOMIC-032",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Atomic operations — semantics and contention",
+      "learningObjective": "Reason about CUDA atomic operations: correctness and the performance impact of contention on hot addresses.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "hardware atomicAdd for FP32"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N"
+          ],
+          [
+            1
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider two CUDA reduction kernels: (X) each thread does `atomicAdd(&out[0], x[i])` for one element; (Y) each thread block reduces its region locally via shared-memory tree then does one `atomicAdd(&out[0], partial)`. Which statement about their behavior is correct?",
+      "codeSnippet": "// (X) One atomic per thread\n__global__ void reduce_atomic_per_thread(const float* x, float* out, int N) {\n    int i = blockIdx.x * blockDim.x + threadIdx.x;\n    if (i < N) atomicAdd(&out[0], x[i]);\n}\n\n// (Y) Block-local tree reduction + one atomic per block\n__global__ void reduce_block_then_atomic(const float* x, float* out, int N) {\n    __shared__ float smem[256];\n    int tid = threadIdx.x;\n    int i = blockIdx.x * blockDim.x + tid;\n    smem[tid] = (i < N) ? x[i] : 0.0f;\n    __syncthreads();\n    for (int s = blockDim.x/2; s > 0; s >>= 1) {\n        if (tid < s) smem[tid] += smem[tid + s];\n        __syncthreads();\n    }\n    if (tid == 0) atomicAdd(&out[0], smem[0]);\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both kernels are correct; kernel (X) suffers heavy contention because thousands of threads target the same address, serializing at the atomic unit — kernel (Y) reduces this to one atomic per block (potentially 1000x fewer) while giving the same result modulo FP32 non-associativity."
+        },
+        {
+          "id": "B",
+          "text": "Kernel (X) is incorrect because `atomicAdd` returns the old value at that address, so calling it in a loop without capturing the return breaks the reduction; only (Y) produces the true sum."
+        },
+        {
+          "id": "C",
+          "text": "Kernel (Y) is unnecessarily complex; on Ampere+ the hardware atomic unit has infinite bandwidth for FP32 `atomicAdd`, so (X) and (Y) have identical throughput."
+        },
+        {
+          "id": "D",
+          "text": "Kernel (Y) is incorrect because the shared-memory tree reduction requires `__syncwarp()` inside the loop; only `__syncthreads()` at block boundaries would leave lanes with stale values and produce an off-by-one sum."
+        }
+      ],
+      "assumptions": [
+        "FP32 hardware atomicAdd on sm_80+.",
+        "N is large enough that contention matters (>= 1024)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-ATTN-022",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Attention — naive scaled dot-product vs materialized attention matrix",
+      "learningObjective": "Reason about the memory-traffic footprint of naive attention and identify the main bottleneck for long sequences.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM bandwidth constraint"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA / Triton",
+        "frameworkVersionScope": "N/A (algorithmic)",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "H",
+            "S",
+            "D"
+          ],
+          [
+            "B",
+            "H",
+            "S",
+            "D"
+          ],
+          [
+            "B",
+            "H",
+            "S",
+            "D"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "In a naive scaled-dot-product attention `O = softmax(Q K^T / sqrt(d)) V` implemented as three separate kernels (compute S = QK^T, materialize P = softmax(S), compute O = PV), Q/K/V/O are FP16 with shape `[B, H, S, D]`. Which statement about memory traffic on A100 is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because Q, K, V are FP16, all intermediate tensors including P and S are automatically kept in registers by the CUDA compiler; there is no HBM traffic for the S × S intermediates regardless of S."
+        },
+        {
+          "id": "B",
+          "text": "The naive path is limited by the D×D dot product's compute cost, not memory; the S×S intermediate is only S*S/32 elements after warp-level reduction and never materialized in HBM."
+        },
+        {
+          "id": "C",
+          "text": "Attention is compute-bound at all sequence lengths on A100 because FP16 matmul throughput is far higher than HBM bandwidth; the O(S^2) memory issue is a theoretical concern with no practical impact."
+        },
+        {
+          "id": "D",
+          "text": "For each (batch, head), the naive path allocates and stores the `S × S` intermediate P (and S) in HBM: `2 * S^2 * sizeof(FP16)` bytes per (batch, head). For `S = 8192`, that is ~256 MB per (B,H) — the O(S^2) memory footprint is the dominant cost and grows quadratically with sequence length, making it infeasible for long sequences."
+        }
+      ],
+      "assumptions": [
+        "Three-kernel naive implementation without tiled online-softmax.",
+        "FP16 storage of Q/K/V/O and intermediates."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-AUTOTUNE-008",
+      "type": "multiple",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / triton.autotune and configuration search",
+      "learningObjective": "Understand triton.autotune configurations and their interaction with kernel launch keys.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Triton autotuner"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N",
+            "K"
+          ]
+        ],
+        "dtypes": [
+          "float16"
+        ],
+        "layouts": [
+          "row_major"
+        ]
+      },
+      "stem": "Consider the Triton autotuned matmul-like kernel below. Which statements about `triton.autotune` are correct? (Select all that apply.)",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.autotune(\n    configs=[\n        triton.Config({'BM':  64, 'BN':  64, 'BK': 32, 'GROUP': 8}, num_warps=4, num_stages=3),\n        triton.Config({'BM': 128, 'BN': 128, 'BK': 32, 'GROUP': 8}, num_warps=8, num_stages=3),\n        triton.Config({'BM': 128, 'BN':  64, 'BK': 32, 'GROUP': 8}, num_warps=4, num_stages=4),\n    ],\n    key=['M', 'N', 'K'],\n)\n@triton.jit\ndef matmul_kernel(A, B, C, M, N, K,\n                  stride_am, stride_ak, stride_bk, stride_bn, stride_cm, stride_cn,\n                  BM: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr, GROUP: tl.constexpr):\n    # ... body omitted ...\n    pass",
+      "options": [
+        {
+          "id": "A",
+          "text": "`num_warps` and `num_stages` are per-Config launch parameters (warps per program, pipelining stages) that the autotuner selects together with the tile-size constants; they are not free-form Python arguments."
+        },
+        {
+          "id": "B",
+          "text": "The autotuner runs at compile time only; once the module is loaded, it never re-tunes even if the caller launches with previously-unseen key values."
+        },
+        {
+          "id": "C",
+          "text": "`triton.autotune` guarantees that the selected config is globally optimal because it exhaustively searches all possible `(BM, BN, BK, num_warps, num_stages)` combinations, not just the user-provided list."
+        },
+        {
+          "id": "D",
+          "text": "For each distinct combination of the `key` arguments (here `(M, N, K)`), the autotuner measures each config once, caches the best one, and reuses it for subsequent launches with the same key values; new key values trigger a fresh tuning pass."
+        }
+      ],
+      "assumptions": [
+        "Standard `triton.autotune` semantics as documented.",
+        "The kernel is launched with varying (M, N, K) tuples in practice."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-BANK-003",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Shared memory bank conflicts / Matrix transpose",
+      "learningObjective": "Analyze a shared-memory transpose kernel and identify which access pattern causes a 32-way bank conflict; know the padding-based mitigation.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "32 shared-memory banks, 4-byte bank width"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N",
+            "N"
+          ],
+          [
+            "N",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "Consider the following CUDA matrix-transpose kernel using shared memory, launched with `blockDim = (32, 32)` and `gridDim = (N/32, N/32)` on sm_80. Which statement about shared-memory bank conflicts is correct?",
+      "codeSnippet": "// CUDA C++, sm_80 (A100)\n__global__ void transpose(const float* __restrict__ A, float* __restrict__ B, int N) {\n    __shared__ float tile[32][32];    // 32 x 32 floats, 4 B each; 32 SMEM banks of 4 B\n    int x = blockIdx.x * 32 + threadIdx.x;\n    int y = blockIdx.y * 32 + threadIdx.y;\n\n    tile[threadIdx.y][threadIdx.x] = A[y * N + x];       // (W1) write\n    __syncthreads();\n\n    int tx = blockIdx.y * 32 + threadIdx.x;\n    int ty = blockIdx.x * 32 + threadIdx.y;\n    B[ty * N + tx] = tile[threadIdx.x][threadIdx.y];     // (R1) transposed read\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both the write (W1) and the transposed read (R1) are conflict-free because sm_80 supports 32-way multicast for shared memory across distinct addresses within the same bank, effectively eliminating serialization."
+        },
+        {
+          "id": "B",
+          "text": "Write (W1) is conflict-free (row stride-1 across banks); transposed read (R1) causes a 32-way bank conflict since all 32 warp lanes hit one bank; padding to `tile[32][33]` breaks the alignment."
+        },
+        {
+          "id": "C",
+          "text": "The write (W1) causes a 32-way conflict because 32 threads target the same bank while writing a row; the transposed read (R1) is conflict-free because column accesses spread evenly across banks."
+        },
+        {
+          "id": "D",
+          "text": "Bank conflicts are automatically eliminated by the CUDA compiler via a promotion pass that pads shared-memory arrays whose access patterns match a canonical conflict template, so no source-level change is required for correctness or performance."
+        }
+      ],
+      "assumptions": [
+        "Default 4-byte shared-memory bank width on sm_80.",
+        "The kernel is intended to transpose an N × N matrix with N a multiple of 32."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-BARRIER-033",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Synchronization — __syncthreads vs __syncwarp",
+      "learningObjective": "Distinguish __syncthreads and __syncwarp semantics and identify when each is appropriate.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Volta (sm_70) or newer for ITS semantics",
+        "device": "GPU",
+        "requiredFeatures": [
+          "cooperative_groups; __syncthreads; __syncwarp"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "compilerVersionScope": "CUDA 11+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about `__syncthreads()` and `__syncwarp()` in CUDA is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "`__syncthreads()` synchronizes only the warp of the calling thread; `__syncwarp()` synchronizes the entire block."
+        },
+        {
+          "id": "B",
+          "text": "`__syncthreads()` and `__syncwarp()` are the same operation with different names for portability; the compiler treats them identically."
+        },
+        {
+          "id": "C",
+          "text": "Neither `__syncthreads()` nor `__syncwarp()` is required on Volta+, because Independent Thread Scheduling automatically ensures memory visibility and lane convergence at every instruction boundary."
+        },
+        {
+          "id": "D",
+          "text": "`__syncthreads()` is a block-wide barrier synchronizing all threads in a thread block; `__syncwarp(mask)` synchronizes only the specified lanes within a warp. On Volta+ (with Independent Thread Scheduling), explicit `__syncwarp` is often required between warp-shuffle operations that used to be implicitly convergent."
+        }
+      ],
+      "assumptions": [
+        "CUDA 11+ toolchain and Volta+ or newer target."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-BENCH-039",
+      "type": "multiple",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / Correctness testing and benchmarking discipline",
+      "learningObjective": "Reason about the discipline of Triton kernel correctness testing and honest benchmark measurement.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any current NVIDIA architecture",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Triton runtime; torch backend for reference"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton + PyTorch (for reference)",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which practices are correct for testing and benchmarking a Triton kernel `my_kernel` versus a PyTorch reference on GPU? (Select all that apply.)",
+      "codeSnippet": "import torch, triton\n\n# Sketch of a good benchmark harness\n# 1) Warmup:\n# for _ in range(warmup):\n#     y = my_kernel(x); torch.cuda.synchronize()\n# 2) Timed loop:\n# torch.cuda.synchronize()\n# start = torch.cuda.Event(enable_timing=True); end = torch.cuda.Event(enable_timing=True)\n# start.record()\n# for _ in range(iters):\n#     y = my_kernel(x)\n# end.record(); torch.cuda.synchronize()\n# ms_per_iter = start.elapsed_time(end) / iters\n#\n# Correctness:\n# y_ref = reference(x)   # e.g. torch.softmax, torch.matmul, etc.\n# torch.testing.assert_close(y, y_ref, rtol=..., atol=...)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Timing a single kernel launch (no warmup, no loop) using Python `time.time()` is a reliable measurement because CUDA is deterministic and one launch captures the true cost."
+        },
+        {
+          "id": "B",
+          "text": "Autotune-cached configs, JIT-compile time, and cudaGraph capture must always be included in the reported per-iteration latency to fairly compare against a native PyTorch op; a well-run benchmark reports first-launch latency as steady-state."
+        },
+        {
+          "id": "C",
+          "text": "A per-iteration warmup loop followed by a synchronized-timed inner loop with `torch.cuda.Event` (or equivalent) is the standard pattern; sync before start and after end prevents leaking CPU-launch time or leftover async work into the measurement."
+        },
+        {
+          "id": "D",
+          "text": "Correctness must compare `my_kernel(x)` against a reference implementation with an explicit tolerance (rtol/atol) chosen for the input dtype and the kernel's expected numerical behavior; using `torch.equal` (bitwise) is generally too strict for FP kernels."
+        }
+      ],
+      "assumptions": [
+        "CUDA kernel launches are asynchronous with respect to the host by default.",
+        "Standard Triton / PyTorch benchmarking harness."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-BLOCKPTR-007",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / tl.make_block_ptr and block pointers",
+      "learningObjective": "Understand `tl.make_block_ptr` semantics for structured tile access and how it differs from raw pointer arithmetic.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Triton block-pointer support"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float16"
+        ],
+        "layouts": [
+          "row_major"
+        ]
+      },
+      "stem": "Which statement about `tl.make_block_ptr` in the following Triton kernel is correct?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef read_tile(in_ptr, M, N,\n              stride_m, stride_n,\n              pid_m, pid_n,\n              BM: tl.constexpr, BN: tl.constexpr):\n    block_ptr = tl.make_block_ptr(\n        base=in_ptr,\n        shape=(M, N),\n        strides=(stride_m, stride_n),\n        offsets=(pid_m * BM, pid_n * BN),\n        block_shape=(BM, BN),\n        order=(1, 0),        # innermost dim = axis 1\n    )\n    x = tl.load(block_ptr, boundary_check=(0, 1))\n    # ... use x ...\n\n# in_ptr: FP16 row-major [M, N], stride_m=N, stride_n=1\n# BM=64, BN=64",
+      "options": [
+        {
+          "id": "A",
+          "text": "`tl.make_block_ptr` allocates a shared-memory buffer of size `BM*BN*sizeof(fp16)` on entry and copies the tile into it before use; `boundary_check` prevents the shared-memory allocation from overflowing when the tile extends past `[M, N]`."
+        },
+        {
+          "id": "B",
+          "text": "`boundary_check=(0, 1)` disables masking on both axes (0 means 'no check on axis 0', 1 means 'no check on axis 1'); users who want masking must specify `boundary_check=None`."
+        },
+        {
+          "id": "C",
+          "text": "`tl.make_block_ptr` builds a structured pointer describing a `[BM, BN]` tile inside an `[M, N]` tensor; `boundary_check=(0, 1)` tells `tl.load` to mask both axes so out-of-range lanes are safely zeroed; `order=(1, 0)` declares axis 1 as the fastest-varying, matching row-major storage."
+        },
+        {
+          "id": "D",
+          "text": "The `order` argument sets element endianness inside each 16-bit half; `(1, 0)` reverses the byte order to little-endian on load. It has no effect on which dimension is contiguous in memory."
+        }
+      ],
+      "assumptions": [
+        "Triton block-pointer semantics as documented.",
+        "Row-major FP16 tensor with `stride_m = N`, `stride_n = 1`."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-CGRAPH-025",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / CUDA Graph — capture, instantiation, launch overhead",
+      "learningObjective": "Understand CUDA Graph's role in reducing per-launch overhead and its capture/instantiation lifecycle.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Pascal or newer (Volta+ recommended)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "CUDA Graph API"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "compilerVersionScope": "CUDA 10+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about CUDA Graphs is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A CUDA Graph is a directed acyclic graph of GPU operations (kernels, memcpys, memsets, host callbacks) captured once (via stream capture or explicit API), instantiated to a `cudaGraphExec_t`, and then launched repeatedly with much lower per-launch CPU overhead than individually launching each op — especially valuable for short kernels where launch overhead dominates."
+        },
+        {
+          "id": "B",
+          "text": "CUDA Graphs improve every kernel's runtime GPU cost by rewriting the kernel body during instantiation; the CPU-side savings are a small side benefit."
+        },
+        {
+          "id": "C",
+          "text": "A captured graph can be launched only once per instantiation; each subsequent launch requires re-capturing the graph from a fresh stream."
+        },
+        {
+          "id": "D",
+          "text": "CUDA Graphs are equivalent to CUDA Streams; they are the same mechanism under different names, and mixing the two APIs on the same context is undefined behavior."
+        }
+      ],
+      "assumptions": [
+        "Standard CUDA Graph API as documented since CUDA 10."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-COALESCE-002",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Coalesced access / Global-memory strided reads",
+      "learningObjective": "Identify the impact of a large stride on effective global-memory bandwidth utilization in a warp-wide load.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "128-byte L1/L2 sector transactions"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N * stride"
+          ],
+          [
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous"
+        ],
+        "strides": [
+          [
+            1
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "stem": "The Triton kernel below reads FP32 values from `in_ptr` with a compile-time stride and writes them to `out_ptr` (dense). Launch config: BLOCK=256, stride=8, `in` is a contiguous FP32 tensor of length `N*stride`. On sm_80 (A100), which is the primary performance issue for the load?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef strided_load(in_ptr, out_ptr, N, stride: tl.constexpr, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    # in has one useful element per `stride` elements; we sample them all.\n    x = tl.load(in_ptr + offsets * stride, mask=mask)   # <-- strided load\n    tl.store(out_ptr + offsets, x, mask=mask)\n\n# Launch: grid = (triton.cdiv(N, BLOCK),), BLOCK = 256, stride = 8\n# `in`  : FP32 contiguous, length = N * stride\n# `out` : FP32 contiguous, length = N",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because `mask` is applied to the load, no memory transactions occur for lanes with `offsets >= N`; the mask also eliminates any coalescing penalty for the strided access among the valid lanes."
+        },
+        {
+          "id": "B",
+          "text": "The load triggers shared-memory bank conflicts because 32 threads access addresses 32 bytes apart, and sm_80's bank layout is designed for stride-1 accesses; the conflict serializes each warp into 32 transactions."
+        },
+        {
+          "id": "C",
+          "text": "The performance impact of strided access is negligible when `BLOCK = 256` because Triton automatically inserts asynchronous copies via `cp.async` that hide the stride penalty behind compute overlap."
+        },
+        {
+          "id": "D",
+          "text": "Consecutive lanes read addresses stride*4 = 32 B apart; each 128 B L1/L2 sector delivers only 4 useful bytes per lane, so effective global BW is ~1/stride of peak (~ 1/8)."
+        }
+      ],
+      "assumptions": [
+        "The pointer arithmetic `in_ptr + offsets * stride` produces a strided address pattern within a warp.",
+        "L1/L2 sector granularity is 128 bytes (or an integer multiple thereof) on sm_80.",
+        "No unrolling reorders the accesses into a coalesceable form."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-CONSTEXPR-010",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / tl.constexpr specialization and re-compilation",
+      "learningObjective": "Understand `tl.constexpr` semantics: which arguments trigger shape specialization and per-value compilation.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Triton JIT"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Consider the Triton kernel signature below. Which statement about the difference between `N` and `BLOCK` is correct?",
+      "codeSnippet": "@triton.jit\ndef kernel(x_ptr, out_ptr, N, BLOCK: tl.constexpr):\n    pid = tl.program_id(0)\n    offs = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offs < N\n    x = tl.load(x_ptr + offs, mask=mask, other=0.0)\n    tl.store(out_ptr + offs, x * 2.0, mask=mask)\n\n# Caller launches many times with:\n#   N in {1000, 1024, 2048, 100000}\n#   BLOCK in {256, 512, 1024}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Both `N` and `BLOCK` are runtime scalars; `tl.constexpr` is a type annotation that affects only IDE tooling and has no impact on compilation or specialization."
+        },
+        {
+          "id": "B",
+          "text": "Both `N` and `BLOCK` trigger re-compilation on every distinct value; Triton has no notion of runtime scalar arguments."
+        },
+        {
+          "id": "C",
+          "text": "`N` is compile-time (any change re-compiles); `BLOCK` is runtime. The `tl.constexpr` marker on `BLOCK` is a hint that it is *permitted to be runtime-varying* and is optimized as a register value."
+        },
+        {
+          "id": "D",
+          "text": "`N` is a runtime scalar passed as a kernel argument; changing `N` reuses the same compiled kernel. `BLOCK: tl.constexpr` is a compile-time constant; each distinct `BLOCK` value triggers a fresh kernel compilation and produces a new specialized PTX."
+        }
+      ],
+      "assumptions": [
+        "Triton JIT specialization behavior as documented."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-CONSTMEM-036",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Constant memory",
+      "learningObjective": "Understand what CUDA constant memory is, its size limits, and when its broadcast semantics benefit performance.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any current NVIDIA architecture",
+        "device": "GPU",
+        "requiredFeatures": [
+          "64 KB constant memory per module"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about CUDA `__constant__` memory is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Constant memory is a runtime-mutable scratchpad allocated from global memory; writes are ordered with respect to `__threadfence()` and it is the standard place for per-warp temporary state."
+        },
+        {
+          "id": "B",
+          "text": "Constant memory is unlimited in size and is always the fastest memory on the GPU; it should be used in preference to shared memory whenever possible."
+        },
+        {
+          "id": "C",
+          "text": "Constant memory is a per-thread-block private cache holding read-only tensors; each block gets a fresh 64 KB copy that is invalidated between kernel invocations."
+        },
+        {
+          "id": "D",
+          "text": "`__constant__` memory is a 64 KB per-module region declared at file scope, cached in a dedicated constant cache; when all threads of a warp read the same address, the read is broadcast in a single access — most efficient for warp-uniform accesses (e.g., small lookup tables, per-block scalar parameters)."
+        }
+      ],
+      "assumptions": [
+        "Standard CUDA `__constant__` semantics."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-CORRECT-040",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / Differential correctness testing under FP non-associativity",
+      "learningObjective": "Reason about tolerance selection when a Triton kernel's reduction order differs from a reference implementation.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any current NVIDIA architecture",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP32 arithmetic"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton + PyTorch",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "K"
+          ],
+          [
+            "K",
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float32"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "You wrote a Triton FP16-in/FP32-accumulate matmul kernel and compare its FP32 output against `torch.matmul(a.float(), b.float())` (also FP32). You observe max absolute error ~5e-3 and max relative error ~1e-3 on random inputs with K=4096. Which conclusion is best supported?",
+      "codeSnippet": "# a: [M, K] FP16 row-major; b: [K, N] FP16 row-major; K = 4096\n# y = my_kernel(a, b)          # Triton kernel: FP16 in, FP32 accum, FP32 out\n# y_ref = torch.matmul(a.float(), b.float())   # FP32 reference\n#\n# Observed:\n# torch.max(torch.abs(y - y_ref)).item()                              # ~5e-3\n# torch.max(torch.abs(y - y_ref) / (torch.abs(y_ref) + 1e-6)).item()  # ~1e-3",
+      "options": [
+        {
+          "id": "A",
+          "text": "The reference `torch.matmul(a.float(), b.float())` is itself imprecise on GPU because PyTorch uses TF32 by default on Ampere; the observed error is entirely from the reference and the Triton kernel is exact."
+        },
+        {
+          "id": "B",
+          "text": "The discrepancy indicates a bug in the kernel: FP32 accumulators guarantee bit-identical output to an FP32 reference, so any deviation above the FP32 machine epsilon (~1e-7) implies an incorrect implementation."
+        },
+        {
+          "id": "C",
+          "text": "The discrepancy is consistent with expected FP16-input matmul precision: FP16 has ~11 mantissa bits (~3 decimal digits), so per-element rounding accumulates over K=4096 reductions. The observed rtol ~1e-3 is a reasonable tolerance for FP16-input GEMM against an FP32-input reference; the kernel is likely correct."
+        },
+        {
+          "id": "D",
+          "text": "The discrepancy is due to CUDA's non-determinism; the same kernel will produce a different result each run, so absolute tolerance measurement is meaningless and the test should use `torch.testing.assert_close(atol=inf, rtol=inf)` to always pass."
+        }
+      ],
+      "assumptions": [
+        "FP16 has ~11 mantissa bits (relative machine epsilon ~9.77e-4).",
+        "Random inputs with reasonable range; no NaN/inf pathologies.",
+        "K = 4096 accumulation length."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-CPASYNC-027",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / cp.async and asynchronous global-to-shared copies",
+      "learningObjective": "Understand cp.async: what it does, on which architectures, and how it enables software pipelining of GMEM→SMEM copies with compute.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "cp.async instruction (PTX)"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++ / inline PTX / Triton",
+        "compiler": "nvcc",
+        "compilerVersionScope": "CUDA 11+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement about `cp.async` (introduced in Ampere / sm_80) is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "`cp.async` issues an asynchronous copy from global memory directly to shared memory that does not pass through registers; the copy proceeds in the background while the thread continues executing, and the completion is synchronized with `cp.async.commit_group` + `cp.async.wait_group` (or higher-level barriers). This enables software-pipelined GEMM tile loads."
+        },
+        {
+          "id": "B",
+          "text": "`cp.async` is a synchronous copy that goes through registers just like a normal load-then-store; the 'async' name refers only to being callable inside asynchronous streams."
+        },
+        {
+          "id": "C",
+          "text": "`cp.async` is a Hopper-only instruction; on Ampere, all GMEM→SMEM copies must go through registers."
+        },
+        {
+          "id": "D",
+          "text": "`cp.async` copies from shared memory to global memory (the reverse direction) and is used to flush computed tiles back to HBM without blocking."
+        }
+      ],
+      "assumptions": [
+        "PTX ISA as of CUDA 11+; sm_80+ hardware."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-DIVERGE-029",
+      "type": "multiple",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Warp divergence — cost and mitigation",
+      "learningObjective": "Reason about the performance cost of intra-warp branch divergence and understand which patterns do or do not cause it.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Kepler+ (with Volta+ ITS considerations)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "warp SIMT execution"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about intra-warp branch divergence are correct? (Select all that apply.)",
+      "codeSnippet": "// Case A: divergence within a warp\nif (threadIdx.x < 16) foo(); else bar();       // lanes 0-15 vs 16-31 diverge\n\n// Case B: uniform branch across a warp\nif (blockIdx.x < 10) foo(); else bar();        // whole warp goes one way\n\n// Case C: data-dependent branch\nif (x[tid] > 0) foo(); else bar();             // may or may not diverge depending on data\n\n// Case D: predication rewrite\nfloat v = cond ? a : b;                        // no divergence; both sides may compute",
+      "options": [
+        {
+          "id": "A",
+          "text": "All conditional constructs in CUDA C++ always compile to divergent branches; the compiler never emits predicated instructions, so `?:` in Case D is exactly as slow as the diverging `if/else` in Case A."
+        },
+        {
+          "id": "B",
+          "text": "Case A causes intra-warp divergence: the warp effectively serializes into two passes (one for lanes 0-15 running `foo`, one for lanes 16-31 running `bar`), so total cost ≈ cost(foo) + cost(bar) for the divergent instructions rather than max of the two."
+        },
+        {
+          "id": "C",
+          "text": "Case B is not divergent within a warp because the branch condition depends on `blockIdx`, which is uniform across all threads of a block (and hence across each warp); the warp takes one path with no serialization."
+        },
+        {
+          "id": "D",
+          "text": "Case D (`v = cond ? a : b`) compiled to predicated instructions avoids serialization but may compute both `a` and `b` (each lane keeps the value selected by its predicate), so if `a` and `b` are expensive, predication can be slower than a well-predicted branch."
+        }
+      ],
+      "assumptions": [
+        "Standard nvcc code generation for control flow."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-DOTPROD-004",
+      "type": "multiple",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton reduction with atomic accumulation",
+      "learningObjective": "Reason about correctness, determinism, and initialization semantics of a Triton per-block partial dot-product accumulated via tl.atomic_add.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP32 global atomic add"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            1
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the Triton kernel below computing a global FP32 dot product via per-block partials accumulated with `tl.atomic_add` into a single-element output `out`. Assume `x, y` are FP32 contiguous CUDA tensors of length N, and the caller sets `out` to 0 before launching. Which of the following statements are correct? (Select all that apply.)",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef dot_prod(x_ptr, y_ptr, out_ptr, N, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    x = tl.load(x_ptr + offsets, mask=mask, other=0.0)\n    y = tl.load(y_ptr + offsets, mask=mask, other=0.0)\n    partial = tl.sum(x * y, axis=0)\n    tl.atomic_add(out_ptr, partial)\n\n# Caller:\n#   out.zero_()\n#   grid = (triton.cdiv(N, BLOCK),)\n#   dot_prod[grid](x, y, out, N, BLOCK=1024)",
+      "options": [
+        {
+          "id": "A",
+          "text": "The kernel is correct: final `out[0]` equals the sum of all partials, and `tl.atomic_add` is necessary because programs concurrently accumulate into the same address."
+        },
+        {
+          "id": "B",
+          "text": "Reduction order across programs is non-deterministic; for FP32 this can yield bitwise-different results across runs due to floating-point non-associativity."
+        },
+        {
+          "id": "C",
+          "text": "The `mask=mask, other=0.0` combination in the loads ensures tail lanes contribute 0 to `partial` (since 0 * anything = 0), preserving mask semantics through `tl.sum`."
+        },
+        {
+          "id": "D",
+          "text": "Setting `out` to a non-zero initial value has no effect on correctness because `tl.atomic_add` overwrites the previous value with each incoming partial, so only the last program's contribution determines the final result stored in memory."
+        }
+      ],
+      "assumptions": [
+        "`out` is FP32 and supports the atomic add operation on the target GPU.",
+        "The launch grid covers all elements; no lanes are skipped."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-FLASHATTN-023",
+      "type": "multiple",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / FlashAttention — tiling and IO-awareness",
+      "learningObjective": "Understand FlashAttention's core techniques (tiling, online softmax, IO-aware fusion) and what they achieve.",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (A100) tested in the paper; later versions target Hopper",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Sufficient SMEM for Q/K/V tiles"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton / CUDA",
+        "frameworkVersionScope": "FlashAttention v1/v2/v3 as noted",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "B",
+            "H",
+            "S",
+            "D"
+          ],
+          [
+            "B",
+            "H",
+            "S",
+            "D"
+          ],
+          [
+            "B",
+            "H",
+            "S",
+            "D"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "The Triton FlashAttention-forward inner loop iterates over K/V tiles for a fixed Q tile, using an online-softmax running (m, l, acc) state. Which statements about the algorithm are correct? (Select all that apply.)",
+      "codeSnippet": "# Pseudocode outline for one Q-tile Q_i (fp16, shape [BM, D]):\n#   m_i = -inf; l_i = 0; acc = zeros((BM, D), fp32)\n#   for j in range(0, S, BN):\n#       Kj = load_kv_tile(K, j)          # [BN, D]\n#       Vj = load_kv_tile(V, j)          # [BN, D]\n#       S_ij = tl.dot(Q_i, Kj.T) * scale # [BM, BN], FP32 accum\n#       m_new = max(m_i, tl.max(S_ij, axis=1))\n#       P_ij = tl.exp(S_ij - m_new[:, None])            # rescaled\n#       l_new = l_i * exp(m_i - m_new) + tl.sum(P_ij, axis=1)\n#       acc = acc * exp(m_i - m_new)[:, None] + tl.dot(P_ij.to(fp16), Vj)\n#       m_i, l_i = m_new, l_new\n#   O_i = acc / l_i[:, None]",
+      "options": [
+        {
+          "id": "A",
+          "text": "FlashAttention approximates the attention output; the paper reports lower accuracy than standard attention on long-context tasks, so it should be avoided when numerical fidelity matters."
+        },
+        {
+          "id": "B",
+          "text": "FlashAttention v1's speedup over naive attention comes entirely from replacing the softmax with a cheaper approximation (piecewise-linear exp), not from IO-awareness or tiling."
+        },
+        {
+          "id": "C",
+          "text": "By processing K/V in tiles and rescaling the running `(m, l, acc)` triple via the online-softmax recurrence, FlashAttention avoids ever materializing the [S, S] score matrix in HBM, reducing HBM traffic from O(S^2) to O(S)."
+        },
+        {
+          "id": "D",
+          "text": "The rescale factor `exp(m_i - m_new)` on `acc` is required because `acc` was previously anchored at `m_i`; the update aligns it to the new anchor `m_new` before adding the new tile's contribution, preserving exact algebra."
+        }
+      ],
+      "assumptions": [
+        "FlashAttention-forward as documented in the original paper (v1).",
+        "SMEM sufficient for tiled Q/K/V blocks."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-GEMMFP16-015",
+      "type": "multiple",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton GEMM / FP16 inputs, FP32 accumulation",
+      "learningObjective": "Reason about the FP16-in / FP32-out matmul pattern common in Triton GEMM kernels and why FP32 accumulation is used.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "tl.dot with FP32 accumulator"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "K"
+          ],
+          [
+            "K",
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "Consider the Triton GEMM inner loop below. Which statements about the `tl.dot` call and accumulator precision are correct? (Select all that apply.)",
+      "codeSnippet": "# A, B, C: FP16 row-major; K-loop accumulator = FP32\nacc = tl.zeros((BM, BN), dtype=tl.float32)\nfor k in range(0, K, BK):\n    a = tl.load(A_block_ptr)          # FP16, [BM, BK]\n    b = tl.load(B_block_ptr)          # FP16, [BK, BN]\n    acc += tl.dot(a, b, out_dtype=tl.float32)   # accumulate in FP32\n    A_block_ptr = tl.advance(A_block_ptr, (0, BK))\n    B_block_ptr = tl.advance(B_block_ptr, (BK, 0))\nc = acc.to(tl.float16)                # cast back to FP16 for storage\ntl.store(C_block_ptr, c)",
+      "options": [
+        {
+          "id": "A",
+          "text": "FP32 accumulation is only necessary in Triton; CUDA's native `wmma`/`mma.sync` APIs are limited to FP16 accumulation and cannot mix input/accumulator precisions on Ampere or Hopper."
+        },
+        {
+          "id": "B",
+          "text": "FP32 accumulation is used to avoid catastrophic loss of precision when summing many FP16 partials: FP16's ~3-decimal-digit precision cannot faithfully represent large partial sums that arise from long K-dimension reductions."
+        },
+        {
+          "id": "C",
+          "text": "On Ampere+, `tl.dot(a, b, out_dtype=tl.float32)` with FP16 inputs lowers to Tensor Core MMA instructions (mma.sync) that accept FP16 operands and produce FP32 accumulator lanes natively, matching the hardware's design."
+        },
+        {
+          "id": "D",
+          "text": "Casting `acc.to(tl.float16)` at the end is guaranteed to produce a bit-identical result to running the entire kernel in FP16 including accumulation, because FP32→FP16 rounding is a no-op when values are within FP16 range."
+        }
+      ],
+      "assumptions": [
+        "Tensor Core support on the target GPU (sm_70+).",
+        "Triton compiler lowers `tl.dot` with mixed dtypes to mma.sync when supported."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-GEMMSM-014",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA GEMM / Shared-memory tiling — tile shape and reuse",
+      "learningObjective": "Reason about the compute-to-memory ratio of a shared-memory tiled GEMM and identify how tile size affects reuse.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "shared memory ≥ 96 KB / SM"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "K"
+          ],
+          [
+            "K",
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "In a shared-memory tiled FP32 GEMM using thread-block tile size `BM × BN × BK` (with A tile `BM × BK` and B tile `BK × BN`), the number of GMEM bytes loaded per output tile and the number of FMA ops per output tile determine the arithmetic intensity. For a `128 × 128 × 32` thread-block tile, which statement is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Increasing BK from 32 to 64 halves the SMEM footprint per iteration because the A and B tiles get smaller; therefore, larger BK always improves performance."
+        },
+        {
+          "id": "B",
+          "text": "Each output tile `128 × 128` requires K/BK iterations of the K-loop. Per iteration: load 128*32*4 + 32*128*4 = 32768 B into SMEM; do 128*128*32*2 = 1_048_576 FLOPs. Per-iteration arithmetic intensity ≈ 1_048_576 / 32768 = 32 FLOPs/byte — high enough to become compute-bound on A100 FP32."
+        },
+        {
+          "id": "C",
+          "text": "The output tile requires 128*128*4 = 64 KB of registers per thread block for accumulator storage, exceeding the register file on A100; the compiler therefore spills registers to global memory, making this tile size unusable in practice."
+        },
+        {
+          "id": "D",
+          "text": "Because GEMM is memory-bound at every tile size, changing BM/BN/BK cannot alter the arithmetic intensity; the only way to increase FLOPs/byte is to switch to Tensor Cores."
+        }
+      ],
+      "assumptions": [
+        "FP32, no Tensor Cores; single-precision FLOPs on A100 ~19.5 TFLOPs; HBM ~1.5 TB/s.",
+        "One thread block computes one output tile of size 128×128."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-GEMV-013",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / GEMV — row-parallel dot product with warp reduction",
+      "learningObjective": "Analyze a CUDA GEMV kernel that assigns one warp per row and identify the memory-bandwidth bottleneck.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "warp shuffle; 128 B L2 sectors"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "K"
+          ],
+          [
+            "K"
+          ],
+          [
+            "M"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "row_major",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "The CUDA GEMV kernel below computes `y = A @ x` for a row-major FP32 matrix `A` of shape [M, K] and vector `x` of length K. Launch: `gridDim = (M,)`, `blockDim = (32,)` (one warp per row). Which statement about performance on sm_80 is correct?",
+      "codeSnippet": "// sm_80; one warp per output row; warpSize = 32\n__global__ void gemv(const float* __restrict__ A,  // [M, K] row-major\n                     const float* __restrict__ x,  // [K]\n                     float* __restrict__ y,        // [M]\n                     int M, int K) {\n    int row = blockIdx.x;\n    int lane = threadIdx.x;                 // 0..31\n    float acc = 0.0f;\n    for (int k = lane; k < K; k += 32) {\n        acc += A[row * K + k] * x[k];\n    }\n    // warp reduction (assume warp_reduce_sum is defined as in F-REDUCE-011)\n    acc = warp_reduce_sum(acc);\n    if (lane == 0) y[row] = acc;\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "GEMV is compute-bound on A100 because each thread performs a fused-multiply-add per iteration, and the multiply-add throughput on Ampere exceeds the memory throughput; therefore, larger K values improve efficiency asymptotically."
+        },
+        {
+          "id": "B",
+          "text": "Because every warp reads all of `x`, the kernel is bottlenecked by x's shared-memory bank usage; loading `x` into `__shared__` once per block would eliminate the redundant reads."
+        },
+        {
+          "id": "C",
+          "text": "The kernel is incorrect because `A[row * K + k]` with `k = lane, lane+32, ...` produces non-coalesced accesses on sm_80: consecutive lanes read addresses `K*4` bytes apart, which is bank-conflicted at the L2."
+        },
+        {
+          "id": "D",
+          "text": "GEMV is memory-bound on A100: each output element reads K FP32 values from A plus K from x for O(K) traffic and does O(K) FLOPs (arithmetic intensity ~0.25 FLOPs/byte for FP32), well below A100's compute:bandwidth balance. The kernel's per-warp stride-32 access on A gives coalesced reads within a warp; x is loaded redundantly by every row's warp."
+        }
+      ],
+      "assumptions": [
+        "One warp per output row; blockDim=32.",
+        "A100 (sm_80) memory subsystem with 128-byte L2 sectors."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-KVCACHE-024",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / KV Cache access pattern in decode-phase attention",
+      "learningObjective": "Reason about the memory-access pattern of KV Cache reads during LLM decode-phase attention.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere / Hopper",
+        "device": "GPU",
+        "requiredFeatures": [
+          "HBM bandwidth is the bottleneck"
+        ]
+      },
+      "softwareContext": {
+        "framework": "generic decode-phase attention (vLLM/TensorRT-LLM/SGLang concept)",
+        "frameworkVersionScope": "N/A (systems concept)",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "1",
+            "H",
+            "1",
+            "D"
+          ],
+          [
+            "B",
+            "H",
+            "S_kv",
+            "D"
+          ],
+          [
+            "B",
+            "H",
+            "S_kv",
+            "D"
+          ]
+        ],
+        "dtypes": [
+          "float16",
+          "float16",
+          "float16"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "During LLM decoding (one new token per step), the attention kernel loads Q (only 1 token) and reads the full KV Cache. Which statement about the memory-access pattern is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Decode-phase attention traffic is constant per token regardless of context length; the KV Cache is compressed by the hardware after each step, so HBM reads do not grow."
+        },
+        {
+          "id": "B",
+          "text": "Decode-phase attention is heavily memory-bound: for each generated token, Q is a single row while K and V (of length S_kv per sequence) must be fully read from HBM. Arithmetic intensity is very low, and per-step HBM traffic scales linearly with S_kv, growing over the sequence."
+        },
+        {
+          "id": "C",
+          "text": "The KV Cache is fully cached in L2 for any sequence length, so decoding never reads from HBM after the first step; latency is bounded by L2 hit rate."
+        },
+        {
+          "id": "D",
+          "text": "Decode-phase attention is compute-bound because MMA operations on Q and K/V dominate; the small Q tensor is negligible compared to the compute cost of the matmul."
+        }
+      ],
+      "assumptions": [
+        "Standard decode-phase attention without approximations.",
+        "S_kv exceeds L2 cache capacity for real workloads."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-LAUNCH-038",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Launch configuration limits",
+      "learningObjective": "Reason about the fixed hardware limits on grid and block dimensions and identify which configurations are legal.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100) and generally similar to modern architectures",
+        "device": "GPU",
+        "requiredFeatures": [
+          "1024 threads/block max; 65535 grid.y/z max; 2^31 - 1 grid.x max on sm_60+"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "For a compute-capability 8.0 (A100) GPU, which of the following kernel launch configurations is legal?",
+      "options": [
+        {
+          "id": "A",
+          "text": "`gridDim = (1000, 1, 1)`, `blockDim = (33, 32, 1)`. Even though `33 * 32 = 1056 > 1024`, the CUDA runtime silently truncates block dimensions to the nearest multiple of 32, so the launch succeeds with `blockDim.x = 32`."
+        },
+        {
+          "id": "B",
+          "text": "`gridDim = (1, 1, 1)`, `blockDim = (2048, 1, 1)`. This is legal because a single block can span up to 4096 threads on sm_80 as long as no shared memory is used."
+        },
+        {
+          "id": "C",
+          "text": "`gridDim = (65535, 65535, 65535)`, `blockDim = (32, 32, 1)`. `blockDim.x * blockDim.y * blockDim.z = 1024 ≤ 1024` and all grid dims are within the 65535 (y/z) / 2^31-1 (x) hardware maximum on sm_80; this is a legal launch."
+        },
+        {
+          "id": "D",
+          "text": "Grid dimensions on Ampere are hard-capped at 65535 across x, y, z; any request larger than 65535 in any dimension is rejected. This is why one-dimensional grids are always the safest choice."
+        }
+      ],
+      "assumptions": [
+        "sm_80 (A100) launch limits as documented in CUDA guide."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-LN-020",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / LayerNorm — welford / two-pass mean-variance",
+      "learningObjective": "Reason about a two-pass LayerNorm's memory-traffic cost vs a fused single-pass variant.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP32 arithmetic; block reduction"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "row_major",
+          "contiguous",
+          "contiguous",
+          "row_major"
+        ]
+      },
+      "stem": "The Triton LayerNorm kernel below is fused into a single pass per row (mean, variance, and normalization all inside one program). Which statement about this pattern is correct?",
+      "codeSnippet": "@triton.jit\ndef layer_norm(x_ptr, out_ptr, gamma_ptr, beta_ptr,\n               N: tl.constexpr, eps: tl.constexpr, BLOCK: tl.constexpr):\n    row = tl.program_id(0)\n    cols = tl.arange(0, BLOCK)\n    mask = cols < N\n    x = tl.load(x_ptr + row * N + cols, mask=mask, other=0.0)\n    mean = tl.sum(x, axis=0) / N\n    xc = x - mean\n    var = tl.sum(xc * xc, axis=0) / N\n    rstd = 1.0 / tl.sqrt(var + eps)\n    g = tl.load(gamma_ptr + cols, mask=mask, other=0.0)\n    b = tl.load(beta_ptr  + cols, mask=mask, other=0.0)\n    y = xc * rstd * g + b\n    tl.store(out_ptr + row * N + cols, y, mask=mask)\n\n# Launch: grid = (M,), one program per row, BLOCK >= N\n# x, out : FP32 row-major [M, N]",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because `1.0 / tl.sqrt(var + eps)` uses `tl.sqrt`, the kernel is guaranteed to produce bit-identical FP32 results across all NVIDIA GPUs regardless of PTX version."
+        },
+        {
+          "id": "B",
+          "text": "The fused kernel is mathematically incorrect: computing variance as `sum((x - mean)^2) / N` in one program violates the two-pass Welford requirement, and only a Welford accumulator can produce numerically stable variance."
+        },
+        {
+          "id": "C",
+          "text": "The kernel keeps the entire row in registers/SMEM across the mean and variance reductions and the final normalization, so `x` is loaded from HBM only once per row; a naive multi-pass implementation that re-reads `x` from HBM after computing mean would double the memory traffic for large M."
+        },
+        {
+          "id": "D",
+          "text": "Storing `gamma` and `beta` in `__constant__` memory would make this Triton kernel faster because Triton natively places small tensors in constant memory when their size is a `tl.constexpr`."
+        }
+      ],
+      "assumptions": [
+        "N fits in one program's tile; row-parallel design.",
+        "FP32 arithmetic."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-MMA-016",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / mma.sync — matrix operand layout and warp-level cooperation",
+      "learningObjective": "Understand the warp-cooperative nature of mma.sync and the register-fragment layout it requires.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Tensor Cores; mma.sync instruction"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++ / inline PTX",
+        "compiler": "nvcc",
+        "compilerVersionScope": "CUDA 11+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about a Tensor Core `mma.sync` instruction (e.g., `mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32`) is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "`mma.sync` reads its operands directly from global memory and writes accumulators back to global memory; register fragments are only used for the FP32 accumulator."
+        },
+        {
+          "id": "B",
+          "text": "`mma.sync` is a per-thread instruction: each of 32 lanes independently multiplies its 16×8 block by its 8×16 block, so the warp effectively performs 32 independent MMAs per cycle."
+        },
+        {
+          "id": "C",
+          "text": "`mma.sync` is a warp-cooperative instruction: all 32 threads in a warp jointly execute one MMA, each holding a fragment of the operands and accumulator in registers per a hardware-defined layout; a single thread cannot execute an mma on its own."
+        },
+        {
+          "id": "D",
+          "text": "`mma.sync` requires operands to reside in shared memory; the compiler automatically issues `ldmatrix` to fetch them and reissues the mma on every register-file eviction to avoid stalls."
+        }
+      ],
+      "assumptions": [
+        "Ampere+ mma.sync instruction set as documented in PTX ISA."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-OCC-030",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Occupancy limiters — registers, SMEM, block size",
+      "learningObjective": "Understand what limits occupancy in practice: registers per thread, shared memory per block, and threads per block.",
+      "archetype": "formula_performance",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "65536 32-bit regs/SM, 164 KB SMEM/SM, 2048 threads/SM (A100)"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "On A100 (sm_80: 65536 registers/SM, 164 KB SMEM/SM configurable, max 2048 threads/SM, max 32 blocks/SM), a kernel uses 96 registers per thread, 32 KB SMEM per block, and 256 threads per block. Which statement about the resulting occupancy per SM is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Registers per SM cap: 65536 / (96 * 256) = 2.66 → 2 blocks. SMEM per SM cap: 164 / 32 = 5.12 → 5 blocks. Thread-count cap: 2048 / 256 = 8 blocks. Block-count cap: 32 blocks. The binding constraint is registers → 2 blocks per SM → 512 active threads → 25% occupancy (relative to 2048 threads/SM peak)."
+        },
+        {
+          "id": "B",
+          "text": "Occupancy is limited by SMEM: 164 KB / 32 KB = 5 blocks. Registers and thread count are secondary. Actual occupancy is 5 * 256 / 2048 = 62.5%."
+        },
+        {
+          "id": "C",
+          "text": "The compiler automatically spills registers to prevent register pressure from limiting occupancy; therefore, the effective occupancy is 100% (8 blocks × 256 threads = 2048)."
+        },
+        {
+          "id": "D",
+          "text": "Occupancy is determined solely by block size: `2048 / 256 = 8` blocks per SM = 100% occupancy; registers and SMEM only affect performance within a block, not occupancy."
+        }
+      ],
+      "assumptions": [
+        "A100 (sm_80) hardware limits: 65536 regs/SM, 164 KB SMEM/SM (max carveout), 2048 threads/SM, 32 blocks/SM.",
+        "One kernel resident type; no concurrent kernels."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-ONLINE-021",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Online softmax — tile-wise running max and sum",
+      "learningObjective": "Understand the online softmax recurrence used to compute softmax in tiles without materializing the full row.",
+      "archetype": "code_implementation",
+      "difficulty": 4,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP32 arithmetic"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++ / Triton",
+        "frameworkVersionScope": "N/A (algorithmic)",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ],
+        "layouts": [
+          "contiguous"
+        ]
+      },
+      "stem": "The online-softmax recurrence processes a row of length N in tiles of size B (with T = N/B tiles). Let `(m_t, s_t)` be the running (max, sum-of-exp-with-max-subtracted) after tile t. Which update rule is correct when a new tile `x_new` (of size B) with local max `m_new` and local sum `s_new = sum(exp(x_new - m_new))` arrives?",
+      "codeSnippet": "// Online softmax recurrence (per row, tiled over the reduction axis)\n// Given (m_prev, s_prev) and a new tile (m_new, s_new):\n//   m = max(m_prev, m_new)\n//   s = s_prev * exp(m_prev - m) + s_new * exp(m_new - m)\n// Final: y_i = exp(x_i - m_final) / s_final for the i-th element (rescaled on read)",
+      "options": [
+        {
+          "id": "A",
+          "text": "`m = max(m_prev, m_new)`; `s = s_prev * exp(m_prev - m) + s_new * exp(m_new - m)`. The old sum is rescaled by `exp(m_prev - m)` (a value in (0, 1]) to reflect the new anchor; the new tile's sum by `exp(m_new - m)`. This is exact algebra: the merged tile is anchored at the new max."
+        },
+        {
+          "id": "B",
+          "text": "`m = m_prev + m_new` and `s = s_prev + s_new`; the recurrence is a straightforward sum-of-parts because addition is commutative and softmax is scale-invariant."
+        },
+        {
+          "id": "C",
+          "text": "`m` remains `m_prev` and `s = s_prev + s_new * exp(m_new)`; the running max is never updated after the first tile because subsequent tiles' contributions are absolutely negligible."
+        },
+        {
+          "id": "D",
+          "text": "The online softmax recurrence works only for FP16 inputs because FP32 overflows before the second rescale; the algorithm is FlashAttention-specific and not applicable to plain softmax kernels."
+        }
+      ],
+      "assumptions": [
+        "FP32 accumulation with well-behaved input ranges.",
+        "Tiles processed in some (order-agnostic) sequence."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-OTHER-009",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / tl.load `other` parameter semantics",
+      "learningObjective": "Reason precisely about the semantics of the `other` argument in `tl.load` and its interaction with masking and downstream reductions.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Triton runtime"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ],
+        "layouts": [
+          "contiguous"
+        ]
+      },
+      "stem": "You want to compute the *maximum* value of an FP32 tensor `x` of length N via a per-block reduction in Triton. Which value should be passed to `other` in `tl.load` at the tail to preserve correctness?",
+      "codeSnippet": "import triton\nimport triton.language as tl\nimport math\n\n@triton.jit\ndef block_max(x_ptr, out_ptr, N,\n              BLOCK: tl.constexpr):\n    pid = tl.program_id(0)\n    offs = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offs < N\n    x = tl.load(x_ptr + offs, mask=mask, other=???)\n    m = tl.max(x, axis=0)          # per-block max\n    tl.atomic_max(out_ptr, m)      # atomic reduction to a single output\n\n# out is initialized to -inf before launch\n# Launch: grid = (cdiv(N, BLOCK),), BLOCK = 1024, N arbitrary",
+      "options": [
+        {
+          "id": "A",
+          "text": "`other=0.0`: matches the identity for `sum`, and Triton reuses the same identity for both `sum` and `max` reductions so it is safe here too."
+        },
+        {
+          "id": "B",
+          "text": "`other=-float('inf')` (negative infinity): masked-off tail lanes contribute the identity for `max`, so they do not bias the per-block maximum upward or downward."
+        },
+        {
+          "id": "C",
+          "text": "`other=float('inf')` (positive infinity): filling with the largest float ensures tail lanes never depress the maximum, guaranteeing correctness of a `max` reduction."
+        },
+        {
+          "id": "D",
+          "text": "`other=x_ptr[0]`: repeating the first element on the tail keeps the domain of `tl.max` closed under the loaded values, avoiding out-of-domain floats like inf/NaN."
+        }
+      ],
+      "assumptions": [
+        "IEEE-754 FP32 with support for ±inf.",
+        "`tl.max` returns the maximum of the input tile."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-PERSIST-037",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Persistent kernel pattern",
+      "learningObjective": "Understand the persistent-kernel pattern: launch a fixed number of blocks equal to SM count and loop internally over work items.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Volta+ (persistent pattern common in Ampere/Hopper serving)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "work stealing via atomicAdd on a global counter"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about the 'persistent kernel' pattern is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A persistent kernel launches a fixed number of blocks (typically = SM count × blocks-per-SM) and loops internally over work items pulled from a global queue (e.g., via `atomicAdd` on a counter). It avoids repeated kernel launches for many small work items, amortizes tail-effect load imbalance, and gives the kernel authority over scheduling — at the cost of foregoing the CUDA runtime's dynamic block placement."
+        },
+        {
+          "id": "B",
+          "text": "A persistent kernel launches one block per work item (like a normal kernel) but marks it as `__persistent__` in nvcc so the runtime keeps its context resident between launches for faster subsequent invocations."
+        },
+        {
+          "id": "C",
+          "text": "A persistent kernel runs forever until the host explicitly terminates it via `cudaKillKernel`; it is used for background monitoring and cannot be used for compute pipelines."
+        },
+        {
+          "id": "D",
+          "text": "Persistent kernels require Grace-Hopper CPUs to work; on regular GPU-only nodes they behave like ordinary kernels because they rely on CPU-driven persistent state."
+        }
+      ],
+      "assumptions": [
+        "Standard CUDA runtime; a hardware-atomic-add counter is available."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-RACE-034",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Race conditions on shared memory",
+      "learningObjective": "Identify a race condition in a CUDA kernel that writes and reads shared memory without adequate synchronization.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any current NVIDIA architecture",
+        "device": "GPU",
+        "requiredFeatures": [
+          "shared memory; __syncthreads"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            256
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ],
+        "layouts": [
+          "contiguous"
+        ]
+      },
+      "stem": "The kernel below is intended to compute `y[tid] = x[tid-1] + x[tid]` (with `y[0] = x[0]`) using shared memory. Identify the correctness issue.",
+      "codeSnippet": "// blockDim.x = 256; input `x`, output `y` (both length 256)\n__global__ void shifted_add(const float* x, float* y) {\n    __shared__ float smem[256];\n    int tid = threadIdx.x;\n    smem[tid] = x[tid];\n    // (missing __syncthreads() here?)\n    if (tid == 0) y[tid] = smem[tid];\n    else          y[tid] = smem[tid - 1] + smem[tid];\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Without a `__syncthreads()` between the write `smem[tid] = x[tid]` and the read `smem[tid - 1]`, there is a race: thread `tid` may read `smem[tid - 1]` before thread `tid - 1` has written it. The fix is to insert `__syncthreads()` immediately after the shared-memory store."
+        },
+        {
+          "id": "B",
+          "text": "There is no race because thread `tid` only reads `smem[tid]` and `smem[tid - 1]`; both writes come from thread `tid - 1` and thread `tid`, which are in the same warp for `tid < 32` and therefore execute in lockstep."
+        },
+        {
+          "id": "C",
+          "text": "The kernel is incorrect because `__shared__ float smem[256]` requires an explicit `__syncthreads()` at kernel entry to initialize the shared memory to zero."
+        },
+        {
+          "id": "D",
+          "text": "The write `smem[tid] = x[tid]` is atomic per lane, so no synchronization is needed; the CUDA runtime automatically inserts a barrier before any subsequent shared-memory read."
+        }
+      ],
+      "assumptions": [
+        "blockDim.x = 256 (multi-warp block).",
+        "Modern NVIDIA GPU with ITS behavior."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-REDUCE-011",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Warp-level reduction using shuffle intrinsics",
+      "learningObjective": "Reason about a canonical CUDA warp-level reduction using __shfl_down_sync and identify why the shuffle-tree pattern is required.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Volta (sm_70) or newer with independent thread scheduling",
+        "device": "GPU",
+        "requiredFeatures": [
+          "__shfl_down_sync intrinsic; warpSize=32"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "compilerVersionScope": "CUDA 11+ (any modern nvcc)",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32"
+        ],
+        "layouts": [
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the following CUDA warp-reduction snippet inside a kernel where every thread of a warp holds a partial value in `val`. Which statement is correct?",
+      "codeSnippet": "// sm_70+; warpSize == 32\n__device__ __forceinline__ float warp_reduce_sum(float val) {\n    unsigned mask = 0xffffffff;         // all 32 lanes active\n    for (int offset = 16; offset > 0; offset >>= 1) {\n        val += __shfl_down_sync(mask, val, offset);\n    }\n    return val;                          // lane 0 holds the warp-wide sum\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "After the loop, lane 0 holds the sum of all 32 lanes' initial values via a log2(32)=5-step shuffle tree; other lanes hold partial sums that may not equal the total, so consumers must read the result only from lane 0 (or broadcast via `__shfl_sync`)."
+        },
+        {
+          "id": "B",
+          "text": "After the loop, every lane holds the full warp sum because `__shfl_down_sync` broadcasts the result to all lanes at each step."
+        },
+        {
+          "id": "C",
+          "text": "The reduction is incorrect on Volta+ because Independent Thread Scheduling makes lanes potentially diverge; the correct pattern must use `__syncwarp()` between every shuffle to guarantee lane convergence."
+        },
+        {
+          "id": "D",
+          "text": "`__shfl_down_sync(mask, val, offset)` is a memory operation that reads from shared memory addressed by `offset`; using it for reductions is inefficient compared to atomic operations in shared memory."
+        }
+      ],
+      "assumptions": [
+        "warpSize=32 on NVIDIA architectures.",
+        "All 32 lanes are active (mask=0xffffffff)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-REGSPILL-031",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Register spill and local memory",
+      "learningObjective": "Understand what CUDA 'local memory' actually is and when register spilling occurs.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any current NVIDIA architecture",
+        "device": "GPU",
+        "requiredFeatures": [
+          "per-thread local memory (backed by L1/L2/DRAM)"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "In CUDA, when nvcc reports register spilling to 'local memory', which statement is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "'Local memory' in CUDA is per-thread private storage that lives in global memory (backed by L1 / L2 / DRAM), not on-chip; spilled registers therefore incur high-latency accesses through the memory hierarchy, and heavy spilling typically kills performance."
+        },
+        {
+          "id": "B",
+          "text": "'Local memory' is a small dedicated on-chip cache (~4 KB per thread) that is faster than shared memory; register spills into it are essentially free and do not affect kernel throughput."
+        },
+        {
+          "id": "C",
+          "text": "'Local memory' is the same physical memory as shared memory; the compiler decides at build time which lanes get 'local' vs 'shared' slots, and spilling only affects certain warps."
+        },
+        {
+          "id": "D",
+          "text": "Register spilling never happens because nvcc emits a compile error whenever a kernel would exceed the per-thread register budget; kernels only compile when the register file is sufficient."
+        }
+      ],
+      "assumptions": [
+        "Standard CUDA memory model as documented since CUDA 1.0."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-RMS-005",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton RMSNorm / Launch configuration and register pressure",
+      "learningObjective": "Reason about the register/SMEM footprint of a row-parallel Triton RMSNorm kernel and how BLOCK sizing affects occupancy.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80, A100) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "shared memory / register file for row-parallel reductions"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N"
+          ],
+          [
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the Triton row-parallel RMSNorm kernel below launched with `grid = (M,)` (one program per row), BLOCK=4096, N=4096. Which assessment is correct?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef rms_norm(x_ptr, out_ptr, weight_ptr,\n             N: tl.constexpr, eps: tl.constexpr, BLOCK: tl.constexpr):\n    row = tl.program_id(0)\n    cols = tl.arange(0, BLOCK)\n    mask = cols < N\n    x = tl.load(x_ptr + row * N + cols, mask=mask, other=0.0)\n    var = tl.sum(x * x, axis=0) / N\n    rstd = 1.0 / tl.sqrt(var + eps)\n    w = tl.load(weight_ptr + cols, mask=mask, other=0.0)\n    y = x * rstd * w\n    tl.store(out_ptr + row * N + cols, y, mask=mask)\n\n# Launch: grid = (M,), BLOCK = 4096\n# x, out : FP32 contiguous, shape [M, N]; weight : FP32 shape [N]; N = 4096",
+      "options": [
+        {
+          "id": "A",
+          "text": "The kernel is incorrect because `tl.sum(x * x, axis=0)` requires its own explicit `mask` argument to zero out invalid lanes; without it, tail lanes contribute stale register values and bias the computed variance upwards."
+        },
+        {
+          "id": "B",
+          "text": "Each program handles one row by loading all `N=4096` FP32 elements into registers/SRAM (~16 KB); this constrains occupancy since the full row lives in one program's tile."
+        },
+        {
+          "id": "C",
+          "text": "With `BLOCK = N = 4096` the mask is always True, so removing `other=0.0` improves performance by roughly 20% by skipping a redundant predicate check that Triton would otherwise emit on every lane of the load."
+        },
+        {
+          "id": "D",
+          "text": "`1.0 / tl.sqrt(var + eps)` is guaranteed to be lowered to a `rcpsqrt` PTX instruction that produces bit-identical FP32 results across all NVIDIA architectures, since PTX reciprocal-square-root is an IEEE-strict operation."
+        }
+      ],
+      "assumptions": [
+        "N=4096 fits within one program's tile; larger N would require a two-pass reduction or online-softmax-style algorithm.",
+        "FP32 accumulation of `x * x` is used; FP16 inputs would motivate an FP32 upcast."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-SCAN-012",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Prefix scan (Hillis-Steele vs Blelloch)",
+      "learningObjective": "Distinguish work-inefficient (Hillis-Steele) from work-efficient (Blelloch) parallel prefix-scan algorithms.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "sm_70+",
+        "device": "GPU",
+        "requiredFeatures": [
+          "shared memory"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "int32"
+        ],
+        "layouts": [
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the two parallel inclusive-scan patterns below over a warp/block of N=32 threads. Which statement about the two algorithms is correct?",
+      "codeSnippet": "// Hillis-Steele (inclusive scan, log N steps, N*log N work)\n// for offset = 1, 2, 4, 8, 16:\n//     __syncthreads();\n//     if (tid >= offset)  temp = data[tid] + data[tid - offset];\n//     __syncthreads();\n//     if (tid >= offset)  data[tid] = temp;\n\n// Blelloch (up-sweep + down-sweep, 2 log N steps, ~2N work)\n// up-sweep:\n//   for stride = 1, 2, 4, 8:\n//     if ((tid+1) % (2*stride) == 0) data[tid] += data[tid - stride];\n// down-sweep:\n//   data[N-1] = 0  (for exclusive scan)\n//   for stride = 8, 4, 2, 1: reverse pattern with swap",
+      "options": [
+        {
+          "id": "A",
+          "text": "Hillis-Steele has depth O(log N) but does O(N log N) work; Blelloch has depth O(log N) and does O(N) work. Blelloch is 'work-efficient': asymptotically fewer operations, but its access pattern is more complex and often needs bank-conflict-avoiding padding on shared memory."
+        },
+        {
+          "id": "B",
+          "text": "Both algorithms have identical work and depth; the choice between them is purely stylistic and yields identical performance on all NVIDIA architectures."
+        },
+        {
+          "id": "C",
+          "text": "Hillis-Steele produces the correct output only when the reduction operator is commutative; Blelloch works for any operator. This is why Hillis-Steele is deprecated for FP addition (non-associative)."
+        },
+        {
+          "id": "D",
+          "text": "Blelloch has depth O(N/2) and work O(N); it is faster than Hillis-Steele on serial architectures but not on GPUs, where Hillis-Steele's O(N log N) work is preferred."
+        }
+      ],
+      "assumptions": [
+        "Both algorithms use shared memory with `__syncthreads()`.",
+        "N is a power of two."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-SOFTMAX-019",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Softmax — numerical stability (subtract max)",
+      "learningObjective": "Understand why the numerically stable softmax subtracts the row maximum before exponentiation.",
+      "archetype": "code_implementation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "FP32 arithmetic"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "The Triton row-parallel softmax kernel below computes `y[m, :] = softmax(x[m, :])`. Which statement about the design is correct?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef softmax_row(x_ptr, y_ptr, M, N,\n                stride_m, stride_n,\n                BLOCK: tl.constexpr):\n    row = tl.program_id(0)\n    cols = tl.arange(0, BLOCK)\n    mask = cols < N\n    # Load row into registers\n    x = tl.load(x_ptr + row * stride_m + cols * stride_n,\n                mask=mask, other=-float('inf'))\n    # (1) Subtract row max for stability\n    x_max = tl.max(x, axis=0)\n    x = x - x_max\n    # (2) Exp and sum\n    e = tl.exp(x)\n    s = tl.sum(e, axis=0)\n    y = e / s\n    tl.store(y_ptr + row * stride_m + cols * stride_n, y, mask=mask)\n\n# Launch: grid=(M,), BLOCK >= N (single-block-per-row)\n# x, y: FP32 row-major [M, N]",
+      "options": [
+        {
+          "id": "A",
+          "text": "Using `other=-float('inf')` for masked lanes causes the max computation to include -inf and biases `x_max` downward, so real softmax kernels must use `other=0.0` and add a separate `_valid_count` normalization step."
+        },
+        {
+          "id": "B",
+          "text": "Subtracting `x_max` speeds up the kernel by ~2x on Ampere because Triton uses a fast-path `exp` that only runs on inputs in [-1, 0]; without the subtraction, the slow-path is invoked."
+        },
+        {
+          "id": "C",
+          "text": "Subtracting `x_max` from every element is a mathematical identity for softmax (numerator and denominator both scale by e^{-x_max}); the transform prevents `tl.exp(x)` from overflowing when `x` contains large values (FP32 `exp` overflows around x ≈ 88.7)."
+        },
+        {
+          "id": "D",
+          "text": "The subtraction is required for correctness because `tl.exp` returns undefined values for any input greater than 0; softmax's mathematical definition assumes all inputs are non-positive."
+        }
+      ],
+      "assumptions": [
+        "FP32 arithmetic on IEEE-754 hardware.",
+        "`tl.exp` is the standard IEEE-consistent expf approximation."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-STREAM-026",
+      "type": "multiple",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Stream, Event, and asynchronous ordering",
+      "learningObjective": "Understand CUDA stream ordering semantics and how events synchronize across streams.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Kepler or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "multi-stream engine"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about CUDA streams and events are correct? (Select all that apply.)",
+      "codeSnippet": "cudaStream_t s1, s2;\ncudaStreamCreate(&s1); cudaStreamCreate(&s2);\ncudaEvent_t e;\ncudaEventCreate(&e);\n\n// (1) Kernels launched on the same stream run in issued order:\nkA<<<..., s1>>>(...);\nkB<<<..., s1>>>(...);   // B waits for A on same stream\n\n// (2) Cross-stream sync via events:\nkC<<<..., s1>>>(...);\ncudaEventRecord(e, s1);           // event fires when C completes on s1\ncudaStreamWaitEvent(s2, e, 0);    // s2 stalls until e fires\nkD<<<..., s2>>>(...);             // D on s2, ordered after C on s1\n\n// (3) Default stream (0) behavior depends on --default-stream compile flag",
+      "options": [
+        {
+          "id": "A",
+          "text": "All non-default streams block each other by default; concurrent execution across streams requires an explicit `cudaSetStreamPriority(concurrent=true)` call before use."
+        },
+        {
+          "id": "B",
+          "text": "`cudaEventRecord` is a synchronous host operation that returns only after the event has been observed by the device; it blocks the calling CPU thread."
+        },
+        {
+          "id": "C",
+          "text": "Kernels launched on the same non-default stream execute in program order; kernels on different streams may execute concurrently subject to resource availability."
+        },
+        {
+          "id": "D",
+          "text": "`cudaEventRecord(e, s1)` followed by `cudaStreamWaitEvent(s2, e, 0)` makes any subsequent work on `s2` wait until the event fires (i.e., until all work enqueued on `s1` before the record has completed), enabling cross-stream dependencies without blocking the host thread."
+        }
+      ],
+      "assumptions": [
+        "Standard CUDA runtime semantics as documented.",
+        "Default stream = 0 behavior is per-thread or legacy depending on compile flag; question focuses on non-default streams."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-TCORE-018",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Tensor Core / dtypes and per-architecture support",
+      "learningObjective": "Understand which Tensor Core dtypes are supported on which NVIDIA architectures and how throughput scales.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Volta / Turing / Ampere / Hopper",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Tensor Core generation-dependent dtypes"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "compilerVersionScope": "CUDA 12+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement about Tensor Core dtype support across NVIDIA architectures is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Tensor Cores support only FP16; other 'Tensor Core dtypes' (BF16, TF32, INT8, FP8) are software emulations built on the FP16 hardware path."
+        },
+        {
+          "id": "B",
+          "text": "All Tensor Core dtypes (FP16, BF16, TF32, INT8, FP8) have been supported since Volta; the throughput is identical across all NVIDIA architectures for a given dtype."
+        },
+        {
+          "id": "C",
+          "text": "Tensor Cores were introduced with Volta (sm_70) supporting FP16 with FP16/FP32 accumulate; Turing (sm_75) added INT8/INT4; Ampere (sm_80) added TF32, BF16, and FP64 Tensor Cores; Hopper (sm_90) added FP8 (E4M3/E5M2) and improved throughput. Not every dtype is on every architecture; kernels must be conditionalized on `__CUDA_ARCH__`."
+        },
+        {
+          "id": "D",
+          "text": "FP8 Tensor Cores exist on every Ampere GPU; Hopper only added higher clock speeds without introducing new numeric formats to the Tensor Core."
+        }
+      ],
+      "assumptions": [
+        "NVIDIA architecture history through 2025 as documented in whitepapers."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-TEXTURE-035",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Texture and __ldg (read-only) path",
+      "learningObjective": "Understand what the texture / read-only cache path provides and when it is beneficial.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Kepler and newer (Kepler introduced read-only path; texture cache older)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "read-only cache / __ldg intrinsic; texture object API"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about the CUDA texture / read-only cache path (accessed via `__ldg`, texture objects, or `__restrict__` const pointers) is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The texture cache is faster than shared memory for all access patterns; users should therefore always convert `__shared__` allocations to texture-bound arrays for peak performance."
+        },
+        {
+          "id": "B",
+          "text": "The read-only path routes global-memory loads through a separate cache (historically the texture cache) that is optimized for read-only, spatially-local data; it can improve L1 pressure and bandwidth for read-only inputs (e.g., weight matrices), and is triggered by `__ldg` or by loading through `const T* __restrict__` pointers on Kepler and later."
+        },
+        {
+          "id": "C",
+          "text": "`__ldg` is a synchronous host-side intrinsic that pre-copies data from device global memory to host DRAM; using it inside a kernel produces undefined behavior."
+        },
+        {
+          "id": "D",
+          "text": "The read-only path bypasses coherence; using it on data that another kernel wrote in the same stream will always return stale values, so it should only be used for compile-time-constant arrays."
+        }
+      ],
+      "assumptions": [
+        "Kepler+ architectures where `__ldg` is available."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-TLPGM-006",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / program_id and 2D launch grid",
+      "learningObjective": "Reason about how a 2D Triton launch grid maps to `tl.program_id(axis=0)` and `axis=1` and how to compute per-program tile bases.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere (sm_80) or newer",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Triton runtime with PTX backend"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            "M",
+            "N"
+          ],
+          [
+            "M",
+            "N"
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "row_major",
+          "row_major"
+        ]
+      },
+      "stem": "The 2D Triton kernel below copies a row-major FP32 tensor of shape [M, N] with M=2048, N=1024. Launch: `grid = (triton.cdiv(M, BM), triton.cdiv(N, BN))`, `BM=32`, `BN=128`. Which statement about program (pid_m=17, pid_n=3) is correct?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef copy2d(in_ptr, out_ptr, M, N,\n           stride_m, stride_n,\n           BM: tl.constexpr, BN: tl.constexpr):\n    pid_m = tl.program_id(axis=0)\n    pid_n = tl.program_id(axis=1)\n    offs_m = pid_m * BM + tl.arange(0, BM)\n    offs_n = pid_n * BN + tl.arange(0, BN)\n    mask_m = offs_m < M\n    mask_n = offs_n < N\n    # Row-major addressing: element (i,j) at stride_m*i + stride_n*j\n    ptrs_in  = in_ptr  + offs_m[:, None] * stride_m + offs_n[None, :] * stride_n\n    ptrs_out = out_ptr + offs_m[:, None] * stride_m + offs_n[None, :] * stride_n\n    mask = mask_m[:, None] & mask_n[None, :]\n    x = tl.load(ptrs_in, mask=mask, other=0.0)\n    tl.store(ptrs_out, x, mask=mask)\n\n# Launch: grid = (cdiv(M, BM), cdiv(N, BN)), BM=32, BN=128\n# M=2048, N=1024, row-major FP32, stride_m=N=1024, stride_n=1",
+      "options": [
+        {
+          "id": "A",
+          "text": "Program (17, 3) copies the tile rows `[17*32 .. 17*32+31]` and columns `[3*128 .. 3*128+127]`, i.e., rows 544..575 and columns 384..511; all lanes are in-bounds (since M=2048>575 and N=1024>511), so the mask is uniformly True and no lanes are skipped."
+        },
+        {
+          "id": "B",
+          "text": "Program (17, 3) copies rows 17..48 and columns 3..130 because `pid_m * BM + arange(0, BM)` is interpreted as `(pid_m + arange)` due to Python operator precedence in the Triton JIT frontend."
+        },
+        {
+          "id": "C",
+          "text": "Because `stride_n=1`, the pointer expression `offs_n[None, :] * stride_n` degenerates to a scalar; only column 0 is copied for each row in program (17, 3)."
+        },
+        {
+          "id": "D",
+          "text": "The `mask_m[:, None] & mask_n[None, :]` combination produces a 1D mask of length `BM+BN`; Triton then broadcasts it back to 2D during `tl.load`, which is why passing a 2D mask is redundant."
+        }
+      ],
+      "assumptions": [
+        "Row-major FP32 layout with `stride_m = N`, `stride_n = 1`.",
+        "Triton indexing broadcast semantics as documented in the language reference."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-TRITON-001",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "Triton / Mask and boundary handling",
+      "learningObjective": "Reason about how Triton's tl.load/tl.store mask semantics handle out-of-bounds lanes at the tail of a block-tiled kernel.",
+      "archetype": "code_implementation",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Ampere or newer (sm_80+)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "Triton runtime with LLVM/PTX backend"
+        ]
+      },
+      "softwareContext": {
+        "framework": "Triton",
+        "frameworkVersionScope": "Triton 2.2 ~ 3.0",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "tensorContext": {
+        "shapes": [
+          [
+            1000000
+          ],
+          [
+            1000000
+          ],
+          [
+            1000000
+          ]
+        ],
+        "dtypes": [
+          "float32",
+          "float32",
+          "float32"
+        ],
+        "layouts": [
+          "contiguous",
+          "contiguous",
+          "contiguous"
+        ]
+      },
+      "stem": "Consider the Triton vector-add kernel below launched with grid = (triton.cdiv(N, BLOCK),), BLOCK=1024, N=1_000_000, and 1-D contiguous FP32 CUDA inputs `x`, `y`, `out` of length N. Which statement about the last program (pid = 976) is correct?",
+      "codeSnippet": "import triton\nimport triton.language as tl\n\n@triton.jit\ndef add_kernel(x_ptr, y_ptr, out_ptr, N, BLOCK: tl.constexpr):\n    pid = tl.program_id(axis=0)\n    offsets = pid * BLOCK + tl.arange(0, BLOCK)\n    mask = offsets < N\n    x = tl.load(x_ptr + offsets, mask=mask, other=0.0)\n    y = tl.load(y_ptr + offsets, mask=mask, other=0.0)\n    tl.store(out_ptr + offsets, x + y, mask=mask)\n\n# Launch: grid = (triton.cdiv(N, BLOCK),), BLOCK = 1024, N = 1_000_000\n# For pid = 976: base = 976 * 1024 = 999_424; offsets = 999_424 .. 1_000_447\n# Valid lanes: offsets 999_424 .. 999_999 (576 lanes); OOB: 1_000_000 .. 1_000_447 (448 lanes)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because `BLOCK` is a `tl.constexpr`, the mask is fully constant-folded at compile time and lanes with `offsets >= N` still incur memory traffic identical to the non-tail programs, so tail masking provides no bandwidth savings."
+        },
+        {
+          "id": "B",
+          "text": "The last program reads 448 out-of-bounds addresses which produce undefined values, but even without a mask `tl.load` would remain safe because Triton performs implicit bounds checking on every load operation before dereferencing."
+        },
+        {
+          "id": "C",
+          "text": "The `mask` argument affects only the store; the load always performs 1024 contiguous global-memory transactions and will read past the end of the tensor whenever `pid * BLOCK + BLOCK > N` on the last program."
+        },
+        {
+          "id": "D",
+          "text": "Tail lanes with `offsets >= N` (448 lanes here) skip the load (using `other=0.0`) and skip the store thanks to `mask`; no OOB access occurs and those lanes are no-ops."
+        }
+      ],
+      "assumptions": [
+        "The pointers `x_ptr`, `y_ptr`, `out_ptr` correspond to tensors of length exactly N (no padding beyond).",
+        "Triton version implements `mask`/`other` as documented in the language reference."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-WARP-028",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / Warp size, warp scheduling, and SIMT execution",
+      "learningObjective": "Reason about warp granularity: how threads are grouped into warps and how a warp is scheduled as a single instruction issue unit.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "any current NVIDIA architecture",
+        "device": "GPU",
+        "requiredFeatures": [
+          "warpSize=32; warp scheduler per SM"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about NVIDIA warp execution is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A warp is a group of 32 threads (`warpSize == 32`) that the SM schedules as a single instruction issue unit; all 32 lanes execute the same instruction on their respective data (SIMT), with per-lane predication used when a branch would otherwise diverge."
+        },
+        {
+          "id": "B",
+          "text": "Warp size is architecture-dependent and has ranged from 16 to 128 across NVIDIA generations; portable kernels should query `blockDim.x % warpSize == 0` at runtime and adapt block dimensions accordingly."
+        },
+        {
+          "id": "C",
+          "text": "Warps are software-only abstractions imposed by nvcc for readability; the underlying hardware schedules individual threads independently, and warp-level primitives (shuffles, votes) are software emulations."
+        },
+        {
+          "id": "D",
+          "text": "Threads in a warp are scheduled in a round-robin order at instruction granularity; even for non-divergent code, each thread of the warp takes 32 cycles to complete one instruction."
+        }
+      ],
+      "assumptions": [
+        "NVIDIA CUDA GPUs (as opposed to hypothetical wave-64 architectures like AMD)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "F-WMMA-017",
+      "type": "single",
+      "module": "cuda_triton_kernel",
+      "subtopic": "CUDA / WMMA C++ API vs mma.sync PTX",
+      "learningObjective": "Distinguish the CUDA C++ WMMA API from raw mma.sync PTX and understand which layer each occupies.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "Volta (sm_70) and later",
+        "device": "GPU",
+        "requiredFeatures": [
+          "nvcuda::wmma; PTX mma.sync"
+        ]
+      },
+      "softwareContext": {
+        "framework": "CUDA C++",
+        "compiler": "nvcc",
+        "compilerVersionScope": "CUDA 11+",
+        "verifiedAt": "2026-07-26",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about `nvcuda::wmma` (CUDA C++ API) vs raw `mma.sync` (PTX) is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "`wmma` is Volta-only; on Ampere+ users must switch to a completely different API called `cuda::mma`, which is unrelated to `nvcuda::wmma`."
+        },
+        {
+          "id": "B",
+          "text": "`wmma` and `mma.sync` are mutually exclusive: a kernel using `wmma` cannot invoke `mma.sync`, and vice versa; the compiler will reject any mixture."
+        },
+        {
+          "id": "C",
+          "text": "`nvcuda::wmma` is a higher-level C++ template API (fragment types, load/store/mma functions) that abstracts the fragment layout and typically compiles down to sequences of `mma.sync` and `ldmatrix` PTX; using raw `mma.sync` gives finer control over shape, layout, and fragment reuse, and is the path used by high-performance libraries like CUTLASS."
+        },
+        {
+          "id": "D",
+          "text": "`mma.sync` PTX exists only for debugging; production kernels are required to use `wmma` because PTX is not guaranteed to be stable across CUDA versions."
+        }
+      ],
+      "assumptions": [
+        "CUDA 11+ toolchain."
+      ],
+      "version": 1
+    }
+  ]
+}

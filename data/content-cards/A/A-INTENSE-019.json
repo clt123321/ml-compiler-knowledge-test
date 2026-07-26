@@ -1,0 +1,49 @@
+{
+  "questionId": "A-INTENSE-019",
+  "learningObjective": "Quantify how batch size increases arithmetic intensity from GEMV to GEMM regime for weight-shared linear layers.",
+  "canonicalClaims": [
+    {
+      "claim": "For a linear layer Y = X · W with weight W streamed once per launch, arithmetic intensity is approximately linear in the batch/token dimension B while the weight-byte term dominates, transitioning from GEMV-like (AI ≈ 1) at B = 1 to compute-bound (AI ≫ ridge) at moderate B on modern GPUs.",
+      "conditions": [
+        "Weight W is streamed once from HBM per launch (no persistent-kernel weight caching).",
+        "AI measured against HBM bytes moved.",
+        "B remains small enough that the weight term still dominates bytes moved."
+      ],
+      "nonImplications": [
+        "Does not imply AI grows without bound; large B eventually shifts bytes-moved toward activations.",
+        "Does not imply achieving compute-bound classification automatically yields peak throughput."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "GEMV/GEMM transition, batching effect on AI" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Arithmetic intensity decreases with batch size because more activations traverse HBM.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "In small-B regimes the weight bytes dominate; FLOPs scale with B while weight bytes are constant, so AI increases with B.",
+      "sourceOrEvidence": "PMPP4 GEMM chapter"
+    },
+    {
+      "claim": "AI is invariant in B because FLOPs and bytes both scale linearly with B.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Weight bytes are B-independent for a shared weight; only activation bytes scale with B. Overall bytes = O(K·N + B·(K+N)), giving AI ≈ B while the K·N term dominates.",
+      "sourceOrEvidence": "PMPP4"
+    },
+    {
+      "claim": "Larger batches always push into the compute-bound regime.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For very small K or N, or when W does not dominate bytes moved, batching alone may not cross the ridge point.",
+      "sourceOrEvidence": "Roofline analysis"
+    }
+  ],
+  "implementationFacts": [
+    "AI ≈ (2·B·K·N) / (2·K·N + 4·B·K) for K=N linear layer FP16.",
+    "For K=N=4096: AI ≈ B while B ≪ K/2; crosses A100 FP16 ridge (~156) around B ~ 200."
+  ],
+  "performanceScenarios": [
+    "LLM decode (B=1 per request) is GEMV-like; prefill (B = many tokens) is GEMM-like. Continuous batching in serving systems raises effective B to move decode into GEMM regime."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,60 @@
+{
+  "questionId": "I-FFT-023",
+  "learningObjective": "Reason about the memory and compute characteristics of FFT and related transforms as custom operators inside ML models.",
+  "canonicalClaims": [
+    {
+      "claim": "Cooley-Tukey FFT of length N has O(N log N) compute organized in log N butterfly stages; each stage reads/writes O(N) elements with small per-element flops, making large-N FFT bandwidth-bound on GPU.",
+      "conditions": [
+        "N is a power of two for radix-2 FFT.",
+        "cuFFT-class implementation is used."
+      ],
+      "nonImplications": [
+        "Does not imply FFT beats direct methods for small N."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "FFT on GPU" }
+      ]
+    },
+    {
+      "claim": "FFT-based convolution (via the convolution theorem) is competitive with direct convolution when the kernel is large enough; the FFT approach cost O((N+K) log(N+K)) crosses over direct O(N*K) as K grows.",
+      "conditions": [
+        "Real-valued convolution can use R2C FFT to save ~2x.",
+        "Sequence length N is fixed by the workload."
+      ],
+      "nonImplications": [
+        "Does not imply FFT-based convolution is exact; rounding differs from direct."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Frequency-domain convolutions" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FFT is bit-exact because Parseval preserves L2 norm.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Parseval is an identity in exact arithmetic; twiddle factors are irrational and round in FP.",
+      "sourceOrEvidence": "Numerical analysis of FFT"
+    },
+    {
+      "claim": "FFT is compute-bound because it has O(N log N) flops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Per stage, flops per element are small and constant; memory bandwidth dominates.",
+      "sourceOrEvidence": "cuFFT performance analysis"
+    },
+    {
+      "claim": "FFT-based convolution is always faster than direct convolution.",
+      "errorType": "overgeneralization",
+      "whyWrong": "There is a kernel-size crossover; small kernels favor direct.",
+      "sourceOrEvidence": "Convolution algorithm literature"
+    }
+  ],
+  "implementationFacts": [
+    "cuFFT provides highly-tuned radix-N kernels for common N.",
+    "FlashFFTConv, S4/S5 SSMs, and Hyena rely on FFT-based long-range convolutions."
+  ],
+  "performanceScenarios": [
+    "Real-input R2C FFT halves compute and memory vs full complex FFT."
+  ],
+  "versionSensitivity": "stable_principle"
+}

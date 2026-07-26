@@ -1,0 +1,100 @@
+{
+  "id": "H-MIXED-023",
+  "type": "multiple",
+  "module": "quantization",
+  "subtopic": "Mixed precision / Master weights / Accumulation dtype",
+  "learningObjective": "Explain the master-weight pattern in mixed-precision DNN training and the roles of the various dtypes.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper",
+    "device": "GPU",
+    "requiredFeatures": [
+      "FP16/BF16 Tensor Core"
+    ]
+  },
+  "softwareContext": {
+    "framework": "PyTorch autocast + GradScaler",
+    "frameworkVersionScope": "PyTorch 2.0 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Standard mixed-precision (FP16 with FP32 master weights) DNN training on GPU has several dtype roles. Which of the following statements are TRUE? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "For FP16 training, dynamic loss scaling multiplies the loss by a factor before backward and unscales the gradients before optimizer step; this shifts gradient magnitudes into FP16's representable range and avoids underflow."
+    },
+    {
+      "id": "B",
+      "text": "Because BF16 has the same exponent range as FP32, BF16 mixed-precision training never needs FP32 master weights — production frameworks (Megatron-LM, DeepSpeed, NeMo) run the optimizer state in pure BF16 with no accuracy penalty."
+    },
+    {
+      "id": "C",
+      "text": "The forward pass runs matmuls in FP16 on Tensor Cores; the accumulator inside each matmul is FP32; the output is cast to FP16 for the next op."
+    },
+    {
+      "id": "D",
+      "text": "The optimizer maintains a FP32 copy of the weights ('master weights') and applies updates to them; the FP32 weights are then cast to FP16 for the forward pass. This preserves accumulated small-magnitude gradients that would round to zero in FP16."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "Options A, C, D are correct; option B is incorrect. A (Correct): loss scaling for FP16 underflow. B (Wrong): BF16 has FP32 exponent range so **loss scaling** is not required — that part is correct in the literature. But FP32 **master weights and FP32 optimizer state (moments)** are still standard practice in production BF16 training (Megatron-LM, DeepSpeed BF16 optimizer, NeMo) to prevent small weight-update underflow into BF16 mantissa noise. Running the optimizer purely in BF16 does incur measurable convergence degradation for LLM-scale training. C (Correct): matmul dtype roles. D (Correct): master-weight rationale.",
+  "optionExplanations": {
+    "A": "Correct: loss scaling for FP16 underflow.",
+    "B": "Wrong: BF16 has FP32 exponent range so **loss scaling** is not required — that part is correct in the literature. But FP32 **master weights and FP32 optimizer state (moments)** are still standard practice in production BF16 training (Megatron-LM, DeepSpeed BF16 optimizer, NeMo) to prevent small weight-update underflow into BF16 mantissa noise. Running the optimizer purely in BF16 does incur measurable convergence degradation for LLM-scale training.",
+    "C": "Correct: matmul dtype roles.",
+    "D": "Correct: master-weight rationale."
+  },
+  "assumptions": [
+    "Standard mixed-precision training as implemented in PyTorch autocast + GradScaler or Megatron / DeepSpeed."
+  ],
+  "nonImplications": [
+    "Does not imply optimizer state (moments) are always FP32 — some methods (e.g., 8-bit optimizers, LAMB) use lower precision optimizer state.",
+    "Does not imply BF16 always achieves the same convergence as FP32 — very small learning-rate schedules may require FP32."
+  ],
+  "misconceptionTags": [
+    "bf16_no_master_weights",
+    "master_weights_double_memory"
+  ],
+  "distractorRationales": {
+    "B": "Misstates BF16 practice."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Mixed-precision training guide",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Mixed-precision training",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "PyTorch mixed-precision training dtype roles",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/H/H-MIXED-023.json",
+  "reviewStatus": "draft",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

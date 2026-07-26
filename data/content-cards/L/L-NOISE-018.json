@@ -1,0 +1,47 @@
+{
+  "questionId": "L-NOISE-018",
+  "learningObjective": "Choose a robust statistic (median or a percentile) rather than mean when reporting kernel latency in the presence of outliers.",
+  "canonicalClaims": [
+    {
+      "claim": "Latency distributions are typically right-skewed with sparse outliers; the median (or a trimmed mean) is more representative of steady-state behavior than the arithmetic mean, and tail percentiles (p95/p99) are essential for tail-sensitive workloads.",
+      "conditions": [
+        "Small-N samples with visible outliers.",
+        "Goal is to summarize typical steady-state performance."
+      ],
+      "nonImplications": [
+        "Does not imply mean is worthless; for throughput calculations it can be appropriate.",
+        "Does not imply p99 is meaningless; it is essential for SLOs but not as a stand-alone summary."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Timing methodology" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Mean is always the standard summary statistic.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Mean is not robust to right-skewed distributions common in latency.",
+      "sourceOrEvidence": "Robust statistics"
+    },
+    {
+      "claim": "p99 from 20 samples is a stable statistic.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "With small N, extreme percentiles are dominated by 1-2 samples and are noisy.",
+      "sourceOrEvidence": "Percentile estimation basics"
+    },
+    {
+      "claim": "std deviation is a full percentile encoder under normality.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Latency distributions are typically not normal; the assumption fails.",
+      "sourceOrEvidence": "SRE latency-measurement literature"
+    },
+    {
+      "claim": "Warmup eliminates all outliers.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Even post-warmup, page faults, GC and driver events can produce outliers.",
+      "sourceOrEvidence": "Standard benchmarking practice"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

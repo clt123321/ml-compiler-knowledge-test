@@ -1,0 +1,49 @@
+{
+  "questionId": "F-OCC-030",
+  "learningObjective": "Reason about occupancy: it is the minimum over registers, SMEM, threads/SM, and blocks/SM limits.",
+  "canonicalClaims": [
+    {
+      "claim": "GPU occupancy per SM is the minimum of resource limits: (i) registers per SM / (regs-per-thread * threads-per-block), (ii) SMEM per SM / SMEM-per-block, (iii) threads per SM / threads-per-block, (iv) blocks-per-SM cap. On A100 with regs=96, threads=256, SMEM=32 KB, register cap dominates at 2 blocks/SM.",
+      "conditions": ["A100 sm_80 hardware limits; single kernel resident."],
+      "nonImplications": [
+        "Does not imply higher occupancy is always better.",
+        "Does not imply nvcc auto-spills registers to raise occupancy."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Compute Capability 8.0 resource table" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "SMEM is always the binding limiter.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Registers, threads/SM, or block count can dominate depending on kernel.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "nvcc automatically spills registers to global memory to raise occupancy.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Register limits are set by user (`-maxrregcount`, `__launch_bounds__`); nvcc does not silently spill for occupancy.",
+      "sourceOrEvidence": "CUDA best practices"
+    },
+    {
+      "claim": "Only block size determines occupancy.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Registers and SMEM are equally binding factors.",
+      "sourceOrEvidence": "Occupancy Calculator"
+    },
+    {
+      "claim": "100% occupancy is always the optimization target.",
+      "errorType": "overgeneralization",
+      "whyWrong": "High occupancy can force smaller tiles that hurt arithmetic intensity.",
+      "sourceOrEvidence": "CUDA best practices"
+    }
+  ],
+  "implementationFacts": [
+    "A100 sm_80: 65536 regs/SM, 164 KB SMEM/SM (dynamic carveout), 2048 threads/SM, 32 blocks/SM cap.",
+    "`__launch_bounds__(threads_per_block, min_blocks_per_sm)` guides compiler register allocation."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

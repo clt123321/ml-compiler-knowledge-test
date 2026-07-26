@@ -1,0 +1,47 @@
+{
+  "questionId": "L-E2E-020",
+  "learningObjective": "Distinguish end-to-end latency from microbenchmark latency and identify when a microbenchmark speedup does not translate to end-to-end speedup.",
+  "canonicalClaims": [
+    {
+      "claim": "End-to-end speedup follows Amdahl's law: it is bounded above by 1 / ((1-f) + f/k), where f is the fraction of end-to-end time spent in the optimized op and k is the microbenchmark speedup. A large k with small f yields a small end-to-end improvement.",
+      "conditions": [
+        "The optimization affects only the target op's execution time.",
+        "The rest of the pipeline is unchanged."
+      ],
+      "nonImplications": [
+        "Does not imply small end-to-end gains are unimportant at scale.",
+        "Does not imply Amdahl is the only constraint; cross-op memory traffic and batch effects matter too."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Amdahl's law" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Kernel-level speedup composes multiplicatively into end-to-end speedup.",
+      "errorType": "kernel_vs_e2e_confusion",
+      "whyWrong": "Amdahl weights speedup by time fraction; a small-fraction op cannot dominate.",
+      "sourceOrEvidence": "PMPP text"
+    },
+    {
+      "claim": "Fusing an op amplifies its end-to-end speedup via downstream cache reuse.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Cross-op cache reuse can help slightly but rarely converts a small time fraction into a large end-to-end share.",
+      "sourceOrEvidence": "TorchInductor fusion analysis"
+    },
+    {
+      "claim": "Launch overhead subtracts from end-to-end speedup linearly.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Launch overhead is a fixed CPU cost, not a linear subtraction from GPU speedup.",
+      "sourceOrEvidence": "CUDA best practices"
+    },
+    {
+      "claim": "End-to-end and kernel-level speedups are equivalent when the kernel is called many times.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Number of calls does not remove the Amdahl weighting by time fraction.",
+      "sourceOrEvidence": "PMPP text"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

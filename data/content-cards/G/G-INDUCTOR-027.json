@@ -1,0 +1,54 @@
+{
+  "questionId": "G-INDUCTOR-027",
+  "learningObjective": "Given a TorchInductor scheduler log, explain why two pointwise ops were not fused.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchInductor's scheduler weighs fusion decisions by projected memory-traffic and register-pressure impact; it declines a legal fusion when the projected traffic increase exceeds the traffic saved by removing an intermediate materialization.",
+      "conditions": [
+        "The scheduler has an accurate estimate of the reduction's read pattern for the fused vs. unfused case.",
+        "Legality is preserved by both options."
+      ],
+      "nonImplications": [
+        "Does not imply pointwise+reduction fusion is impossible in TorchInductor.",
+        "Does not imply the heuristic's decision is provably optimal."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Scheduler / fusion policy" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TorchInductor never fuses pointwise ops with reductions.",
+      "errorType": "overgeneralization",
+      "whyWrong": "TorchInductor commonly fuses pointwise+reduction patterns (softmax, layer norm, log-sum-exp).",
+      "sourceOrEvidence": "TorchInductor generated kernels for RMSNorm / softmax"
+    },
+    {
+      "claim": "Pointwise-into-reduction fusion is semantically illegal when the reduction is over the inner axis.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Legality holds; only performance heuristics may reject it.",
+      "sourceOrEvidence": "TVM / Halide fusion legality"
+    },
+    {
+      "claim": "The scheduler's memory-traffic model is provably optimal.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The scheduler uses heuristics that approximate memory traffic; optimality is not guaranteed.",
+      "sourceOrEvidence": "TorchInductor design docs"
+    },
+    {
+      "claim": "The scheduler's behavior in PyTorch 2.5 is guaranteed to be identical in PyTorch 3.0.",
+      "errorType": "version_leak",
+      "whyWrong": "The scheduler's heuristics are marked as version-sensitive; they evolve across releases.",
+      "sourceOrEvidence": "PyTorch release notes"
+    }
+  ],
+  "implementationFacts": [
+    "TORCH_LOGS=+inductor prints scheduler fusion decisions and reasons.",
+    "The Inductor scheduler models pointwise, reduction, and template (matmul) heads with different fusion rules."
+  ],
+  "performanceScenarios": [
+    "For RMSNorm, TorchInductor typically fuses square + mean + rsqrt + multiply into one Triton kernel."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

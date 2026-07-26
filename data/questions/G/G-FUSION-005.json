@@ -1,0 +1,96 @@
+{
+  "id": "G-FUSION-005",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Operator fusion / Register-pressure regression",
+  "learningObjective": "Recognize a scenario where operator fusion increases register pressure and causes spill-driven slowdown.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "compute capability 8.0"
+    ]
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "profileData": "Before fusion (two kernels):\n  kernel_A (pointwise chain, 4 ops)   : 32 regs/thread, occupancy 100%,  0.42 ms\n  kernel_B (reduction)                : 40 regs/thread, occupancy  75%, 0.31 ms\n  total: 0.73 ms + ~0 ms launch overhead per kernel\n\nAfter vertical fusion (single kernel):\n  fused_AB                            : 96 regs/thread, occupancy 25%, register spills reported by ptxas: 48 bytes/thread\n  total: 1.15 ms",
+  "stem": "A compiler fuses a 4-op pointwise chain with a downstream reduction into a single kernel on sm_80. Nsight Compute and ptxas outputs are above. The fused kernel is slower. Which is the best-supported explanation?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Fusion is buggy: producing correct results but running slower is a code-generation bug that must be reported to the compiler backend."
+    },
+    {
+      "id": "B",
+      "text": "The reduction kernel was already memory-bound before fusion; adding pointwise math strictly reduces its runtime because the pointwise ops are 'free' inside a memory-bound region."
+    },
+    {
+      "id": "C",
+      "text": "The fused kernel's live-range union pushed register usage to 96 regs/thread and induced spills; occupancy dropped to 25% and the spill-driven local-memory traffic exceeds the DRAM traffic saved by not materializing the intermediate."
+    },
+    {
+      "id": "D",
+      "text": "The two-kernel version benefited from asynchronous kernel launch overlap on the default stream; fusion serialized the ops on the CPU launch queue."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Option C is correct; options A, B, D are incorrect. A (Wrong): correctness is preserved; slowdown is a heuristic mismatch, not a compiler bug. B (Wrong): 'pointwise math is free inside memory-bound' ignores that spills add memory traffic. C (Correct): canonical register-pressure regression from over-fusion. D (Wrong): two sequential same-stream kernels do not overlap with each other. General context: Fusion widens the live-range set: pointwise intermediates that would have been consumed and dropped in kernel A now coexist with the reduction accumulator in kernel B's registers. When the union exceeds the per-thread register budget, ptxas spills to local memory (backed by L1/L2/DRAM). Meanwhile, occupancy collapses (from ~100%/75% to 25% at 96 regs on sm_80 with typical block size). Spill traffic and reduced latency hiding overwhelm the saved intermediate materialization.",
+  "optionExplanations": {
+    "A": "Wrong: correctness is preserved; slowdown is a heuristic mismatch, not a compiler bug.",
+    "B": "Wrong: 'pointwise math is free inside memory-bound' ignores that spills add memory traffic.",
+    "C": "Correct: canonical register-pressure regression from over-fusion.",
+    "D": "Wrong: two sequential same-stream kernels do not overlap with each other."
+  },
+  "assumptions": [
+    "Block size and grid size are held constant across the two configurations.",
+    "ptxas spill report reflects local-memory usage backed by the memory hierarchy."
+  ],
+  "nonImplications": [
+    "Does not imply fusion should be disabled globally; it implies the scheduler should track register pressure and back off when spills are induced.",
+    "Does not imply the two-kernel version is optimal; a smarter fusion partition (e.g., fuse 2 of the 4 pointwise ops) may win."
+  ],
+  "misconceptionTags": [
+    "over_fusion_spill",
+    "fusion_always_faster"
+  ],
+  "distractorRationales": {
+    "A": "Confuses heuristic failure with correctness bug.",
+    "B": "Overgeneralizes 'free work inside memory-bound' without accounting for spills.",
+    "D": "Invents a nonexistent overlap between same-stream kernels."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Register pressure, spills, occupancy trade-offs",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-inductor",
+      "locator": "Scheduler heuristics for register-pressure-aware fusion",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Register-pressure-driven fusion regression on sm_80",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-FUSION-005.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

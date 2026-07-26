@@ -1,0 +1,49 @@
+{
+  "questionId": "A-REGSPILL-025",
+  "learningObjective": "Diagnose the performance impact of register spilling on GPU kernels and identify why 'local memory' spills traverse HBM.",
+  "canonicalClaims": [
+    {
+      "claim": "On NVIDIA GPUs, per-thread 'local memory' is physically stored in global memory (HBM), with caching in L1/L2. Register spills therefore incur potentially hundreds of cycles of latency and consume HBM bandwidth when the caches don't absorb the traffic.",
+      "conditions": [
+        "Kernel exceeds the register budget selected by the compiler (via --maxrregcount, __launch_bounds__, or heuristics).",
+        "Spill accesses are not fully absorbed by L1/L2."
+      ],
+      "nonImplications": [
+        "Does not imply every spill costs full HBM latency; L1/L2 hits are common for repeated slot access.",
+        "Does not imply lower --maxrregcount is always better; forced spills often outweigh occupancy gains."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Local memory section" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Spills go to shared memory automatically.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Shared memory is programmer-managed and per-block; the compiler does not implicitly redirect register spills there.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "There is a dedicated on-chip spill buffer separate from HBM.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No such tier exists; spills back to local memory (backed by HBM) via L1/L2.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Register spills are always free because L1 always hits.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Cache hit rate for spills depends on access frequency, working set size, and L1 pressure from other data. Cold spills reach HBM.",
+      "sourceOrEvidence": "CUDA C++ Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "ptxas info line reports 'spill stores' and 'spill loads' in bytes per thread.",
+    "Local memory is per-thread, logically private, but backed by global memory physically.",
+    "Compiler options: --maxrregcount N, __launch_bounds__(threadsPerBlock, minBlocksPerMultiprocessor)."
+  ],
+  "performanceScenarios": [
+    "Attention kernels with large register footprints can experience heavy spill traffic; hand-tuned kernels (FlashAttention) restructure register usage to avoid this."
+  ],
+  "versionSensitivity": "stable_principle"
+}

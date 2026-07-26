@@ -1,0 +1,56 @@
+{
+  "questionId": "H-MIXED-023",
+  "learningObjective": "Explain the master-weight pattern in mixed-precision DNN training and the roles of the various dtypes.",
+  "canonicalClaims": [
+    {
+      "claim": "Mixed-precision DNN training with FP16 matmuls uses (a) FP32 matmul accumulator, (b) FP32 master weights that receive optimizer updates and are cast to FP16 for forward, and (c) loss scaling to avoid FP16 gradient underflow. BF16 training typically avoids loss scaling due to matching exponent range with FP32 but still commonly retains FP32 optimizer state.",
+      "conditions": [
+        "The Tensor Core matmul supports FP32 accumulation for FP16/BF16 inputs.",
+        "The optimizer implementation maintains master weights."
+      ],
+      "nonImplications": [
+        "Does not imply optimizer moments must be FP32 — 8-bit optimizers exist.",
+        "Does not imply BF16 requires zero training-time modifications; the master-weight pattern is still common."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Mixed-precision training guide" },
+        { "ref": "BOOK:sze-eff", "locator": "Mixed-precision training" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "BF16 training removes the need for master weights entirely.",
+      "errorType": "overgeneralization",
+      "whyWrong": "BF16's mantissa is small (7 bits); tiny weight updates can still round to zero. FP32 master weights or FP32 optimizer state remain common (Megatron-LM, DeepSpeed).",
+      "sourceOrEvidence": "Megatron-LM training config"
+    },
+    {
+      "claim": "Master weights double the memory of pure FP32 training.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Master weights (FP32) + working weights (FP16) = 6 bytes/param; pure FP32 = 4 bytes/param. Master-weight training uses MORE weight memory, not double.",
+      "sourceOrEvidence": "PyTorch autocast documentation"
+    },
+    {
+      "claim": "Loss scaling is only needed for BF16, not FP16.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Loss scaling is the standard FP16 tool for gradient underflow; BF16 usually removes the need due to wider exponent.",
+      "sourceOrEvidence": "PyTorch GradScaler docs"
+    },
+    {
+      "claim": "The FP32 accumulator in mixed-precision matmul is a software emulation and slows down the kernel.",
+      "errorType": "hardware_leak",
+      "whyWrong": "The accumulator is native FP32 hardware on Tensor Cores; there is no slowdown vs FP16 accumulation, and Tensor Cores are designed for it.",
+      "sourceOrEvidence": "NVIDIA Tensor Core whitepapers"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch autocast + GradScaler orchestrates the mixed-precision workflow.",
+    "Megatron-LM uses FP32 master weights and BF16 forward for large-scale LLM training.",
+    "DeepSpeed ZeRO can shard master weights and optimizer state across ranks."
+  ],
+  "performanceScenarios": [
+    "LLaMA-family training uses BF16 forward with FP32 master weights and FP32 optimizer moments."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

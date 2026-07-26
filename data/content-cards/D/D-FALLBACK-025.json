@@ -1,0 +1,56 @@
+{
+  "questionId": "D-FALLBACK-025",
+  "learningObjective": "Explain how TorchInductor handles an op that has no direct lowering (falls back to the ATen implementation) and what that means for kernel structure.",
+  "canonicalClaims": [
+    {
+      "claim": "When TorchInductor encounters an op with no lowering but with an ATen implementation, it inserts an ATen fallback call in the generated wrapper at that position; surrounding ops still compile to Triton, and the opaque op forms a fusion boundary.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 default Inductor.",
+        "The op has a valid ATen implementation and meta impl."
+      ],
+      "nonImplications": [
+        "Does not imply that ATen fallbacks are always slow.",
+        "Does not imply fallbacks are unavoidable; a user-supplied decomposition can eliminate them."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Fallbacks and fusion boundaries" },
+        { "ref": "PAPER:pytorch2", "locator": "Inductor coverage" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "One un-lowerable op forces the whole function into eager mode.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Only the specific op falls back; surrounding compilation continues.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Inductor translates CUDA source to Triton at trace time.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No such translator exists.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Inductor inlines PTX of the fallback op into a single Triton kernel.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No PTX inlining mechanism exists.",
+      "sourceOrEvidence": "Inductor / Triton docs"
+    },
+    {
+      "claim": "Fallbacks and graph breaks are the same thing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Graph breaks split the Dynamo trace; fallbacks are Inductor codegen boundaries.",
+      "sourceOrEvidence": "Inductor / Dynamo docs"
+    }
+  ],
+  "implementationFacts": [
+    "Fallback ops appear as ATen kernel calls in the generated wrapper code",
+    "Fusion boundaries at fallbacks add memory traffic for the fallback op's inputs/outputs",
+    "Users can register decompositions to reduce fallback frequency"
+  ],
+  "performanceScenarios": [
+    "A single fallback in a hot chain can cost significant HBM traffic; identifying it via inductor logs is a common optimization step."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

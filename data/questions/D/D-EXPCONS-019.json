@@ -1,0 +1,88 @@
+{
+  "id": "D-EXPCONS-019",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "torch.export dynamic dim constraints",
+  "learningObjective": "Read a torch.export call with explicit dynamic-dim constraints and choose the correct interpretation.",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Consider the export snippet below. Which best describes the exported program's accepted input space along the sequence dim?",
+  "codeSnippet": "import torch\nfrom torch.export import export, Dim\n\ndef f(x, y):\n    return x + y\n\nseq = Dim(\"seq\", min=1, max=8192)\nep = export(\n    f,\n    (torch.randn(4, 128), torch.randn(4, 128)),\n    dynamic_shapes={\n        \"x\": {1: seq},\n        \"y\": {1: seq},   # same `seq` object shared between x and y\n    },\n)\n# ep is an ExportedProgram whose graph is parameterized in a single seq symbol.",
+  "options": [
+    {
+      "id": "A",
+      "text": "The exported program accepts any pair of tensors with shape `[4, N]` and `[4, N]` for the same `N` in the range `[1, 8192]`; sharing the `seq` object across `x` and `y` enforces that both inputs' dim 1 must be equal at runtime."
+    },
+    {
+      "id": "B",
+      "text": "The `Dim` constraint is a compile-time hint that is stripped at export; the exported graph is fully specialized to the example shape `[4, 128]` for both inputs."
+    },
+    {
+      "id": "C",
+      "text": "The exported program accepts any pair of tensors with shape `[4, N1]` and `[4, N2]` independently within `[1, 8192]`; sharing the same `Dim` object is a naming convention only and does not constrain runtime equality."
+    },
+    {
+      "id": "D",
+      "text": "The exported program accepts arbitrary shapes for both inputs regardless of the `Dim` constraints because export ignores dynamic_shapes when both example inputs are provided. In this account, the exported program accepts arbitrary shapes for both inputs regardless of the `Dim` constraints, because `export` ignores its `dynamic_shapes` argument whenever both example inputs are provided as tensors rather than as shape specs."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "In `torch.export`, sharing a `Dim` object across multiple inputs' dims semantically constrains those dims to be equal at runtime; the exported program is parameterized in a single symbolic value for that shared dim, and runtime shape mismatches (or values outside `[min, max]`) will error. If `x` and `y` used two different `Dim` objects, they would be independent.",
+  "optionExplanations": {
+    "A": "Correct: shared Dim => runtime equality constraint.",
+    "B": "Wrong: Dim constraints are preserved in the exported program.",
+    "C": "Wrong: Dim identity is semantic, not just naming.",
+    "D": "Wrong: dynamic_shapes are honored."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 export API.",
+    "The Dim object's min/max bounds are consistent with the example inputs."
+  ],
+  "nonImplications": [
+    "Does not imply that every constraint is satisfiable; overly tight constraints can fail at export time.",
+    "Does not imply that the runtime automatically retries with different shapes; violations are errors."
+  ],
+  "misconceptionTags": [
+    "dim_identity_naming_only",
+    "export_ignores_dynamic_shapes"
+  ],
+  "distractorRationales": {
+    "B": "Wrong claim about stripping.",
+    "C": "Ignores the semantic meaning of Dim identity.",
+    "D": "Wrong claim that dynamic_shapes are ignored."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-export",
+      "locator": "Dim, dynamic_shapes, shared dim constraints",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-EXPCONS-019.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

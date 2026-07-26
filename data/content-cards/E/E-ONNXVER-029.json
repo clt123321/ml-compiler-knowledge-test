@@ -1,0 +1,49 @@
+{
+  "questionId": "E-ONNXVER-029",
+  "learningObjective": "Distinguish ONNX IR version (format) from opset version (operator semantics).",
+  "canonicalClaims": [
+    {
+      "claim": "ONNX has two independent versioning axes: `ir_version` (ModelProto format/schema features) and one or more `opset_import` entries (per-domain operator semantics).",
+      "conditions": ["ONNX spec as documented."],
+      "nonImplications": [
+        "Does not imply the two version numbers are linked.",
+        "Does not imply supporting a high IR version implies supporting all opsets."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "ONNX versioning" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "IR version and opset version are the same field.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are two separate fields with different roles.",
+      "sourceOrEvidence": "ONNX spec"
+    },
+    {
+      "claim": "IR version is used only at export time and ignored by runtimes.",
+      "errorType": "scope_error",
+      "whyWrong": "Runtimes must parse according to IR version.",
+      "sourceOrEvidence": "ONNX spec"
+    },
+    {
+      "claim": "IR version N always corresponds to opset version N.",
+      "errorType": "overgeneralization",
+      "whyWrong": "They evolve independently.",
+      "sourceOrEvidence": "ONNX changelog"
+    },
+    {
+      "claim": "ONNX models are versionless; the runtime infers everything from op names.",
+      "errorType": "definition_confusion",
+      "whyWrong": "IR + opset versions are required for correct interpretation.",
+      "sourceOrEvidence": "ONNX spec"
+    }
+  ],
+  "implementationFacts": [
+    "ModelProto: `ir_version`, `opset_import`, `producer_name`, etc.",
+    "Default domain: `\"\"` (or `\"ai.onnx\"`); ML extensions in `\"ai.onnx.ml\"`."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

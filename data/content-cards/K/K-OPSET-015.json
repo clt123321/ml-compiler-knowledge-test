@@ -1,0 +1,47 @@
+{
+  "questionId": "K-OPSET-015",
+  "learningObjective": "Explain the meaning of the ONNX opset version in a model file and the compatibility contract between opset producers and consumers.",
+  "canonicalClaims": [
+    {
+      "claim": "The ONNX opset version identifies the schema version of each operator in a given domain; a consuming runtime must implement the exact schema of the declared opset to run the model correctly.",
+      "conditions": [
+        "The model declares one or more opset_import entries.",
+        "The runtime advertises a set of supported opset versions per domain."
+      ],
+      "nonImplications": [
+        "Does not imply the newest opset is always best-supported.",
+        "Does not imply opset version tracks runtime binary or exporter framework version."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Operator versioning" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Opset version equals runtime binary version.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Runtime versions and opset numbers are independent.",
+      "sourceOrEvidence": "ONNX Runtime release notes"
+    },
+    {
+      "claim": "Opset changes only affect serialization layout.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Opset governs operator semantics (attributes, defaults, behaviors).",
+      "sourceOrEvidence": "ONNX operator specification"
+    },
+    {
+      "claim": "Opset ties the model to the exporter framework version.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Opset is domain-owned; the exporter maps its ops to whatever opset is chosen.",
+      "sourceOrEvidence": "PyTorch ONNX exporter docs"
+    },
+    {
+      "claim": "A runtime that supports opset N supports all N-1, N-2, ... automatically.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Runtimes may drop very old opsets; supported ranges are declared explicitly.",
+      "sourceOrEvidence": "ONNX Runtime compatibility matrix"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

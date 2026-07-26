@@ -1,0 +1,50 @@
+{
+  "questionId": "A-ENERGY-016",
+  "learningObjective": "Reason about the relative energy costs of on-chip compute vs off-chip memory access and their implications for DNN accelerator design.",
+  "canonicalClaims": [
+    {
+      "claim": "DRAM access energy is 2–3 orders of magnitude larger than an on-chip MAC in modern accelerators, so reducing off-chip data movement is the primary lever for energy efficiency in DNN workloads.",
+      "conditions": [
+        "Modern-process accelerators (Horowitz-style survey numbers).",
+        "Workloads that stress memory-hierarchy traffic (typical DNN inference).",
+        "Reuse-friendly compute pattern such that on-chip storage enables data amortization."
+      ],
+      "nonImplications": [
+        "Does not imply DRAM is always the energy bottleneck for every kernel; tiny in-cache workloads shift toward compute-energy.",
+        "Does not imply that adding SRAM automatically improves energy — reuse is required."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Ch. 1-2 relative energy per op in DNN accelerators" },
+        { "ref": "BOOK:hp6", "locator": "Energy and power chapters" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FLOP minimization is the primary energy optimization for DNNs.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The dominant energy term is data movement, not FLOP count; a lower-FLOP model with worse locality can consume more energy.",
+      "sourceOrEvidence": "Sze et al., DNN efficient processing survey"
+    },
+    {
+      "claim": "SRAM is always energy-cheaper than DRAM, so more SRAM always saves energy.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Per access, SRAM is cheaper; but if SRAM does not enable reuse (data still fetched fresh from DRAM), total energy does not fall.",
+      "sourceOrEvidence": "Sze et al., DNN accelerator energy analysis"
+    },
+    {
+      "claim": "Quantization always halves energy for the same op count.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Energy savings from quantization require hardware support for the lower-precision datapath and matched Kernel; software emulation of low precision may increase energy.",
+      "sourceOrEvidence": "Sze et al., quantization chapter"
+    }
+  ],
+  "implementationFacts": [
+    "45nm survey (Horowitz 2014): 32-bit DRAM access ≈ 640 pJ, 32-bit SRAM ≈ few pJ, 32-bit int MAC ≈ 3 pJ.",
+    "Weight-stationary / output-stationary dataflows are motivated by minimizing DRAM traffic per MAC."
+  ],
+  "performanceScenarios": [
+    "Mobile inference chips (e.g., NPUs) heavily rely on on-chip weight caching to stay within a power budget."
+  ],
+  "versionSensitivity": "stable_principle"
+}

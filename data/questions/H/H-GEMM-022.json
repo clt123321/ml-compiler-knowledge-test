@@ -1,0 +1,96 @@
+{
+  "id": "H-GEMM-022",
+  "type": "single",
+  "module": "quantization",
+  "subtopic": "INT8 GEMM / Compute vs. bandwidth",
+  "learningObjective": "Identify scenarios where INT8 GEMM is NOT faster than FP16 GEMM on an Ampere-class GPU.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "INT8 and FP16 Tensor Core"
+    ]
+  },
+  "softwareContext": {
+    "framework": "cuBLAS / CUTLASS",
+    "stability": "stable_principle"
+  },
+  "profileData": "On A100 (Tensor Core INT8 peak ~ 2\u00d7 FP16 peak):\n  Case 1: M=4096, N=4096, K=4096, batched=1. INT8 GEMM \u2248 0.5\u00d7 FP16 GEMM runtime (compute-bound; INT8 wins).\n  Case 2: M=1, N=4096, K=4096 (GEMV / decode batch=1). INT8 kernel time \u2248 FP16 kernel time (bandwidth-bound; weights dominate).",
+  "stem": "On A100, INT8 GEMM has ~2\u00d7 the FP16 Tensor Core throughput, yet Case 2 (M=1) shows INT8 no faster than FP16. What is the correct explanation?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The M=1 case has such low arithmetic intensity that CUDA cannot launch a grid at all; the runtimes reflect kernel-launch overhead only."
+    },
+    {
+      "id": "B",
+      "text": "INT8 Tensor Cores are disabled on A100 in cuBLAS; the observed times are FP16 in both cases."
+    },
+    {
+      "id": "C",
+      "text": "At M=1 (batch-1 decode), the kernel is bandwidth-bound: the dominant cost is loading the K\u00d7N weight matrix, which is the same size regardless of activation dtype. INT8 activations barely affect memory traffic when they represent a tiny fraction of the total bytes moved; peak-TOPS advantage of INT8 Tensor Cores cannot be realized because there is not enough compute per byte."
+    },
+    {
+      "id": "D",
+      "text": "INT8 GEMM at M=1 is slower than FP16 due to quantize/dequantize overhead in the kernel; the fix is to disable dequantization."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "At M=1 with FP16 weights (K*N = 4096*4096 = 16 MB), the kernel is bandwidth-bound; the FP16 activation vector is negligible. Replacing FP16 activations with INT8 activations saves at most K bytes; the weight matrix bytes dominate. Since both kernels move the same weight bytes (both FP16 weights in this case), the INT8 kernel's TC advantage cannot manifest \u2014 the compute path is idle waiting on weight loads. The proper solution is weight-only quantization (W4A16, W8A16) that reduces the weight bandwidth. Options B, C, D are inventions.",
+  "optionExplanations": {
+    "A": "Wrong: CUDA can launch any grid; kernel-launch overhead is not the story here.",
+    "B": "Wrong: INT8 Tensor Cores are enabled on A100 in cuBLAS.",
+    "C": "Correct: bandwidth-bound M=1 case where compute peak is irrelevant.",
+    "D": "Wrong: quantize/dequantize overhead is minor; the primary issue is weight bandwidth."
+  },
+  "assumptions": [
+    "Both configurations use FP16 weight storage.",
+    "GPU has sufficient memory bandwidth headroom for FP16 weights but not compute-bound at M=1."
+  ],
+  "nonImplications": [
+    "Does not imply INT8 GEMM is useless \u2014 for compute-bound (large M) cases it delivers.",
+    "Does not imply W4A16 solves all bandwidth issues \u2014 for very small K it may not."
+  ],
+  "misconceptionTags": [
+    "int8_always_faster",
+    "peak_tops_ignores_bandwidth"
+  ],
+  "distractorRationales": {
+    "A": "Fabricates a kernel-launch story.",
+    "B": "Denies well-documented INT8 TC support.",
+    "D": "Blames dequant overhead."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:awq",
+      "locator": "Bandwidth vs. compute analysis for W4A16 vs W8A8",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:sze-eff",
+      "locator": "Arithmetic intensity and precision choice",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "INT8 vs FP16 GEMM at M=1 (batch-1 decode) on A100",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/H/H-GEMM-022.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

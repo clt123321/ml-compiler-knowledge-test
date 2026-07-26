@@ -1,0 +1,93 @@
+{
+  "id": "E-MLIRPAT-005",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "MLIR / Pattern Rewrite, greedy driver, canonicalization",
+  "learningObjective": "Reason about how MLIR pattern rewriting composes rewrite patterns, and identify what canonicalization patterns can and cannot do.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "The IR below is fed to the MLIR canonicalization pass with the standard `arith` folder/patterns registered. Which output is correct?",
+  "irSnippet": "// Input\nfunc.func @f(%x: i32) -> i32 {\n  %c0 = arith.constant 0 : i32\n  %c1 = arith.constant 1 : i32\n  %0  = arith.addi %x, %c0 : i32   // add-zero\n  %1  = arith.muli %0, %c1 : i32   // mul-one\n  %2  = arith.subi %1, %1 : i32    // x - x\n  return %2 : i32\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "MLIR canonicalization never removes dead constants; only an explicit DCE pass can eliminate `%c0` and `%c1`, so they will remain in the output IR even after full canonicalization."
+    },
+    {
+      "id": "B",
+      "text": "The pattern driver applies each canonicalization pattern at most once in source order; if `add-zero` fires before `sub`'s operands are unified, the `sub` cannot be folded and the returned value is `arith.subi %x, %x`."
+    },
+    {
+      "id": "C",
+      "text": "`add-zero` and `mul-one` are folded, but `sub %x, %x \u2192 0` is a semantic transformation outside the scope of canonicalization, since it changes the SSA def-use chain and thus requires an explicit `-fold-symmetric-ops` pass."
+    },
+    {
+      "id": "D",
+      "text": "After canonicalization, `add %x, 0` folds to `%x`, `mul %x, 1` folds to `%x`, and `sub %x, %x` folds to `arith.constant 0 : i32`; the function returns a fresh constant zero and both `%c0` and `%c1` become dead and are DCE'd."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "MLIR canonicalization runs a greedy pattern-rewrite driver that iterates to fixed point. Ops implementing `foldFor()` / registered canonicalization patterns for `arith.addi`, `arith.muli`, `arith.subi` produce: `add %x, 0 \u2192 %x`, `mul %x, 1 \u2192 %x`, `sub %x, %x \u2192 0`. The driver also runs DCE on the resulting dead constants because canonicalization includes constant folding and dead-op removal in its loop. The pattern driver is not source-order-limited; it re-applies patterns until convergence.",
+  "optionExplanations": {
+    "A": "Wrong: canonicalization removes dead constants as part of its loop.",
+    "B": "Wrong: the greedy driver applies patterns to fixed point, not once in source order.",
+    "C": "Wrong: `sub %x, %x \u2192 0` is a standard `arith.subi` canonicalization pattern in upstream MLIR.",
+    "D": "Correct: canonicalization applies folders + DCE to fixed point."
+  },
+  "assumptions": [
+    "Standard upstream `arith` dialect canonicalizers are registered.",
+    "The canonicalization pass is `-canonicalize` with default settings."
+  ],
+  "nonImplications": [
+    "Does not imply canonicalization is optimal; it is a fixed-point of local rewrites.",
+    "Does not imply every dialect's canonicalizers are equally aggressive; user-defined dialects must opt in."
+  ],
+  "misconceptionTags": [
+    "canon_no_dce_myth",
+    "pattern_driver_order_myth"
+  ],
+  "distractorRationales": {
+    "A": "Underestimates canonicalization's built-in DCE.",
+    "B": "Wrong claim about pattern-driver ordering.",
+    "C": "Fabricates a nonexistent pass."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "Canonicalization pass and pattern rewrite driver",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "MLIR pattern rewrite and canonicalization",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-MLIRPAT-005.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,33 @@
+{
+  "module": "compiler_basics",
+  "code": "B",
+  "verifier": "verifier-batch1",
+  "verifiedAt": "2026-07-26",
+  "answers": [
+    { "id": "B-ALIAS-007", "independentAnswer": ["B", "C", "D"], "confidence": "high" },
+    { "id": "B-CFG-003", "independentAnswer": ["D"], "confidence": "high" },
+    { "id": "B-CFOLD-009", "independentAnswer": ["B"], "confidence": "high" },
+    { "id": "B-CPROP-010", "independentAnswer": ["B"], "confidence": "high" },
+    { "id": "B-CSE-012", "independentAnswer": ["C"], "confidence": "high" },
+    { "id": "B-DATAFLOW-022", "independentAnswer": ["C"], "confidence": "high" },
+    { "id": "B-DCE-011", "independentAnswer": ["C", "D"], "confidence": "high" },
+    { "id": "B-DEFUSE-006", "independentAnswer": ["C"], "confidence": "high" },
+    { "id": "B-DOM-004", "independentAnswer": ["B", "C", "D"], "confidence": "high" },
+    { "id": "B-DOMTREE-025", "independentAnswer": ["D"], "confidence": "high" },
+    { "id": "B-ESCAPE-008", "independentAnswer": ["D"], "confidence": "high" },
+    { "id": "B-INLINE-014", "independentAnswer": ["B", "C", "D"], "confidence": "high" },
+    { "id": "B-INSTSEL-016", "independentAnswer": ["B"], "confidence": "high" },
+    { "id": "B-JITAOT-019", "independentAnswer": ["B", "C"], "confidence": "high" },
+    { "id": "B-LICM-013", "independentAnswer": ["D"], "confidence": "high" },
+    { "id": "B-LIVE-005", "independentAnswer": ["D"], "confidence": "high" },
+    { "id": "B-LOOPINV-023", "independentAnswer": ["C"], "confidence": "high" },
+    { "id": "B-PARTIAL-018", "independentAnswer": ["A"], "confidence": "high" },
+    { "id": "B-PATTERN-017", "independentAnswer": ["B", "C", "D"], "confidence": "high" },
+    { "id": "B-PHI-002", "independentAnswer": ["D"], "confidence": "high" },
+    { "id": "B-REGALLOC-015", "independentAnswer": ["D"], "confidence": "high" },
+    { "id": "B-SEMPRES-021", "independentAnswer": ["A", "C", "D"], "confidence": "high" },
+    { "id": "B-SOUND-020", "independentAnswer": ["A", "B", "D"], "confidence": "high" },
+    { "id": "B-SSA-001", "independentAnswer": ["C"], "confidence": "high" },
+    { "id": "B-SSAFORM-024", "independentAnswer": ["D"], "confidence": "high" }
+  ]
+}

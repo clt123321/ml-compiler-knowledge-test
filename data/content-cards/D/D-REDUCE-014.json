@@ -1,0 +1,56 @@
+{
+  "questionId": "D-REDUCE-014",
+  "learningObjective": "Predict how TorchInductor fuses a reduction chain such as a numerically stable softmax and identify the resulting kernel structure.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchInductor's scheduler fuses reduction + pointwise chains such as softmax into a small number of Triton kernels on CUDA (typically a reduction that computes the required statistics along the reduction dim, followed by a pointwise finalize), avoiding materializing intermediate tensors as full HBM buffers when possible.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 with default Inductor on CUDA.",
+        "No decomposition is disabled by the user that would break the softmax pattern."
+      ],
+      "nonImplications": [
+        "Does not imply the fused softmax matches hand-written IO-aware kernels (like those in FlashAttention).",
+        "Does not imply all multi-reduction patterns fuse this cleanly."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Reduction/pointwise fusion" },
+        { "ref": "PAPER:pytorch2", "locator": "Inductor scheduler" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Inductor emits one kernel per Python line.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The scheduler fuses across producer-consumer chains and reductions when possible.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Softmax cannot be compiled because `.max(dim=-1)` returns a namedtuple.",
+      "errorType": "scope_error",
+      "whyWrong": "Inductor supports the pattern; `.values` extraction is handled.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Reductions on the last dim are dispatched to CPU C++ code even for CUDA tensors.",
+      "errorType": "definition_confusion",
+      "whyWrong": "CUDA inputs go to Triton codegen.",
+      "sourceOrEvidence": "Inductor docs"
+    },
+    {
+      "claim": "Inductor softmax is always as fast as FlashAttention's fused softmax.",
+      "errorType": "overgeneralization",
+      "whyWrong": "IO-aware hand-tuned kernels can still outperform automatically generated code, especially in attention contexts.",
+      "sourceOrEvidence": "FlashAttention paper"
+    }
+  ],
+  "implementationFacts": [
+    "Inductor recognizes reduction + pointwise patterns via its scheduler",
+    "Softmax pattern typically becomes 1-2 kernels on CUDA",
+    "Numerical stability (subtract max) is preserved during codegen"
+  ],
+  "performanceScenarios": [
+    "The fused softmax kernel is memory-bound on typical shapes; the win comes from removing intermediate HBM traffic."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

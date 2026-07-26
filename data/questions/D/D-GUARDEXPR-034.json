@@ -1,0 +1,95 @@
+{
+  "id": "D-GUARDEXPR-034",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Guard expression on dim relations",
+  "learningObjective": "Interpret a symbolic-shape guard involving a relation between dims and identify the correct fix or diagnosis.",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "The user compiles with `dynamic=True` and observes the guard message shown when they change from a divisible sequence length (64) to a non-divisible one (67). Which best interprets the guard and gives a valid remediation?",
+  "codeSnippet": "import torch\n\n@torch.compile(dynamic=True)\ndef f(x):\n    return x.view(-1, 8).sum(dim=-1)   # requires seq % 8 == 0 for the view\n\nfor n in [64, 67]:\n    x = torch.randn(n, device=\"cuda\")\n    f(x)\n\n# TORCH_LOGS=\"dynamic\" (excerpt):\n#   symbolic shape assertion: s0 % 8 == 0 was derived from `.view(-1, 8)`;\n#   guard failure: L['x'].size(0) = 67, does not satisfy s0 % 8 == 0.\n#   Recompiling with specialization or falling back to concrete-shape trace.",
+  "options": [
+    {
+      "id": "A",
+      "text": "The `.view` is unrelated to the guard; the failure is caused by `sum(dim=-1)` on a non-power-of-two length, which is a known limitation of Inductor's Triton reductions."
+    },
+    {
+      "id": "B",
+      "text": "The tracer derived a divisibility constraint (`s0 % 8 == 0`) from `.view(-1, 8)`; when a size that violates the constraint arrives, the guard fails and PyTorch either specializes on that new size or errors, depending on config. Fixes: pad the input to a multiple of 8, or rewrite the `.view` to a shape-safe form (e.g., use `.reshape` with explicit padding, or handle the tail separately)."
+    },
+    {
+      "id": "C",
+      "text": "The correct fix is to disable dynamic tracing entirely via `dynamic=False` — this bypasses divisibility constraints because the compiled kernel will be specialized to each observed size and thus does not derive symbolic constraints. In this reading, `dynamic=True` should always accept any input size unconditionally; the log line about `s0 % 8 == 0` is spurious output from an internal debugging assertion, can be safely ignored, and no code rewrite is needed to keep the compiled path stable."
+    },
+    {
+      "id": "D",
+      "text": "`dynamic=True` should always accept any size; the log is spurious and can be ignored, and no rewrite is needed. Under this framing, `.view` is unrelated to the guard message; the failure is caused by `sum(dim=-1)` on a non-power-of-two length, which is a known limitation of Inductor's Triton reductions and requires padding the reduction dim to a power of two."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "`.view(-1, 8)` requires the total element count to be divisible by 8; the tracer derives this divisibility constraint on the corresponding symbolic dim and installs a guard. When a call violates the constraint, symbolic tracing cannot proceed under the same graph — the runtime either specializes (recompile) or errors, depending on config. Correct fixes address the constraint: pad to a multiple of 8, or restructure to a shape-safe form. `dynamic=False` would specialize per size (still not accepting any size in one graph), and the other diagnoses are wrong.",
+  "optionExplanations": {
+    "A": "Wrong: `sum(dim=-1)` supports non-power-of-two lengths.",
+    "B": "Correct: identifies the divisibility constraint from .view and gives valid remediations.",
+    "C": "Wrong: `dynamic=False` specializes but does not sidestep the .view divisibility for a single call — each call still needs a compatible shape.",
+    "D": "Wrong: dynamic=True still enforces constraints derivable from ops."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 with symbolic-shape tracing.",
+    "The user calls `.view(-1, 8)` on the varying-size input."
+  ],
+  "nonImplications": [
+    "Does not imply all guards on symbolic dims can be avoided; some are fundamental to the op's semantics.",
+    "Does not imply padding is free; padding-then-mask patterns add memory and compute."
+  ],
+  "misconceptionTags": [
+    "dynamic_true_accepts_all_shapes",
+    "guard_from_sum_not_view"
+  ],
+  "distractorRationales": {
+    "A": "Wrong causal attribution.",
+    "C": "Wrong claim that dynamic=False bypasses shape constraints.",
+    "D": "Wrong claim about dynamic=True accepting any shape."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Symbolic shape assertions from ops; guard failures",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Dynamic shape constraints and remediation",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-GUARDEXPR-034.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

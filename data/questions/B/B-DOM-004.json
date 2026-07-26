@@ -1,0 +1,95 @@
+{
+  "id": "B-DOM-004",
+  "type": "multiple",
+  "module": "compiler_basics",
+  "subtopic": "Dominance / post-dominance / dominator tree",
+  "learningObjective": "Distinguish dominance and post-dominance relations and identify implications for SSA construction and code motion.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about dominance and post-dominance in a CFG with a distinguished entry are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Dominance and post-dominance are the same relation; the two are equivalent for any well-formed CFG."
+    },
+    {
+      "id": "B",
+      "text": "Dominance implies reachability from the entry, so unreachable code is not part of any dominator subtree and is typically removed before SSA construction."
+    },
+    {
+      "id": "C",
+      "text": "Block D dominates block N (written D dom N) iff every path from the entry to N passes through D; the dominance relation forms a tree rooted at the entry block."
+    },
+    {
+      "id": "D",
+      "text": "Block P post-dominates block N iff every path from N to the exit passes through P; post-dominance uses a reverse CFG and requires a distinguished exit (which may need to be synthesized for functions with multiple returns)."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C",
+    "D"
+  ],
+  "explanation": "A: standard dominance definition; the dominance relation forms a tree (dominator tree). B: post-dominance is the dual on the reverse CFG; a distinguished exit node is required for a well-defined post-dominance tree (synthesized when multiple returns exist). C is false: dominance and post-dominance are duals but not identical; e.g., a block may dominate itself trivially, but post-dominance depends on the exit structure. D is correct: unreachable code has no path from entry to it, so it is outside the dominator tree; DCE typically eliminates it first.",
+  "optionExplanations": {
+    "A": "Wrong: they are duals, not identities; they coincide only in trivial CFGs.",
+    "B": "Correct: unreachable code is excluded from the dominator tree and typically pruned first.",
+    "C": "Correct: dominance definition and tree property.",
+    "D": "Correct: post-dominance is the dual over reverse CFG requiring an exit."
+  },
+  "assumptions": [
+    "CFG has a distinguished entry; for post-dominance, an exit (possibly synthesized) is added.",
+    "Standard textbook definitions from EAC3, Appel."
+  ],
+  "nonImplications": [
+    "Does not imply that dominance is easy to compute; efficient algorithms (Lengauer-Tarjan) require some care.",
+    "Does not imply post-dominance is only useful for reverse analyses; sink-based optimizations and control dependence use it heavily."
+  ],
+  "misconceptionTags": [
+    "dominance_postdominance_identity_myth",
+    "unreachable_code_in_ssa"
+  ],
+  "distractorRationales": {
+    "A": "Conflates dual concepts."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Dominance, post-dominance, dominator tree chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Dominator computation chapter",
+      "supports": [
+        "B",
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-DOM-004.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

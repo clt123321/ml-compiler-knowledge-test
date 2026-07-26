@@ -1,0 +1,47 @@
+{
+  "questionId": "L-GENCODE-029",
+  "learningObjective": "Interpret generated Triton code emitted by TorchInductor and identify what the code does and does not tell you about performance.",
+  "canonicalClaims": [
+    {
+      "claim": "Generated Triton code exposes the fused iteration space and load/compute/store structure, confirming which ops were fused; runtime performance also depends on autotune configurations, which are visible in @triton.autotune decorators but chosen at first call.",
+      "conditions": [
+        "TorchInductor with the Triton codegen backend.",
+        "PyTorch 2.3 ~ 2.5 default settings."
+      ],
+      "nonImplications": [
+        "Does not imply reading source replaces profiling.",
+        "Does not imply autotune always converges to the optimum."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Generated code and autotune" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Same Triton source ⇒ same latency.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Autotune choices and launch configuration change latency substantially.",
+      "sourceOrEvidence": "Triton documentation"
+    },
+    {
+      "claim": "Inductor codegen is frozen across 2.x versions.",
+      "errorType": "version_leak",
+      "whyWrong": "Codegen strategy evolves substantially across minor releases.",
+      "sourceOrEvidence": "PyTorch release notes"
+    },
+    {
+      "claim": "Reading Triton source is unnecessary once profiling is done.",
+      "errorType": "scope_error",
+      "whyWrong": "Source review answers 'what was compiled'; profiling answers 'how it ran'. Both are useful.",
+      "sourceOrEvidence": "TorchInductor debug story"
+    },
+    {
+      "claim": "Autotune runs on every call.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It runs once per configuration space and caches the best.",
+      "sourceOrEvidence": "Triton autotune docs"
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

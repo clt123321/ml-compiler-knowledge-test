@@ -1,0 +1,50 @@
+{
+  "questionId": "J-DISAGG-019",
+  "learningObjective": "Explain the motivation and dataflow of disaggregated prefill/decode serving.",
+  "canonicalClaims": [
+    {
+      "claim": "Disaggregated serving places prefill and decode on separate GPU pools because prefill is compute-bound and decode is memory-bandwidth bound; separation avoids mutual interference and allows independent hardware provisioning per phase, at the cost of a KV cache transfer between pools per request.",
+      "conditions": [
+        "High-bandwidth interconnect for KV transfer.",
+        "Workload has mixed prefill and decode phases."
+      ],
+      "nonImplications": [
+        "Does not imply disaggregation always wins; short prompts may not benefit.",
+        "Does not imply model or precision splitting."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "Disaggregated serving" },
+        { "ref": "PAPER:orca", "locator": "Prefill/decode scheduling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Disaggregation runs different models for prefill and decode.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Same model runs on both pools; only the phase is split.",
+      "sourceOrEvidence": "DistServe / SplitWise papers"
+    },
+    {
+      "claim": "Disaggregation is a security isolation design.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Motivation is performance / scheduling asymmetry.",
+      "sourceOrEvidence": "DistServe motivation"
+    },
+    {
+      "claim": "Prefill and decode use different numerical precision on different hardware in disaggregation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both phases typically run in FP16/BF16; precision is not the split.",
+      "sourceOrEvidence": "TRT-LLM disagg docs"
+    }
+  ],
+  "implementationFacts": [
+    "Per-request KV transfer between pools is the main new communication step; typically over NVLink or InfiniBand RDMA.",
+    "DistServe and SplitWise reported large TPOT-latency improvements under mixed load."
+  ],
+  "performanceScenarios": [
+    "Disaggregation shines when prefill-decode workload mix varies over time and per-pool scaling is beneficial.",
+    "The transfer cost is bounded by the size of the prompt's KV cache, which is manageable with high-bandwidth interconnects."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

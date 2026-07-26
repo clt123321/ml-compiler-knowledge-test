@@ -1,0 +1,125 @@
+{
+  "id": "L-TOL-003",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Numerical tolerance / Golden test for FP16 GEMM",
+  "learningObjective": "Choose realistic tolerance thresholds when validating a custom FP16 GEMM implementation against a reference (e.g., cuBLAS) with a large K reduction.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any Tensor-Core-capable",
+    "device": "GPU",
+    "requiredFeatures": [
+      "FP16 Tensor Cores"
+    ]
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.0+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        1024,
+        1024
+      ],
+      [
+        1024,
+        1024
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major"
+    ]
+  },
+  "stem": "A custom FP16 matmul kernel using FP32 accumulators is compared against `x @ w` on FP16 tensors with `K = 1024`. The following tolerance check fails:\n\n`torch.testing.assert_close(out_ref, out_test, atol=1e-5, rtol=1e-6)`\n\nWhat is the most likely reason and what is a correct fix?",
+  "codeSnippet": "import torch\n\nx = torch.randn(1024, 1024, device=\"cuda\", dtype=torch.float16)\nw = torch.randn(1024, 1024, device=\"cuda\", dtype=torch.float16)\n\nout_ref  = x @ w                       # cuBLAS FP16 (Tensor Core), FP32 accum\nout_test = my_flash_matmul(x, w)       # custom kernel, also FP32 accum\n\n# Fails:\ntorch.testing.assert_close(out_ref, out_test, atol=1e-5, rtol=1e-6)",
+  "profileData": null,
+  "options": [
+    {
+      "id": "A",
+      "text": "The FP32 accumulator in `my_flash_matmul` is the problem — reducing at higher precision produces different results from cuBLAS; the correct fix is to accumulate in FP16 so both implementations round identically after every multiply-add."
+    },
+    {
+      "id": "B",
+      "text": "The kernel has a bug; two correct FP16 matmul implementations should produce bit-identical results across all accumulation orders because IEEE 754 guarantees deterministic rounding for FP16 sums up to at least K=2048."
+    },
+    {
+      "id": "C",
+      "text": "FP16 GEMM reductions over K=1024 differ across implementations due to accumulation order and rounding; realistic tolerances are ~1e-2 (atol/rtol), not FP64-scale 1e-5/1e-6."
+    },
+    {
+      "id": "D",
+      "text": "`torch.testing.assert_close` requires `check_dtype=False` to correctly compare tensors that were computed via a Tensor-Core path; adding this flag eliminates the failure regardless of numerical difference between the two outputs."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "FP16 matmul with K=1024 involves 1024 partial products summed in some order. Different implementations (cuBLAS kernels, custom Triton, cutlass) traverse the K dimension with different tile shapes and reduction trees; combined with FP16 rounding, the results differ in the low bits. Tolerances of 1e-5 atol / 1e-6 rtol correspond to FP64 accuracy. For FP16 GEMM, tolerances in the 1e-2 to 1e-3 range are typical for random Gaussian inputs of moderate K.",
+  "optionExplanations": {
+    "A": "Wrong: FP32 accumulation is actually the higher-accuracy choice and matches what cuBLAS does for FP16 Tensor-Core matmul. Downgrading to FP16 accum increases, not decreases, the error.",
+    "B": "Wrong: FP16 (and FP32 accumulated FP16) matmul is not bitwise-reproducible across implementations because floating-point addition is not associative.",
+    "C": "Correct: matches the standard numerical-analysis view of FP16 GEMM tolerance.",
+    "D": "Wrong: `check_dtype=False` skips dtype comparison; the numerical mismatch remains. The failure is about the values themselves."
+  },
+  "assumptions": [
+    "`x` and `w` are Gaussian-distributed FP16 tensors of moderate magnitude.",
+    "Both implementations use FP16 storage and (approximately) FP32 accumulation via Tensor Cores or their emulation."
+  ],
+  "nonImplications": [
+    "Does not imply that any error is acceptable; if `atol > 1` for magnitudes ~ 1, the kernel is wrong.",
+    "Does not imply that FP16 accumulation is never appropriate; small-K reductions may fit within FP16 dynamic range."
+  ],
+  "misconceptionTags": [
+    "tolerance_from_fp64",
+    "bit_reproducibility_myth"
+  ],
+  "distractorRationales": {
+    "A": "Reverses the correct causal direction: FP32 accum is more accurate, not less.",
+    "B": "Bit-reproducibility myth.",
+    "D": "Confuses check_dtype with numerical tolerance."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "Testing and numerical tolerance guidance (torch.testing)",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Floating-point precision and reduction ordering",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Numerical accuracy: precision, rounding, accumulation",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-TOL-003.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,62 @@
+{
+  "questionId": "J-DIAG-021",
+  "learningObjective": "Diagnose per-metric bottlenecks (TTFT vs TPOT) from serving-side data.",
+  "canonicalClaims": [
+    {
+      "claim": "P99 TTFT tail under load with nontrivial preemption rate is a signature of KV cache pressure causing queueing and preempt-and-resume overhead; direct levers are KV footprint reduction (MQA/GQA, quant, shorter context).",
+      "conditions": [
+        "Serving uses continuous batching with preemption.",
+        "Prompt lengths large relative to KV budget per sequence."
+      ],
+      "nonImplications": [
+        "Does not imply KV quant is accuracy-neutral.",
+        "Does not imply all TTFT tail is preemption-caused."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:vllm", "locator": "Metrics + preemption" },
+        { "ref": "PAPER:vllm", "locator": "Sec 4" }
+      ]
+    },
+    {
+      "claim": "Decode utilization ~25% at batch-1 or small batch is consistent with memory-bandwidth-bound decode; TPOT is set by KV/weight bandwidth, not compute.",
+      "conditions": [
+        "Small effective batch during decode.",
+        "Standard dense transformer."
+      ],
+      "nonImplications": [
+        "Does not imply utilization is a bug; it is normal for bandwidth-bound kernels."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 2 characterization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "High compute utilization indicates memory-bound behavior.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "High SM utilization means SMs are busy; that is compute-bound.",
+      "sourceOrEvidence": "Roofline / Nsight Compute docs"
+    },
+    {
+      "claim": "Increasing batch size always improves throughput without hurting TPOT.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Larger batch increases per-step compute time and thus TPOT; there is a latency-throughput trade-off.",
+      "sourceOrEvidence": "vLLM benchmarks"
+    },
+    {
+      "claim": "Preemption never affects TTFT for the preempted request.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Preemption pushes TTFT (for that request's first-token) further out by whatever the resume cost is.",
+      "sourceOrEvidence": "vLLM preemption implementation"
+    }
+  ],
+  "implementationFacts": [
+    "Preemption rate is often reported by serving frameworks as a first-class metric.",
+    "SGLang/vLLM expose queue-depth and effective batch size histograms for diagnosis."
+  ],
+  "performanceScenarios": [
+    "Long-context serving is the most common driver of KV-pressure-driven TTFT tail."
+  ],
+  "versionSensitivity": "stable_principle"
+}

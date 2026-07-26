@@ -1,0 +1,129 @@
+{
+  "id": "F-KVCACHE-024",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / KV Cache access pattern in decode-phase attention",
+  "learningObjective": "Reason about the memory-access pattern of KV Cache reads during LLM decode-phase attention.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere / Hopper",
+    "device": "GPU",
+    "requiredFeatures": [
+      "HBM bandwidth is the bottleneck"
+    ]
+  },
+  "softwareContext": {
+    "framework": "generic decode-phase attention (vLLM/TensorRT-LLM/SGLang concept)",
+    "frameworkVersionScope": "N/A (systems concept)",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "1",
+        "H",
+        "1",
+        "D"
+      ],
+      [
+        "B",
+        "H",
+        "S_kv",
+        "D"
+      ],
+      [
+        "B",
+        "H",
+        "S_kv",
+        "D"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "During LLM decoding (one new token per step), the attention kernel loads Q (only 1 token) and reads the full KV Cache. Which statement about the memory-access pattern is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Decode-phase attention traffic is constant per token regardless of context length; the KV Cache is compressed by the hardware after each step, so HBM reads do not grow."
+    },
+    {
+      "id": "B",
+      "text": "Decode-phase attention is heavily memory-bound: for each generated token, Q is a single row while K and V (of length S_kv per sequence) must be fully read from HBM. Arithmetic intensity is very low, and per-step HBM traffic scales linearly with S_kv, growing over the sequence."
+    },
+    {
+      "id": "C",
+      "text": "The KV Cache is fully cached in L2 for any sequence length, so decoding never reads from HBM after the first step; latency is bounded by L2 hit rate."
+    },
+    {
+      "id": "D",
+      "text": "Decode-phase attention is compute-bound because MMA operations on Q and K/V dominate; the small Q tensor is negligible compared to the compute cost of the matmul."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Decoding generates one token at a time; Q is only 1 row per head, but K and V of length S_kv per sequence must be fully read from HBM to compute attention. The per-step HBM traffic per (batch, head) is ~2 * S_kv * D * sizeof (K + V) plus small Q/O. Arithmetic intensity is very low \u2014 this is a canonical memory-bound step in LLM decoding, and the reason KV Cache size / bandwidth is a first-order concern in serving systems (paged KV cache, KV quantization, MQA/GQA). Per-step cost grows with S_kv, so long-context decoding becomes progressively slower per token.",
+  "optionExplanations": {
+    "A": "Wrong: no hardware compression; traffic grows with S_kv.",
+    "B": "Correct: memory-bound; linear in S_kv per step.",
+    "C": "Wrong: KV Cache far exceeds L2 for long contexts.",
+    "D": "Wrong: MMA on 1\u00d7D * D\u00d7S_kv is memory-bound, not compute-bound."
+  },
+  "assumptions": [
+    "Standard decode-phase attention without approximations.",
+    "S_kv exceeds L2 cache capacity for real workloads."
+  ],
+  "nonImplications": [
+    "Does not imply that KV quantization is the only mitigation; MQA/GQA and paged KV also help.",
+    "Does not imply prefill has the same access pattern; prefill is compute-heavy on Q with matmul-shaped patterns."
+  ],
+  "misconceptionTags": [
+    "decode_compute_bound_myth",
+    "kv_l2_cached_myth"
+  ],
+  "distractorRationales": {
+    "A": "Fabricates hardware KV compression.",
+    "C": "Overstates L2 capacity.",
+    "D": "Confuses prefill and decode compute intensity."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "FlashAttention decoding variants and memory bandwidth analysis",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Arithmetic intensity and memory-bound analysis",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "KV Cache traffic scaling in decode-phase attention",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-KVCACHE-024.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

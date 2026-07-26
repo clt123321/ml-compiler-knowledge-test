@@ -1,0 +1,96 @@
+{
+  "id": "J-LONGCTX-025",
+  "type": "multiple",
+  "module": "llm_inference",
+  "subtopic": "Long context serving / KV bandwidth and capacity",
+  "learningObjective": "Reason about the primary bottlenecks that appear when scaling LLM inference to very long contexts.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": [
+      "large HBM"
+    ]
+  },
+  "softwareContext": {
+    "framework": "generic serving stack",
+    "stability": "stable_principle"
+  },
+  "stem": "Select all statements that correctly characterize challenges specific to long-context (say 32K+ token) LLM serving. (Choose all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Decode-step attention time grows linearly with context length because the attention kernel reads the full growing KV cache each step; at long context, attention read bandwidth can rival weight read bandwidth per step, changing the per-step latency composition."
+    },
+    {
+      "id": "B",
+      "text": "Long context has no impact on prefill latency: prefill is a single forward pass that always takes the same wall-clock time regardless of prompt length, so TTFT stays constant with longer prompts."
+    },
+    {
+      "id": "C",
+      "text": "Per-token KV cache grows linearly with context length; at fixed HBM budget, doubling context length approximately halves the maximum concurrent batch size, directly cutting throughput."
+    },
+    {
+      "id": "D",
+      "text": "TPOT is independent of context length because decode still processes only one new token per step; the KV cache size is a memory-only concern with no effect on per-step latency."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C"
+  ],
+  "explanation": "A is correct: KV grows linearly with context, capping batch size. C is correct: attention read cost per decode step grows linearly with context (whole KV read), and at long context attention bytes can rival weight bytes, increasing TPOT. B is wrong: TPOT does grow with context because attention reads scale linearly. D is wrong: prefill time is roughly proportional to P (or P^2/M in the FlashAttention regime for attention); longer prompts increase TTFT.",
+  "optionExplanations": {
+    "A": "Correct: per-step attention bandwidth growth.",
+    "B": "Wrong: prefill scales with prompt length.",
+    "C": "Correct: batch capacity cost.",
+    "D": "Wrong: TPOT grows with context."
+  },
+  "assumptions": [
+    "'Long context' means the KV cache is a significant fraction of HBM.",
+    "Attention kernel reads the full KV each decode step (no sliding window or sparse attention)."
+  ],
+  "nonImplications": [
+    "Does not imply sliding-window or approximate attention cannot help; they are exactly the mitigations.",
+    "Does not imply KV quantization is quality-neutral."
+  ],
+  "misconceptionTags": [
+    "tpot_context_independent",
+    "prefill_length_independent"
+  ],
+  "distractorRationales": {
+    "B": "Denies prefill scaling.",
+    "D": "Denies attention read growth."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 2 — KV bandwidth analysis",
+      "supports": [
+        "A",
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Sec 4 — attention I/O at long context",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Long-context LLM serving bottlenecks",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-LONGCTX-025.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

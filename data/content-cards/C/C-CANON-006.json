@@ -1,0 +1,56 @@
+{
+  "questionId": "C-CANON-006",
+  "learningObjective": "Explain what canonicalization does in an IR framework such as MLIR and distinguish it from lowering and legalization.",
+  "canonicalClaims": [
+    {
+      "claim": "Canonicalization is a within-dialect pass that folds constants and applies small algebraic rewrites to bring semantically equivalent IR into a preferred normal form; it is orthogonal to lowering (which moves to lower-level dialects) and to dialect conversion / legalization (which uses a ConversionTarget and TypeConverter).",
+      "conditions": [
+        "The pass is running on IR whose ops register canonicalization patterns or folders.",
+        "The transformation preserves semantics."
+      ],
+      "nonImplications": [
+        "Does not imply canonicalization removes all redundancy (CSE / DCE remain separate).",
+        "Does not imply canonical form always improves runtime; it targets a simpler IR."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Canonicalization and fold" },
+        { "ref": "PAPER:mlir", "locator": "MLIR CGO'21: dialects, canonicalization, conversion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Canonicalization is another name for lowering to a lower-level dialect.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Lowering crosses dialect boundaries; canonicalization stays in-dialect.",
+      "sourceOrEvidence": "MLIR docs"
+    },
+    {
+      "claim": "Canonicalization uses ConversionTarget / TypeConverter to legalize illegal ops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That describes MLIR's Dialect Conversion framework; canonicalization is a distinct rewrite mechanism.",
+      "sourceOrEvidence": "MLIR Dialect Conversion doc"
+    },
+    {
+      "claim": "Canonicalization performs functionalization of in-place operations and SSA renaming.",
+      "errorType": "scope_error",
+      "whyWrong": "Functionalization is a distinct transformation; SSA renaming is not the goal of canonicalization.",
+      "sourceOrEvidence": "MLIR / PyTorch functionalization docs"
+    },
+    {
+      "claim": "Canonicalization always improves runtime performance because it removes operations.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Canonicalization targets IR quality; downstream passes decide performance, and some rewrites are neutral for codegen.",
+      "sourceOrEvidence": "MLIR docs"
+    }
+  ],
+  "implementationFacts": [
+    "MLIR ops register `getCanonicalizationPatterns` and `fold` hooks",
+    "Canonicalization runs GreedyPatternRewriteDriver over registered patterns until fixpoint",
+    "Common canonicalizations: identity fold (x+0, x*1), constant folding, redundant cast elimination"
+  ],
+  "performanceScenarios": [
+    "Simplified IR enables downstream passes (fusion, tiling) to match patterns more reliably."
+  ],
+  "versionSensitivity": "stable_principle"
+}

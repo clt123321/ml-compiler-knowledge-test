@@ -1,0 +1,47 @@
+{
+  "questionId": "L-IRDUMP-028",
+  "learningObjective": "Reason about what information a TorchInductor IR dump reveals and what it does not, and how to use it for debugging compilation issues.",
+  "canonicalClaims": [
+    {
+      "claim": "TorchInductor debug dumps expose the post-AOTAutograd FX graph, scheduler fusion decisions, and generated Triton (CUDA) / C++ (CPU) code, enabling diagnosis of missing fusions, unexpected kernel launches, and fallback paths.",
+      "conditions": [
+        "torch._inductor.config.debug or TORCH_COMPILE_DEBUG=1 is enabled.",
+        "PyTorch 2.3 ~ 2.5 default layout."
+      ],
+      "nonImplications": [
+        "Does not imply IR dumps replace runtime profiling.",
+        "Does not imply the dumps expose PTX/SASS or ONNX serialization."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Debug output" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "IR dumps include PTX/SASS assembly.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The dumps stop at the Triton (or C++) source level; PTX/SASS analysis uses ptxas -v and Nsight Compute.",
+      "sourceOrEvidence": "TorchInductor debug docs"
+    },
+    {
+      "claim": "IR dumps are ONNX-compatible.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The dumps are Inductor's internal format; ONNX export is a separate path.",
+      "sourceOrEvidence": "PyTorch export documentation"
+    },
+    {
+      "claim": "IR dumps contain only weights.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They contain graph structure and generated code; weights are separate.",
+      "sourceOrEvidence": "TorchInductor debug output format"
+    },
+    {
+      "claim": "IR dumps automatically show autotuning history.",
+      "errorType": "scope_error",
+      "whyWrong": "Autotune logging requires additional flags.",
+      "sourceOrEvidence": "TorchInductor autotune docs"
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

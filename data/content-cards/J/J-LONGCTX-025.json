@@ -1,0 +1,49 @@
+{
+  "questionId": "J-LONGCTX-025",
+  "learningObjective": "Reason about the primary bottlenecks that appear when scaling LLM inference to very long contexts.",
+  "canonicalClaims": [
+    {
+      "claim": "Long-context serving faces two linear-in-N pressures: per-token KV cache size (limiting batch capacity) and per-decode-step attention read bandwidth (rising vs the fixed weight-read baseline).",
+      "conditions": [
+        "Standard full attention; no sparse or sliding-window approximation.",
+        "KV stored at full precision."
+      ],
+      "nonImplications": [
+        "Does not imply mitigations do not exist (sparse attention, sliding window, KV quant).",
+        "Does not imply mitigations preserve quality."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 2" },
+        { "ref": "PAPER:flashattn", "locator": "Sec 4" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TPOT is independent of context length.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Attention reads scale linearly with context.",
+      "sourceOrEvidence": "Decode roofline analysis"
+    },
+    {
+      "claim": "Prefill time is independent of prompt length.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Prefill compute and I/O scale with prompt length.",
+      "sourceOrEvidence": "Prefill compute analysis"
+    },
+    {
+      "claim": "Increasing HBM alone is sufficient to serve arbitrarily long context.",
+      "errorType": "scope_error",
+      "whyWrong": "Even with unlimited HBM, per-step attention bandwidth grows with N and eventually dominates.",
+      "sourceOrEvidence": "Long-context roofline"
+    }
+  ],
+  "implementationFacts": [
+    "Common long-context mitigations: MQA/GQA, KV quantization, sliding window attention, sparse attention (Mamba-style or Mistral-style).",
+    "PagedAttention avoids per-sequence KV waste but does not change total KV bytes per token."
+  ],
+  "performanceScenarios": [
+    "At 32K+ context and small batch, per-step attention time can exceed per-step weight time."
+  ],
+  "versionSensitivity": "stable_principle"
+}

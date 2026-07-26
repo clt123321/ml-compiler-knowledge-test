@@ -1,0 +1,140 @@
+{
+  "id": "I-ATTBACK-025",
+  "type": "multiple",
+  "module": "core_ops_attention",
+  "subtopic": "Attention backward / Memory footprint and recomputation",
+  "learningObjective": "Reason about the peak activation memory of standard attention backward and how FlashAttention-style recomputation changes it.",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "HBM",
+      "SMEM sized for tile"
+    ]
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ],
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ],
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ],
+      [
+        "B",
+        "H",
+        "N",
+        "N"
+      ],
+      [
+        "B",
+        "H",
+        "N",
+        "d"
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "contiguous",
+      "contiguous",
+      "contiguous",
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "Consider the backward pass of standard attention O = softmax(Q @ K^T / sqrt(d)) @ V for shapes Q, K, V ∈ [B, H, N, d]. Select all correct statements about activation memory and recomputation. (Choose all that apply.)",
+  "codeSnippet": "# Forward:\n# S = Q @ K^T / sqrt(d)                # [B, H, N, N]\n# P = softmax(S, dim=-1)               # [B, H, N, N]\n# O = P @ V                             # [B, H, N, d]\n\n# Backward (given dO):\n# Need dQ, dK, dV. Naive requires materialized P (or S).",
+  "options": [
+    {
+      "id": "A",
+      "text": "FlashAttention avoids storing P in HBM by re-tiling backward: it stores only per-row (m, l) statistics from forward (size O(B*H*N)) and recomputes P block-by-block from Q, K in backward, trading extra compute for a large HBM saving."
+    },
+    {
+      "id": "B",
+      "text": "In FlashAttention backward, the extra recomputation makes total FLOPs strictly larger than the forward-only baseline; the wall-clock speedup comes entirely from reduced HBM traffic dominating the extra compute."
+    },
+    {
+      "id": "C",
+      "text": "The naive backward stores the softmax output P (or S) of shape [B, H, N, N] from forward and re-uses it in backward; this dominates activation memory for long sequences (quadratic in N) and is the main reason non-flash attention runs out of memory at long context."
+    },
+    {
+      "id": "D",
+      "text": "The backward gradient of softmax with respect to logits requires access to the full P matrix element-by-element; there is no way to avoid materializing P in HBM at some point in any correct algorithm."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "C"
+  ],
+  "explanation": "Options A, B, C are correct; option D is incorrect. A (Correct): FlashAttention backward recomputation strategy. B (Correct): FA backward is a compute-for-I/O trade. C (Correct): standard attention backward memory footprint. D (Wrong): block-wise recomputation avoids full P materialization.",
+  "optionExplanations": {
+    "A": "Correct: FlashAttention backward recomputation strategy.",
+    "B": "Correct: FA backward is a compute-for-I/O trade.",
+    "C": "Correct: standard attention backward memory footprint.",
+    "D": "Wrong: block-wise recomputation avoids full P materialization."
+  },
+  "assumptions": [
+    "Discussion is training attention with standard cross-entropy loss upstream.",
+    "'Naive backward' means a straightforward autograd derivation without I/O-aware fusion."
+  ],
+  "nonImplications": [
+    "Does not imply that all attention backward implementations recompute; some do checkpoint P.",
+    "Does not imply that recomputation is always the best trade; on short sequences, storing P may be preferable."
+  ],
+  "misconceptionTags": [
+    "attn_p_must_be_materialized",
+    "flashattn_flop_neutral_myth"
+  ],
+  "distractorRationales": {
+    "D": "Denies the tiled backward possibility."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Sec 3.3 — backward algorithm and recomputation",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Attention backward activation memory and FlashAttention recomputation trade",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/I/I-ATTBACK-025.json",
+  "reviewStatus": "draft",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

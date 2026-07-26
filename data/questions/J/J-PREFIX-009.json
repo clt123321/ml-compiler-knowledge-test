@@ -1,0 +1,95 @@
+{
+  "id": "J-PREFIX-009",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Prefix caching / KV cache reuse across requests",
+  "learningObjective": "Explain prefix caching, its correctness conditions, and its effect on TTFT.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "vLLM / SGLang / TRT-LLM",
+    "frameworkVersionScope": "vLLM 0.4+, SGLang, TRT-LLM 0.9+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Prefix caching (also called 'prompt caching' or 'radix cache' in SGLang) is a KV-cache reuse mechanism. Which description of its behavior and correctness conditions is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Prefix caching stores the softmax outputs of past attention layers keyed by the prompt hash; when a new request's prompt matches, the softmax output is directly reused for the shared prefix, skipping both the QKV projections and the attention math."
+    },
+    {
+      "id": "B",
+      "text": "Prefix caching stores the KV cache blocks of previously computed token positions and reuses them for new requests whose prompts share a token-identical prefix. Reuse is exact only if the shared prefix has identical token ids (any diff invalidates from that position onward). It reduces or eliminates the prefill of the shared prefix, cutting TTFT."
+    },
+    {
+      "id": "C",
+      "text": "Prefix caching is a text-level LRU cache of the model's output strings keyed by prompt; it is only correct when the model temperature is 0 (deterministic decoding), and it cannot be applied when sampling is stochastic."
+    },
+    {
+      "id": "D",
+      "text": "Prefix caching approximates the KV of a matching prompt with the closest cached embedding vector via cosine similarity; because the approximation is very close (typically >0.98 cosine similarity), the resulting output is nearly identical for most prompts."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Prefix caching stores per-position KV blocks (from PagedAttention or equivalent) keyed by the sequence of prompt token ids. When a new request comes in whose prompt starts with an already-cached token sequence, the KV blocks for that shared prefix are reused directly — the prefill for those tokens is skipped, cutting TTFT. Reuse is exact and only when the token ids match; any divergence invalidates the reused cache from that position onward. SGLang's radix cache is a common efficient index structure for this.",
+  "optionExplanations": {
+    "B": "Correct: token-id-keyed KV reuse with exact-prefix condition.",
+    "A": "Wrong: softmax outputs are not cached; only KV.",
+    "C": "Wrong: prefix caching is at KV level, not output-string level, and does not require T=0.",
+    "D": "Wrong: no cosine-similarity approximation; that would break correctness."
+  },
+  "assumptions": [
+    "Prompts are tokenized identically across requests (same tokenizer, same normalization).",
+    "System stores KV in a form (paged blocks) that supports reuse."
+  ],
+  "nonImplications": [
+    "Does not imply that prefix caching helps every workload; it only helps when prompt prefixes are shared.",
+    "Does not imply zero overhead; cache lookup and eviction have costs."
+  ],
+  "misconceptionTags": [
+    "prefix_cache_output_string_myth",
+    "prefix_cache_cosine_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrong cached quantity.",
+    "C": "Confuses with output-string caching.",
+    "D": "Fabricates similarity-based approximation."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:sglang",
+      "locator": "RadixAttention / prefix cache",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "Prefix caching / automatic prefix caching",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Prefix caching mechanism and TTFT benefit",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/J/J-PREFIX-009.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

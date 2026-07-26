@@ -1,0 +1,51 @@
+{
+  "questionId": "E-ONNXFMT-030",
+  "learningObjective": "Understand ONNX as an interchange format distinct from runtimes; interchange ≠ peak performance.",
+  "canonicalClaims": [
+    {
+      "claim": "ONNX standardizes serialization, opset semantics, and shape/dtype info to enable model interchange; execution performance is entirely determined by the consuming runtime (ONNX Runtime, TensorRT, OpenVINO, IREE, etc.), which makes independent implementation choices.",
+      "conditions": ["ONNX spec as documented."],
+      "nonImplications": [
+        "Does not imply portability yields peak performance on any target.",
+        "Does not imply runtimes cannot share optimization tooling."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "ONNX overview and runtime independence" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Exporting to ONNX guarantees peak performance on any hardware.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Performance depends on the runtime, not the format.",
+      "sourceOrEvidence": "ONNX docs"
+    },
+    {
+      "claim": "An `.onnx` file bundles a specific execution engine.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a data file; the runtime is a separate component.",
+      "sourceOrEvidence": "ONNX docs"
+    },
+    {
+      "claim": "All ONNX-consuming runtimes produce identical numerical outputs.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Runtimes may produce slightly different results within spec tolerance (e.g., due to reduction order, mixed precision).",
+      "sourceOrEvidence": "ONNX docs / runtime docs"
+    },
+    {
+      "claim": "ONNX Runtime and TensorRT are the same thing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ONNX Runtime is Microsoft's runtime; TensorRT is NVIDIA's — both consume ONNX but are distinct products.",
+      "sourceOrEvidence": "Vendor docs"
+    }
+  ],
+  "implementationFacts": [
+    "ONNX Runtime, TensorRT, OpenVINO, IREE, TVM all consume ONNX with different pipelines.",
+    "Interchange format = portable representation; runtime = executor with its own optimizations."
+  ],
+  "performanceScenarios": [
+    "Same ONNX file, different runtimes: latency can differ by orders of magnitude depending on hardware match, kernel availability, and fusion policy."
+  ],
+  "versionSensitivity": "stable_principle"
+}

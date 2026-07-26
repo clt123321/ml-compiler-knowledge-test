@@ -1,0 +1,95 @@
+{
+  "id": "C-LINALG-030",
+  "type": "multiple",
+  "module": "graph_tensor_ir",
+  "subtopic": "MLIR linalg.generic semantics",
+  "learningObjective": "Interpret an MLIR linalg.generic op's indexing maps and iterator types and identify which claims about its semantics are correct.",
+  "archetype": "ir_transformation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "MLIR",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider the `linalg.generic` op below expressing a matmul-like reduction. Which of the following statements about its semantics are correct? (Select all that apply.)",
+  "irSnippet": "// Matmul via linalg.generic\n#matmul_maps = [\n  affine_map<(m, n, k) -> (m, k)>,   // A[m, k]\n  affine_map<(m, n, k) -> (k, n)>,   // B[k, n]\n  affine_map<(m, n, k) -> (m, n)>    // C[m, n]\n]\nlinalg.generic {\n  indexing_maps = #matmul_maps,\n  iterator_types = [\"parallel\", \"parallel\", \"reduction\"]\n} ins(%A, %B : tensor<MxKxf32>, tensor<KxNxf32>)\n  outs(%C : tensor<MxNxf32>) {\n^bb0(%a : f32, %b : f32, %c : f32):\n  %ab = arith.mulf %a, %b : f32\n  %s  = arith.addf %c, %ab : f32\n  linalg.yield %s : f32\n} -> tensor<MxNxf32>",
+  "options": [
+    {
+      "id": "A",
+      "text": "The `iterator_types` list marks `m` and `n` as parallel (all iterations along these dims can execute concurrently) and `k` as reduction (iterations along this dim accumulate into the output)."
+    },
+    {
+      "id": "B",
+      "text": "The `indexing_maps` express how each input/output tensor is indexed as a function of the loop iterator tuple `(m, n, k)`; combined with `iterator_types`, they fully describe the iteration space of the op."
+    },
+    {
+      "id": "C",
+      "text": "The op's body (`^bb0`) executes a scalar `mul-add` per (m, n, k) triple, accumulating into the output; `linalg.yield` returns the new value of the output element."
+    },
+    {
+      "id": "D",
+      "text": "`linalg.generic` cannot express matmul because it lacks reduction support; any reduction op must be lowered to explicit `scf.for` before `linalg.generic` can accept it."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B",
+    "C"
+  ],
+  "explanation": "A, B, C are correct: iterator_types classify each iterator (parallel/reduction/etc.), indexing_maps say how each tensor is accessed from the iterator tuple, and the scalar body specifies per-iteration computation with `linalg.yield` returning the new value. D is wrong: `linalg.generic` supports reduction iterators natively (that is exactly what the example above uses).",
+  "optionExplanations": {
+    "A": "Correct.",
+    "B": "Correct.",
+    "C": "Correct.",
+    "D": "Wrong: linalg.generic supports reduction iterators natively."
+  },
+  "assumptions": [
+    "The MLIR linalg dialect syntax as of current LangRef.",
+    "The tensor types match the indexing_maps' dimensionalities."
+  ],
+  "nonImplications": [
+    "Does not imply linalg.generic is the fastest way to express matmul; specialized ops (linalg.matmul) or tuned kernels exist.",
+    "Does not imply that all reductions are associative under FP; ordering choices affect numerical results."
+  ],
+  "misconceptionTags": [
+    "linalg_no_reduction"
+  ],
+  "distractorRationales": {
+    "D": "Wrong claim that linalg.generic lacks reduction support."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "linalg dialect: linalg.generic, indexing_maps, iterator_types",
+      "supports": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:mlir",
+      "locator": "Structured ops and iteration domain",
+      "supports": [
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-LINALG-030.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

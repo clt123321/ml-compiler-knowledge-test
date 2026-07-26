@@ -1,0 +1,217 @@
+{
+  "module": "graph_opt_schedule",
+  "code": "G",
+  "expectedCount": 30,
+  "questions": [
+    {
+      "id": "G-FUSION-001",
+      "file": "data/questions/G/G-FUSION-001.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-FUSION-001.json",
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-002",
+      "file": "data/questions/G/G-FUSION-002.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-FUSION-002.json",
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-003",
+      "file": "data/questions/G/G-FUSION-003.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-FUSION-003.json",
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-004",
+      "file": "data/questions/G/G-FUSION-004.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-FUSION-004.json",
+      "version": 1
+    },
+    {
+      "id": "G-FUSION-005",
+      "file": "data/questions/G/G-FUSION-005.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-FUSION-005.json",
+      "version": 2
+    },
+    {
+      "id": "G-LOOPFUSE-006",
+      "file": "data/questions/G/G-LOOPFUSE-006.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-LOOPFUSE-006.json",
+      "version": 1
+    },
+    {
+      "id": "G-LOOPFISS-007",
+      "file": "data/questions/G/G-LOOPFISS-007.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-LOOPFISS-007.json",
+      "version": 1
+    },
+    {
+      "id": "G-TILE-008",
+      "file": "data/questions/G/G-TILE-008.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-TILE-008.json",
+      "version": 1
+    },
+    {
+      "id": "G-TILE-009",
+      "file": "data/questions/G/G-TILE-009.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-TILE-009.json",
+      "version": 1
+    },
+    {
+      "id": "G-REORDER-010",
+      "file": "data/questions/G/G-REORDER-010.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-REORDER-010.json",
+      "version": 1
+    },
+    {
+      "id": "G-UNROLL-011",
+      "file": "data/questions/G/G-UNROLL-011.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-UNROLL-011.json",
+      "version": 2
+    },
+    {
+      "id": "G-VECTOR-012",
+      "file": "data/questions/G/G-VECTOR-012.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-VECTOR-012.json",
+      "version": 1
+    },
+    {
+      "id": "G-PARALLEL-013",
+      "file": "data/questions/G/G-PARALLEL-013.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-PARALLEL-013.json",
+      "version": 1
+    },
+    {
+      "id": "G-LAYOUT-014",
+      "file": "data/questions/G/G-LAYOUT-014.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-LAYOUT-014.json",
+      "version": 1
+    },
+    {
+      "id": "G-MEMPLAN-015",
+      "file": "data/questions/G/G-MEMPLAN-015.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-MEMPLAN-015.json",
+      "version": 1
+    },
+    {
+      "id": "G-RECOMP-016",
+      "file": "data/questions/G/G-RECOMP-016.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-RECOMP-016.json",
+      "version": 1
+    },
+    {
+      "id": "G-CFCSE-017",
+      "file": "data/questions/G/G-CFCSE-017.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-CFCSE-017.json",
+      "version": 2
+    },
+    {
+      "id": "G-SHAPESPEC-018",
+      "file": "data/questions/G/G-SHAPESPEC-018.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-SHAPESPEC-018.json",
+      "version": 1
+    },
+    {
+      "id": "G-KERNSEL-019",
+      "file": "data/questions/G/G-KERNSEL-019.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-KERNSEL-019.json",
+      "version": 1
+    },
+    {
+      "id": "G-COSTMODEL-020",
+      "file": "data/questions/G/G-COSTMODEL-020.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-COSTMODEL-020.json",
+      "version": 2
+    },
+    {
+      "id": "G-AUTOTUNE-021",
+      "file": "data/questions/G/G-AUTOTUNE-021.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-AUTOTUNE-021.json",
+      "version": 1
+    },
+    {
+      "id": "G-SEARCHSP-022",
+      "file": "data/questions/G/G-SEARCHSP-022.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-SEARCHSP-022.json",
+      "version": 1
+    },
+    {
+      "id": "G-METASCHED-023",
+      "file": "data/questions/G/G-METASCHED-023.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-METASCHED-023.json",
+      "version": 1
+    },
+    {
+      "id": "G-ANSOR-024",
+      "file": "data/questions/G/G-ANSOR-024.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-ANSOR-024.json",
+      "version": 1
+    },
+    {
+      "id": "G-HALIDE-025",
+      "file": "data/questions/G/G-HALIDE-025.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-HALIDE-025.json",
+      "version": 1
+    },
+    {
+      "id": "G-PORTABILITY-026",
+      "file": "data/questions/G/G-PORTABILITY-026.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-PORTABILITY-026.json",
+      "version": 2
+    },
+    {
+      "id": "G-INDUCTOR-027",
+      "file": "data/questions/G/G-INDUCTOR-027.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-INDUCTOR-027.json",
+      "version": 1
+    },
+    {
+      "id": "G-TVMSCHED-028",
+      "file": "data/questions/G/G-TVMSCHED-028.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-TVMSCHED-028.json",
+      "version": 2
+    },
+    {
+      "id": "G-BUDGET-029",
+      "file": "data/questions/G/G-BUDGET-029.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-BUDGET-029.json",
+      "version": 2
+    },
+    {
+      "id": "G-TRANSFERTUNE-030",
+      "file": "data/questions/G/G-TRANSFERTUNE-030.json",
+      "reviewStatus": "draft",
+      "contentCardFile": "data/content-cards/G/G-TRANSFERTUNE-030.json",
+      "version": 1
+    }
+  ]
+}

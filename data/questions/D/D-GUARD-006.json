@@ -1,0 +1,96 @@
+{
+  "id": "D-GUARD-006",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "TorchDynamo / Stride guard causing recompilation",
+  "learningObjective": "Diagnose a stride-triggered recompilation in torch.compile by reading a recompile log and identify the correct interpretation.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "The user compiles the same shape but sometimes passes a contiguous tensor and sometimes a `.transpose(0,1)` view of it. TORCH_LOGS=\"recompiles\" reports the excerpt shown. What is the most accurate reading?",
+  "codeSnippet": "import torch\n\n@torch.compile\ndef f(x):\n    return x.sum(dim=-1)\n\nx_c = torch.randn(64, 128, device=\"cuda\")\nx_t = torch.randn(128, 64, device=\"cuda\").transpose(0, 1)  # same logical shape, different strides\n\nf(x_c)  # first compile\nf(x_t)  # triggers recompile\n\n# TORCH_LOGS=\"recompiles\" (excerpt):\n#   Recompiling function f\n#     triggered by the following guard failure(s):\n#       - tensor 'L[\\'x\\']' stride mismatch at index 0: expected 128, actual 1\n#       - tensor 'L[\\'x\\']' stride mismatch at index 1: expected 1, actual 128",
+  "profileData": "Two compiled variants observed: one specialized for contiguous stride pattern (128, 1), another for transposed stride (1, 128). No graph break was reported.",
+  "options": [
+    {
+      "id": "A",
+      "text": "The log is misattributed: a transposed view has the same physical storage as the contiguous tensor, so no stride guard should fire; the recompile must have been caused by an unrelated dtype change."
+    },
+    {
+      "id": "B",
+      "text": "The recompile is triggered by a stride guard, not a shape guard. TorchDynamo installs guards on the observed strides (in addition to shapes); a call with the same shape but different strides fails the guard and produces a new compiled variant."
+    },
+    {
+      "id": "C",
+      "text": "Recompilation only occurs on shape changes, so the observed guard failure indicates that the transposed view was silently reshaped by Dynamo before running, invalidating the compile cache. In this account, recompilation only occurs on shape changes in the input tensor, so the observed guard failure indicates that the transposed view was silently reshaped by Dynamo into a fresh tensor before running, invalidating the compile cache and forcing a re-compile."
+    },
+    {
+      "id": "D",
+      "text": "Stride guards do not exist in current PyTorch releases; the log entry is stale from a pre-2.0 debug build and can be ignored. Under this reading, stride guards do not exist in current PyTorch releases; the log entry is stale output from a pre-2.0 debug build, can be safely ignored, and the observed recompile is actually caused by an unrelated cache-key hash collision."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "TorchDynamo installs guards not only on shape but also on stride and (device, dtype, etc.). Different stride patterns can imply different generated kernels (contiguous vs. non-contiguous access patterns), so Dynamo specializes on the stride tuple by default. Passing a transposed view with the same logical shape but different stride fails the stride guard and triggers a recompile. Marking the stride as dynamic (via `torch._dynamo.mark_dynamic` or via reduce-overhead mode heuristics) can avoid this in some cases.",
+  "optionExplanations": {
+    "B": "Correct: stride guards are a known guard category.",
+    "A": "Wrong: identical storage still has different stride metadata; guards are on metadata.",
+    "C": "Wrong: no silent reshape occurs; the log clearly cites a stride mismatch.",
+    "D": "Wrong: stride guards are supported in current releases."
+  },
+  "assumptions": [
+    "Default torch.compile mode with no mark_dynamic overrides.",
+    "Compile cache is populated by the first call."
+  ],
+  "nonImplications": [
+    "Does not imply every stride change forces a recompile with all settings; some modes relax stride guards.",
+    "Does not imply that the two compiled variants are equally fast; non-contiguous access can be slower."
+  ],
+  "misconceptionTags": [
+    "only_shape_guards_exist",
+    "storage_identity_implies_no_guard"
+  ],
+  "distractorRationales": {
+    "A": "Ignores stride metadata.",
+    "C": "Wrong causal claim about silent reshape.",
+    "D": "Wrong denial of stride guards."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "Guards: shape, stride, dtype, device",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "Guards install and check discussion",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-GUARD-006.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

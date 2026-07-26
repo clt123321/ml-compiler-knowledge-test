@@ -1,0 +1,56 @@
+{
+  "questionId": "D-BWSHAPE-033",
+  "learningObjective": "Reason about how AOTAutograd's partitioner divides the joint (fw+bw) graph and what activations get materialized between forward and backward.",
+  "canonicalClaims": [
+    {
+      "claim": "AOTAutograd's partitioner (a min-cut-based heuristic on the joint FX graph) decides at compile time which activations to materialize between forward and backward and which to recompute in the backward, trading compute for memory. It is a compile-time decision.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5.",
+        "Autograd is active when the compiled function is called."
+      ],
+      "nonImplications": [
+        "Does not imply the heuristic always minimizes peak memory optimally.",
+        "Does not imply recompute is always beneficial; latency-sensitive kernels may prefer full save."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:pytorch2", "locator": "Partitioner discussion" },
+        { "ref": "DOC:torch-compile", "locator": "AOTAutograd partitioner" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AOTAutograd saves every intermediate activation.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Cheap-to-recompute values may be recomputed to save memory.",
+      "sourceOrEvidence": "PyTorch 2 ASPLOS"
+    },
+    {
+      "claim": "Users must invoke the partitioner manually.",
+      "errorType": "scope_error",
+      "whyWrong": "It runs by default.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "The partitioner runs at each call site.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a compile-time decision, executed once per compilation.",
+      "sourceOrEvidence": "torch.compile docs"
+    },
+    {
+      "claim": "Recompute always slows the backward pass.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For cheap ops, recomputation cost is minimal and the memory savings enable larger batch sizes, sometimes yielding overall speedups.",
+      "sourceOrEvidence": "Recompute discussions in AOTAutograd docs"
+    }
+  ],
+  "implementationFacts": [
+    "The default partitioner uses a min-cut heuristic",
+    "Users can customize the partitioner strategy in some releases",
+    "Activation-checkpointing patterns interact with the partitioner"
+  ],
+  "performanceScenarios": [
+    "The partitioner's decisions affect peak memory and step time; suboptimal choices lead to OOM or slower steps."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

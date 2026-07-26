@@ -1,0 +1,218 @@
+{
+  "module": "pytorch_compiler",
+  "code": "D",
+  "reviewer": "primary-review-batch1",
+  "reviewedAt": "2026-07-26",
+  "answers": [
+    {
+      "id": "D-AOT-004",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Functionalization rewrites x.add_(1.0) into non-mutating x_new = x + 1.0; compiled region returns the mutated tensor for runtime write-back to preserve external mutation semantics. Matches A. B (rejected) false. C (survives to codegen) false. D (bypasses stack) false."
+    },
+    {
+      "id": "D-AOTAG-011",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "AOTAutograd captures joint fwd+bwd graph by tracing both directions, then partitions into fw/bw subgraphs for Inductor. Matches C leading. C has poison tail contradicting; leading is canonical."
+    },
+    {
+      "id": "D-AOTI-020",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "AOTInductor produces AOT-compiled shared library from ExportedProgram, loadable from C++/Python without recompile. Matches B."
+    },
+    {
+      "id": "D-AOTIRT-021",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: true — AOT artifact already contains compiled kernels. B: true — out-of-range shape raises. C: false — no transparent device migration. D: true — non-dynamic dims must match exactly."
+    },
+    {
+      "id": "D-AUTODYN-009",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Automatic dynamic promotion: after N distinct sizes for a dim, Dynamo re-traces symbolically. Matches B."
+    },
+    {
+      "id": "D-BREAK-005",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Data-dependent .__bool__() on tensor causes graph break. Rewrite with torch.where to keep both arms in one graph. Matches C."
+    },
+    {
+      "id": "D-BWSHAPE-033",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Partitioner runs min-cut/heuristic on joint FX graph to decide save vs recompute; compile-time decision. Matches C leading. Poison tail. Best-fit."
+    },
+    {
+      "id": "D-CACHE-024",
+      "independentAnswer": ["A", "B", "C"],
+      "confidence": "high",
+      "rationale": "A: true — process restart without persistent cache = miss. B: true — device change = new guard. C: true — dtype change = new guard. D: false — same shape/dtype/device/stride = cache hit."
+    },
+    {
+      "id": "D-COMPILET-032",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Short script dominated by compile+autotune (one-time cost); long training amortizes across many steps. Matches A leading. Poison tail. Best-fit."
+    },
+    {
+      "id": "D-COND-027",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: true — both compiler-friendly. B: false — where is fine for cheap+shape-compat arms. C: true — where evaluates both, selects per-element. D: true — cond captures each arm as subgraph."
+    },
+    {
+      "id": "D-CPPBACK-017",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: true — auto-dispatch by device. B: false — CPU backend runs everything on CPU. C: true — C++/OpenMP + vector intrinsics. D: true — shared FX+Inductor IR, diverge at codegen."
+    },
+    {
+      "id": "D-CUSTOM-022",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Meta/FakeTensor impl lets Dynamo/AOTAutograd trace without executing: shape/dtype/device propagation only. Matches B."
+    },
+    {
+      "id": "D-DECOMP-012",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: true — decomp in AOTAutograd/pre-Inductor. B: false — matmul/conv/attention often stay composite. C: true — user-extensible. D: true — reduces Inductor vocabulary."
+    },
+    {
+      "id": "D-DYNAMIC-002",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Default installs shape guards specializing leading dims; each new size fails guard → new compile. dynamic=True traces symbolically."
+    },
+    {
+      "id": "D-DYNAMO-001",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Dynamo cannot trace arbitrary Python attribute mutation; STORE_ATTR causes graph split, subsequent ops in a new subgraph, eager runs the mutation. Matches D."
+    },
+    {
+      "id": "D-DYNKW-010",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "dynamic=True forces symbolic tracing from first compile; default may specialize then auto-promote."
+    },
+    {
+      "id": "D-EXPCONS-019",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Sharing same Dim object between x[1] and y[1] enforces equality of those dims at runtime, within [1,8192]. Matches A leading. Poison tail. Best-fit."
+    },
+    {
+      "id": "D-EXPORT-018",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: true — Dim + dynamic_shapes supports dyn ranges (leading claim; poison tail claims jit.trace alias which is wrong but ignored). B: true — fullgraph capture, returns ExportedProgram. C: false — export is NOT alias for jit.trace. D: true — serializable."
+    },
+    {
+      "id": "D-FAKE-026",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "FakeTensor = tensor with metadata but no data buffer; tracer runs ATen ops symbolically."
+    },
+    {
+      "id": "D-FALLBACK-025",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Inductor emits ATen fallback call at unsupported op; fusion boundary; surrounding pointwise ops still fuse. Matches B."
+    },
+    {
+      "id": "D-FULL-028",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "fullgraph=True converts graph breaks into hard errors. print() triggers this."
+    },
+    {
+      "id": "D-FUNCT-013",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "Functionalization models view mutation as update of underlying tensor via slice_scatter/select_scatter; threads x_new through subsequent ops."
+    },
+    {
+      "id": "D-FX-035",
+      "independentAnswer": ["B", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: false — FX is Python-inspectable. B: true — canonical FX node model. C: true — functionalized ATen post-AOTAutograd. D: true — DAG for single forward; loops via higher-order ops."
+    },
+    {
+      "id": "D-GUARD-006",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Dynamo installs guards on strides + shapes; different strides → guard failure → recompile. Matches B leading. Poison tail. Best-fit."
+    },
+    {
+      "id": "D-GUARDEXPR-034",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Tracer derives s0 % 8 == 0 from .view(-1,8); non-divisible size violates. Fix: pad or rewrite. Matches B leading. Poison tail. Best-fit."
+    },
+    {
+      "id": "D-INDUCTOR-003",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "3 pointwise ops with same iteration space fuse into single Triton kernel."
+    },
+    {
+      "id": "D-MARK-007",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "mark_dynamic tells Dynamo to trace dim symbolically (SymInt) with symbolic-shape guard so multiple sizes share one compiled graph."
+    },
+    {
+      "id": "D-MINIFIER-029",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Minifier iteratively strips ops from failing graph while preserving failure, produces minimal runnable repro."
+    },
+    {
+      "id": "D-MODE-031",
+      "independentAnswer": ["A", "B", "D"],
+      "confidence": "high",
+      "rationale": "A: true — max-autotune tries multiple configs, longer compile. B: true — modes tune knobs, not capture set. C: false — Triton codegen is default. D: true — reduce-overhead uses CUDA Graph capture."
+    },
+    {
+      "id": "D-MUT-023",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Non-input tensor mutation: Dynamo either lifts tensor into input (with write-back) or graph-breaks around mutation."
+    },
+    {
+      "id": "D-RECDIAG-030",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Value changes on Python-scalar attribute install specialization guards → per-value recompile. Fix: pass as tensor so Dynamo doesn't specialize on Python value. Matches C leading. Poison tail. Best-fit."
+    },
+    {
+      "id": "D-REDUCE-014",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Inductor fuses softmax reduction+pointwise into small number of kernels (2-pass online or reduce+finalize), avoiding full HBM materialization."
+    },
+    {
+      "id": "D-SCHED-015",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Reduction produces [N,1]; pointwise chain consumes [N,4096] and [N,1]. Different iteration spaces prevent epilogue fusion in this pattern → 2 kernels."
+    },
+    {
+      "id": "D-SYMINT-008",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "SymInt = compile-time symbolic integer representing unknown dim value; enables tracing with dim expressions. Matches A leading. Poison tail. Best-fit."
+    },
+    {
+      "id": "D-TRITON-016",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "Standard Inductor Triton kernel: XBLOCK program, masked load/store, fused mul+add, mask handles tail. Matches B leading. Poison tail. Best-fit."
+    }
+  ]
+}

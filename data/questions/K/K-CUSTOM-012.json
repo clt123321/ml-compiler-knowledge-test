@@ -1,0 +1,91 @@
+{
+  "id": "K-CUSTOM-012",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "Custom operator",
+  "learningObjective": "Describe how a custom operator is registered into a runtime so that both the compiler and the executor recognize it, and what obligations the author takes on.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic (ONNX Runtime custom op, TensorRT plugin, torch custom op)",
+    "stability": "stable_principle"
+  },
+  "stem": "When you add a custom operator to a runtime such as ONNX Runtime, TensorRT, or PyTorch, which combination best describes the author's responsibilities?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Only register a Python function of the same name; the runtime automatically infers the op schema from its Python signature and generates GPU kernels for all supported dtypes by tracing example inputs at first call."
+    },
+    {
+      "id": "B",
+      "text": "Only implement the CUDA kernel; runtime frameworks introspect the .cu source to derive the op schema, differentiate the kernel symbolically, and register it into every backend transparently."
+    },
+    {
+      "id": "C",
+      "text": "Ship the model with the op's PyTorch source; the compiler recompiles the source on every process start to derive schema, kernels, and backward pass, so no explicit registration is needed."
+    },
+    {
+      "id": "D",
+      "text": "Provide (i) an op schema/signature so the compiler can type- and shape-check calls, (ii) a kernel implementation for each supported device/dtype registered into the runtime, and (iii) — if the op appears inside an autograd graph — a backward or functional counterpart. The runtime performs no automatic differentiation or shape inference for unknown ops."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Custom operators require: (1) a schema describing inputs/outputs/types/attributes so the compiler and shape inference can reason about them; (2) at least one kernel per (device, dtype) combination to be supported, registered into the runtime; and (3) if used in autograd, either a differentiable formulation via primitive ops or a manual backward. None of the automated behaviors in A/B/D are how mainstream runtimes work.",
+  "optionExplanations": {
+    "A": "Wrong: schemas are declared, not inferred; kernels are not auto-generated from a Python function.",
+    "B": "Wrong: no framework introspects .cu source to derive schema and backward.",
+    "C": "Wrong: shipping source and recompiling on every start is neither typical nor what enables custom ops.",
+    "D": "Correct: reflects ONNX custom op API, TensorRT plugin API, and torch's custom op registration."
+  },
+  "assumptions": [
+    "The runtime supports pluggable custom ops (ONNX RT, TRT, PyTorch)."
+  ],
+  "nonImplications": [
+    "Does not imply the author must implement all dtypes; only those declared as supported by the registration.",
+    "Does not imply autograd is always required; inference-only custom ops need no backward."
+  ],
+  "misconceptionTags": [
+    "auto_kernel_gen_myth",
+    "auto_grad_myth"
+  ],
+  "distractorRationales": {
+    "A": "Fabricates automatic kernel gen.",
+    "B": "Fabricates .cu introspection.",
+    "C": "Fabricates recompile-on-start."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:onnx",
+      "locator": "Custom operator API / kernel registration",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:trt",
+      "locator": "TensorRT plugin API (IPluginV2)",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-CUSTOM-012.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

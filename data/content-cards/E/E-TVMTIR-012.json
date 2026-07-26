@@ -1,0 +1,50 @@
+{
+  "questionId": "E-TVMTIR-012",
+  "learningObjective": "Explain how TensorIR represents tensor-level programs and how compute and schedule are separated.",
+  "canonicalClaims": [
+    {
+      "claim": "TVM TensorIR PrimFunc is a loop-level IR with explicit blocks, iteration variables, and buffer accesses; schedule primitives rewrite the loop structure while preserving the mathematical compute semantics.",
+      "conditions": ["Schedule primitives are semantics-preserving by construction."],
+      "nonImplications": [
+        "Does not imply schedules cannot be broken by bugs; the design intent is correctness-preserving.",
+        "Does not imply PrimFunc lacks dynamic shape support."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "TensorIR PrimFunc overview" },
+        { "ref": "PAPER:halide", "locator": "Halide compute/schedule separation (intellectual predecessor)" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PrimFunc is graph-level and has no loops.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PrimFunc is the loop-level IR; graph-level lives in Relax.",
+      "sourceOrEvidence": "TVM docs"
+    },
+    {
+      "claim": "Schedule primitives may change mathematical semantics; correctness must be re-verified after each step.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Schedules are correctness-preserving; the compiler enforces this via block/dependency structure.",
+      "sourceOrEvidence": "TVM TensorIR doc"
+    },
+    {
+      "claim": "PrimFunc bodies are Python callables interpreted at runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PrimFunc is compiled to target code (LLVM, CUDA, etc.).",
+      "sourceOrEvidence": "TVM docs"
+    },
+    {
+      "claim": "TensorIR schedule primitives are limited to CPU targets.",
+      "errorType": "overgeneralization",
+      "whyWrong": "GPU-specific primitives like `bind` to threadIdx/blockIdx exist and are core to TensorIR.",
+      "sourceOrEvidence": "TVM docs"
+    }
+  ],
+  "implementationFacts": [
+    "Schedule primitives: split, fuse, reorder, parallel, vectorize, bind, tensorize.",
+    "`block` construct scopes explicit iteration domains and read/write regions."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

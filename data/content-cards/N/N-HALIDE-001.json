@@ -1,0 +1,39 @@
+{
+  "questionId": "N-HALIDE-001",
+  "learningObjective": "Explain why the Halide paper separates the algorithm (what to compute) from the schedule (how to compute) and identify the design intent behind this separation.",
+  "canonicalClaims": [
+    {
+      "claim": "Halide separates the declarative algorithm from the imperative schedule so that a single, portable algorithm can be re-scheduled (tiled, vectorized, parallelized, fused, recomputed) without changing its meaning, enabling non-expert programmers to explore many performance-relevant strategies without rewriting the pipeline and allowing schedules to be tuned per target architecture.",
+      "conditions": [
+        "The algorithm is expressed as a set of pure functions with dependencies but no explicit loop nesting.",
+        "The schedule expresses loop nesting, tiling, storage granularity, and computation-vs-storage trade-offs.",
+        "The compiler is responsible for lowering the (algorithm, schedule) pair into equivalent imperative code."
+      ],
+      "nonImplications": [
+        "Does not imply that a schedule can violate dependencies; only choices that preserve algorithm semantics are legal.",
+        "Does not imply that any schedule is beneficial — most schedules are worse than the naive one; the point is that many alternatives can be tried cheaply."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:halide", "locator": "§1–§3 algorithm/schedule separation motivation and formalism" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Halide's separation exists to hide the algorithm from the user so that only compiler-generated schedules are visible.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The paper's stated goal is exactly the opposite: to expose scheduling choices to programmers as a first-class, portable knob, while keeping the algorithm concise and readable."
+    },
+    {
+      "claim": "The separation is a compiler-implementation convenience with no user-facing significance; users always write both parts together as a monolithic function.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The user writes algorithm and schedule as separate constructs; the paper argues that this separation is the key design contribution."
+    },
+    {
+      "claim": "Halide's schedule can change the algorithm's output values (e.g. approximate results) to gain speed; the schedule is thus a form of lossy transformation.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Legal Halide schedules preserve algorithmic semantics; they never change output values, only the order/granularity of computation and storage."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

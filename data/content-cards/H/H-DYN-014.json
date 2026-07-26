@@ -1,0 +1,55 @@
+{
+  "questionId": "H-DYN-014",
+  "learningObjective": "Distinguish dynamic and static activation quantization by scale computation and runtime cost.",
+  "canonicalClaims": [
+    {
+      "claim": "Dynamic quantization computes activation scale/zero-point from the runtime tensor's statistics at each forward pass; static quantization computes and freezes them offline via a calibration pass over representative inputs.",
+      "conditions": [
+        "The framework distinguishes these two modes (TensorRT, PyTorch, TF-Lite).",
+        "For static, a representative calibration set is available."
+      ],
+      "nonImplications": [
+        "Does not imply dynamic is always slower — per-tensor reductions are cheap.",
+        "Does not imply static is always less accurate — frozen scales avoid drift from single-sample outliers."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Dynamic vs static quantization" },
+        { "ref": "DOC:cuda-guide", "locator": "TensorRT workflows" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Dynamic quantization is a synonym for QAT and static quantization is a synonym for PTQ.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The two axes are orthogonal: PTQ/QAT concerns training-time involvement; dynamic/static concerns scale-computation timing.",
+      "sourceOrEvidence": "PyTorch quantization tutorial"
+    },
+    {
+      "claim": "Dynamic quantization applies to INT4 and static to INT8; the distinction is by format.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both apply to any integer format; the distinction is when scales are computed.",
+      "sourceOrEvidence": "TensorRT documentation"
+    },
+    {
+      "claim": "Dynamic quantization is always more accurate because it adapts to each input.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Adaptation to a single sample can amplify per-sample outliers; static calibration on a corpus can be more robust.",
+      "sourceOrEvidence": "Quantization empirical studies"
+    },
+    {
+      "claim": "Static quantization requires QAT; without QAT it cannot be used.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Static PTQ is the most common combination — freeze scales offline without any training-time modification.",
+      "sourceOrEvidence": "TensorRT INT8 PTQ workflow"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch `torch.ao.quantization.quantize_dynamic` implements dynamic quantization of Linear/RNN modules.",
+    "TensorRT static INT8 uses a calibration cache and IEntropyCalibrator/IEntropyCalibrator2 APIs."
+  ],
+  "performanceScenarios": [
+    "For CPU inference of a Transformer, dynamic INT8 quantization saves ~40% latency vs FP32 with minimal accuracy loss."
+  ],
+  "versionSensitivity": "stable_principle"
+}

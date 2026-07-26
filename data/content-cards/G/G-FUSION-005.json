@@ -1,0 +1,56 @@
+{
+  "questionId": "G-FUSION-005",
+  "learningObjective": "Recognize a scenario where operator fusion increases register pressure and causes spill-driven slowdown.",
+  "canonicalClaims": [
+    {
+      "claim": "Aggressive vertical fusion can widen the union of live ranges beyond the per-thread register file, inducing spills to local memory and dropping occupancy; the net memory traffic of the spills can exceed the DRAM traffic saved by fusion.",
+      "conditions": [
+        "The fused kernel's per-thread register count reported by ptxas exceeds the target's spill-free budget.",
+        "Occupancy is a meaningful contributor to latency hiding for this kernel."
+      ],
+      "nonImplications": [
+        "Does not imply fusion should be globally disabled; it implies register-pressure-aware fusion partitioning.",
+        "Does not imply lower occupancy is always the culprit; some kernels tolerate low occupancy well."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Register-pressure guidance" },
+        { "ref": "DOC:torch-inductor", "locator": "Scheduler heuristics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "If fusion is correctness-preserving and slower, the compiler backend must be buggy.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion is a heuristic optimization; correct-but-slower is a heuristic failure, not a correctness bug.",
+      "sourceOrEvidence": "TorchInductor scheduler documentation"
+    },
+    {
+      "claim": "Adding pointwise math into a memory-bound kernel is always 'free' since the SMs are stalled waiting on DRAM.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The added work may increase register pressure and cause spills, which are themselves memory traffic; the kernel can transition from memory-bound to spill-bound.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "Two sequential kernels on the same CUDA stream overlap execution and are always faster than a fused version.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Same-stream kernels are strictly ordered; overlap requires separate streams and disjoint resources.",
+      "sourceOrEvidence": "CUDA Programming Guide streams"
+    },
+    {
+      "claim": "Lowering register-per-thread usage always improves performance because occupancy rises.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Forcing lower registers can itself induce spills; the compiler may need more registers per thread to avoid spills.",
+      "sourceOrEvidence": "CUDA Best Practices — register pressure"
+    }
+  ],
+  "implementationFacts": [
+    "ptxas reports register usage and spills via `--ptxas-options=-v`.",
+    "On sm_80 with 256 threads/block, 96 regs/thread yields ~25% occupancy (as in A-OCC-003).",
+    "Spills to local memory hit L1 first but can spill to L2/DRAM under pressure."
+  ],
+  "performanceScenarios": [
+    "A 6-op fusion of pointwise + reduction where the accumulator + 6 intermediates exceed 64 live regs and induce spills."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,91 @@
+{
+  "id": "B-CFOLD-009",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Constant folding",
+  "learningObjective": "Distinguish constant folding from constant propagation and identify when folding is legal.",
+  "archetype": "ir_transformation",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "irSnippet": "; Before folding\n%a = add i32 3, 4\n%b = mul i32 %a, 2\n%c = add i32 %b, 5\n\n; After constant folding\n%c = i32 19",
+  "stem": "Constant folding transforms the IR shown above by evaluating arithmetic on compile-time constants. Which statement about constant folding is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Constant folding requires SSA form; a non-SSA IR cannot support folding because reaching definitions are ambiguous."
+    },
+    {
+      "id": "B",
+      "text": "Constant folding evaluates operations whose operands are all compile-time constants at compile time, producing a new constant. It must respect the source semantics for overflow, rounding, and floating-point edge cases (NaN, infinity) — otherwise it can change program behavior."
+    },
+    {
+      "id": "C",
+      "text": "Constant folding is identical to constant propagation; both refer to substituting known values into use sites."
+    },
+    {
+      "id": "D",
+      "text": "Constant folding may reorder floating-point operations freely because IEEE-754 arithmetic is associative."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Constant folding computes constant expressions at compile time but must preserve semantics — integer overflow behavior, floating-point rounding, NaN/Inf handling. Constant propagation is a distinct (but related) optimization: it replaces variable uses with their known constant values. Non-SSA IRs can also fold; SSA simplifies but is not required. IEEE-754 floating-point is NOT associative, so reordering is not always safe.",
+  "optionExplanations": {
+    "A": "Wrong: constant folding is applicable in both SSA and non-SSA IRs.",
+    "B": "Correct: standard definition with the important semantic-preservation caveats.",
+    "C": "Wrong: folding evaluates operations; propagation replaces uses. They are related but distinct.",
+    "D": "Wrong: IEEE-754 addition/multiplication are NOT associative; naive reordering may change results (see -ffast-math implications)."
+  },
+  "assumptions": [
+    "IR represents integer and/or floating-point operations with well-defined semantics."
+  ],
+  "nonImplications": [
+    "Does not imply all constant expressions are folded; e.g., division by zero may need to be preserved as a trap.",
+    "Does not imply folding is 'free' compile-time work; large expressions may increase compile time."
+  ],
+  "misconceptionTags": [
+    "fold_vs_propagate_confusion",
+    "fp_associativity_myth"
+  ],
+  "distractorRationales": {
+    "A": "Falsely conditions folding on SSA.",
+    "C": "Conflates folding with propagation.",
+    "D": "Falsely claims IEEE-754 associativity."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Optimization chapter, constant folding vs propagation",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:dragon2",
+      "locator": "Optimization chapter, folding definition",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-CFOLD-009.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

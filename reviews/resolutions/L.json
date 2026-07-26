@@ -1,0 +1,43 @@
+{
+  "module": "L",
+  "generatedAt": "2026-07-26",
+  "agent": "repair-agent-round1",
+  "round": "round1_repair",
+  "entries": [
+    {
+      "id": "L-ROOFLINE-021",
+      "finding": "MINOR (arithmetic_wording): correct option D stated AI = \"0.125 FLOP/byte (2 FLOPs / 16 bytes per element pair)\" and later \"(0.125 << 9.75)\". True AI is 2 FLOPs / (4-byte read + 4-byte write) = 0.25 FLOP/byte. Off by 2x. Roofline diagnosis (memory-bound, expected ~62 µs peak, measured 40 ms indicates implementation issue) unaffected.",
+      "resolution": "Rewrote AI arithmetic to \"0.25 FLOP/byte (2 FLOPs / 8 bytes per element = 4 read + 4 write)\" in option D text and \"(0.25 << 9.75)\" for the ridge-comparison; rewrote the top-level explanation to a clean canonical version that avoids the ambiguous \"0.125–0.25\" hedge and clearly separates A/C byte-count errors, B roofline-applicability error, and D correct diagnosis. correctAnswers unchanged.",
+      "diff": [
+        "options[D].text",
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "L-DYNREG-013",
+      "finding": "MINOR (uniqueness_dispute): option B stated a general/conditional principle (\"more shapes WOULD cause churn, higher diversity WOULD make it worse\") that was defensible as a general statement. Reviewer flagged uniqueness because B is arguably correct in general even though it does not describe the current 8-shape state.",
+      "resolution": "Rewrote option B into a claim about the CURRENT state (\"the FX cache is thrashing on the present 8-shape workload; each of the 8 shapes is being evicted and recompiled\") which is factually wrong given cache_size_limit=8 with exactly 8 shapes at capacity but not evicting. Uniqueness restored. correctAnswers unchanged. Top-level explanation regenerated to keep letter references aligned to the rewritten option B content.",
+      "diff": [
+        "options[B].text",
+        "optionExplanations[B]",
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "L-DETERM-017",
+      "finding": "MINOR (uniqueness_dispute): option A carried a canonical determinism-scope claim (\"determinism only guaranteed for identical execution configurations\") bundled with an imprecise CUDA_VISIBLE_DEVICES example. Reviewer flagged uniqueness because the general claim is defensibly correct.",
+      "resolution": "Rewrote option A to bind the caveat to a false mechanism (CUDA_VISIBLE_DEVICES \"re-partitions the kernel launch grid and changes per-warp thread count on a single visible GPU\"), which is factually wrong — that env var only masks device visibility. optionExplanations[\"A\"] spells out the corrected mechanism. Uniqueness restored. correctAnswers unchanged. Top-level explanation regenerated to keep letter references aligned to the rewritten option A content.",
+      "diff": [
+        "options[A].text",
+        "optionExplanations[A]",
+        "explanation"
+      ],
+      "priorVersion": 1,
+      "newVersion": 2
+    }
+  ]
+}

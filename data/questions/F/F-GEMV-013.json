@@ -1,0 +1,121 @@
+{
+  "id": "F-GEMV-013",
+  "type": "single",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / GEMV \u2014 row-parallel dot product with warp reduction",
+  "learningObjective": "Analyze a CUDA GEMV kernel that assigns one warp per row and identify the memory-bandwidth bottleneck.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100) or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "warp shuffle; 128 B L2 sectors"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        "M",
+        "K"
+      ],
+      [
+        "K"
+      ],
+      [
+        "M"
+      ]
+    ],
+    "dtypes": [
+      "float32",
+      "float32",
+      "float32"
+    ],
+    "layouts": [
+      "row_major",
+      "contiguous",
+      "contiguous"
+    ]
+  },
+  "stem": "The CUDA GEMV kernel below computes `y = A @ x` for a row-major FP32 matrix `A` of shape [M, K] and vector `x` of length K. Launch: `gridDim = (M,)`, `blockDim = (32,)` (one warp per row). Which statement about performance on sm_80 is correct?",
+  "codeSnippet": "// sm_80; one warp per output row; warpSize = 32\n__global__ void gemv(const float* __restrict__ A,  // [M, K] row-major\n                     const float* __restrict__ x,  // [K]\n                     float* __restrict__ y,        // [M]\n                     int M, int K) {\n    int row = blockIdx.x;\n    int lane = threadIdx.x;                 // 0..31\n    float acc = 0.0f;\n    for (int k = lane; k < K; k += 32) {\n        acc += A[row * K + k] * x[k];\n    }\n    // warp reduction (assume warp_reduce_sum is defined as in F-REDUCE-011)\n    acc = warp_reduce_sum(acc);\n    if (lane == 0) y[row] = acc;\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "GEMV is compute-bound on A100 because each thread performs a fused-multiply-add per iteration, and the multiply-add throughput on Ampere exceeds the memory throughput; therefore, larger K values improve efficiency asymptotically."
+    },
+    {
+      "id": "B",
+      "text": "Because every warp reads all of `x`, the kernel is bottlenecked by x's shared-memory bank usage; loading `x` into `__shared__` once per block would eliminate the redundant reads."
+    },
+    {
+      "id": "C",
+      "text": "The kernel is incorrect because `A[row * K + k]` with `k = lane, lane+32, ...` produces non-coalesced accesses on sm_80: consecutive lanes read addresses `K*4` bytes apart, which is bank-conflicted at the L2."
+    },
+    {
+      "id": "D",
+      "text": "GEMV is memory-bound on A100: each output element reads K FP32 values from A plus K from x for O(K) traffic and does O(K) FLOPs (arithmetic intensity ~0.25 FLOPs/byte for FP32), well below A100's compute:bandwidth balance. The kernel's per-warp stride-32 access on A gives coalesced reads within a warp; x is loaded redundantly by every row's warp."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "GEMV has arithmetic intensity ~1/4 FLOP/byte for FP32 (one FMA per 4-byte load from A + amortized 4-byte load from x), which is far below any modern GPU's compute:bandwidth balance (~10-40 FLOPs/byte on A100 for FP32). It is memory-bound. Access pattern: lane `l` reads `A[row*K + l], A[row*K + l+32], ...`; consecutive lanes hit consecutive elements of the row \u2014 that is fully coalesced within each iteration. `x` is indeed read redundantly by every row (M times total); the L2 usually caches it since x is only K*4 bytes. Choice C confuses global-memory coalescing (fine here) with shared-memory bank conflicts (not applicable \u2014 no SMEM used).",
+  "optionExplanations": {
+    "A": "Wrong: GEMV is not compute-bound at typical K values.",
+    "B": "Wrong: no SMEM used, so no bank conflicts; but the SMEM-for-x optimization is a real strategy for block-parallel GEMV variants.",
+    "C": "Wrong: consecutive lanes read consecutive elements (stride 1 within a warp iteration).",
+    "D": "Correct: memory-bound + coalesced A access + redundant x reads."
+  },
+  "assumptions": [
+    "One warp per output row; blockDim=32.",
+    "A100 (sm_80) memory subsystem with 128-byte L2 sectors."
+  ],
+  "nonImplications": [
+    "Does not imply this is the fastest possible GEMV kernel; block-parallel variants with SMEM staging can win at large K.",
+    "Does not imply the redundant x reads are always a bottleneck; L2 caching mitigates when K is small."
+  ],
+  "misconceptionTags": [
+    "gemv_compute_bound_myth",
+    "smem_bank_on_global_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Fabricates a compute-bound story for GEMV.",
+    "B": "Applies SMEM concepts where no SMEM is used.",
+    "C": "Confuses coalescing with bank conflicts."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "GEMV / matrix-vector chapter and roofline discussion",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Memory bandwidth and coalescing",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "FP32 GEMV arithmetic intensity and coalescing pattern on sm_80",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/F/F-GEMV-013.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

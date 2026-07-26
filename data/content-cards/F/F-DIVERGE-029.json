@@ -1,0 +1,49 @@
+{
+  "questionId": "F-DIVERGE-029",
+  "learningObjective": "Reason about intra-warp branch divergence: serialization cost, uniform-branch immunity, predication trade-off.",
+  "canonicalClaims": [
+    {
+      "claim": "Intra-warp branch divergence serializes the warp across the divergent paths; branches whose condition is uniform across all lanes in a warp do not diverge; predication (via `?:` or select) avoids divergence but may execute both arms.",
+      "conditions": ["SIMT execution model; standard nvcc code generation."],
+      "nonImplications": [
+        "Does not imply divergence always halves throughput.",
+        "Does not imply Volta+ ITS eliminates divergence cost."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Divergence and predication" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "All conditional constructs compile to divergent branches.",
+      "errorType": "definition_confusion",
+      "whyWrong": "nvcc emits predication (select/`selp`) where profitable.",
+      "sourceOrEvidence": "PTX ISA / nvcc code gen"
+    },
+    {
+      "claim": "Uniform (per-warp uniform) branches are always as expensive as divergent branches.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Uniform branches have no divergence cost.",
+      "sourceOrEvidence": "CUDA guide"
+    },
+    {
+      "claim": "Predication is always faster than divergent branches.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Predication computes both arms; expensive arms make branches preferable when uniform.",
+      "sourceOrEvidence": "CUDA best practices"
+    },
+    {
+      "claim": "Volta+ Independent Thread Scheduling eliminates divergence cost.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ITS enables independent forward progress; per-warp issue and serialization of divergent paths remain.",
+      "sourceOrEvidence": "Volta whitepaper"
+    }
+  ],
+  "implementationFacts": [
+    "Per-warp active mask tracks which lanes execute each path.",
+    "`selp.f32` and predicated `mov`/`fma` are common predication ops."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

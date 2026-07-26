@@ -1,0 +1,85 @@
+{
+  "id": "E-IREERT-026",
+  "type": "single",
+  "module": "mlir_tvm_xla",
+  "subtopic": "IREE / Compiler-runtime separation and edge deployment",
+  "learningObjective": "Understand why IREE separates compiler and runtime and how this enables edge and cross-target deployment.",
+  "archetype": "systems_dataflow",
+  "difficulty": 2,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "compiler": "IREE",
+    "frameworkVersionScope": "IREE 2024+",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statement best captures the reason IREE cleanly separates its compiler and runtime?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The separation is purely for internal code organization; end users must run both the compiler and the runtime on the target device at every model invocation, since IREE bytecode cannot be executed without the compiler."
+    },
+    {
+      "id": "B",
+      "text": "The runtime is only used for testing during development; production deployments must re-implement the runtime themselves because IREE does not distribute a production runtime binary."
+    },
+    {
+      "id": "C",
+      "text": "The compiler is a heavyweight AOT tool that produces a compact, self-describing artifact; the runtime is a small embeddable library that can be linked into edge/mobile apps without shipping the full MLIR toolchain, enabling deployment where the target device lacks the resources or licensing to host a full compiler."
+    },
+    {
+      "id": "D",
+      "text": "IREE compiler and runtime share the same binary at deployment; the 'compiler-runtime separation' is a marketing term and has no impact on the artifact structure or edge deployment story."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "IREE separates a heavyweight AOT compiler (which needs the full MLIR toolchain, LLVM, target libraries, etc.) from a lightweight runtime library that executes the compiled `.vmfb` bytecode. This lets edge/mobile deployments ship only the runtime + compiled artifact, without needing to host the compiler on-device. This mirrors the general 'compile once, deploy many' philosophy of AOT toolchains and is central to IREE's edge story.",
+  "optionExplanations": {
+    "A": "Wrong: compiled artifacts do not need the compiler at runtime.",
+    "B": "Wrong: IREE distributes production-ready runtime libraries.",
+    "C": "Correct: AOT + slim runtime enables edge deployment.",
+    "D": "Wrong: the separation is real and structural."
+  },
+  "assumptions": [
+    "IREE deployment model as documented on iree.dev."
+  ],
+  "nonImplications": [
+    "Does not imply the compiler cannot be embedded (it can, for JIT flows).",
+    "Does not imply the runtime is single-purpose; it is used server-side too."
+  ],
+  "misconceptionTags": [
+    "iree_compiler_needed_at_runtime_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim that runtime requires compiler.",
+    "B": "Wrong claim that runtime is dev-only.",
+    "D": "Denies a real structural separation."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:iree",
+      "locator": "IREE compiler vs runtime separation; deployment docs",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/E/E-IREERT-026.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

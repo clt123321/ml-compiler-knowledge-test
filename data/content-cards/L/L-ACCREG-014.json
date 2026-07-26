@@ -1,0 +1,47 @@
+{
+  "questionId": "L-ACCREG-014",
+  "learningObjective": "Triage an accuracy regression across a model update by systematically bisecting the change (weights, kernel, precision, framework version).",
+  "canonicalClaims": [
+    {
+      "claim": "A defensible triage plan for accuracy regressions bisects the confounded change into single-variable experiments (weights, framework, compile mode, precision) before any deep debugging.",
+      "conditions": [
+        "Multiple changes were rolled together.",
+        "The evaluation harness is reproducible."
+      ],
+      "nonImplications": [
+        "Does not imply the bisection order is unique.",
+        "Does not imply per-op comparisons are useless later."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-profiler", "locator": "Debug guidance" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The most recently changed component is always to blame.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Presumptive blame skips the isolation step and often reverts the wrong change.",
+      "sourceOrEvidence": "Debugging methodology"
+    },
+    {
+      "claim": "A 2-point accuracy drop is within noise.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Noise magnitude must be measured, not assumed; on standard benchmarks 2 points is usually significant.",
+      "sourceOrEvidence": "ML evaluation practice"
+    },
+    {
+      "claim": "Bitwise comparison of softmax outputs identifies the causal op.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Compiler-legal transformations produce non-bit-identical outputs; and even genuine bugs may not localize this way.",
+      "sourceOrEvidence": "Floating-point non-associativity"
+    },
+    {
+      "claim": "Weights changes cannot cause accuracy drops without loss changes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Different training runs (seed, data order, epochs) can produce weights of similar loss but different downstream accuracy.",
+      "sourceOrEvidence": "Deep learning training variance literature"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "G-COSTMODEL-020",
+  "type": "multiple",
+  "module": "graph_opt_schedule",
+  "subtopic": "Cost model / Real measurement gap",
+  "learningObjective": "Enumerate factors that make a static analytical cost model differ from measured wall-clock runtime.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic accelerator",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "Modern autotuning frameworks (Ansor, MetaSchedule, AutoTVM) use cost models to prune the search space before actual measurement. Which of the following make a static analytical cost model DIVERGE from the measured wall-clock runtime? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "The compiler's static model uses the same numerical precision as the target hardware; there is no divergence possible in principle."
+    },
+    {
+      "id": "B",
+      "text": "Register spills that are hard to predict from source-level operation counts; the true register allocation is decided later by the backend (ptxas, LLVM)."
+    },
+    {
+      "id": "C",
+      "text": "Cache and TLB hit-rate variability caused by neighbour kernels, previous benchmark iterations, or OS scheduling that a purely analytical model cannot see."
+    },
+    {
+      "id": "D",
+      "text": "Warmup effects such as JIT compilation, lazy kernel loading, and GPU clock ramp-up that dominate the first few measurements."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
+  "explanation": "Static analytical cost models operate on op counts, memory traffic estimates, and simple loop-bound arithmetic; they miss (B) register spill decisions made later by the backend (ptxas / LLVM), and (C) execution-context variability such as cache pollution and OS scheduling. Ansor's key contribution was to note that these gaps motivate learned or measurement-based rankings rather than pure analytical cost models. Option A asserts no divergence in principle, contradicting the entire motivation of learned cost models. Option D describes warmup effects, which are a *measurement-methodology* concern, not a source of divergence between the model and the true underlying runtime — one runs multiple warmed-up measurements to remove them.",
+  "optionExplanations": {
+    "A": "Wrong: precision alone does not close the model-vs-measurement gap.",
+    "B": "Correct: register allocation and spill decisions are made post-source and affect real runtime.",
+    "C": "Correct: cache/TLB context effects are outside a static model.",
+    "D": "Wrong as a **cost-model vs runtime** discrepancy source: warmup, JIT compilation latency, lazy CUDA context initialization, and clock ramp-up are **measurement-methodology artifacts** eliminated by (i) a warmup phase, (ii) `torch.cuda.synchronize()`, and (iii) CUDA event timing. They inflate wall time on the *first* call but do not reflect a systematic under-estimate by the cost model of steady-state kernel behavior. The genuine cost-model gaps (options B and C) — undermodeled cache/coalescing effects and off-critical-path fixed costs (launch, alloc) — persist even after warmup and are the intended targets of this question."
+  },
+  "assumptions": [
+    "The analytical model is built on op counts, shape, and memory-traffic estimates only.",
+    "Measurements are taken after standard warmup and averaged/medianed."
+  ],
+  "nonImplications": [
+    "Does not imply analytical cost models are useless — they are effective search-space filters.",
+    "Does not imply learned cost models close all gaps — they still approximate."
+  ],
+  "misconceptionTags": [
+    "cost_model_equals_measurement",
+    "warmup_is_model_gap"
+  ],
+  "distractorRationales": {
+    "A": "Denies the well-documented gap that motivates learned cost models.",
+    "D": "Confuses measurement-hygiene concerns with model-vs-truth divergence."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Section 4-5: learned cost model motivation",
+      "supports": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "ref": "PAPER:tvm",
+      "locator": "AutoTVM: measurement-based ranking rationale",
+      "supports": [
+        "B",
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Analytical vs. measured cost gap in tensor program autotuners",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-COSTMODEL-020.json",
+  "reviewStatus": "draft",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

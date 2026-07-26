@@ -1,0 +1,94 @@
+{
+  "id": "J-FRAG-018",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "KV cache fragmentation / Paged vs contiguous allocator",
+  "learningObjective": "Diagnose external fragmentation in a contiguous per-sequence KV allocator vs paged allocation.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic serving stack",
+    "stability": "stable_principle"
+  },
+  "stem": "A serving stack allocates KV cache as contiguous per-sequence slabs sized to each request's max_new_tokens. Diagnose the memory behavior described below.",
+  "profileData": "Setup: 40 GB total KV cache budget.\n  Requests come and go with varying max_new_tokens = 512 to 8192.\n  Steady-state observation:\n    Sum of active sequences' allocated KV: 38 GB\n    Sum of KV actually used by generated tokens: 12 GB\n    Free KV memory: 2 GB\n    New request (max_new_tokens=2048, requires 300 MB contiguous KV): FAILS to allocate despite 2 GB free.\n    OOM error reported.",
+  "options": [
+    {
+      "id": "A",
+      "text": "This is a bug in the KV cache accounting; free memory shows 2 GB but the allocator sees 0. Fix the accounting by including reserved slabs in the free counter, and the new request will succeed."
+    },
+    {
+      "id": "B",
+      "text": "This is compute-bound behavior: the OOM is a symptom of decode being too slow to release KV blocks quickly enough. Increasing tensor parallelism will speed up decode and prevent OOM."
+    },
+    {
+      "id": "C",
+      "text": "This is a data race between the scheduler and the allocator; the fix is to serialize KV cache allocation with a global mutex, which will resolve the OOM at the cost of some throughput."
+    },
+    {
+      "id": "D",
+      "text": "This is textbook external fragmentation from contiguous per-sequence slab allocation: each slab is reserved up-front at max_new_tokens size, so 26 GB of allocated KV is actually unused (reserved for tokens not yet generated), and the 2 GB free area is scattered in non-contiguous pieces too small to fit any single slab. Paged KV cache (fixed-size blocks + indirection) directly addresses this."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "The signature is classic external fragmentation: allocated ≠ used, and the small remaining free memory is not contiguous enough to hold a new slab. The reserved-up-to-max_new_tokens policy causes internal waste (26 GB reserved but not yet used), and freed slabs of varying sizes create external fragmentation. PagedAttention's fixed-size block allocation with block-table indirection eliminates external fragmentation and only over-allocates by at most one block per sequence.",
+  "optionExplanations": {
+    "A": "Wrong: not an accounting bug; the memory really is fragmented/reserved.",
+    "B": "Wrong: OOM is a memory-management issue, unrelated to TP or decode speed.",
+    "C": "Wrong: no data race; the problem is fragmentation.",
+    "D": "Correct: external + internal fragmentation from contiguous slab allocation."
+  },
+  "assumptions": [
+    "'External fragmentation' is used in the OS memory-management sense: free space exists but not in a single contiguous block.",
+    "'Internal waste' is the reservation-up-to-max phenomenon."
+  ],
+  "nonImplications": [
+    "Does not imply paged KV cache has zero waste; it does have small per-sequence internal waste bounded by block size.",
+    "Does not imply that all fragmentation problems are solved by paging alone; preemption policy still matters."
+  ],
+  "misconceptionTags": [
+    "oom_accounting_myth",
+    "oom_race_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrong root cause.",
+    "B": "Orthogonal.",
+    "C": "Fabricates race."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 2 — motivation: fragmentation in prior systems",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:vllm",
+      "locator": "PagedAttention memory management",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "External + internal KV fragmentation from contiguous slab allocation",
+    "evidenceType": "paper_result",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/J/J-FRAG-018.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

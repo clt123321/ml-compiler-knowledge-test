@@ -1,0 +1,121 @@
+{
+  "id": "A-BW-006",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Arithmetic intensity / batched GEMM",
+  "learningObjective": "Compute the arithmetic intensity of a batched matrix multiplication and compare it against a GPU's ridge point to determine bind regime.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100 SXM)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "HBM2e",
+      "Tensor Cores FP16"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        1024,
+        1024
+      ],
+      [
+        1024,
+        1024
+      ],
+      [
+        1024,
+        1024
+      ]
+    ],
+    "dtypes": [
+      "float16",
+      "float16",
+      "float16"
+    ],
+    "layouts": [
+      "row_major",
+      "row_major",
+      "row_major"
+    ]
+  },
+  "stem": "Consider a single-tile FP16 GEMM C = A · B with A ∈ ℝ^{M×K}, B ∈ ℝ^{K×N}, C ∈ ℝ^{M×N}, M=N=K=1024, all tensors streamed once from HBM (no persistence). On A100 SXM (FP16 Tensor Core peak ≈ 312 TFLOP/s, HBM ≈ 2.0 TB/s, ridge point ≈ 156 FLOP/byte), which classification is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Compute-bound only for FP32 accumulation, but memory-bound for FP16 accumulation because the accumulator halves the effective register file and forces spilling to HBM."
+    },
+    {
+      "id": "B",
+      "text": "Memory-bound: even at K=1024, streaming the operands limits performance; AI ≈ 1 FLOP/byte because each element of A and B is loaded once and reused only during the tile computation."
+    },
+    {
+      "id": "C",
+      "text": "Compute-bound: FLOPs = 2·M·N·K ≈ 2.15 G; bytes moved ≈ (M·K + K·N + M·N)·2 ≈ 6.29 MB; AI ≈ 342 FLOP/byte, above the FP16 ridge of ~156, so the ceiling is the FP16 Tensor Core peak of ~312 TFLOP/s."
+    },
+    {
+      "id": "D",
+      "text": "Undetermined without knowing the launch grid; the same math on the same GPU can flip compute/memory regimes depending on how many blocks are launched."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "GEMM FLOPs = 2·M·N·K = 2·1024^3 ≈ 2.147 × 10^9. Bytes for reading A, B and writing C = (1024·1024 + 1024·1024 + 1024·1024) · 2 B = 6.29 MB. Arithmetic intensity = 2.147e9 / 6.29e6 ≈ 341 FLOP/byte. This is above the A100 FP16 Tensor Core ridge point (~156 FLOP/byte), so the operation is compute-bound and the achievable ceiling is the FP16 Tensor Core peak (~312 TFLOP/s). Reaching that ceiling requires efficient tiling; the classification itself is bounded by the AI vs ridge comparison.",
+  "optionExplanations": {
+    "A": "Wrong: FP16 vs FP32 accumulation affects Tensor Core selection and accuracy, not the Roofline classification via HBM traffic. Register file spilling to HBM is not what defines the compute/memory regime here.",
+    "B": "Wrong: AI ≈ 1 FLOP/byte is characteristic of GEMV (batch=1), not GEMM with K=1024. GEMM has strong on-tile reuse.",
+    "C": "Correct: AI = 2·M·N·K / ((M·K+K·N+M·N)·2) ≈ 341 FLOP/byte, which exceeds the FP16 ridge point; ceiling is FP16 Tensor Core peak.",
+    "D": "Wrong: Roofline classification for a well-formed GEMM is a function of AI vs ridge point; launch grid affects achieved efficiency, not the compute/memory-bound category."
+  },
+  "assumptions": [
+    "Operands are loaded from HBM exactly once through a tiled schedule; the arithmetic intensity is measured against HBM traffic.",
+    "No exotic streaming (e.g., persistent kernels reusing weights across steps) that would change effective bytes moved."
+  ],
+  "nonImplications": [
+    "Does not imply the kernel will reach the ~312 TFLOP/s ceiling; achieving that requires good tiling, occupancy, and MMA scheduling.",
+    "Does not imply that reducing K further (e.g., K=1) would remain compute-bound: shrinking K reduces AI proportionally."
+  ],
+  "misconceptionTags": [
+    "gemm_gemv_confusion",
+    "ridge_point_misuse"
+  ],
+  "distractorRationales": {
+    "A": "Introduces an accumulation-precision fiction unrelated to Roofline classification.",
+    "B": "Confuses GEMV traffic pattern with GEMM tile reuse.",
+    "D": "Vacuous 'undetermined' claim contradicted by well-defined AI vs ridge comparison."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "GEMM chapter, arithmetic intensity of tiled matmul",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "BOOK:hp6",
+      "locator": "Ch. 4, arithmetic intensity for dense linear algebra",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "A100 SXM, FP16 GEMM 1024×1024×1024, single-shot streaming from HBM",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-BW-006.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

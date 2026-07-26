@@ -1,0 +1,93 @@
+{
+  "id": "L-DETERM-017",
+  "type": "multiple",
+  "module": "profiling_debug",
+  "subtopic": "Non-determinism in GPU computation",
+  "learningObjective": "Identify sources of non-determinism in GPU-based ML training/inference and which knobs (deterministic algorithms flag, atomic-free kernels, seed control) address them.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.0+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about non-determinism on GPU ML workloads are correct? (Select all that apply.)",
+  "options": [
+    {
+      "id": "A",
+      "text": "Setting `CUDA_VISIBLE_DEVICES` to hide GPUs from a single-GPU training job re-partitions the kernel launch grid and changes the per-warp thread count, which is what causes non-determinism in FP reductions on a single device."
+    },
+    {
+      "id": "B",
+      "text": "Reductions implemented with cross-block `atomicAdd` on floats are non-associative and can produce different low-order bits across runs even with the same input, because the order of concurrent atomic operations is not fixed."
+    },
+    {
+      "id": "C",
+      "text": "Setting `torch.use_deterministic_algorithms(True)` and seeding RNGs is sufficient to guarantee bit-identical outputs across GPU model changes (A100 → H100); once the flag is set, PyTorch reroutes any non-deterministic op through a deterministic kernel that is cross-architecture identical."
+    },
+    {
+      "id": "D",
+      "text": "cuDNN convolution algorithm selection (via benchmark mode) can pick different algorithms across runs with the same input; disabling benchmark mode (or using `torch.backends.cudnn.deterministic = True`) locks the algorithm choice and reduces one source of non-determinism."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
+  "explanation": "Options B, D are correct; options A, C are incorrect. A (Wrong): `CUDA_VISIBLE_DEVICES` only masks which physical devices the CUDA runtime exposes to the process — it does NOT modify the launch grid, per-kernel thread count, or per-warp reduction shape on a single visible GPU. The canonical caveat \"determinism only guaranteed under identical execution configurations (device count, kernel launch bounds, cuBLAS/cuDNN algorithm choice)\" is real, but this option pins the caveat to a mechanism that CUDA_VISIBLE_DEVICES does not have. B (Correct): cross-block atomicAdd is a known non-determinism source. C (Wrong): cross-architecture bit-identity is not a guarantee. D (Correct): cuDNN benchmark mode is a known non-determinism source; deterministic mode addresses it.",
+  "optionExplanations": {
+    "A": "Wrong mechanism: `CUDA_VISIBLE_DEVICES` only masks which physical devices the CUDA runtime exposes to the process — it does NOT modify the launch grid, per-kernel thread count, or per-warp reduction shape on a single visible GPU. The canonical caveat \"determinism only guaranteed under identical execution configurations (device count, kernel launch bounds, cuBLAS/cuDNN algorithm choice)\" is real, but this option pins the caveat to a mechanism that CUDA_VISIBLE_DEVICES does not have.",
+    "B": "Correct: cross-block atomicAdd is a known non-determinism source.",
+    "C": "Wrong: cross-architecture bit-identity is not a guarantee.",
+    "D": "Correct: cuDNN benchmark mode is a known non-determinism source; deterministic mode addresses it."
+  },
+  "assumptions": [
+    "Standard PyTorch 2.0+ with cuDNN backend for convolutions."
+  ],
+  "nonImplications": [
+    "Does not imply determinism is free; deterministic kernels are often slower.",
+    "Does not imply seed control is unnecessary; RNG seed is orthogonal to op determinism."
+  ],
+  "misconceptionTags": [
+    "cross_arch_determinism_myth"
+  ],
+  "distractorRationales": {
+    "A": "Imprecise mechanism attribution.",
+    "C": "Overstates deterministic-algorithms guarantee."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "torch.use_deterministic_algorithms and reproducibility notes",
+      "supports": [
+        "B",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "atomic operations and ordering",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-DETERM-017.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

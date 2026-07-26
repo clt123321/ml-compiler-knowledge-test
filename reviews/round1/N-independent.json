@@ -1,0 +1,69 @@
+{
+  "module": "N",
+  "reviewer": "primary-review-4",
+  "phase": "A_blind",
+  "generatedAt": "2026-07-27",
+  "notes": "Reviewer answered each paper_design question from stem+options without reading data/questions/** or content cards. Strict enforcement of scope discipline: peak vs geomean, kernel vs e2e, single-paper non-generalization.",
+  "answers": [
+    {
+      "id": "N-ANSOR-003",
+      "independentAnswer": ["A", "B"],
+      "confidence": "high",
+      "rationale": "Ansor §5 task scheduler: non-uniform budget allocation guided by expected marginal improvement × contribution to end-to-end latency (A), motivated by the observation that uniform budget wastes on already-optimal or low-contribution tasks (B). C confuses task scheduler with runtime dispatch. D fabricates a hard 10% floor that is not in the paper."
+    },
+    {
+      "id": "N-FLASH-006",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: FlashAttention's speedup is largest in the memory-bound regime (long sequences, small batch/head-dim relative to compute) — correct. C: block-by-block online softmax in SRAM, no N×N in HBM, HBM traffic Θ(N²·d/M) — exactly the paper's central result. D: exact (up to FP ordering) — a key claim vs approximate attention baselines. B is WRONG — FlashAttention explicitly does NOT store the N×N matrix; the backward recomputes attention block-by-block using saved softmax normalizers (L, m). This is a classic distractor to test whether reviewer confuses vanilla-attention backward with FlashAttention backward."
+    },
+    {
+      "id": "N-GSPMD-008",
+      "independentAnswer": ["B", "C"],
+      "confidence": "high",
+      "rationale": "B: peak > geomean is the standard relationship on any non-trivial suite; summarizing a paper by peak overstates typical benefit. C: paper numbers are conditioned on hardware/software/workload/baseline — canonical scope discipline. A (speedup independent of baseline) is false — comparing to an older baseline inflates numbers. D (peak == geomean) is mathematically wrong."
+    },
+    {
+      "id": "N-HALIDE-001",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Halide's core contribution (Ragan-Kelley et al.): decouple algorithm from schedule so the same portable algorithm can be re-scheduled (tile/vectorize/parallelize/fuse/recompute) for different targets without changing semantics. A (hide algorithm) is backwards. B (correctness) misreads: schedule variation preserves semantics regardless of race concerns. D (legacy artifact) contradicts Halide's continuing relevance."
+    },
+    {
+      "id": "N-MLIR-004",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "MLIR paper thesis: each optimization at its natural abstraction level via multi-level dialects with progressive lowering; shared compiler infrastructure reused across domains. A (single universal IR is optimal, dialects transient) directly contradicts the paper. B (MLIR as runtime dispatcher) is a category error. D (replaces LLVM) is false — MLIR lowers to LLVM IR."
+    },
+    {
+      "id": "N-PYT2-009",
+      "independentAnswer": ["C"],
+      "confidence": "high",
+      "rationale": "Classic kernel-vs-e2e confusion under Amdahl. End-to-end speedup is bounded by fraction of runtime in the accelerated kernel; host overhead, graph breaks, non-compiled subgraphs (eager fallbacks, custom ops) cap observable e2e speedup well below per-kernel factor. A (Triton kernels never faster) is false. B (kernel == e2e) is exactly the error. D (defined only for backward) is fabricated."
+    },
+    {
+      "id": "N-QUANT-010",
+      "independentAnswer": ["A", "C", "D"],
+      "confidence": "high",
+      "rationale": "A: ablation isolates the mechanism it studies but does not establish head-to-head superiority — standard scientific discipline. C: single-paper accuracy results are conditioned on their model/task/calibration set; extrapolating to 'LLMs in general' requires more evidence. D: wall-clock speedup depends on efficient dequant-GEMM kernel availability for the target precision/granularity on target hardware — same scheme can be faster on one GPU generation and slower on another (a well-known caveat for W4A16 kernels). B (4-bit always ≥3× e2e speedup regardless of hardware/kernel) is exactly the kind of overclaim this question tests against — always-false."
+    },
+    {
+      "id": "N-TRITON-005",
+      "independentAnswer": ["D"],
+      "confidence": "high",
+      "rationale": "Triton paper (Tillet et al.): programmer writes over tiles (blocks of elements); compiler translates tile-level ops to per-thread PTX handling coalescing, shared-memory staging, register tiling. The programmer focuses on block shapes and memory access patterns rather than per-thread indexing. A (targets CPUs/TPUs only) is false. B (superset of CUDA) is false. C (runtime dispatcher) is false."
+    },
+    {
+      "id": "N-TVM-002",
+      "independentAnswer": ["B"],
+      "confidence": "high",
+      "rationale": "TVM paper argues effective performance depends on hard-to-model factors (cache behavior, coalescing, register pressure, instruction mix, backend choices) that closed-form analytical models cannot rank at fine granularity; hence measurement-driven + learned cost model to guide search. A (can't express tiling) is false. C (only for reproducibility) misreads. D (analytical always superior) contradicts the paper."
+    },
+    {
+      "id": "N-VLLM-007",
+      "independentAnswer": ["A"],
+      "confidence": "high",
+      "rationale": "vLLM §3 explicitly frames PagedAttention as attacking KV-cache memory inefficiency: worst-case contiguous per-sequence reservation causes internal + external fragmentation; paging KV in fixed blocks with a page table allows more concurrent sequences on the same GPU. B (reduces FLOPs) is false — PagedAttention preserves attention compute. C (eliminates KV cache via recompute) is false. D (paged MoE routing) is unrelated."
+    }
+  ]
+}

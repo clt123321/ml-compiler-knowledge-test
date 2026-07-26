@@ -1,0 +1,93 @@
+{
+  "id": "C-DCE-013",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Dead code elimination on ops with side effects",
+  "learningObjective": "Explain why dead code elimination (DCE) in a tensor IR must respect ops that have side effects, and how the IR encodes this.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "MLIR / general SSA IR",
+    "stability": "stable_principle"
+  },
+  "stem": "A tensor-IR pass tries to run DCE and removes both `linalg.copy` (writes to %B) and `linalg.matmul` (returns a used %C) below. Which statement most accurately describes what DCE is allowed to remove in this snippet?",
+  "irSnippet": "// %B is an output-only memref; %C is used by a return.\nfunc.func @f(%A : memref<MxKxf32>,\n             %B : memref<MxKxf32>,\n             %C : memref<MxNxf32>) -> memref<MxNxf32> {\n  linalg.copy   ins(%A : memref<MxKxf32>)  outs(%B : memref<MxKxf32>)   // side-effecting: writes %B\n  linalg.matmul ins(%A, %W : memref<MxKxf32>, memref<KxNxf32>)\n                outs(%C : memref<MxNxf32>)                              // side-effecting: writes %C, and %C escapes\n  %tmp = arith.addf %z, %z : f32                                        // pure, %tmp unused\n  return %C : memref<MxNxf32>\n}",
+  "options": [
+    {
+      "id": "A",
+      "text": "DCE may remove `linalg.copy` (its result appears unused inside the function) and the pure `arith.addf` (unused); `linalg.matmul` must stay because its result escapes."
+    },
+    {
+      "id": "B",
+      "text": "DCE may remove only the pure `arith.addf` because it has no observable side effects and its result is dead. Neither `linalg.copy` nor `linalg.matmul` can be removed: both have write side effects, and the copy's write to %B is externally observable through the function's memref argument."
+    },
+    {
+      "id": "C",
+      "text": "DCE may remove all three operations because pass-by-memref semantics let the caller re-execute the code path; the callee is free to elide any write it does not itself observe internally. In this reading, pass-by-memref is equivalent to pure-value semantics because the compiler owns the buffer and only surfaces the writes through an explicit return value; thus stores to it are private to the callee."
+    },
+    {
+      "id": "D",
+      "text": "DCE may remove `linalg.copy` and `linalg.matmul` but must keep `arith.addf` because SSA values are always considered live regardless of use, whereas memref stores are always dead absent an explicit `sync` op. Under this framing, MLIR's default DCE ignores memory-effect annotations entirely and treats any op whose SSA result is unused as removable, on the assumption that side effects are already tracked by a separate `sync` pass."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "DCE removes computations whose results are dead and that have no side effects. In an IR with memref writes, a store to a memref is a side effect: if the memref is a function argument or otherwise reachable outside the pass's SSA horizon, removing the store is unsound. `linalg.copy` writes to %B (a caller-owned memref) — externally observable — so it must stay. `linalg.matmul` writes to %C and %C is returned — clearly live. Only the pure `arith.addf` with a dead SSA result can be safely removed.",
+  "optionExplanations": {
+    "A": "Wrong: it treats `linalg.copy` as dead. But the copy writes to a function-argument memref, which is externally observable.",
+    "B": "Correct: DCE respects memory side effects and only removes the pure, dead SSA op.",
+    "C": "Wrong: elides observable writes; violates program semantics.",
+    "D": "Wrong: reverses the rule about SSA-value liveness and memory-store elimination."
+  },
+  "assumptions": [
+    "The IR distinguishes ops with memory side effects from pure ops (as MLIR's MemoryEffects interface does).",
+    "The caller retains a reference to the memrefs `%A`, `%B`, `%C` after the call."
+  ],
+  "nonImplications": [
+    "Does not imply DCE cannot remove any memref write; if analysis proves the write is unobservable (fully-local buffer, no escape), the write can be removed.",
+    "Does not imply DCE and CSE are the same; CSE deduplicates equivalent computations."
+  ],
+  "misconceptionTags": [
+    "dce_ignores_side_effects",
+    "memref_store_always_dead"
+  ],
+  "distractorRationales": {
+    "A": "Ignores that the copy's write is observable.",
+    "C": "Elides observable writes.",
+    "D": "Inverts DCE's rule."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Dead code elimination; observable side effects",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "MemoryEffects interface; op purity",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-DCE-013.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

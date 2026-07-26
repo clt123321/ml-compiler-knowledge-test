@@ -1,0 +1,97 @@
+{
+  "id": "A-PEAK-018",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Theoretical peak vs sustained throughput",
+  "learningObjective": "Diagnose why a measured GEMM throughput falls significantly below the theoretical peak and identify the most plausible cause.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100 SXM)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "FP16 Tensor Cores",
+      "312 TFLOP/s FP16 peak"
+    ]
+  },
+  "softwareContext": {
+    "compiler": "cuBLAS",
+    "stability": "stable_principle"
+  },
+  "profileData": "cuBLAS FP16 GEMM (M=N=K=8192): measured throughput 220 TFLOP/s; theoretical peak 312 TFLOP/s (dense FP16 Tensor Core, A100 SXM). Nsight Compute reports 78% Tensor Core utilization and no HBM saturation.",
+  "stem": "You measure 220 TFLOP/s on a cuBLAS FP16 GEMM (M=N=K=8192) on an A100 SXM, versus a theoretical peak of 312 TFLOP/s. Nsight Compute shows 78% Tensor Core utilization and HBM is not saturated. Which explanation is most consistent with the data?",
+  "options": [
+    {
+      "id": "A",
+      "text": "cuBLAS is memory-bound on this size, so achieved throughput is HBM × AI; the ridge point is above the achieved value."
+    },
+    {
+      "id": "B",
+      "text": "Tensor Cores are not fully occupied every cycle (78% Tensor Core utilization); typical causes include tile boundary effects, epilogue/prologue, imperfect scheduling, and warp scheduler stalls, producing the gap from the 312 TFLOP/s ceiling."
+    },
+    {
+      "id": "C",
+      "text": "Kernel launch overhead dominates; the 30% gap is CPU-side launch overhead not overlapping with compute."
+    },
+    {
+      "id": "D",
+      "text": "The A100 SXM ridge point is 78 FLOP/byte and this GEMM sits exactly on the ridge, so the measured value equals the ceiling."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "For M=N=K=8192 FP16, AI ≈ 8192/3 ≈ 2731 FLOP/byte, well above A100's FP16 ridge (~156 FLOP/byte), so the kernel is deeply compute-bound and HBM is not the bottleneck (consistent with the profile). The measured 220 TFLOP/s ≈ 78% × 312 TFLOP/s matches the reported Tensor Core utilization. Typical gaps come from prologue/epilogue, tile-boundary padding, warp-scheduler stalls and non-ideal MMA pipeline packing. Options A (memory-bound), C (launch overhead), and D (ridge alignment) contradict the profile or the AI.",
+  "optionExplanations": {
+    "A": "Wrong: HBM is not saturated and AI is far above ridge; kernel is compute-bound.",
+    "B": "Correct: 78% Tensor Core utilization × 312 TFLOP/s ≈ 244 TFLOP/s (order-of-magnitude match with 220), and the classical causes of the gap fit the profile.",
+    "C": "Wrong: launch overhead is microseconds; a single GEMM of this size runs many milliseconds. Launch overhead cannot explain a 30% shortfall.",
+    "D": "Wrong: A100 FP16 ridge is ~156 FLOP/byte and the GEMM AI is ~2731 FLOP/byte; the operation is far above the ridge."
+  },
+  "assumptions": [
+    "Single-kernel steady-state GEMM measurement; not a batch-of-tiny-kernels regime.",
+    "cuBLAS handle, FP16 inputs and outputs, no exotic epilogue fusion."
+  ],
+  "nonImplications": [
+    "Does not imply Tensor Core utilization percentage directly maps to achieved TFLOP/s at any ratio; the mapping is approximate and depends on how the metric is defined by Nsight Compute.",
+    "Does not imply moving to a larger K would necessarily hit peak; other factors (SM occupancy, MMA scheduling) still cap it."
+  ],
+  "misconceptionTags": [
+    "memory_bound_misdiagnosis",
+    "launch_overhead_scope_error"
+  ],
+  "distractorRationales": {
+    "A": "Ignores profile evidence (HBM not saturated) and AI computation.",
+    "C": "Wrong order of magnitude for launch overhead scope.",
+    "D": "Miscomputes ridge point."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:ncu",
+      "locator": "Tensor Core utilization / SM active metrics; interpretation guide",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "GEMM tiling and steady-state throughput",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "A100 SXM, cuBLAS FP16 GEMM 8192×8192×8192, diagnosis of ~70% of peak",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-PEAK-018.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

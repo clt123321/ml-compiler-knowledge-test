@@ -1,0 +1,97 @@
+{
+  "id": "L-TIMING-002",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "CUDA async timing / CPU-timer trap",
+  "learningObjective": "Explain why a CPU-based timer around a CUDA kernel launch loop under-reports GPU execution time and how to obtain a correct measurement.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.0+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "A user times a matmul on CUDA two different ways. Attempt 1 reports 0.008 ms per iteration; Attempt 2 reports 3.412 ms per iteration. Which measurement reflects actual GPU execution time and what explains the discrepancy?",
+  "codeSnippet": "import torch, time\n\nx = torch.randn(4096, 4096, device=\"cuda\")\nw = torch.randn(4096, 4096, device=\"cuda\")\n\n# Attempt 1: CPU timer only, no synchronization\nt0 = time.perf_counter()\nfor _ in range(10):\n    y = x @ w\nt1 = time.perf_counter()\nprint(f\"Attempt 1 mean per iter: {(t1 - t0) / 10 * 1000:.3f} ms\")\n\n# Attempt 2: synchronize on both sides\ntorch.cuda.synchronize()\nt0 = time.perf_counter()\nfor _ in range(10):\n    y = x @ w\ntorch.cuda.synchronize()\nt1 = time.perf_counter()\nprint(f\"Attempt 2 mean per iter: {(t1 - t0) / 10 * 1000:.3f} ms\")\n\n# Output:\n#   Attempt 1 mean per iter: 0.008 ms\n#   Attempt 2 mean per iter: 3.412 ms",
+  "profileData": "Reported per-iter times: Attempt 1 = 0.008 ms; Attempt 2 = 3.412 ms",
+  "options": [
+    {
+      "id": "A",
+      "text": "Attempt 2 is correct. CUDA launches are asynchronous; without `torch.cuda.synchronize()`, the CPU timer captures dispatch cost, not GPU execution time."
+    },
+    {
+      "id": "B",
+      "text": "Attempt 1 is correct. Modern GPUs execute matmul in single-digit microseconds thanks to Tensor Cores and cuBLAS's autotuning; Attempt 2 is measuring the added synchronize overhead rather than the actual per-iter kernel duration."
+    },
+    {
+      "id": "C",
+      "text": "Both are incorrect. `torch.cuda.synchronize()` returns before kernels finish because it only waits for launches on the default stream; only `torch.cuda.Event.elapsed_time` is a valid method for CUDA-side timing measurements."
+    },
+    {
+      "id": "D",
+      "text": "Attempt 1 is correct because JIT warmup happens after the 10th iteration and pre-warmup runs are much slower; Attempt 2 unfortunately measures pre-warmup kernels because `synchronize()` resets the JIT cache between the two measurements."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "CUDA kernel launches are asynchronous: the CPU function `x @ w` returns after enqueuing the kernel on the stream, not after the GPU completes it. A CPU timer around such launches captures dispatch cost (microseconds), not GPU execution time. Synchronizing before starting the timer flushes prior work; synchronizing before stopping the timer ensures all in-flight kernels finish; the delta then reflects the actual wall time for GPU execution.",
+  "optionExplanations": {
+    "A": "Correct: describes the async-launch model and the synchronization discipline needed for CPU-timer accuracy.",
+    "B": "Wrong: 8 µs per 4096-square FP32 matmul is physically implausible on any current GPU (~ 137 GFLOPs at that time would exceed HBM constraints).",
+    "C": "Wrong: `torch.cuda.synchronize()` blocks until the stream is fully drained; it is a valid synchronization primitive.",
+    "D": "Wrong: PyTorch's cuBLAS matmul dispatch has essentially no per-iteration JIT compilation; warmup effects exist but do not explain a 400× difference."
+  },
+  "assumptions": [
+    "The matmul kernel is compute-heavy enough that GPU work dominates once measured correctly.",
+    "No CUDA Graphs capture is active (which would alter the timing model)."
+  ],
+  "nonImplications": [
+    "Does not imply that CPU timers are useless; wrapped with synchronize they are fine for aggregate measurements.",
+    "Does not imply that `torch.cuda.Event` is unnecessary; events remain preferable for high-resolution single-kernel timing."
+  ],
+  "misconceptionTags": [
+    "async_launch_confusion",
+    "warmup_scapegoat"
+  ],
+  "distractorRationales": {
+    "B": "Physically implausible per-iter number.",
+    "C": "Wrong claim about synchronize semantics.",
+    "D": "Wrong root-cause attribution."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-best",
+      "locator": "Asynchronous kernel launches; timing methodology chapter",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:torch-profiler",
+      "locator": "Guidance on CUDA synchronization for timing",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "CPU timer around CUDA async launches on any current NVIDIA GPU",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-TIMING-002.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

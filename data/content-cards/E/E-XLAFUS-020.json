@@ -1,0 +1,49 @@
+{
+  "questionId": "E-XLAFUS-020",
+  "learningObjective": "Distinguish XLA fusion kinds (loop / input / output) and understand their boundaries.",
+  "canonicalClaims": [
+    {
+      "claim": "XLA implements multiple fusion kinds (loop, input, output, custom), each aligned with a memory-access pattern between producer and consumer; the pass is guided by a cost model and has boundaries (register/SMEM pressure, opaque calls, layout mismatches).",
+      "conditions": ["Standard XLA fusion pipeline."],
+      "nonImplications": [
+        "Does not imply fusion is unconditional.",
+        "Does not imply fusion is GPU-only."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:stablehlo", "locator": "OpenXLA fusion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "XLA fuses every adjacent HLO op pair unconditionally.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Fusion has cost heuristics and hard boundaries.",
+      "sourceOrEvidence": "XLA docs"
+    },
+    {
+      "claim": "Fusion is textual duplication of producer into consumer.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion is an HLO `fusion` op with a nested computation.",
+      "sourceOrEvidence": "XLA HLO doc"
+    },
+    {
+      "claim": "Reductions cannot participate in fusion.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Output/epilogue fusion routinely merges elementwise stages into reductions.",
+      "sourceOrEvidence": "XLA docs"
+    },
+    {
+      "claim": "Fusion always improves throughput.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Register pressure and SMEM constraints can make over-fusion slower.",
+      "sourceOrEvidence": "General fusion literature"
+    }
+  ],
+  "implementationFacts": [
+    "HLO `fusion` op carries a nested computation with the fused body.",
+    "Fusion kinds are attributes on the fusion op (loop/input/output/custom)."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

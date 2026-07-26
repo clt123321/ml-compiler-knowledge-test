@@ -1,0 +1,99 @@
+{
+  "id": "B-LICM-013",
+  "type": "single",
+  "module": "compiler_basics",
+  "subtopic": "Loop Invariant Code Motion safety conditions",
+  "learningObjective": "State the safety conditions under which a loop-invariant computation can be hoisted out of a loop.",
+  "archetype": "ir_transformation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "irSnippet": "; Original loop (SSA CFG)\n; Loop header: bb_header\n; Loop body: bb_body containing:\n;   %inv = sdiv i32 %a, %b     ; loop-invariant in %a, %b\n;   %use = add i32 %inv, %i\n; Loop preheader: bb_preheader (dominates the loop; single predecessor of header)\n; Loop backedge closes bb_body -> bb_header.",
+  "stem": "The expression `%inv = sdiv i32 %a, %b` is loop-invariant. Under LICM, which conditions must hold for it to be safe to hoist `%inv` to the loop preheader?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Hoisting requires unrolling the loop first to prove the operation executes at least once."
+    },
+    {
+      "id": "B",
+      "text": "The instruction just needs to be loop-invariant; hoisting is always safe because the value would have been computed inside the loop anyway."
+    },
+    {
+      "id": "C",
+      "text": "Only pure instructions with side-effect-free operations (add, sub, mul) can be hoisted; divisions must remain in the loop regardless of invariance."
+    },
+    {
+      "id": "D",
+      "text": "(1) The instruction is loop-invariant (operands defined outside the loop or themselves loop-invariant). (2) It dominates every use inside the loop, or has no side effects when speculated. (3) Its execution is safe in the preheader (no fault, no observable side effect) — for `sdiv`, this typically means %b is provably non-zero, otherwise hoisting can introduce a divide-by-zero that never occurred in the original loop body."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "Option D is correct; options A, B, C are incorrect. A (Wrong): unrolling is a separate transformation; LICM does not require it. B (Wrong): overlooks that the loop might not execute; hoisting introduces new side effects if the loop body was never entered. C (Wrong): divisions can be hoisted when non-zero divisor is proven; not category-blocked. D (Correct): all three conditions (invariance, dominance, speculative-safety) apply. General context: LICM safety requires: (1) loop-invariance; (2) dominance of exits so the hoisted value is used correctly; (3) speculative-safety — hoisting must not introduce faults or side effects that would not have occurred originally. For sdiv, the divisor must be provably non-zero (otherwise the original loop might never execute the body, e.g., a zero-trip loop, and hoisting would introduce a spurious trap).",
+  "optionExplanations": {
+    "A": "Wrong: unrolling is a separate transformation; LICM does not require it.",
+    "B": "Wrong: overlooks that the loop might not execute; hoisting introduces new side effects if the loop body was never entered.",
+    "C": "Wrong: divisions can be hoisted when non-zero divisor is proven; not category-blocked.",
+    "D": "Correct: all three conditions (invariance, dominance, speculative-safety) apply."
+  },
+  "assumptions": [
+    "Standard LICM as described in EAC3 and LLVM's implementation.",
+    "SSA-based analysis of loop structure with a well-defined preheader."
+  ],
+  "nonImplications": [
+    "Does not imply LICM always helps performance; hoisting can increase register pressure and force spills.",
+    "Does not imply LICM only applies to arithmetic; loads with proven no-alias to intervening stores can also be hoisted."
+  ],
+  "misconceptionTags": [
+    "licm_speculative_safety",
+    "hoisting_free_myth"
+  ],
+  "distractorRationales": {
+    "A": "Requires unnecessary unrolling.",
+    "B": "Ignores the speculative-safety condition (loop may not execute).",
+    "C": "Over-restricts hoisting to arithmetic."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "LICM chapter, safety conditions",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "Loop optimization chapter",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:llvm-langref",
+      "locator": "LICM pass documentation, speculatable attribute",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/B/B-LICM-013.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

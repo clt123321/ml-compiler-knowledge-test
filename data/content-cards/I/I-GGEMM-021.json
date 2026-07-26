@@ -1,0 +1,50 @@
+{
+  "questionId": "I-GGEMM-021",
+  "learningObjective": "Explain what a Grouped GEMM is and why it is preferred over per-expert independent GEMMs in sparse MoE serving.",
+  "canonicalClaims": [
+    {
+      "claim": "Grouped GEMM executes many independent GEMMs of varying shape as a single kernel launch, dispatching per-group tile schedules across SMs; this amortizes launch overhead and avoids SM under-utilization from small variable-size problems like MoE expert GEMMs.",
+      "conditions": [
+        "Per-group problem sizes are known before launch.",
+        "SMs can pick tiles from any group per its schedule."
+      ],
+      "nonImplications": [
+        "Does not reduce total FLOPs.",
+        "Does not eliminate token permutation cost."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "CUTLASS grouped GEMM" },
+        { "ref": "DOC:trtllm", "locator": "MoE grouped-GEMM path" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Grouped GEMM refers to reducing outputs across experts in one kernel.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Grouping is over independent GEMM problems, not over a reduction axis.",
+      "sourceOrEvidence": "CUTLASS grouped GEMM docs"
+    },
+    {
+      "claim": "Padded batched GEMM is always superior to grouped GEMM.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Padding wastes compute proportional to imbalance; grouped GEMM avoids that waste.",
+      "sourceOrEvidence": "MoE serving benchmarks (Mixtral, DBRX)"
+    },
+    {
+      "claim": "Grouped GEMM reduces FLOPs via a Winograd-like transform.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No transform is involved; grouped GEMM is just a scheduling optimization.",
+      "sourceOrEvidence": "CUTLASS grouped GEMM implementation"
+    }
+  ],
+  "implementationFacts": [
+    "MegaBlocks and CUTLASS both provide grouped GEMM primitives for MoE.",
+    "In inference, grouped GEMM is applied to the up and down projections in the MoE MLP."
+  ],
+  "performanceScenarios": [
+    "The win over per-expert launches grows with the number of experts and with imbalance.",
+    "The win over padded batched GEMM grows with imbalance in n_i."
+  ],
+  "versionSensitivity": "stable_principle"
+}

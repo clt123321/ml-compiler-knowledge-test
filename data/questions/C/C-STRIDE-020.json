@@ -1,0 +1,111 @@
+{
+  "id": "C-STRIDE-020",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "Stride / indexing formula",
+  "learningObjective": "Compute the linear storage offset of a strided tensor element from shape, strides, and coordinate; and reason about broadcast strides.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch / MLIR memref semantics",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [
+      [
+        4,
+        3,
+        5
+      ]
+    ],
+    "dtypes": [
+      "float32"
+    ],
+    "strides": [
+      [
+        15,
+        0,
+        1
+      ]
+    ]
+  },
+  "stem": "A tensor `x` has shape `[4, 3, 5]` and strides `[15, 0, 1]` (with element-stride units). The middle dim has stride 0 — a common encoding for broadcast. What is the linear element offset for `x[2, 1, 3]`, and what does the zero stride imply about physical storage?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Offset = 2*15 + 1*0 + 3*1 = 33. The zero stride on dim 1 means that all three indices along dim 1 alias the same underlying physical element, so no storage is allocated along that dim; this is exactly how broadcast is represented as a metadata view."
+    },
+    {
+      "id": "B",
+      "text": "Offset = 2*15 + 1*3 + 3*5 = 48. The zero stride is a placeholder that gets replaced by the compiler with the actual per-element stride at codegen; the tensor still stores 4*3*5 physical elements."
+    },
+    {
+      "id": "C",
+      "text": "Offset = 2 + 1 + 3 = 6. Strided indexing sums the coordinates directly; strides only affect the number of elements allocated, not the offset formula, and the zero on dim 1 means dim 1 is packed with zero-valued elements. Under this framing, strided indexing sums the coordinates directly with equal weight, and strides only affect the number of elements allocated per dim; the zero stride here means dim 1 is packed with implicit zero-valued elements to fill the shape."
+    },
+    {
+      "id": "D",
+      "text": "This is an invalid tensor: a zero stride is disallowed by all tensor IRs because it makes indexing ill-defined; the framework would raise a shape/stride error before any indexing is attempted. In this reading, a zero stride is disallowed by every tensor IR because it makes indexing ill-defined; PyTorch's shape/stride check would raise an error at construction time before any indexing operation is attempted on the tensor."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "The standard strided offset formula is `offset = sum_i (index_i * stride_i)`. With shape `[4,3,5]` and strides `[15, 0, 1]`, `x[2,1,3]` maps to `2*15 + 1*0 + 3*1 = 33`. A zero stride on a dim is a well-known encoding for a broadcast view: all indices along that dim resolve to the same physical element, so the tensor's logical shape can be larger than its physical storage. PyTorch and MLIR memref both allow zero strides for this purpose (with appropriate write restrictions).",
+  "optionExplanations": {
+    "A": "Correct: matches the formula and the broadcast-view interpretation.",
+    "B": "Wrong: uses a formula not equal to the sum of index*stride.",
+    "C": "Wrong: ignores strides in the offset computation.",
+    "D": "Wrong: zero strides are legal for broadcast views."
+  },
+  "assumptions": [
+    "Strides are in element units (not bytes).",
+    "The tensor is a valid broadcast view over an underlying storage of shape effectively `[4, 1, 5]`."
+  ],
+  "nonImplications": [
+    "Does not imply that a broadcast view is writable: writing to a broadcast view with zero stride would alias multiple logical writes to one physical location and is typically disallowed.",
+    "Does not imply broadcast is always free at compute time; downstream ops may re-materialize."
+  ],
+  "misconceptionTags": [
+    "zero_stride_illegal",
+    "stride_ignored_in_offset"
+  ],
+  "distractorRationales": {
+    "B": "Wrong formula.",
+    "C": "Ignores strides.",
+    "D": "Wrong claim that zero strides are illegal."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Array indexing formulae",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:mlir-langref",
+      "locator": "MemRef strided-layout and zero-stride broadcast",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-STRIDE-020.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

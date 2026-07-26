@@ -1,0 +1,1338 @@
+{
+  "module": "mlir_tvm_xla",
+  "code": "E",
+  "label": "MLIR / TVM / XLA 与编译器生态",
+  "generatedAt": "2026-07-26",
+  "count": 30,
+  "questions": [
+    {
+      "id": "E-HLO-018",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "XLA / HLO — semantics of a matmul-add fragment",
+      "learningObjective": "Read a small HLO fragment and identify the semantics of ops, layouts, and reductions.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "XLA / OpenXLA",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the following HLO fragment. Which statement about its semantics is correct?",
+      "irSnippet": "HloModule fused\n\nENTRY main {\n  A = f32[128,256] parameter(0)\n  B = f32[256,64]  parameter(1)\n  C = f32[128,64]  parameter(2)\n  d = f32[128,64]  dot(A, B),\n        lhs_contracting_dims={1}, rhs_contracting_dims={0}\n  ROOT r = f32[128,64] add(d, C)\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "It computes an elementwise product `A * B` broadcasted to a rank-3 tensor; the `contracting_dims` clause is a display hint and does not affect the arithmetic since HLO's `dot` is always elementwise."
+        },
+        {
+          "id": "B",
+          "text": "It computes `r = A @ B + C` where `A @ B` contracts axis 1 of A with axis 0 of B (a standard matmul), producing an f32[128,64] result; the trailing `add` is elementwise bias/skip addition."
+        },
+        {
+          "id": "C",
+          "text": "The `add(d, C)` operation forces `d` and `C` to be broadcast to a common rank-3 shape f32[128,64,1] before summing; HLO does not permit rank-2 elementwise `add`."
+        },
+        {
+          "id": "D",
+          "text": "The `ROOT` keyword indicates that `r` will be recomputed on every call because it names the output; HLO uses `ROOT` as a re-materialization hint for memory planning, not a semantic marker of the entry return value."
+        }
+      ],
+      "assumptions": [
+        "Standard HLO / StableHLO semantics as documented."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-IREE-025",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "IREE / MLIR-based end-to-end compiler + runtime",
+      "learningObjective": "Understand IREE's overall architecture: an MLIR-based compiler that produces a bytecode module executed by IREE's runtime.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "IREE",
+        "frameworkVersionScope": "IREE 2024+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement about IREE's architecture is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "IREE is a pure Python interpreter for StableHLO IR; it does not perform ahead-of-time compilation and has no separate runtime binary."
+        },
+        {
+          "id": "B",
+          "text": "IREE targets only mobile/edge deployment; it has no support for server-class GPUs like NVIDIA A100/H100 and cannot use MLIR dialects beyond `tosa`."
+        },
+        {
+          "id": "C",
+          "text": "IREE is a runtime wrapper around cuBLAS/cuDNN; the 'compilation' step consists of choosing which library kernel to invoke for each op, with no MLIR pipeline in between."
+        },
+        {
+          "id": "D",
+          "text": "IREE is an MLIR-based compiler that lowers input IR (StableHLO / linalg / tosa) through target-specific pipelines and produces a serialized VM module (`.vmfb`) plus device-specific artifacts; the IREE runtime loads the module and dispatches host and device work through a HAL abstraction supporting CPU / Vulkan / CUDA / Metal / ROCm backends."
+        }
+      ],
+      "assumptions": [
+        "IREE 2024+ architecture as documented on iree.dev."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-IREERT-026",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "IREE / Compiler-runtime separation and edge deployment",
+      "learningObjective": "Understand why IREE separates compiler and runtime and how this enables edge and cross-target deployment.",
+      "archetype": "systems_dataflow",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "IREE",
+        "frameworkVersionScope": "IREE 2024+",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement best captures the reason IREE cleanly separates its compiler and runtime?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The separation is purely for internal code organization; end users must run both the compiler and the runtime on the target device at every model invocation, since IREE bytecode cannot be executed without the compiler."
+        },
+        {
+          "id": "B",
+          "text": "The runtime is only used for testing during development; production deployments must re-implement the runtime themselves because IREE does not distribute a production runtime binary."
+        },
+        {
+          "id": "C",
+          "text": "The compiler is a heavyweight AOT tool that produces a compact, self-describing artifact; the runtime is a small embeddable library that can be linked into edge/mobile apps without shipping the full MLIR toolchain, enabling deployment where the target device lacks the resources or licensing to host a full compiler."
+        },
+        {
+          "id": "D",
+          "text": "IREE compiler and runtime share the same binary at deployment; the 'compiler-runtime separation' is a marketing term and has no impact on the artifact structure or edge deployment story."
+        }
+      ],
+      "assumptions": [
+        "IREE deployment model as documented on iree.dev."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRAFF-007",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / Affine dialect — affine maps, integer sets, loop nests",
+      "learningObjective": "Reason about MLIR affine dialect semantics: what makes a loop-nest 'affine' and what transformations rely on that structure.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the following two loop-nest fragments; which statement about their status in the MLIR `affine` dialect is correct?",
+      "irSnippet": "// Fragment 1 (Affine)\naffine.for %i = 0 to %N step 1 {\n  affine.for %j = 0 to %M step 4 {\n    %v = affine.load %A[%i, %j + 1] : memref<?x?xf32>\n    affine.store %v, %B[%j, %i] : memref<?x?xf32>\n  }\n}\n\n// Fragment 2 (Uses data-dependent bound)\naffine.for %i = 0 to %N step 1 {\n  %k = memref.load %indices[%i] : memref<?xi32>\n  %kidx = arith.index_cast %k : i32 to index\n  affine.for %j = 0 to %kidx step 1 {  // <-- bound is data-dependent\n    %v = affine.load %A[%i, %j] : memref<?x?xf32>\n    affine.store %v, %B[%i, %j] : memref<?x?xf32>\n  }\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Fragment 2 is valid affine IR because `%kidx` is materialized before the inner loop via `arith.index_cast`, and by that point in the SSA order it is treated as a symbolic constant by the affine verifier."
+        },
+        {
+          "id": "B",
+          "text": "Both fragments are valid affine IR because both use `affine.for` and `affine.load/store`; the affine dialect verifier is deliberately syntactic and does not enforce affine constraints on values used as bounds."
+        },
+        {
+          "id": "C",
+          "text": "Fragment 1 is invalid because the inner load `%A[%i, %j + 1]` uses a non-trivial affine expression `%j + 1`; affine.load only accepts single-IV indices."
+        },
+        {
+          "id": "D",
+          "text": "Fragment 1 is valid affine IR because loop bounds, steps, and index expressions are affine functions of loop IVs and symbolic constants (`%N`, `%M`). Fragment 2 is invalid because the inner loop's upper bound (`%kidx`) is a data-dependent value not a symbol, violating the affine dialect's structural requirement."
+        }
+      ],
+      "assumptions": [
+        "Standard upstream MLIR affine dialect verifier."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRCONV-003",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / Dialect Conversion, Conversion Target, Type Converter",
+      "learningObjective": "Understand the roles of Conversion Target, Type Converter, and legalization patterns in an MLIR Dialect Conversion, including the difference between partial and full conversion.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "You want to convert `func.func` bodies containing `arith.addi` on `i32` to an `llvm.func` using LLVM Dialect. You configure a `ConversionTarget` marking `LLVMDialect` as legal, `arith.addi` as illegal, register conversion patterns, and set a `TypeConverter` mapping `i32 → i32`. Which statement about the resulting Dialect Conversion is correct?",
+      "irSnippet": "// Before conversion (arith on builtin types)\nfunc.func @add(%a: i32, %b: i32) -> i32 {\n  %0 = arith.addi %a, %b : i32\n  return %0 : i32\n}\n\n// Target after full conversion (LLVM Dialect)\nllvm.func @add(%a: i32, %b: i32) -> i32 {\n  %0 = llvm.add %a, %b : i32\n  llvm.return %0 : i32\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "Because `arith.addi` is marked illegal, the framework silently deletes any matched op without a rewriter pattern; illegal ops without patterns are simply dropped, and the surrounding IR is left in an inconsistent state that a later Canonicalizer pass must repair."
+        },
+        {
+          "id": "B",
+          "text": "`applyPartialConversion` requires the same completeness as full conversion; the difference between partial and full is only whether the transformation runs in a single or multiple passes."
+        },
+        {
+          "id": "C",
+          "text": "Under `applyFullConversion`, every operation in the input (including `func.func`, `func.return`, and `arith.addi`) must have a matching legalization pattern; if any remaining op is not marked legal by the target, the conversion fails with a verification error."
+        },
+        {
+          "id": "D",
+          "text": "The `TypeConverter` is optional whenever conversion patterns keep types unchanged; here `i32 → i32` is an identity mapping, so registering the TypeConverter has no effect and can be omitted entirely regardless of how the func signature is rewritten."
+        }
+      ],
+      "assumptions": [
+        "The reader is using upstream MLIR's `applyFullConversion` / `applyPartialConversion` APIs.",
+        "`arith.addi` on `i32` has a registered pattern lowering to `llvm.add` on `i32`."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRDIA-002",
+      "type": "multiple",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / Dialect, Trait, Interface",
+      "learningObjective": "Explain the roles of Dialect, Trait, and Interface in MLIR extensibility, and identify what each entity does and does not do.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "Which of the following statements about MLIR Dialects, Traits, and Interfaces are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "A Trait is compile-time metadata attached to an Op class that Pass writers can query with a static check (e.g., `SameOperandsAndResultType`, `MemoryEffects`), letting analyses and rewrites treat many Ops uniformly."
+        },
+        {
+          "id": "B",
+          "text": "An Interface is a virtual method table on Ops (or Dialects/Types), letting client code call polymorphic behavior on an Op without knowing its concrete class (e.g., `InferShapedTypeOpInterface`)."
+        },
+        {
+          "id": "C",
+          "text": "Once an Op is defined in one Dialect, it can never be aliased into another Dialect; therefore lowering between Dialects always requires cloning the Op and rebuilding all its uses from scratch, without leveraging any interface polymorphism."
+        },
+        {
+          "id": "D",
+          "text": "A Dialect is a registration namespace grouping related Operations, Types, and Attributes; different Dialects can coexist in one IRModule, enabling progressive lowering across levels of abstraction."
+        }
+      ],
+      "assumptions": [
+        "The reader is thinking about MLIR core extensibility mechanisms, not any downstream project's naming."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRGPU-010",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / GPU dialect — kernel launch, memory space, workgroup semantics",
+      "learningObjective": "Interpret an MLIR `gpu.launch_func` and identify how the GPU dialect represents grid/block dimensions and memory spaces.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "sm_80+ (via gpu-to-nvvm lowering)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "NVVM or ROCDL target"
+        ]
+      },
+      "softwareContext": {
+        "compiler": "MLIR gpu dialect",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the MLIR fragment below. Which statement about the `gpu.launch_func` and the callee `@kernel` is correct?",
+      "irSnippet": "gpu.module @kernels {\n  gpu.func @kernel(%arg: memref<1024xf32, 1>) kernel {\n    %tid = gpu.thread_id x\n    %bid = gpu.block_id  x\n    %idx = arith.addi %bid, %tid : index\n    %v   = memref.load %arg[%idx] : memref<1024xf32, 1>\n    gpu.return\n  }\n}\n\nfunc.func @host(%a: memref<1024xf32, 1>) {\n  %c1  = arith.constant 1  : index\n  %c256 = arith.constant 256 : index\n  %c4   = arith.constant 4   : index\n  gpu.launch_func @kernels::@kernel\n     blocks in (%c4, %c1, %c1)\n     threads in (%c256, %c1, %c1)\n     args(%a : memref<1024xf32, 1>)\n  return\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "The `kernel` attribute on `gpu.func` is redundant when a `gpu.launch_func` refers to it; removing it would still produce a valid kernel launch, and `%bid * blockDim` is automatically computed by `gpu.block_id x` under the hood."
+        },
+        {
+          "id": "B",
+          "text": "The launch spawns exactly 4 threads because `blocks in (4, 1, 1)` sets the total thread count; the `threads in` clause is a lowering hint that the NVVM backend may ignore, and memory space 1 denotes shared memory on NVVM targets."
+        },
+        {
+          "id": "C",
+          "text": "The launch spawns 4 blocks × 256 threads = 1024 threads; `%arg` in memory space 1 (global) is captured as a kernel argument; `gpu.thread_id x` and `gpu.block_id x` give per-thread coordinates, and the bug in the kernel is that `%idx = %bid + %tid` should be `%bid * blockDim + %tid` — as written, indices repeat across blocks and only the first 256 elements are read."
+        },
+        {
+          "id": "D",
+          "text": "`gpu.launch_func` cannot pass `memref` arguments; only scalars and raw `!llvm.ptr` are permitted, so the IR is invalid and would fail verification before lowering to NVVM."
+        }
+      ],
+      "assumptions": [
+        "Standard upstream MLIR `gpu` dialect and `gpu-to-nvvm`/`gpu-to-rocdl` lowering conventions.",
+        "Memory space integers follow the gpu-dialect convention (0 = global, 3 = workgroup/shared, 5 = private on NVVM lowering)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRLIN-004",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / Linalg Dialect, generic ops, iterator types",
+      "learningObjective": "Read a `linalg.generic` op and identify which iterator types encode parallel vs reduction dimensions, and how indexing maps drive the semantics.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the following `linalg.generic` op operating on `%A: tensor<MxKxf32>`, `%B: tensor<KxNxf32>`, `%C: tensor<MxNxf32>`. Which statement describes what this op computes?",
+      "irSnippet": "#map0 = affine_map<(m, n, k) -> (m, k)>\n#map1 = affine_map<(m, n, k) -> (k, n)>\n#map2 = affine_map<(m, n, k) -> (m, n)>\nlinalg.generic {\n  indexing_maps = [#map0, #map1, #map2],\n  iterator_types = [\"parallel\", \"parallel\", \"reduction\"]\n} ins(%A, %B : tensor<MxKxf32>, tensor<KxNxf32>)\n  outs(%C : tensor<MxNxf32>) {\n^bb0(%a: f32, %b: f32, %c: f32):\n  %0 = arith.mulf %a, %b : f32\n  %1 = arith.addf %c, %0 : f32\n  linalg.yield %1 : f32\n} -> tensor<MxNxf32>",
+      "options": [
+        {
+          "id": "A",
+          "text": "It computes `C[m,n] += A[m,k] * B[k,n]` — a standard matrix multiplication with accumulation into `%C`. The `k` dimension is a reduction iterator, so contributions across `k` are summed; `m` and `n` are parallel iterators."
+        },
+        {
+          "id": "B",
+          "text": "It computes `C[m,n] = A[m,k] * B[k,n]` for a single arbitrary `k` chosen at runtime because there is no explicit `linalg.reduce` marker inside the region body."
+        },
+        {
+          "id": "C",
+          "text": "It computes elementwise `C[m,n] = A[m,n] * B[m,n] + C[m,n]`; the indexing maps are ignored by `linalg.generic` and only the region body determines the operation."
+        },
+        {
+          "id": "D",
+          "text": "It computes a batched matmul across three parallel dimensions `(m, n, k)`, producing a rank-3 result tensor of shape `M x N x K` — because all iterators feed the output through the `linalg.yield`."
+        }
+      ],
+      "assumptions": [
+        "Standard `linalg.generic` semantics as documented in MLIR Linalg dialect."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRMEM-009",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / MemRef dialect — strides, memory space, layout",
+      "learningObjective": "Interpret a strided MemRef type descriptor and understand what its layout affix encodes about memory access patterns.",
+      "archetype": "precise_definition",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "Consider the MLIR type `memref<4x8xf32, strided<[8, 1], offset: 0>, 3>`. Which interpretation is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "A 4×8 column-major FP32 buffer because the second stride is `1`; MLIR's convention is that stride `1` in the last position indicates column-major layout, and the `3` denotes an alignment-in-bytes annotation."
+        },
+        {
+          "id": "B",
+          "text": "A 4×8 buffer of f32 in memory space 3 (typically GPU shared/workgroup memory), row-major (stride [8, 1]) with offset 0; the element `[i, j]` lives at linear address `i*8 + j` from the base pointer."
+        },
+        {
+          "id": "C",
+          "text": "A 4×8 buffer whose stride array is contiguous FP32 counts, so element `[i, j]` lives at byte address `i*8*4 + j*4`; the memory-space integer `3` denotes a runtime allocator ID resolved lazily at first access."
+        },
+        {
+          "id": "D",
+          "text": "A 4×8 tensor value in memory space 3 with a non-standard SSA numbering; the `strided<[8,1], offset:0>` clause is documentation only and does not affect the address computation, which is always row-major for `memref`."
+        }
+      ],
+      "assumptions": [
+        "MLIR memref strides are in element units unless documented otherwise.",
+        "Memory-space integer 3 is a convention used by GPU lowerings for shared memory."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIROP-001",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / Operation / Region / Block / Value / Type / Attribute",
+      "learningObjective": "Distinguish the roles of Operation, Region, Block, Value, Type, and Attribute in the MLIR structural model, and identify which entity carries compile-time constants vs. SSA runtime values.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "In MLIR's structural model, which statement about Operation, Region, Block, Value, Type, and Attribute is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Attributes are runtime SSA values attached to an Operation via a special dataflow edge; they can be mutated during execution and are the primary way MLIR represents dynamic scalars inside a Region."
+        },
+        {
+          "id": "B",
+          "text": "An Operation may contain zero or more Regions; each Region contains one or more Blocks in a CFG; SSA Values flow between Operations at runtime, while Attributes carry compile-time constant metadata attached to an Operation."
+        },
+        {
+          "id": "C",
+          "text": "A Block is the top-level unit of MLIR IR; each Block owns exactly one Region, and Operations exist inside a Region only as an implementation-level detail invisible to Pass writers."
+        },
+        {
+          "id": "D",
+          "text": "In MLIR every Value must have both a Type and an Attribute; without the paired Attribute the Type is undefined, which is why `arith.constant` is modelled as a pair `(Type, Attribute)` on a Value edge rather than on the Operation."
+        }
+      ],
+      "assumptions": [
+        "MLIR core dialect structure as defined in the MLIR LangRef."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRPASS-008",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / Pass, PassManager, nested pipelines",
+      "learningObjective": "Reason about MLIR Pass and PassManager semantics: op-scoping, nesting, and how a pass's op-type constrains where it runs.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about MLIR PassManager and Pass scoping is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Each Pass declares the Op type it runs on (e.g., `ModuleOp` or `func.func`); the PassManager runs a pass over every matching Op in the IR, and nested pass managers can be composed to run inner passes on inner ops (e.g., a `func.func` pipeline nested inside a `ModuleOp` pipeline)."
+        },
+        {
+          "id": "B",
+          "text": "MLIR Passes are always module-level: any pass registered with the PassManager runs exactly once on the top-level `ModuleOp`, and per-function work is achieved by having the pass walk the module manually with a `walk()` call."
+        },
+        {
+          "id": "C",
+          "text": "The PassManager runs all registered passes in parallel by default; users must explicitly opt out of parallelism to guarantee ordering, since MLIR provides no sequential pipeline semantics."
+        },
+        {
+          "id": "D",
+          "text": "Passes may freely modify any op in the IR regardless of the declared scope; the declared Op type is only a documentation hint used by the pass registry to display help text."
+        }
+      ],
+      "assumptions": [
+        "Standard upstream MLIR PassManager design."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRPAT-005",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / Pattern Rewrite, greedy driver, canonicalization",
+      "learningObjective": "Reason about how MLIR pattern rewriting composes rewrite patterns, and identify what canonicalization patterns can and cannot do.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "The IR below is fed to the MLIR canonicalization pass with the standard `arith` folder/patterns registered. Which output is correct?",
+      "irSnippet": "// Input\nfunc.func @f(%x: i32) -> i32 {\n  %c0 = arith.constant 0 : i32\n  %c1 = arith.constant 1 : i32\n  %0  = arith.addi %x, %c0 : i32   // add-zero\n  %1  = arith.muli %0, %c1 : i32   // mul-one\n  %2  = arith.subi %1, %1 : i32    // x - x\n  return %2 : i32\n}",
+      "options": [
+        {
+          "id": "A",
+          "text": "MLIR canonicalization never removes dead constants; only an explicit DCE pass can eliminate `%c0` and `%c1`, so they will remain in the output IR even after full canonicalization."
+        },
+        {
+          "id": "B",
+          "text": "The pattern driver applies each canonicalization pattern at most once in source order; if `add-zero` fires before `sub`'s operands are unified, the `sub` cannot be folded and the returned value is `arith.subi %x, %x`."
+        },
+        {
+          "id": "C",
+          "text": "`add-zero` and `mul-one` are folded, but `sub %x, %x → 0` is a semantic transformation outside the scope of canonicalization, since it changes the SSA def-use chain and thus requires an explicit `-fold-symmetric-ops` pass."
+        },
+        {
+          "id": "D",
+          "text": "After canonicalization, `add %x, 0` folds to `%x`, `mul %x, 1` folds to `%x`, and `sub %x, %x` folds to `arith.constant 0 : i32`; the function returns a fresh constant zero and both `%c0` and `%c1` become dead and are DCE'd."
+        }
+      ],
+      "assumptions": [
+        "Standard upstream `arith` dialect canonicalizers are registered.",
+        "The canonicalization pass is `-canonicalize` with default settings."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-MLIRTYPE-006",
+      "type": "multiple",
+      "module": "mlir_tvm_xla",
+      "subtopic": "MLIR / Tensor, MemRef, Vector types",
+      "learningObjective": "Distinguish MLIR `tensor`, `memref`, and `vector` types by their semantics (value vs buffer), aliasing model, and role in the lowering pipeline.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "MLIR",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about MLIR `tensor`, `memref`, and `vector` types are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "`tensor` and `memref` are fully interchangeable; the bufferization pass exists only for user convenience since MLIR's runtime executes both types with identical semantics."
+        },
+        {
+          "id": "B",
+          "text": "`tensor<...>` is a value type with SSA semantics: producers create new logical tensors; there is no in-place mutation and no explicit aliasing between different SSA values."
+        },
+        {
+          "id": "C",
+          "text": "`memref<...>` models a buffer with an explicit memory space, strides, and offset; multiple `memref` values can alias the same underlying storage, and stores through one memref are visible via aliased memrefs."
+        },
+        {
+          "id": "D",
+          "text": "`vector<...>` typically models SIMD/SIMT lane-aligned values held in registers; vector types are the primary lowering target for `arith` ops on `tensor` before bufferization, because tensors cannot be lowered to LLVM directly."
+        }
+      ],
+      "assumptions": [
+        "Upstream MLIR bufferization semantics.",
+        "The reader is thinking of built-in tensor/memref/vector types, not downstream extensions."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-ONNXFMT-030",
+      "type": "multiple",
+      "module": "mlir_tvm_xla",
+      "subtopic": "ONNX / Interchange format vs high-performance runtime",
+      "learningObjective": "Understand the boundary between ONNX as a model interchange format and the runtimes that consume it, avoiding the assumption that interchange = high performance.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "ONNX / ONNX Runtime / TensorRT / etc.",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about ONNX as a model interchange format are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "ONNX defines a portable representation of a model (operators, initializers, shapes, versions); it does not itself define how to execute the model efficiently on any specific hardware — that is the job of ONNX-consuming runtimes (ONNX Runtime, TensorRT, OpenVINO, IREE, etc.)."
+        },
+        {
+          "id": "B",
+          "text": "Two runtimes consuming the same ONNX model can produce different latency/throughput because their operator implementations, fusion policies, kernel selection, and memory management are runtime-specific, even though the numerical results should match within spec tolerance."
+        },
+        {
+          "id": "C",
+          "text": "Because ONNX is a widely adopted format, exporting a model to ONNX automatically guarantees it will be as fast on any target as the fastest hand-tuned implementation for that hardware."
+        },
+        {
+          "id": "D",
+          "text": "ONNX bundles a specific execution engine into the model file; loading an `.onnx` file automatically brings in a runtime and there is no distinction between the format and its executors."
+        }
+      ],
+      "assumptions": [
+        "ONNX as documented at onnx.ai."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-ONNXOP-027",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "ONNX / Operator Set, Opset versioning",
+      "learningObjective": "Understand ONNX's operator set and opset versioning model.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "textbook",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "ONNX",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about ONNX opsets is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "ONNX opsets are monotonically merged over time: a runtime supporting opset 18 automatically supports the exact semantics of every opset from 1 to 17 without any per-version handling."
+        },
+        {
+          "id": "B",
+          "text": "ONNX opsets are only a display feature; every ONNX runtime implements the union of all opset versions simultaneously, so opset numbers can be ignored."
+        },
+        {
+          "id": "C",
+          "text": "An ONNX model declares a specific opset version (e.g., `opset_import: [domain=\"\", version=17]`); each op's semantics is defined by the version listed in that opset, and consumers must implement the exact opset version to execute the model correctly."
+        },
+        {
+          "id": "D",
+          "text": "The opset version determines only the file-format layout on disk; the operator semantics themselves never change across versions."
+        }
+      ],
+      "assumptions": [
+        "ONNX specification as of 2026; opset versioning is stable across recent revisions."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-ONNXSHP-028",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "ONNX / Shape inference — dynamic vs static shapes",
+      "learningObjective": "Understand ONNX shape inference and how dynamic dimensions are represented in a model.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "ONNX",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about ONNX shape inference and dynamic dimensions is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "ONNX represents dynamic dimensions by encoding a runtime `Tensor<int64>` shape argument as an implicit first input to every op, replacing the static shape annotation."
+        },
+        {
+          "id": "B",
+          "text": "ONNX shape inference always produces fully static shapes; any op that cannot be statically resolved is deleted from the graph before serialization."
+        },
+        {
+          "id": "C",
+          "text": "ONNX has no shape inference mechanism; every runtime must implement its own inference from scratch, and the model file never contains any type/shape annotations."
+        },
+        {
+          "id": "D",
+          "text": "ONNX supports symbolic (named) dynamic dimensions on tensor shapes; `onnx.shape_inference` propagates concrete or symbolic shape/dtype information through the graph where op rules allow it, and unresolved dimensions remain symbolic — consumers use this info for planning but do not require full staticity."
+        }
+      ],
+      "assumptions": [
+        "ONNX shape inference API and TensorShapeProto as documented."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-ONNXVER-029",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "ONNX / Versioning, IR version vs Opset version",
+      "learningObjective": "Distinguish ONNX's IR version (model format) from opset version (operator semantics).",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "ONNX",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement correctly distinguishes ONNX's IR version from its opset version?",
+      "options": [
+        {
+          "id": "A",
+          "text": "IR version defines the on-disk protobuf schema/structural features of ModelProto (e.g., which optional fields exist); opset version defines the semantics of individual operators (e.g., what attributes Conv accepts). The two evolve independently, and a model must declare both."
+        },
+        {
+          "id": "B",
+          "text": "IR version and opset version are two names for the same field; both refer to the operator set used by the model."
+        },
+        {
+          "id": "C",
+          "text": "IR version is used only during export; runtimes ignore it and only look at the opset when executing."
+        },
+        {
+          "id": "D",
+          "text": "Opset version is a subset of IR version: opset N is always the operator content of IR version N; both must be equal in every valid ONNX model."
+        }
+      ],
+      "assumptions": [
+        "ONNX specification distinction between IR version and opset version."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-STHLO-019",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "StableHLO / Operator set stability and framework/compiler portability",
+      "learningObjective": "Explain the design goal of StableHLO as a portable operator set between frameworks and compilers.",
+      "archetype": "concept_boundary",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "StableHLO",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement best describes the design purpose of StableHLO?",
+      "options": [
+        {
+          "id": "A",
+          "text": "StableHLO is a hardware-independent runtime that directly executes ML models on GPU/TPU/CPU without invoking any downstream compiler; it replaces XLA at the execution layer."
+        },
+        {
+          "id": "B",
+          "text": "StableHLO is a versioned operator set with a formal specification that acts as a portability contract between ML frameworks (as producers) and compilers (as consumers), providing forward/backward compatibility guarantees so framework upgrades and compiler upgrades can proceed independently."
+        },
+        {
+          "id": "C",
+          "text": "StableHLO is a Python DSL for defining new ops in JAX; it is not an IR and cannot be serialized to disk."
+        },
+        {
+          "id": "D",
+          "text": "StableHLO is a strict subset of TensorFlow's SavedModel format; every StableHLO program is directly a SavedModel and vice versa."
+        }
+      ],
+      "assumptions": [
+        "OpenXLA StableHLO project design as documented at openxla.org/stablehlo."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-STHLOPORT-024",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "StableHLO / Framework-compiler portability design intent",
+      "learningObjective": "Explain why the community invests in a stable, versioned operator set at the framework-compiler boundary.",
+      "archetype": "paper_design_intent",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "StableHLO / OpenXLA",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement best captures the design rationale for putting a stable, versioned operator set (StableHLO) at the framework-compiler boundary?",
+      "options": [
+        {
+          "id": "A",
+          "text": "It decouples the release cycles of frameworks (PyTorch, JAX, TensorFlow) and compilers (XLA, IREE, ...): each side can evolve independently as long as they respect the StableHLO version compatibility contract, avoiding an O(frameworks × compilers) integration matrix and enabling shared optimization work."
+        },
+        {
+          "id": "B",
+          "text": "It forces every framework to adopt identical implementation details, so any two frameworks that consume StableHLO produce bit-identical outputs on all hardware, eliminating framework-level differences in numerical results."
+        },
+        {
+          "id": "C",
+          "text": "It replaces the need for framework-specific tracing tools; any framework that emits StableHLO no longer needs its own graph capture mechanism (TorchDynamo, JAX's tracer, TF's tf.function)."
+        },
+        {
+          "id": "D",
+          "text": "It exists primarily to give the compiler backend access to Python source code so that Python-native optimizations (e.g., decorator rewriting) can be applied at the compiler level."
+        }
+      ],
+      "assumptions": [
+        "OpenXLA StableHLO design motivations as documented."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-TVMEXT-016",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "TVM / External library integration — BYOC, extern ops",
+      "learningObjective": "Understand how TVM integrates external kernel libraries (cuBLAS, cuDNN, TensorRT) into a Relax program.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM BYOC / external ops",
+        "frameworkVersionScope": "TVM Unity",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement about how TVM integrates external libraries (e.g., cuBLAS, cuDNN, TensorRT) into a Relax program is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "External library calls are inlined into TensorIR PrimFunc bodies at compile time; the compiler then applies MetaSchedule to tune the library implementation just like any generated code."
+        },
+        {
+          "id": "B",
+          "text": "TVM cannot call any external library from a compiled Relax program; all compute must be expressed as generated PrimFunc bodies to be executable by the Relax VM."
+        },
+        {
+          "id": "C",
+          "text": "TVM's Bring-Your-Own-Codegen (BYOC) and extern-op mechanisms let a Relax op be lowered to an opaque call into a target library instead of a generated PrimFunc; the compiler treats such calls as black boxes at fusion and scheduling time but still tracks shapes/dtypes at the graph level."
+        },
+        {
+          "id": "D",
+          "text": "BYOC only supports CPU targets; GPU external libraries like cuBLAS must be linked at runtime via the host Python interpreter and cannot be encoded into the compiled artifact."
+        }
+      ],
+      "assumptions": [
+        "Standard TVM Unity BYOC and extern-op flows."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-TVMFUS-015",
+      "type": "multiple",
+      "module": "mlir_tvm_xla",
+      "subtopic": "TVM / Operator fusion — graph-level and tensor-level",
+      "learningObjective": "Distinguish graph-level operator fusion in Relax from loop-level fusion in TensorIR and understand what each achieves.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM",
+        "frameworkVersionScope": "TVM Unity",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statements about operator fusion in TVM are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "Graph-level fusion in Relax groups multiple ops into a single fused sub-function (often a call into a fused PrimFunc), reducing kernel launch counts and enabling shared intermediate buffers."
+        },
+        {
+          "id": "B",
+          "text": "Loop-level fusion in TensorIR (`sch.compute_inline`, `sch.reverse_compute_at`) merges producer and consumer loop nests inside a PrimFunc, eliminating intermediate materialization and improving locality."
+        },
+        {
+          "id": "C",
+          "text": "Graph-level fusion can always fuse arbitrary op pairs; there is no notion of a fusion boundary or per-op fusion policy in Relax."
+        },
+        {
+          "id": "D",
+          "text": "External-library ops (e.g., calls to cuBLAS or cuDNN) can be freely fused with generated PrimFunc kernels because Relax's fusion pass rewrites external calls into loop bodies at compile time."
+        }
+      ],
+      "assumptions": [
+        "Standard TVM Unity fusion pipeline."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-TVMMETA-014",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "TVM / MetaSchedule — search-based auto-tuning",
+      "learningObjective": "Understand the role of MetaSchedule in TVM: search space, measurement, cost model, and its relationship to TensorIR schedule primitives.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM MetaSchedule",
+        "frameworkVersionScope": "TVM Unity",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement about TVM's MetaSchedule is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "MetaSchedule operates at the Relax graph level; it does not touch loop-level IR and instead selects among pre-built kernel library implementations."
+        },
+        {
+          "id": "B",
+          "text": "MetaSchedule replaces TensorIR schedule primitives with a purely analytical solver based on the polyhedral model; it does not perform any real measurement and relies solely on integer-linear-programming derived closed-form costs."
+        },
+        {
+          "id": "C",
+          "text": "MetaSchedule automatically generates candidate schedules over TensorIR PrimFunc using rule-based expansion (space definition), then evaluates them via a cost model and real measurement on target hardware, iterating to find high-performance implementations."
+        },
+        {
+          "id": "D",
+          "text": "MetaSchedule is deterministic: given the same PrimFunc and target, it always produces the same schedule regardless of search budget, seed, or measurement noise."
+        }
+      ],
+      "assumptions": [
+        "MetaSchedule as documented for TVM Unity.",
+        "Search-based tuning as the intended workflow."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-TVMRLX-011",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "TVM / Relax vs Relay — design motivation",
+      "learningObjective": "Understand what Relax adds relative to Relay and why the TVM community introduced a new graph-level IR.",
+      "archetype": "paper_design_intent",
+      "difficulty": 3,
+      "depth": "research",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM",
+        "frameworkVersionScope": "TVM Unity (Relax, ~0.14+)",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement best captures the design motivation behind Relax over the older Relay IR in TVM Unity?",
+      "options": [
+        {
+          "id": "A",
+          "text": "Relax removes the module concept from TVM; unlike Relay's IRModule, Relax programs are flat lists of ops without functions, calls, or nested regions, which simplifies serialization."
+        },
+        {
+          "id": "B",
+          "text": "Relax's main goal is to replace TensorIR entirely by folding all loop-level scheduling into a single graph IR; PrimFunc is retained only for legacy compatibility."
+        },
+        {
+          "id": "C",
+          "text": "Relax is a graph-level IR designed to (i) natively support symbolic/dynamic shapes as first-class values, (ii) unify graph-level and tensor-level IRs by cross-calling PrimFunc via TensorIR, and (iii) enable Python-native metaprogramming and staged transformation — capabilities that Relay's typed functional core could not cleanly express."
+        },
+        {
+          "id": "D",
+          "text": "Relax exists solely to add automatic differentiation to TVM; it does not change how shapes, calls, or tensor programs are represented compared to Relay."
+        }
+      ],
+      "assumptions": [
+        "TVM Unity / Relax reflects the design goals documented on tvm.apache.org."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-TVMSCH-013",
+      "type": "multiple",
+      "module": "mlir_tvm_xla",
+      "subtopic": "TVM / TensorIR schedule primitives — split, bind, cache_read",
+      "learningObjective": "Reason about the effect of individual TensorIR schedule primitives on the resulting loop structure and buffer accesses.",
+      "archetype": "ir_transformation",
+      "difficulty": 3,
+      "depth": "implementation",
+      "hardwareContext": {
+        "vendor": "NVIDIA",
+        "architecture": "sm_80+ (via TensorIR CUDA codegen)",
+        "device": "GPU",
+        "requiredFeatures": [
+          "threadIdx/blockIdx mapping"
+        ]
+      },
+      "softwareContext": {
+        "framework": "TVM",
+        "frameworkVersionScope": "TVM Unity",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "You have a TensorIR PrimFunc computing `C = A + B` with a single loop `for i in range(N)`. Which of the following schedule sequences are consistent with the semantics of TensorIR schedule primitives? (Select all that apply.)",
+      "irSnippet": "@T.prim_func\ndef vec_add(A: T.Buffer((N,), \"float32\"), B: T.Buffer((N,), \"float32\"),\n            C: T.Buffer((N,), \"float32\")):\n    for i in range(N):\n        with T.block(\"C\"):\n            vi = T.axis.spatial(N, i)\n            C[vi] = A[vi] + B[vi]",
+      "options": [
+        {
+          "id": "A",
+          "text": "`sch.vectorize(loop=i)` is guaranteed to succeed on any loop regardless of the loop's extent, alignment, or the underlying target; TensorIR will silently emit scalar code if vectorization is impossible."
+        },
+        {
+          "id": "B",
+          "text": "`sch.bind(loop=i, thread_axis='threadIdx.x')` may be applied without any prior split; this is a valid legalization that turns a single serial loop into a per-thread compute where each thread handles one element and blockDim is set to the loop's extent."
+        },
+        {
+          "id": "C",
+          "text": "`sch.split(loop=i, factors=[None, 256])` produces two nested loops `(io, ii)` with `ii` size 256 and `io` size `ceildiv(N, 256)`; then `sch.bind(io, 'blockIdx.x')` and `sch.bind(ii, 'threadIdx.x')` map the two loops to the CUDA launch grid, producing a canonical vector-add kernel."
+        },
+        {
+          "id": "D",
+          "text": "`sch.cache_read(block='C', read_buffer_index=0, storage_scope='shared')` inserts a shared-memory staging buffer between the load of `A` and its use in the C block, without changing the mathematical result."
+        }
+      ],
+      "assumptions": [
+        "Standard TensorIR schedule primitive semantics as documented.",
+        "The reader is thinking of Unity-era TensorIR (not the pre-Unity TE `create_schedule` API)."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-TVMTIR-012",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "TVM / TensorIR PrimFunc — compute + schedule separation",
+      "learningObjective": "Explain how TensorIR represents tensor-level programs and how compute and schedule are separated.",
+      "archetype": "precise_definition",
+      "difficulty": 2,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM",
+        "frameworkVersionScope": "TVM Unity (~0.14+)",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement about TVM TensorIR PrimFunc is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "TensorIR schedule primitives are semantic transformations that may change the mathematical result of the PrimFunc; users must supply a separate golden reference to verify correctness after each schedule step."
+        },
+        {
+          "id": "B",
+          "text": "A PrimFunc is a graph-level op description without loops; all loop structure lives in Relax and is projected into PrimFunc only during code generation."
+        },
+        {
+          "id": "C",
+          "text": "A PrimFunc is a loop-level tensor program with explicit blocks, iteration variables, and buffer accesses; schedule primitives (`split`, `tile`, `bind`, `vectorize`) transform the loop structure without changing the underlying compute semantics."
+        },
+        {
+          "id": "D",
+          "text": "PrimFunc bodies are opaque Python callables that TVM's runtime interprets at execution time; TVM does not analyze or transform their internal structure at compile time."
+        }
+      ],
+      "assumptions": [
+        "TensorIR as documented in TVM Unity docs.",
+        "Schedule primitives operate on the block/loop structure."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-TVMVM-017",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "TVM / Relax VM runtime — dynamic execution model",
+      "learningObjective": "Understand the role of the Relax VM in executing compiled TVM programs and its position relative to static compilation.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "framework": "TVM Relax VM",
+        "frameworkVersionScope": "TVM Unity",
+        "verifiedAt": "2026-07-26",
+        "stability": "version_sensitive"
+      },
+      "stem": "Which statement about the Relax VM in TVM is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "The Relax VM only supports CPU targets; GPU execution in TVM is handled by a separate compile-time-only pipeline that emits standalone `.so` files without any VM involvement."
+        },
+        {
+          "id": "B",
+          "text": "The Relax VM is a Python interpreter that parses and executes Relax IR line-by-line at runtime; it does not require any AOT compilation of PrimFuncs, and switching to a different target only requires changing an environment variable."
+        },
+        {
+          "id": "C",
+          "text": "The Relax VM eliminates the need for a compiler: it JIT-compiles TensorIR at every function call, so the entire tuning + scheduling pipeline runs at inference time."
+        },
+        {
+          "id": "D",
+          "text": "The Relax VM is a bytecode-based runtime that executes a compiled Relax program: it dispatches PrimFunc calls, external-library calls, and control flow, and it handles dynamic-shape allocation and object lifetime — enabling static compilation of graph structure with runtime resolution of dynamic dimensions."
+        }
+      ],
+      "assumptions": [
+        "Relax VM design as documented in TVM Unity."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-XLABUF-021",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "XLA / Buffer assignment, aliasing, in-place operations",
+      "learningObjective": "Understand XLA's buffer assignment: value → buffer mapping, aliasing, and how in-place execution is decided.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "XLA",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about XLA's buffer assignment pass is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "XLA's buffer assignment maps HLO SSA values to physical buffers, allowing values with disjoint liveness to share the same buffer and enabling in-place execution when the compiler can prove the input value is no longer needed after the operation."
+        },
+        {
+          "id": "B",
+          "text": "Buffer assignment gives each HLO value its own dedicated buffer for the lifetime of the program; buffer reuse only happens at runtime through the memory allocator."
+        },
+        {
+          "id": "C",
+          "text": "Buffer assignment is a runtime pass executed on every step of the model; it is not part of static compilation and produces different assignments each iteration."
+        },
+        {
+          "id": "D",
+          "text": "HLO ops are always executed out-of-place; XLA does not support in-place semantics for any operation, so all elementwise updates must allocate a fresh buffer."
+        }
+      ],
+      "assumptions": [
+        "Standard XLA buffer assignment as documented in the OpenXLA project."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-XLAFUS-020",
+      "type": "multiple",
+      "module": "mlir_tvm_xla",
+      "subtopic": "XLA / Fusion — kinds and boundaries",
+      "learningObjective": "Distinguish the kinds of fusion XLA performs (loop, input, output) and their motivations.",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "XLA",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about XLA's operator fusion are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "XLA distinguishes multiple fusion kinds (e.g., 'loop' fusion, 'input' fusion, 'output' fusion) chosen based on producer/consumer memory-access patterns, so that fused kernels avoid materializing intermediate tensors when the access pattern is compatible."
+        },
+        {
+          "id": "B",
+          "text": "Elementwise ops chained with reductions can be output-fused into the reduction kernel so the elementwise stage runs inside the reduction's inner loop and no intermediate tensor is written to global memory."
+        },
+        {
+          "id": "C",
+          "text": "XLA always fuses any two adjacent ops in the HLO graph; fusion has no cost model and no boundaries, so producer/consumer pairs are unconditionally combined into one kernel."
+        },
+        {
+          "id": "D",
+          "text": "Fusion in XLA operates by cloning the producer's HLO source into the consumer's IR file at compile time; there is no compiler-side representation of a fused kernel, only a copy at the string level."
+        }
+      ],
+      "assumptions": [
+        "XLA fusion pass as documented; naming may evolve but the taxonomy is stable."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-XLASHP-022",
+      "type": "multiple",
+      "module": "mlir_tvm_xla",
+      "subtopic": "XLA / Static vs dynamic shape handling",
+      "learningObjective": "Understand XLA's static-shape orientation and how dynamic shape is handled (bucketing, dynamic dims, StableHLO dynamic ops).",
+      "archetype": "concept_boundary",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "N/A",
+        "device": "generic",
+        "requiredFeatures": []
+      },
+      "softwareContext": {
+        "compiler": "XLA / StableHLO",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statements about static vs dynamic shape handling in XLA / StableHLO are correct? (Select all that apply.)",
+      "options": [
+        {
+          "id": "A",
+          "text": "StableHLO includes `dynamic_*` ops (e.g., `dynamic_reshape`, `dynamic_slice`, `real_dynamic_slice`) that let programs represent computations whose shapes depend on runtime values without requiring re-compilation for every value."
+        },
+        {
+          "id": "B",
+          "text": "XLA achieves dynamic-shape support by removing all shape annotations from HLO; static shapes are only used for debug logging and are not required by any optimization pass."
+        },
+        {
+          "id": "C",
+          "text": "Serving systems using XLA often mitigate re-compilation cost by shape bucketing / padding: routing many similar shapes to a small fixed set of pre-compiled shape configurations."
+        },
+        {
+          "id": "D",
+          "text": "XLA is fundamentally static-shape-oriented: each HLO computation is specialized for concrete shapes at compile time, so shape changes typically trigger a fresh compilation (potentially very costly if unbounded)."
+        }
+      ],
+      "assumptions": [
+        "XLA / StableHLO static-first orientation as documented."
+      ],
+      "version": 1
+    },
+    {
+      "id": "E-XLASPMD-023",
+      "type": "single",
+      "module": "mlir_tvm_xla",
+      "subtopic": "XLA SPMD / GSPMD — sharding annotations and automatic parallelization",
+      "learningObjective": "Understand the basic idea of XLA SPMD partitioning and how sharding annotations drive automatic parallelization.",
+      "archetype": "systems_dataflow",
+      "difficulty": 3,
+      "depth": "systems",
+      "hardwareContext": {
+        "vendor": "generic",
+        "architecture": "multi-device (TPU / GPU cluster)",
+        "device": "generic",
+        "requiredFeatures": [
+          "multi-device execution"
+        ]
+      },
+      "softwareContext": {
+        "compiler": "XLA GSPMD",
+        "stability": "stable_principle"
+      },
+      "stem": "Which statement about XLA SPMD partitioning (GSPMD) is correct?",
+      "options": [
+        {
+          "id": "A",
+          "text": "GSPMD replaces the single HLO program with N distinct per-device programs (one per device); each program is compiled and shipped independently, and there is no shared HLO representation after partitioning."
+        },
+        {
+          "id": "B",
+          "text": "GSPMD takes an HLO program annotated with sharding specifications (e.g., `sharding={devices=[4,1] ...}` on some tensors) and rewrites it into a per-device program that runs the same computation on each device, inserting collective communication (all-reduce/all-gather/reshard) where required to preserve semantics."
+        },
+        {
+          "id": "C",
+          "text": "GSPMD partitions only the model parameters; activations are always fully replicated across devices, so it does not require any collective communication for forward or backward passes."
+        },
+        {
+          "id": "D",
+          "text": "GSPMD is a runtime-only system; sharding annotations are ignored by the compiler and interpreted by the XLA runtime scheduler, which decides sharding decisions per step based on load."
+        }
+      ],
+      "assumptions": [
+        "GSPMD as described in the XLA / OpenXLA project and Xu et al. 2021 paper."
+      ],
+      "version": 1
+    }
+  ]
+}

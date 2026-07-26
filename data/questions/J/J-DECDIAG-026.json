@@ -1,0 +1,96 @@
+{
+  "id": "J-DECDIAG-026",
+  "type": "multiple",
+  "module": "llm_inference",
+  "subtopic": "Decode performance diagnosis / Memory-bandwidth bound",
+  "learningObjective": "Diagnose memory-bandwidth-bound decode from profile data and identify effective vs ineffective mitigations.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "A100 80GB (HBM ~2 TB/s)",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic serving stack",
+    "stability": "stable_principle"
+  },
+  "stem": "The following profile is collected for a single decode step at batch size 1 on a Llama-2-13B model on A100 80GB. Which mitigations are consistent with the bottleneck and select those that would concretely reduce TPOT. (Choose all that apply.)",
+  "profileData": "Model: Llama-2-13B, FP16 weights.\n  Per decode step (batch=1):\n    HBM read for weights: 26 GB / step, elapsed 13 ms → effective bandwidth ≈ 2000 GB/s (close to A100 peak ~2 TB/s)\n    HBM read for KV cache: 200 MB / step, elapsed 0.1 ms\n    SM compute utilization inside kernels: 22%\n    Kernel launch gaps: ~10% of step time\n    TPOT (this step): ~14.5 ms",
+  "options": [
+    {
+      "id": "A",
+      "text": "Continuous batching that raises the effective batch size (multiple requests decoded together) would amortize the same weight read across all requests, cutting TPOT-per-request substantially when the amortized batch is large enough (moving the operator toward compute-bound)."
+    },
+    {
+      "id": "B",
+      "text": "Adding tensor-core-accelerated math kernels for the MLP GEMMs would raise SM utilization from 22% to near 100% and cut TPOT proportionally, because the low utilization directly indicates undersubscribed compute."
+    },
+    {
+      "id": "C",
+      "text": "CUDA Graph capture of the decode step would eliminate most of the 10% launch-gap fraction, cutting TPOT by roughly that amount (a modest but real improvement)."
+    },
+    {
+      "id": "D",
+      "text": "Weight-only INT4 quantization would cut weight HBM reads by ~4x, reducing the weight-read time (dominant cost) by close to a factor of 4 and directly cutting TPOT — subject to available INT4 GEMM kernels and acceptable accuracy loss."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C",
+    "D"
+  ],
+  "explanation": "The signature is memory-bandwidth-bound decode: weight reads dominate (13 ms of 14.5 ms), effective bandwidth is already near peak, and SM utilization is low because the kernels are bandwidth-bound. Real levers are (A) reducing weight bytes (quantization) — biggest lever; (B) sharing weight reads across a batch (continuous batching / batched decode); (D) reducing launch overhead (CUDA Graphs) — small but real. (C) is wrong: 22% utilization is a symptom of being memory-bound, not undersubscribed compute; adding math capability does not help a bandwidth-bound kernel.",
+  "optionExplanations": {
+    "A": "Correct: amortize weight reads across batch.",
+    "B": "Wrong: reverses diagnosis; low utilization is expected for bandwidth-bound.",
+    "C": "Correct: launch overhead reduction.",
+    "D": "Correct: bandwidth-bound → cut bytes; INT4 is the standard lever."
+  },
+  "assumptions": [
+    "INT4 kernels are available and accuracy loss is acceptable.",
+    "Multiple concurrent requests are available for batching."
+  ],
+  "nonImplications": [
+    "Does not imply INT4 is quality-neutral.",
+    "Does not imply CUDA Graphs are compatible with all shape configurations."
+  ],
+  "misconceptionTags": [
+    "low_util_needs_more_math",
+    "quant_free_myth"
+  ],
+  "distractorRationales": {
+    "B": "Reverses cause-and-effect of low utilization."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:vllm",
+      "locator": "Sec 2 — decode bottleneck analysis",
+      "supports": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "ref": "DOC:trtllm",
+      "locator": "Decode-time bandwidth analysis and quantization",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Decode bandwidth-bound diagnosis and effective mitigations",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-DECDIAG-026.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

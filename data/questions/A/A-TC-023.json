@@ -1,0 +1,95 @@
+{
+  "id": "A-TC-023",
+  "type": "single",
+  "module": "arch_perf_model",
+  "subtopic": "Tensor Core density vs FP32 SIMT",
+  "learningObjective": "Compare the arithmetic density (FLOP per cycle per SM) of NVIDIA Tensor Core FP16 vs FP32 SIMT paths, and reason about when each dominates.",
+  "archetype": "formula_performance",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100 SXM)",
+    "device": "GPU",
+    "requiredFeatures": [
+      "Tensor Cores FP16",
+      "FP32 CUDA cores"
+    ]
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A100 SXM published peaks: FP32 CUDA-core ≈ 19.5 TFLOP/s; FP16 Tensor Core ≈ 312 TFLOP/s (dense). A GEMM kernel with sufficient AI can, in principle, choose between the two paths. Which statement about the Tensor Core vs CUDA-core throughput ratio is correct?",
+  "options": [
+    {
+      "id": "A",
+      "text": "The paths are equal in throughput; the 312 TFLOP/s figure counts sparse Tensor Core throughput, which reduces to ~19.5 TFLOP/s once sparsity is disabled."
+    },
+    {
+      "id": "B",
+      "text": "The FP16 Tensor Core path is roughly 2× denser than FP32 CUDA cores because Tensor Cores process 2 operands per lane in one instruction; the ratio 312 / 19.5 must be a benchmark artifact."
+    },
+    {
+      "id": "C",
+      "text": "The FP16 Tensor Core path halves throughput compared to FP32 CUDA cores because reduced precision requires additional accumulation steps."
+    },
+    {
+      "id": "D",
+      "text": "The FP16 Tensor Core path is roughly 16× more FLOP-dense than the FP32 CUDA-core path on A100; using FP16 tensor cores (when the workload tolerates FP16 precision) yields up to a 16× ideal speedup for compute-bound kernels."
+    }
+  ],
+  "correctAnswers": [
+    "D"
+  ],
+  "explanation": "312 / 19.5 ≈ 16. This is the documented dense-throughput ratio on A100 SXM between FP16 Tensor Cores and FP32 CUDA cores. Compute-bound kernels that can tolerate FP16 (with FP32 accumulation) can approach this speedup; memory-bound kernels benefit less because HBM bandwidth is unchanged. Options B, C, D contradict the documented peak numbers.",
+  "optionExplanations": {
+    "A": "Wrong: the 312 TFLOP/s figure is dense (not sparse). Sparse throughput would be ~624 TFLOP/s under 2:4 structured sparsity.",
+    "B": "Wrong: the ratio is ~16×, not ~2×; A100 dense Tensor Core figures are architectural, not benchmark artifacts.",
+    "C": "Wrong: FP16 Tensor Core throughput exceeds FP32 CUDA-core throughput; extra accumulation does not net a slowdown at the kernel level.",
+    "D": "Correct: 312 / 19.5 ≈ 16× dense; the actual ideal speedup applies only to compute-bound workloads that can adopt the FP16 tensor core path."
+  },
+  "assumptions": [
+    "A100 SXM dense FP16 Tensor Core peak = 312 TFLOP/s; FP32 CUDA-core peak = 19.5 TFLOP/s (NVIDIA published).",
+    "Comparison is compute peak vs compute peak, not achievable throughput on any particular kernel."
+  ],
+  "nonImplications": [
+    "Does not imply that any real kernel achieves 16× speedup; achievable speedup depends on precision tolerance, kernel implementation, and Roofline regime.",
+    "Does not imply that FP16 always improves accuracy-normalized performance; some workloads require careful mixed-precision recipes to preserve accuracy."
+  ],
+  "misconceptionTags": [
+    "tc_vs_cuda_core_ratio",
+    "sparse_dense_peak_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Confuses sparse and dense peak values.",
+    "B": "Underestimates Tensor Core density.",
+    "C": "Reverses the direction of Tensor Core benefit."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Compute Capability 8.0 tables; Tensor Core throughput per precision",
+      "supports": [
+        "D"
+      ]
+    },
+    {
+      "ref": "BOOK:pmpp4",
+      "locator": "Tensor Cores and mixed-precision chapter",
+      "supports": [
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "A100 SXM published FP32 CUDA and FP16 Tensor Core peaks",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/A/A-TC-023.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

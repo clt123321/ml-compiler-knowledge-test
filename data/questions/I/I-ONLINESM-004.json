@@ -1,0 +1,86 @@
+{
+  "id": "I-ONLINESM-004",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "Online Softmax / One-pass streaming reduction",
+  "learningObjective": "State the online softmax update rules that let a single-pass streaming algorithm compute exact softmax over a partitioned row.",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "An online softmax algorithm streams over a row in tiles B_1, B_2, .... After processing tile B_t it maintains a running max m_t and a running denominator d_t such that d_t = sum_{i in B_1..t} exp(x_i - m_t). Which update rule is correct when a new tile B_{t+1} arrives with local max m' and local denominator d' = sum_{i in B_{t+1}} exp(x_i - m')?",
+  "codeSnippet": "# State after tile t:  m_t (running max), d_t = sum_{i<=t} exp(x_i - m_t)\n# New tile stats:      m' = max over B_{t+1};   d' = sum_{i in B_{t+1}} exp(x_i - m')\n# We want:             m_{t+1} = max(m_t, m'),  d_{t+1} = sum_{i<=t+1} exp(x_i - m_{t+1})",
+  "options": [
+    {
+      "id": "A",
+      "text": "m_{t+1} = max(m_t, m') ; d_{t+1} = d_t * exp(m_t - m_{t+1}) + d' * exp(m' - m_{t+1})  (both partial denominators are rescaled by the exponential of the difference between their old reference max and the new global max.)"
+    },
+    {
+      "id": "B",
+      "text": "m_{t+1} = max(m_t, m') ; d_{t+1} = d_t + d'  (the max is the elementwise maximum; the denominator combines by simple addition because both partial sums are already normalized.)"
+    },
+    {
+      "id": "C",
+      "text": "m_{t+1} = max(m_t, m') ; d_{t+1} = d_t + d' * exp(m' - m_{t+1})  (only the new tile's denominator needs a correction factor because the old running sum was already normalized to the true maximum seen so far.)"
+    },
+    {
+      "id": "D",
+      "text": "m_{t+1} = m_t + m' ; d_{t+1} = d_t + d'  (sum both running max and denominator to preserve the streaming invariant.)"
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "d_t was accumulated with reference max m_t. If m_{t+1} > m_t, every term in d_t must be re-referenced: exp(x_i - m_t) = exp(x_i - m_{t+1}) * exp(m_{t+1} - m_t)^{-1}, so d_t is rescaled by exp(m_t - m_{t+1}) (which is <= 1). Symmetrically d' is rescaled by exp(m' - m_{t+1}). Summing gives the correct d_{t+1} = sum_{i<=t+1} exp(x_i - m_{t+1}). This is the identity that lets FlashAttention (and any tiled softmax) work in a single pass with exact results.",
+  "optionExplanations": {
+    "A": "Correct: both partial denominators are rescaled to the new global max.",
+    "B": "Wrong: without rescaling, the sums use different reference maxes and are incomparable.",
+    "C": "Wrong: only rescaling the new tile leaves the old sum on a stale reference; the old d_t also needs a rescale unless m_t is already the new global max.",
+    "D": "Wrong: max is not additive; adding running maxes yields nonsense."
+  },
+  "assumptions": [
+    "All exp arguments (x_i - m_{t+1}) are non-positive so no overflow.",
+    "Sufficient accumulation precision (typically FP32)."
+  ],
+  "nonImplications": [
+    "Does not imply that online softmax is faster than a two-pass safe softmax on all hardware; it is faster mainly when reloading the row would be expensive (attention).",
+    "Does not imply that the algorithm avoids all rounding differences from summation order."
+  ],
+  "misconceptionTags": [
+    "online_softmax_wrong_rescale",
+    "additive_max"
+  ],
+  "distractorRationales": {
+    "B": "Forgets the rescale factor entirely.",
+    "C": "Rescales only one side.",
+    "D": "Confuses max with sum."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:flashattn",
+      "locator": "Sec 3.1 — online softmax recurrence",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-ONLINESM-004.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

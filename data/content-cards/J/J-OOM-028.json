@@ -1,0 +1,49 @@
+{
+  "questionId": "J-OOM-028",
+  "learningObjective": "Diagnose KV cache OOM under long-context multi-tenant serving and identify effective mitigations.",
+  "canonicalClaims": [
+    {
+      "claim": "KV cache OOM in long-context multi-tenant serving can be mitigated by (1) KV quantization to reduce per-token bytes, (2) admission control (max concurrent batch) to keep KV usage below capacity, and (3) prefix caching to share KV across requests with common prefixes.",
+      "conditions": [
+        "PagedAttention or equivalent block-based KV management.",
+        "Workload has amenable structure (shared prefixes for (3))."
+      ],
+      "nonImplications": [
+        "Does not imply mitigations preserve quality.",
+        "Does not imply admission control is always preferable to scaling out."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:vllm", "locator": "KV cache tuning" },
+        { "ref": "PAPER:vllm", "locator": "Sec 4" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Pipeline parallelism replicates KV cache across stages, giving more KV capacity per stage.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PP shards layers across stages; each stage holds only its layers' KV.",
+      "sourceOrEvidence": "PP design (GPipe, Megatron)"
+    },
+    {
+      "claim": "Batch admission control has no effect on TTFT/TPOT stability.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Capping batch reduces preemption and stabilizes tail latency.",
+      "sourceOrEvidence": "vLLM tuning guide"
+    },
+    {
+      "claim": "KV quantization is always safe accuracy-wise.",
+      "errorType": "overgeneralization",
+      "whyWrong": "INT4/FP8 KV can degrade quality on some tasks; INT8 is typically safer.",
+      "sourceOrEvidence": "KV quant literature"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM supports INT8/FP8 KV cache via configuration.",
+    "Prefix caching is off by default in some versions; must be explicitly enabled."
+  ],
+  "performanceScenarios": [
+    "Shared system prompts (agent workflows, tool-use) show 5-10x KV amortization with prefix caching."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

@@ -1,0 +1,55 @@
+{
+  "questionId": "H-OVERFLOW-006",
+  "learningObjective": "Diagnose overflow in FP16 accumulation on a long reduction and explain why FP32 accumulation is required.",
+  "canonicalClaims": [
+    {
+      "claim": "FP16's maximum representable magnitude (~65504) is easily exceeded by long reductions of moderate-magnitude partial products; FP32 accumulation is required to keep intermediate sums in range, with the final result downcast to FP16 on write.",
+      "conditions": [
+        "K is large enough (roughly K ≥ 1024 for typical DNN magnitudes) to risk overflow.",
+        "Input distribution has non-negligible mass in the moderate-magnitude regime."
+      ],
+      "nonImplications": [
+        "Does not imply FP16 accumulation is always dangerous — small-K or bounded-input reductions can be safe.",
+        "Does not imply BF16 removes all overflow risk downstream (e.g., squaring can still overflow)."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Tensor Core mixed-precision accumulation" },
+        { "ref": "BOOK:sze-eff", "locator": "Accumulation precision" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Higher precision (mantissa) prevents overflow.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Precision (mantissa width) and dynamic range (exponent width) are orthogonal; FP32 has both larger, but the range difference is what prevents overflow here.",
+      "sourceOrEvidence": "IEEE 754"
+    },
+    {
+      "claim": "FP16 GEMM is broken in principle; only FP32 GEMM produces meaningful results.",
+      "errorType": "overgeneralization",
+      "whyWrong": "FP16 GEMM with FP32 accumulation is a standard, well-tested configuration used across cuBLAS Tensor Core kernels.",
+      "sourceOrEvidence": "cuBLAS HMMA documentation"
+    },
+    {
+      "claim": "Only very large K (K > 10^6) can cause FP16 accumulation to overflow.",
+      "errorType": "wrong_condition",
+      "whyWrong": "K on the order of 10^3 with unit-magnitude inputs is already at risk; typical GEMMs in Transformers have K = 4096 or more.",
+      "sourceOrEvidence": "Empirical overflow studies"
+    },
+    {
+      "claim": "Downcasting the FP32 accumulator to FP16 on the final write reintroduces the same overflow.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The overflow happens during accumulation, not at the final write; if the final result fits in FP16, downcast is safe (else it produces INF at write, one value at a time).",
+      "sourceOrEvidence": "Tensor Core HMMA semantics"
+    }
+  ],
+  "implementationFacts": [
+    "cuBLAS FP16 Tensor Core GEMM uses FP32 accumulator by default.",
+    "PyTorch autocast for FP16 uses FP32 for reductions and BN stats."
+  ],
+  "performanceScenarios": [
+    "Transformer FFN layer with hidden_dim=4096 exhibits partial-sum magnitudes >65504 with typical input distributions."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,53 @@
+{
+  "questionId": "E-MLIRLIN-004",
+  "learningObjective": "Read a linalg.generic op and identify parallel vs reduction iterators and indexing-map semantics.",
+  "canonicalClaims": [
+    {
+      "claim": "`linalg.generic` iterates over an iteration space defined by `iterator_types`; parallel iterators produce independent output entries; reduction iterators accumulate the region body's yielded value into the output at the map-defined position, giving matmul-like semantics for the canonical `(m,n,k)` parallel/parallel/reduction pattern with `A[m,k]`, `B[k,n]`, `C[m,n]` indexing maps.",
+      "conditions": [
+        "Indexing maps must be affine maps over the iteration space.",
+        "Reduction body must be associative/commutative-compatible."
+      ],
+      "nonImplications": [
+        "Does not imply the output rank equals the iteration-space rank.",
+        "Does not imply reduction order is deterministic in generated code."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:mlir-langref", "locator": "Linalg dialect — generic op" },
+        { "ref": "PAPER:mlir", "locator": "MLIR CGO 2021 — Linalg dialect" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A reduction iterator picks a single value rather than accumulating over the range.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Reduction accumulates the body's yielded value across all points in that dimension.",
+      "sourceOrEvidence": "Linalg dialect semantics"
+    },
+    {
+      "claim": "Indexing maps in `linalg.generic` are advisory; only the region body defines the op.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Indexing maps are the semantic contract for how iteration coordinates index operands.",
+      "sourceOrEvidence": "Linalg dialect semantics"
+    },
+    {
+      "claim": "The output tensor rank equals the number of iterators.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Output rank equals the output tensor's declared shape; reduction dims do not appear in the output.",
+      "sourceOrEvidence": "Linalg dialect semantics"
+    },
+    {
+      "claim": "`linalg.generic` cannot express matmul; a specialized `linalg.matmul` is required.",
+      "errorType": "overgeneralization",
+      "whyWrong": "`linalg.matmul` is sugar for the parallel/parallel/reduction pattern shown; `generic` expresses it directly.",
+      "sourceOrEvidence": "Linalg dialect doc"
+    }
+  ],
+  "implementationFacts": [
+    "iterator_types: parallel | reduction | window (rarely used).",
+    "indexing_maps are affine maps of iteration variables."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

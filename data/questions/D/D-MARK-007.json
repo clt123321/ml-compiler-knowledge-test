@@ -1,0 +1,94 @@
+{
+  "id": "D-MARK-007",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "torch._dynamo.mark_dynamic",
+  "learningObjective": "Understand what `torch._dynamo.mark_dynamic` does and how it interacts with recompilation.",
+  "archetype": "code_implementation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Consider the following code. The intent is to compile once and reuse across several sequence lengths. Which statement best describes the behavior of `torch._dynamo.mark_dynamic`?",
+  "codeSnippet": "import torch\nimport torch._dynamo\n\n@torch.compile\ndef f(x):\n    return x.sin() + x.cos()\n\nfor n in [128, 256, 512]:\n    x = torch.randn(n, 64, device=\"cuda\")\n    torch._dynamo.mark_dynamic(x, 0)   # mark dim 0 as dynamic\n    f(x)\n\n# TORCH_LOGS=\"recompiles\" shows one compile (no recompile on the second or third call).",
+  "options": [
+    {
+      "id": "A",
+      "text": "`mark_dynamic(x, 0)` records that dim 0 of `x` should be treated as symbolic; Dynamo traces with a SymInt for that dim and installs a symbolic-shape guard, allowing multiple sizes to share the same compiled graph."
+    },
+    {
+      "id": "B",
+      "text": "`mark_dynamic(x, 0)` reshapes `x` at trace time by unsqueezing a symbolic dim; the compiled graph accepts a larger rank than the original tensor, requiring the user to also squeeze the output."
+    },
+    {
+      "id": "C",
+      "text": "`mark_dynamic` disables all guards on the tensor and replaces them with runtime shape checks written into the compiled Triton kernel; the compiled function then dynamically dispatches to different kernel variants."
+    },
+    {
+      "id": "D",
+      "text": "`mark_dynamic` is a no-op in current releases and exists only for backward compatibility with an old prototype; dynamic-shape behavior is controlled exclusively by the `dynamic=True` compile flag."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "`torch._dynamo.mark_dynamic(t, dim)` tells Dynamo to treat that dim of `t` as symbolic during tracing rather than specializing on the observed value. This produces a compiled graph parameterized by a SymInt for that dim and installs a symbolic-shape guard consistent with the observation (e.g., ranges/relations). Subsequent calls with different sizes for that dim reuse the same graph and avoid recompilation. It does not disable all guards, does not change the tensor's rank, and is not a no-op.",
+  "optionExplanations": {
+    "A": "Correct: describes mark_dynamic accurately.",
+    "B": "Wrong: no rank change is performed.",
+    "C": "Wrong: mark_dynamic does not push all guards into a runtime kernel dispatch.",
+    "D": "Wrong: mark_dynamic is a functional API in current releases."
+  },
+  "assumptions": [
+    "The user is on PyTorch 2.3 ~ 2.5 with default settings otherwise."
+  ],
+  "nonImplications": [
+    "Does not imply that mark_dynamic guarantees a single compile; other unmarked dims can still trigger specialization.",
+    "Does not imply the symbolic-shape kernel is always as fast as a shape-specialized one."
+  ],
+  "misconceptionTags": [
+    "mark_dynamic_disables_guards",
+    "mark_dynamic_changes_rank"
+  ],
+  "distractorRationales": {
+    "B": "Wrong mechanism.",
+    "C": "Overstates its effect on guards.",
+    "D": "Wrong claim about being a no-op."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "Dynamic shapes; mark_dynamic API",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:torch-dynamo",
+      "locator": "SymInt / symbolic-shape tracing",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-MARK-007.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

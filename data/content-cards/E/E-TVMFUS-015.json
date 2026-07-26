@@ -1,0 +1,50 @@
+{
+  "questionId": "E-TVMFUS-015",
+  "learningObjective": "Distinguish Relax graph-level fusion from TensorIR loop-level fusion.",
+  "canonicalClaims": [
+    {
+      "claim": "TVM performs fusion at two levels: (1) Relax graph-level fusion groups ops into a fused sub-function to reduce kernel launches; (2) TensorIR loop-level fusion via `compute_inline`/`compute_at` merges producer/consumer loops within a PrimFunc to eliminate intermediates and improve locality.",
+      "conditions": ["Both levels honor fusion policies and dependence constraints."],
+      "nonImplications": [
+        "Does not imply fusion always improves performance.",
+        "Does not imply the two levels are redundant; they compose."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "Fusion pass documentation" },
+        { "ref": "PAPER:tvm", "locator": "TVM OSDI 2018 — fusion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Relax fuses arbitrary op pairs with no fusion boundary.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Relax uses per-op patterns and policies; fusion boundaries exist.",
+      "sourceOrEvidence": "TVM Relax fusion doc"
+    },
+    {
+      "claim": "External calls (cuBLAS/cuDNN) can be loop-fused with generated PrimFuncs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Extern calls are opaque; only epilogue-style graph-level linking is possible in limited cases.",
+      "sourceOrEvidence": "TVM extern op doc"
+    },
+    {
+      "claim": "Graph-level and loop-level fusion are the same optimization at different names.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They operate on different IRs and at different scales.",
+      "sourceOrEvidence": "TVM Unity design"
+    },
+    {
+      "claim": "Fusion is always a monotonic win.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Over-fusion can spike register/SMEM pressure and hurt occupancy.",
+      "sourceOrEvidence": "General fusion literature"
+    }
+  ],
+  "implementationFacts": [
+    "Relax fusion transforms produce fused sub-functions calling a merged PrimFunc.",
+    "TensorIR: `sch.compute_inline`, `sch.compute_at`, `sch.reverse_compute_at`."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

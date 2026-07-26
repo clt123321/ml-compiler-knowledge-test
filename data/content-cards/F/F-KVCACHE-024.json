@@ -1,0 +1,49 @@
+{
+  "questionId": "F-KVCACHE-024",
+  "learningObjective": "Reason about KV Cache traffic in decode-phase attention as a memory-bound problem scaling with S_kv.",
+  "canonicalClaims": [
+    {
+      "claim": "Decode-phase attention is memory-bound: Q is one row per head, but K and V of length S_kv per sequence must be fully read from HBM each step; per-step traffic scales linearly with S_kv, and arithmetic intensity is very low.",
+      "conditions": ["Standard decode without approximations; KV cache exceeds L2 capacity."],
+      "nonImplications": [
+        "Does not imply prefill has the same pattern (prefill is compute-heavy).",
+        "Does not imply MQA/GQA change the bottleneck class (they reduce KV cache size but do not turn it compute-bound)."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Memory bandwidth analysis" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Decode attention is compute-bound.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Q is tiny; K/V dominate memory traffic.",
+      "sourceOrEvidence": "Roofline analysis"
+    },
+    {
+      "claim": "The KV Cache fits in L2 for typical serving loads.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For long context and moderate batches, KV cache is many MB per sequence — far beyond L2.",
+      "sourceOrEvidence": "vLLM / SGLang docs"
+    },
+    {
+      "claim": "The hardware compresses KV Cache automatically.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No automatic compression; software-level KV quantization is required.",
+      "sourceOrEvidence": "GPU architecture"
+    },
+    {
+      "claim": "Per-step decode cost is constant regardless of context length.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Linear in S_kv per step.",
+      "sourceOrEvidence": "LLM inference literature"
+    }
+  ],
+  "implementationFacts": [
+    "MQA/GQA reduce KV size by K/V head sharing.",
+    "Paged KV Cache (vLLM) mitigates fragmentation but not per-token bandwidth."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "stable_principle"
+}

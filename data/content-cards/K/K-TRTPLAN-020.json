@@ -1,0 +1,47 @@
+{
+  "questionId": "K-TRTPLAN-020",
+  "learningObjective": "Reason about the portability constraints of a serialized TensorRT engine across GPU architectures, driver versions and TensorRT major versions.",
+  "canonicalClaims": [
+    {
+      "claim": "TensorRT plan files are self-contained artifacts that are architecture-specific (compute capability), TensorRT-major-version-specific, and bound to the optimization-profile shape ranges specified at build time.",
+      "conditions": [
+        "Standard build without explicit hardware-compat or version-compat modes.",
+        "The runtime is being asked to deserialize on a possibly different device or version."
+      ],
+      "nonImplications": [
+        "Does not imply cross-arch/version is impossible; opt-in compatibility modes exist.",
+        "Does not imply plans depend on the source ONNX at runtime."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trt", "locator": "Engine portability and versioning" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Plans depend on the source ONNX at deserialization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Plans are self-contained binaries; the ONNX is not needed at runtime.",
+      "sourceOrEvidence": "TensorRT developer guide"
+    },
+    {
+      "claim": "Plans are portable across all NVIDIA GPUs.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Plans are compiled for a specific compute capability by default.",
+      "sourceOrEvidence": "TensorRT documentation"
+    },
+    {
+      "claim": "Cross-major-version plan compatibility is guaranteed.",
+      "errorType": "overgeneralization",
+      "whyWrong": "TRT does not guarantee cross-major-version compatibility for plans.",
+      "sourceOrEvidence": "TensorRT release notes"
+    },
+    {
+      "claim": "Input shape ranges are inferred at run time.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Ranges must be specified as optimization profiles at build time.",
+      "sourceOrEvidence": "TensorRT dynamic shapes docs"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

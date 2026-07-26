@@ -1,0 +1,66 @@
+{
+  "questionId": "F-DOTPROD-004",
+  "learningObjective": "Reason about correctness, determinism, and initialization semantics of a Triton per-block partial dot-product accumulated via tl.atomic_add.",
+  "canonicalClaims": [
+    {
+      "claim": "`tl.atomic_add` performs a read-modify-write against the target address; concurrent programs updating the same address produce the algebraic sum but in an unspecified order, so FP32 results are not bitwise-deterministic across runs.",
+      "conditions": [
+        "The target address supports the atomic op on the hardware/precision (FP32 atomic add is supported since sm_60).",
+        "The initial value at the address is set to the additive identity (0) before launch."
+      ],
+      "nonImplications": [
+        "Does not imply the result is 'wrong' in a numerical sense; the algebraic total is preserved up to floating-point rounding.",
+        "Does not imply that using a tree reduction would deliver higher throughput; both patterns have trade-offs."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Atomic functions and memory-consistency section" },
+        { "ref": "DOC:triton", "locator": "tl.atomic_add semantics" }
+      ]
+    },
+    {
+      "claim": "Masked loads with `other=0.0` are safe to feed into `tl.sum` because the additive identity of the reduction masks the OOB lanes' contribution.",
+      "conditions": ["The reduction operator is addition and the identity is 0."],
+      "nonImplications": [
+        "Does not imply this works for arbitrary reductions; e.g., `tl.max` with `other=0.0` would incorrectly bias the result for negative inputs."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "Reduction primitives and masked loads" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "`tl.atomic_add(ptr, v)` overwrites the value at `ptr` with `v`; only the last program's contribution survives.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`atomic_add` accumulates onto the current value; overwrite semantics would be `atomic_exchange`.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide, atomic functions"
+    },
+    {
+      "claim": "Floating-point reductions with atomics are always bit-deterministic across runs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FP32 addition is not associative; concurrent atomic ordering is unspecified, producing per-run bitwise variability.",
+      "sourceOrEvidence": "IEEE 754 non-associativity"
+    },
+    {
+      "claim": "The initial value of `out` does not matter as long as at least one program executes.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Because `atomic_add` accumulates, non-zero initialization offsets the final sum.",
+      "sourceOrEvidence": "CUDA atomic functions doc"
+    },
+    {
+      "claim": "Using `other=0.0` in the mask means masked lanes still contribute their pre-mask value to the sum.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`other=0.0` substitutes 0.0 for masked lanes; the pre-mask (uninitialized) value never enters the computation.",
+      "sourceOrEvidence": "Triton language reference"
+    }
+  ],
+  "implementationFacts": [
+    "`tl.atomic_add(ptr, v)`: atomically adds v to *ptr, returns old value",
+    "FP32 atomic add supported since sm_60; FP16/BF16 support depends on architecture",
+    "Determinism can be achieved via deterministic parallel reduction algorithms at extra cost"
+  ],
+  "performanceScenarios": [
+    "For reductions where hot contention on a single output is a bottleneck, a two-stage tree reduction (per-block partials into a partials tensor, followed by a second-pass reduction) avoids atomic hotspots and improves both throughput and determinism."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

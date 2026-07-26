@@ -1,0 +1,92 @@
+{
+  "id": "G-CFCSE-017",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Constant folding / CSE / DCE / IR rewrite",
+  "learningObjective": "Given a small IR fragment, identify which classical optimization (constant folding, CSE, DCE) is applied and confirm semantic preservation.",
+  "archetype": "ir_transformation",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "generic",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "irSnippet": "// Before\n%c1 = const 2\n%c2 = const 3\n%t1 = mul %c1, %c2       // = 6\n%t2 = mul %c1, %c2       // = 6\n%t3 = add %x, %t1\n%t4 = add %x, %t2\n%unused = mul %x, %x     // never used later\nreturn %t3, %t4\n\n// After\n%c6  = const 6\n%tsum = add %x, %c6\nreturn %tsum, %tsum",
+  "stem": "Which sequence of classical optimizations transforms the 'Before' IR into the 'After' IR, and is the rewrite semantics-preserving?",
+  "options": [
+    {
+      "id": "A",
+      "text": "Only constant folding is applied; the duplicate `add %x, %c6` values are not detected because CSE cannot fold across use points, and `%unused` is retained since DCE would violate side-effect ordering."
+    },
+    {
+      "id": "B",
+      "text": "Constant folding fuses `%t1 = mul 2, 3` into `%c6 = const 6`; CSE identifies `%t3` and `%t4` as syntactically equivalent `add %x, %c6` and collapses them to one value; DCE removes `%unused`. All three preserve semantics."
+    },
+    {
+      "id": "C",
+      "text": "The rewrite is illegal: returning `%tsum` twice from a function violates SSA form because a single value cannot flow to two return slots."
+    },
+    {
+      "id": "D",
+      "text": "Loop-invariant code motion is applied to hoist `mul %c1, %c2` out of the loop; CSE and DCE are unrelated to this particular rewrite."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Option B is correct; options A, C, D are incorrect. A (Wrong): mischaracterizes the reach of CSE and DCE. B (Correct): constant folding + CSE + DCE composition; all semantics-preserving. C (Wrong): SSA allows a value to have many uses. D (Wrong): no loop is present; LICM is irrelevant to this fragment. General context: The 'Before \u2192 After' rewrite is a canonical composition of three classical optimizations: constant folding (evaluate `mul 2, 3` at compile time), CSE (recognize `%t3` and `%t4` compute the same expression on the same operands, so they are one value), and DCE (remove `%unused` since it has no consumer and no side effect). All three are semantics-preserving on pure operations. Option D introduces an irrelevant loop context.",
+  "optionExplanations": {
+    "A": "Wrong: mischaracterizes the reach of CSE and DCE.",
+    "B": "Correct: constant folding + CSE + DCE composition; all semantics-preserving.",
+    "C": "Wrong: SSA allows a value to have many uses.",
+    "D": "Wrong: no loop is present; LICM is irrelevant to this fragment."
+  },
+  "assumptions": [
+    "`mul` and `add` are pure operations without side effects.",
+    "The return signature is a tuple that can hold two references to the same SSA value."
+  ],
+  "nonImplications": [
+    "Does not imply CSE can always eliminate `add %x, %c6` duplicates across function boundaries \u2014 it operates within a scope defined by the pass.",
+    "Does not imply DCE can always remove any unused op \u2014 ops with observable side effects are exempt."
+  ],
+  "misconceptionTags": [
+    "ssa_prohibits_multiple_uses",
+    "dce_forbidden"
+  ],
+  "distractorRationales": {
+    "A": "Underestimates CSE/DCE reach on pure ops.",
+    "C": "Misunderstands SSA multi-use.",
+    "D": "Introduces irrelevant LICM."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "Chapters on constant folding, CSE, DCE",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "DOC:llvm-langref",
+      "locator": "LLVM optimization passes: -constprop, -gvn, -dce",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/G/G-CFCSE-017.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

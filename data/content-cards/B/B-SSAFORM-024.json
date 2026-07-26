@@ -1,0 +1,50 @@
+{
+  "questionId": "B-SSAFORM-024",
+  "learningObjective": "Explain how out-of-SSA translation lowers phi functions into copies at predecessor blocks and identify the swap/lost-copy problem.",
+  "canonicalClaims": [
+    {
+      "claim": "Phi functions at a merge block have parallel-copy semantics; correct out-of-SSA translation lowers them into copies at predecessor block ends, using temporaries or permutation decomposition to handle cyclic (swap) patterns safely.",
+      "conditions": [
+        "SSA-form IR with phi at merge blocks.",
+        "Target ISA lacks a native phi instruction."
+      ],
+      "nonImplications": [
+        "Does not imply all phi lowering requires temporaries; only cyclic dependency patterns do.",
+        "Does not imply out-of-SSA is the only strategy; SSA-based register allocation is an alternative."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Out-of-SSA chapter" },
+        { "ref": "BOOK:appel", "locator": "SSA destruction chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Phi lowering inserts a single move at the merge block.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Phi is a parallel copy fed by predecessor edges; the copies must be placed at each predecessor's end so they execute along the correct incoming edge.",
+      "sourceOrEvidence": "Appel SSA destruction"
+    },
+    {
+      "claim": "Machine code natively supports phi instructions.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Target ISAs execute a linear stream of instructions; phi is an IR abstraction that must be lowered to explicit copies.",
+      "sourceOrEvidence": "EAC3 backend chapters"
+    },
+    {
+      "claim": "Serializing phi copies in any order is always correct.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Cyclic dependencies (swap patterns) require a temporary or a permutation-preserving schedule; naive sequential copies overwrite needed values.",
+      "sourceOrEvidence": "Sreedhar et al., Boissinot et al."
+    }
+  ],
+  "implementationFacts": [
+    "Sreedhar's Method I inserts a temporary per phi in critical cases.",
+    "Boissinot's algorithm classifies phi resources by chunks to reduce copy count.",
+    "LLVM lowers phi via PHIElimination pass in the machine-IR pipeline."
+  ],
+  "performanceScenarios": [
+    "Poor out-of-SSA lowering inserts redundant copies, increasing register pressure and hurting performance."
+  ],
+  "versionSensitivity": "stable_principle"
+}

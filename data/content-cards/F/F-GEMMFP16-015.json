@@ -1,0 +1,53 @@
+{
+  "questionId": "F-GEMMFP16-015",
+  "learningObjective": "Reason about FP16-in/FP32-accumulate GEMM: numerics and Tensor Core hardware path.",
+  "canonicalClaims": [
+    {
+      "claim": "FP16-input GEMM commonly uses FP32 accumulation to preserve precision across long K-dimension reductions; on sm_70+ Tensor Cores natively support this mixed-precision mode via `mma.sync` with FP16 operands and FP32 accumulator.",
+      "conditions": [
+        "Tensor Core hardware present (sm_70+).",
+        "Triton lowers `tl.dot(out_dtype=fp32)` to mma.sync when possible."
+      ],
+      "nonImplications": [
+        "Does not imply FP32 accumulation is exact.",
+        "Does not imply short reductions require FP32 accum."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Tensor Core / mma.sync mixed precision" },
+        { "ref": "DOC:triton", "locator": "tl.dot out_dtype" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FP32-accumulate + downcast is bit-identical to full-FP16 pipeline.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Intermediate precision changes the result of long sums.",
+      "sourceOrEvidence": "IEEE-754 rounding behavior"
+    },
+    {
+      "claim": "CUDA `mma.sync`/`wmma` cannot mix input and accumulator precisions.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Mixed precision (FP16 in, FP32 accum) is a Tensor Core selling point.",
+      "sourceOrEvidence": "CUDA programming guide"
+    },
+    {
+      "claim": "Long FP16 accumulations are safe because 16-bit precision is sufficient for most models.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Rounding error accumulates quadratically-in-magnitude with reduction length.",
+      "sourceOrEvidence": "Numerical analysis"
+    },
+    {
+      "claim": "FP32 accumulation halves Tensor Core throughput vs FP16 accumulation.",
+      "errorType": "wrong_condition",
+      "whyWrong": "On many architectures FP32-accum is at the same rate as FP16-accum (they use the same MMA); on some, FP16-accum is faster. Architecture-specific check required.",
+      "sourceOrEvidence": "NVIDIA architecture whitepapers"
+    }
+  ],
+  "implementationFacts": [
+    "Ampere `mma.sync.m16n8k16.f32.f16.f16.f32` instruction shape/layout.",
+    "Triton lowers `tl.dot(a, b, out_dtype=tl.float32)` with FP16 inputs to mma.sync."
+  ],
+  "performanceScenarios": [],
+  "versionSensitivity": "version_sensitive"
+}

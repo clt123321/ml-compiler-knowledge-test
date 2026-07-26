@@ -1,0 +1,50 @@
+{
+  "questionId": "B-PHI-002",
+  "learningObjective": "Determine correct phi placement and semantics at a control-flow merge involving multiple predecessors.",
+  "canonicalClaims": [
+    {
+      "claim": "A φ-function at the top of a CFG join block selects the reaching definition based on which predecessor executed; its incoming operands are pairs (value, predecessor block).",
+      "conditions": [
+        "The merge block has multiple predecessors, each defining or forwarding a value for the merged variable.",
+        "The IR is in SSA form."
+      ],
+      "nonImplications": [
+        "Does not imply φ-functions cost anything at runtime; they compile to copies during out-of-SSA lowering.",
+        "Does not imply φ can be replaced by `select` in general; select requires both operands to be safely evaluatable."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:llvm-langref", "locator": "phi instruction" },
+        { "ref": "BOOK:eac3", "locator": "SSA construction chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The `select` instruction is the SSA form of a control-flow merge and always replaces φ.",
+      "errorType": "definition_confusion",
+      "whyWrong": "select is a data-flow operation whose operands must both be defined; it cannot represent merges where side effects or unsafe evaluations would occur along the untaken side.",
+      "sourceOrEvidence": "LLVM Language Reference, select and phi"
+    },
+    {
+      "claim": "SSA at a merge requires duplicating the merge block for each predecessor.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Duplication is an alternative implementation strategy (tail duplication) but not a requirement; φ-functions handle merges without CFG changes.",
+      "sourceOrEvidence": "EAC3, SSA construction"
+    },
+    {
+      "claim": "OR-ing the two candidate values at a merge produces the correct SSA merged value.",
+      "errorType": "definition_confusion",
+      "whyWrong": "OR has value semantics; it computes a bitwise result that has nothing to do with control-flow merging.",
+      "sourceOrEvidence": "Standard compiler texts"
+    }
+  ],
+  "implementationFacts": [
+    "LLVM syntax: %v = phi <ty> [<val1>, <label1>], [<val2>, <label2>], ...",
+    "φ-functions appear only at the top of a block, before non-phi instructions.",
+    "Dominance-frontier algorithm (Cytron et al.) places minimal φ-functions."
+  ],
+  "performanceScenarios": [
+    "Loop headers use φ to merge initial value with backedge; SSA-based loop optimization (LICM, IV analysis) relies on this."
+  ],
+  "versionSensitivity": "stable_principle"
+}

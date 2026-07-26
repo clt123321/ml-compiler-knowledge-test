@@ -1,0 +1,49 @@
+{
+  "questionId": "N-GSPMD-008",
+  "learningObjective": "Distinguish peak (best-case) speedup from geometric-mean speedup and understand the scope-limits of reported paper numbers such as those in GSPMD.",
+  "canonicalClaims": [
+    {
+      "claim": "A paper's 'peak' speedup on a specific workload/hardware does not generalize to a geometric-mean across workloads: peak is the best-case observation and can be substantially higher than the geomean; when comparing systems, only comparably-defined summary statistics (e.g. geomean across a fixed benchmark suite) support fair conclusions.",
+      "conditions": [
+        "The comparison spans multiple workloads with heterogeneous behavior.",
+        "The reported peak refers to a single (workload, hardware) pair."
+      ],
+      "nonImplications": [
+        "Does not imply peak numbers are meaningless; they are useful to describe a system's best case, just not to summarize its typical performance."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§6 benchmark methodology and per-model results" }
+      ]
+    },
+    {
+      "claim": "Reported speedups in a systems paper are conditioned on that paper's hardware, software stack, workload set and baseline; treating them as a general property of the technique overgeneralizes.",
+      "conditions": [
+        "Baseline is stated (e.g. vs. manual placement, vs. a specific version of another framework)."
+      ],
+      "nonImplications": [
+        "Does not imply the technique offers no benefit outside the paper's setup; it means the specific numbers require restatement of conditions."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§6 reported baselines and conditions" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "If a paper reports a peak speedup of 2×, the geometric-mean speedup across models is also approximately 2×.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Peak is by definition the maximum observed value; geomean is a summary that is typically strictly smaller, often substantially so."
+    },
+    {
+      "claim": "A speedup reported vs. an older version of a competitor framework can be used as evidence against the current version of that framework.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Baselines evolve; comparisons must be against contemporaneous versions or explicitly qualified."
+    },
+    {
+      "claim": "Peak and geomean speedup are computed the same way and are interchangeable as summary metrics.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Peak = maximum; geomean = product-of-ratios^(1/N). They are distinct summaries with different sensitivity to outliers."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

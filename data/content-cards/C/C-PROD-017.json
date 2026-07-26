@@ -1,0 +1,56 @@
+{
+  "questionId": "C-PROD-017",
+  "learningObjective": "Explain when a producer-consumer relation between two ops in a tensor IR permits fusion into a single kernel and when it does not.",
+  "canonicalClaims": [
+    {
+      "claim": "Producer-consumer fusion that avoids materializing the intermediate tensor requires that per-element production by P and per-element consumption by C share (or are tileable into) a common iteration space, so consumed elements are produced on demand at the consumer's iteration site.",
+      "conditions": [
+        "P and C operate over tensor values with a defined per-element production/consumption.",
+        "The compiler has an iteration-space or scheduling model."
+      ],
+      "nonImplications": [
+        "Does not imply every such fusion is profitable; register/instruction-count budgets matter.",
+        "Does not imply reductions never fuse — many reduction patterns (softmax, GEMM epilogue) do fuse."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:halide", "locator": "compute_at semantics" },
+        { "ref": "PAPER:tvm", "locator": "Operator fusion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Fusion requires P and C to be written in the same language.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Language identity is a codegen concern; semantic fusion is a data-dependence question.",
+      "sourceOrEvidence": "TVM / Halide docs"
+    },
+    {
+      "claim": "Fusion applies only when P and C share the same op name.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion is based on data dependence, not op-name equality.",
+      "sourceOrEvidence": "TVM / Inductor design"
+    },
+    {
+      "claim": "Fusion requires one op to be pure and the other side-effecting.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Typical fusion prefers both being pure; opposite polarity is not required.",
+      "sourceOrEvidence": "MLIR MemoryEffects docs"
+    },
+    {
+      "claim": "Every producer-consumer pair with shared iteration should always be fused.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Register pressure and generated-code size are real costs; too-aggressive fusion spills and slows down execution.",
+      "sourceOrEvidence": "TVM / Inductor scheduler heuristics"
+    }
+  ],
+  "implementationFacts": [
+    "Pointwise-into-pointwise: canonical fusion case",
+    "Pointwise-into-reduction: common (e.g., mul-then-sum)",
+    "Reduction-into-pointwise (epilogue): common (softmax normalization)"
+  ],
+  "performanceScenarios": [
+    "Fusing pointwise chains removes intermediate HBM traffic; this is the dominant win in memory-bound tensor workloads."
+  ],
+  "versionSensitivity": "stable_principle"
+}

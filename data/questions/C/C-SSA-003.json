@@ -1,0 +1,100 @@
+{
+  "id": "C-SSA-003",
+  "type": "single",
+  "module": "graph_tensor_ir",
+  "subtopic": "SSA / Functionalization of in-place tensor mutations",
+  "learningObjective": "Explain why compiler passes over tensor IRs commonly functionalize in-place operations into non-mutating SSA-like forms.",
+  "archetype": "ir_transformation",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch / AOTAutograd or general tensor compiler",
+    "stability": "stable_principle"
+  },
+  "stem": "A compiler ingests the following pseudo-IR fragment (with an in-place op) and converts it to a functional / SSA form before running fusion, DCE, and CSE:\n\nBEFORE (imperative, in-place):\n```\n%x = ...\naten::mul_(%x, 2.0)     # in-place: mutates %x\n%y = aten::add(%x, 1.0)\nreturn %y\n```\nAFTER (functionalized):\n```\n%x0 = ...\n%x1 = aten::mul(%x0, 2.0)   # non-mutating\n%y  = aten::add(%x1, 1.0)\nreturn %y\n```\nWhich statement best explains why compilers perform this functionalization?",
+  "irSnippet": "// BEFORE (mutating)\n%x : tensor<Nxf32> = ...\naten.mul_(%x, 2.0)          // %x is redefined implicitly\n%y : tensor<Nxf32> = aten.add(%x, 1.0)\nreturn %y\n\n// AFTER (functional / SSA)\n%x0 : tensor<Nxf32> = ...\n%x1 : tensor<Nxf32> = aten.mul(%x0, 2.0)\n%y  : tensor<Nxf32> = aten.add(%x1, 1.0)\nreturn %y",
+  "options": [
+    {
+      "id": "A",
+      "text": "Functional operations run faster than in-place operations at runtime because non-mutating ops enable more aggressive prefetching and are lowered to a distinct CUDA scheduling path."
+    },
+    {
+      "id": "B",
+      "text": "In-place mutations violate SSA: they create multiple definitions under one name, complicating dataflow analysis, CSE, and safe reordering/fusion."
+    },
+    {
+      "id": "C",
+      "text": "In-place tensor operations cannot be represented in FX Graph or any tensor IR; functionalization is required for the IR to be well-formed and to satisfy graph-level verifiers."
+    },
+    {
+      "id": "D",
+      "text": "Functional operations avoid CUDA context switches, whereas in-place operations require a stream synchronization between iterations to preserve the read-modify-write ordering across launches."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "SSA requires each name to be defined exactly once. In-place ops mutate the underlying value while keeping the same name, breaking single-assignment and making dataflow reasoning (who observes which version of `x`?) much more expensive. Functionalization renames each mutation into a new SSA value (`%x1 = mul(%x0, 2)`), giving downstream passes (CSE, fusion, alias-free scheduling) a simpler and safer graph to work over. It is not a runtime speedup, not a representability issue, and not related to CUDA context switching.",
+  "optionExplanations": {
+    "A": "Wrong: functionalization is an IR-level transformation; at runtime the codegen may still emit in-place stores where safe.",
+    "B": "Correct: SSA/single-assignment is the analytical reason; functionalized IRs are what fusion, alias-free scheduling, and autograd tracing all consume.",
+    "C": "Wrong: FX Graph and other tensor IRs can represent in-place ops (e.g., `aten::mul_`); the issue is analysis convenience, not representability.",
+    "D": "Wrong: this claim conflates IR-level transformation with runtime stream behavior."
+  },
+  "assumptions": [
+    "The IR under consideration supports both mutating and non-mutating variants of an operator (as PyTorch aten does).",
+    "The functionalization pass preserves outward-visible mutation semantics for tensors that escape the compiled region."
+  ],
+  "nonImplications": [
+    "Does not imply that functionalization removes all copies at runtime; the code generator can reintroduce in-place execution when analysis shows safety.",
+    "Does not imply that in-place ops are always harmful; small hot-loop code can sometimes benefit."
+  ],
+  "misconceptionTags": [
+    "ssa_confusion",
+    "runtime_vs_ir_confusion"
+  ],
+  "distractorRationales": {
+    "A": "Wrong runtime claim.",
+    "C": "Wrong representability claim.",
+    "D": "Wrong causal claim about CUDA behavior."
+  },
+  "sourceRefs": [
+    {
+      "ref": "BOOK:eac3",
+      "locator": "SSA definition and consequences for dataflow analysis",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "BOOK:appel",
+      "locator": "SSA and CSE/DCE chapters",
+      "supports": [
+        "B"
+      ]
+    },
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "AOTAutograd / functionalization discussion",
+      "supports": [
+        "B"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/C/C-SSA-003.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

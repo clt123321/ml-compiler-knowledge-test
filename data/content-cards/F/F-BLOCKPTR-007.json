@@ -1,0 +1,51 @@
+{
+  "questionId": "F-BLOCKPTR-007",
+  "learningObjective": "Understand tl.make_block_ptr semantics: structured tile pointers, boundary_check, and memory order.",
+  "canonicalClaims": [
+    {
+      "claim": "`tl.make_block_ptr` constructs a structured pointer describing a `[block_shape]` tile within a base tensor of `shape` with given `strides` at `offsets`; `order` declares which axis is fastest-varying in memory; `tl.load(block_ptr, boundary_check=(axes))` masks OOB lanes on the listed axes.",
+      "conditions": ["Triton block-pointer support present (Triton 2.2+)."],
+      "nonImplications": [
+        "Does not imply block pointers are always faster than raw pointer arithmetic.",
+        "Does not imply all axes are checked; only those listed in `boundary_check`."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:triton", "locator": "make_block_ptr / load boundary_check" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "make_block_ptr allocates shared memory for the tile.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It builds a structured pointer; SMEM allocation is not implied.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "boundary_check=(0, 1) disables masking on both axes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The tuple enumerates axes to check; listing an axis enables the check.",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "The `order` argument controls endianness.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It specifies memory layout order (which dim is contiguous).",
+      "sourceOrEvidence": "Triton docs"
+    },
+    {
+      "claim": "Block pointers cannot be advanced; a new one must be built each iteration.",
+      "errorType": "definition_confusion",
+      "whyWrong": "`tl.advance(block_ptr, (dm, dn))` steps the block pointer efficiently in a loop.",
+      "sourceOrEvidence": "Triton docs"
+    }
+  ],
+  "implementationFacts": [
+    "`tl.advance(block_ptr, offsets)` shifts the tile origin.",
+    "`order=(1, 0)` = axis 1 fastest-varying (row-major)."
+  ],
+  "performanceScenarios": [
+    "Block pointers can help the Triton compiler emit better vectorized memory ops, especially on Hopper's TMA/Ampere's cp.async paths."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

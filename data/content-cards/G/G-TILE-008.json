@@ -1,0 +1,56 @@
+{
+  "questionId": "G-TILE-008",
+  "learningObjective": "Compute the largest square tile size for a GEMM inner kernel so that the three FP32 tiles fit within a target L1/SMEM budget.",
+  "canonicalClaims": [
+    {
+      "claim": "For square FP32 GEMM tiling with three T×T tiles sharing an on-chip buffer of B bytes, the largest legal tile size satisfies 12·T² ≤ B, i.e., T ≤ √(B/12).",
+      "conditions": [
+        "The three tiles occupy the buffer exclusively.",
+        "Elements are 4 bytes each (FP32)."
+      ],
+      "nonImplications": [
+        "Does not imply the largest fitting T is the best-performing T; register-tiling, warp shape, and reuse pattern still matter.",
+        "Does not imply the same formula holds for FP16/BF16 tiles (12·T² becomes 6·T²)."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "Cache blocking / tile sizing" },
+        { "ref": "BOOK:pmpp4", "locator": "Tiled GEMM: shared memory sizing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Caches or shared memory buffers tolerate 2× to 4× overcommit; the reported budget is a soft limit.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Overcommitting the on-chip budget forces either eviction thrashing (caches) or a static allocation error (SMEM).",
+      "sourceOrEvidence": "CUDA Programming Guide, shared memory allocation"
+    },
+    {
+      "claim": "The tile size should always be chosen as small as possible to guarantee cache residency.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Too-small tiles reduce arithmetic-intensity gains from tiling and increase loop-overhead / launch counts.",
+      "sourceOrEvidence": "PMPP4 GEMM tuning discussion"
+    },
+    {
+      "claim": "Only the A and B tiles need to fit; C_tile is 'accumulated in registers' and does not count toward the budget.",
+      "errorType": "scope_error",
+      "whyWrong": "In the SMEM-tiled formulation, C_tile is held in the block's memory; ignoring it under-counts the footprint by 33%.",
+      "sourceOrEvidence": "PMPP4 tiled GEMM listing"
+    },
+    {
+      "claim": "For FP16 tiles the largest T is the same as for FP32 because the formula is dtype-agnostic.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Element size halves for FP16, so T grows by √2; the formula is 6·T² ≤ B in FP16.",
+      "sourceOrEvidence": "PMPP4 tiled GEMM"
+    }
+  ],
+  "implementationFacts": [
+    "sm_80 configurable L1/SMEM allows up to 164 KB SMEM per SM but per-block SMEM has separate limits.",
+    "TensorIR / MetaSchedule automates the search over tile sizes subject to a memory budget."
+  ],
+  "performanceScenarios": [
+    "For a 48 KB budget in FP16, T can go up to 90 (round to 88 for warp alignment).",
+    "Choosing T slightly below the maximum is common to leave room for double-buffering (2× tile A + 2× tile B)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

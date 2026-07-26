@@ -1,0 +1,47 @@
+{
+  "questionId": "L-WARPSTALL-023",
+  "learningObjective": "Interpret Nsight Compute warp stall reasons and translate them to actionable optimization steps.",
+  "canonicalClaims": [
+    {
+      "claim": "'Long Scoreboard' is a memory-latency stall (warps waiting for global-memory loads); mitigations include improving L2 hit rate, prefetching (cp.async), and raising warps per SM to hide latency. Attacking memory traffic (better locality) reduces the source rather than hiding it.",
+      "conditions": [
+        "Nsight Compute stall taxonomy on Ampere/Hopper.",
+        "Kernel legitimately accesses memory (not a synthetic benchmark)."
+      ],
+      "nonImplications": [
+        "Does not imply memory-latency stalls can always be eliminated.",
+        "Does not imply barriers are always bad; they can be required for correctness."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:ncu", "locator": "Warp stall reasons" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Long Scoreboard is a compute-pipeline stall.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a memory-latency stall; the compute-pipeline stall is Wait or MIO Throttle.",
+      "sourceOrEvidence": "Nsight Compute stall reason reference"
+    },
+    {
+      "claim": "Barrier stalls are always a bug.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Correctness requires synchronization; eliminating barriers is not always feasible.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Reducing block size always reduces Barrier stalls.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Smaller blocks may increase kernel-launch overhead and hurt occupancy without solving the barrier.",
+      "sourceOrEvidence": "Nsight Compute docs"
+    },
+    {
+      "claim": "High DRAM throughput always means memory-saturation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Saturation is at ~90%+; 45% indicates room to grow (or to reduce).",
+      "sourceOrEvidence": "Nsight Compute SoL analysis"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

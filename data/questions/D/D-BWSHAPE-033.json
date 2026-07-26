@@ -1,0 +1,95 @@
+{
+  "id": "D-BWSHAPE-033",
+  "type": "single",
+  "module": "pytorch_compiler",
+  "subtopic": "Backward graph shapes / joint graph partitioning",
+  "learningObjective": "Reason about how AOTAutograd's partitioner divides the joint (fw+bw) graph and what activations get materialized between forward and backward.",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Consider the compiled model below (a linear + activation + linear). Which best describes how AOTAutograd's partitioner typically decides which forward-pass activations to save for the backward and which to recompute?",
+  "codeSnippet": "import torch\n\nclass M(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.a = torch.nn.Linear(64, 128)\n        self.b = torch.nn.Linear(128, 64)\n    def forward(self, x):\n        return self.b(self.a(x).relu())\n\nmodel_c = torch.compile(M())\nx = torch.randn(32, 64, device=\"cuda\", requires_grad=True)\ny = model_c(x).sum()\ny.backward()",
+  "options": [
+    {
+      "id": "A",
+      "text": "The partitioner always saves every intermediate activation produced by the forward, because the backward needs each intermediate; recompute is not supported by AOTAutograd."
+    },
+    {
+      "id": "B",
+      "text": "The partitioner is disabled by default; users must invoke it manually via `torch._functorch.min_cut_partitioner` to obtain a compiled backward. In this framing, the partitioner always saves every intermediate activation produced by the forward pass, because the backward needs each one to compute gradients; recompute is not a feature that AOTAutograd exposes to Inductor in current releases."
+    },
+    {
+      "id": "C",
+      "text": "The partitioner runs a min-cut / heuristic algorithm on the joint FX graph to decide which tensors to save as activations vs. recompute in the backward. Cheap-to-recompute values may be recomputed to reduce activation memory, while expensive-to-recompute values are saved. It is a compile-time decision, not a per-call runtime decision."
+    },
+    {
+      "id": "D",
+      "text": "The partitioner runs at each call site to observe runtime memory usage and decides on the fly whether to save or recompute; this is why AOTAutograd introduces variable per-call latency. Under this reading, the partitioner is disabled by default and users must invoke it manually via `torch._functorch.min_cut_partitioner` after `torch.compile` returns, otherwise the compiled backward will be structurally identical to the eager op-by-op backward."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "AOTAutograd's default partitioner (a min-cut-based heuristic) analyzes the joint FX graph at compile time to decide which tensors to materialize between forward and backward and which to recompute inside the backward. Cheap-to-recompute values (e.g., activations of pointwise ops) can be recomputed instead of saved, trading extra compute for reduced memory. This is a compile-time decision (not per-call), and recomputation is fully supported.",
+  "optionExplanations": {
+    "A": "Wrong: recompute is supported.",
+    "B": "Wrong: partitioner runs by default.",
+    "C": "Correct.",
+    "D": "Wrong: it is a compile-time decision."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5.",
+    "The compiled function is called with autograd active."
+  ],
+  "nonImplications": [
+    "Does not imply the partitioner always minimizes peak memory; heuristics vs. exact min-cut can differ.",
+    "Does not imply save-vs-recompute is always the right trade-off; some workloads want maximum compute-time speed."
+  ],
+  "misconceptionTags": [
+    "partitioner_saves_everything",
+    "partitioner_is_per_call"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim that recompute is unsupported.",
+    "B": "Wrong claim about manual invocation.",
+    "D": "Wrong claim about per-call decision."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:pytorch2",
+      "locator": "AOTAutograd partitioner (min-cut) discussion",
+      "supports": [
+        "C"
+      ]
+    },
+    {
+      "ref": "DOC:torch-compile",
+      "locator": "AOTAutograd partitioner overview",
+      "supports": [
+        "C"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/D/D-BWSHAPE-033.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

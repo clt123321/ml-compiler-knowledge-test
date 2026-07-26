@@ -1,0 +1,90 @@
+{
+  "id": "F-STREAM-026",
+  "type": "multiple",
+  "module": "cuda_triton_kernel",
+  "subtopic": "CUDA / Stream, Event, and asynchronous ordering",
+  "learningObjective": "Understand CUDA stream ordering semantics and how events synchronize across streams.",
+  "archetype": "code_implementation",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Kepler or newer",
+    "device": "GPU",
+    "requiredFeatures": [
+      "multi-stream engine"
+    ]
+  },
+  "softwareContext": {
+    "framework": "CUDA C++",
+    "compiler": "nvcc",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about CUDA streams and events are correct? (Select all that apply.)",
+  "codeSnippet": "cudaStream_t s1, s2;\ncudaStreamCreate(&s1); cudaStreamCreate(&s2);\ncudaEvent_t e;\ncudaEventCreate(&e);\n\n// (1) Kernels launched on the same stream run in issued order:\nkA<<<..., s1>>>(...);\nkB<<<..., s1>>>(...);   // B waits for A on same stream\n\n// (2) Cross-stream sync via events:\nkC<<<..., s1>>>(...);\ncudaEventRecord(e, s1);           // event fires when C completes on s1\ncudaStreamWaitEvent(s2, e, 0);    // s2 stalls until e fires\nkD<<<..., s2>>>(...);             // D on s2, ordered after C on s1\n\n// (3) Default stream (0) behavior depends on --default-stream compile flag",
+  "options": [
+    {
+      "id": "A",
+      "text": "All non-default streams block each other by default; concurrent execution across streams requires an explicit `cudaSetStreamPriority(concurrent=true)` call before use."
+    },
+    {
+      "id": "B",
+      "text": "`cudaEventRecord` is a synchronous host operation that returns only after the event has been observed by the device; it blocks the calling CPU thread."
+    },
+    {
+      "id": "C",
+      "text": "Kernels launched on the same non-default stream execute in program order; kernels on different streams may execute concurrently subject to resource availability."
+    },
+    {
+      "id": "D",
+      "text": "`cudaEventRecord(e, s1)` followed by `cudaStreamWaitEvent(s2, e, 0)` makes any subsequent work on `s2` wait until the event fires (i.e., until all work enqueued on `s1` before the record has completed), enabling cross-stream dependencies without blocking the host thread."
+    }
+  ],
+  "correctAnswers": [
+    "C",
+    "D"
+  ],
+  "explanation": "Options C, D are correct; options A, B are incorrect. A (Wrong): streams are concurrent by default. B (Wrong): `cudaEventRecord` is asynchronous. C (Correct): intra-stream ordered, inter-stream may overlap. D (Correct): canonical event-based cross-stream sync. General context: Neither operation blocks the host.",
+  "optionExplanations": {
+    "A": "Wrong: streams are concurrent by default.",
+    "B": "Wrong: `cudaEventRecord` is asynchronous.",
+    "C": "Correct: intra-stream ordered, inter-stream may overlap.",
+    "D": "Correct: canonical event-based cross-stream sync."
+  },
+  "assumptions": [
+    "Standard CUDA runtime semantics as documented.",
+    "Default stream = 0 behavior is per-thread or legacy depending on compile flag; question focuses on non-default streams."
+  ],
+  "nonImplications": [
+    "Does not imply that any two streams always overlap; hardware resources (copy engines, SM count) still constrain concurrency.",
+    "Does not imply `cudaStreamWaitEvent` blocks the host."
+  ],
+  "misconceptionTags": [
+    "stream_serial_by_default_myth",
+    "event_record_synchronous_myth"
+  ],
+  "distractorRationales": {
+    "A": "Wrong claim about default stream blocking.",
+    "B": "Confuses record with synchronize."
+  },
+  "sourceRefs": [
+    {
+      "ref": "DOC:cuda-guide",
+      "locator": "Streams and Events \u2014 asynchronous ordering",
+      "supports": [
+        "C",
+        "D"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/F/F-STREAM-026.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 2,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

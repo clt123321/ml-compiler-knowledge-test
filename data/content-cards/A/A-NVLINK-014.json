@@ -1,0 +1,51 @@
+{
+  "questionId": "A-NVLINK-014",
+  "learningObjective": "Compare NVLink and PCIe bandwidth for inter-GPU communication and reason about ring-AllReduce throughput.",
+  "canonicalClaims": [
+    {
+      "claim": "For bandwidth-bound ring-AllReduce, wall time scales inversely with the slowest inter-GPU link bandwidth; NVLink typically delivers an order of magnitude more per-direction bandwidth than PCIe on modern platforms, translating directly into collective speedup.",
+      "conditions": [
+        "Tensor is large enough that latency terms are negligible.",
+        "Topology is fully connected via the compared interconnect; no fallback to PCIe or CPU routing.",
+        "Comparison is at steady state, not small-message regime."
+      ],
+      "nonImplications": [
+        "Does not imply latency-bound collectives (small messages) show the same speedup.",
+        "Does not imply NVLink always solves all-to-all patterns; different collective algorithms use topology differently."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Interconnect and collective chapters" },
+        { "ref": "DOC:cuda-best", "locator": "Multi-GPU communication chapter" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Ring-AllReduce time is independent of link bandwidth.",
+      "errorType": "definition_confusion",
+      "whyWrong": "In the bandwidth-bound regime, time = bytes / effective_link_BW; slower links directly increase time.",
+      "sourceOrEvidence": "Standard collective analysis, e.g., NCCL and HP6"
+    },
+    {
+      "claim": "CPU-mediated PCIe routing outperforms NVLink for large tensors.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "CPU-mediated routing adds copies and involves lower-bandwidth links; NVLink is a direct GPU-to-GPU high-bandwidth fabric.",
+      "sourceOrEvidence": "NVIDIA multi-GPU whitepapers"
+    },
+    {
+      "claim": "NVLink and PCIe have the same per-direction bandwidth, differing only in aggregate.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Per-direction NVLink 4.0 is ~450 GB/s aggregate per GPU vs ~25 GB/s per direction on PCIe Gen4 x16; they differ by more than 10× per direction.",
+      "sourceOrEvidence": "NVIDIA H100 whitepaper"
+    }
+  ],
+  "implementationFacts": [
+    "NCCL ring-AllReduce bandwidth-bound time ≈ 2(P−1)/P × N / effective_link_BW.",
+    "NVLink 4.0 per-GPU ≈ 900 GB/s bidirectional (H100).",
+    "PCIe Gen4 x16 ≈ 25 GB/s practical per direction."
+  ],
+  "performanceScenarios": [
+    "Training LLMs on multi-node clusters uses NVLink/NVSwitch to hide gradient AllReduce behind backward pass; PCIe-only clusters see collective as a bottleneck."
+  ],
+  "versionSensitivity": "stable_principle"
+}

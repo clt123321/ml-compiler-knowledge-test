@@ -1,0 +1,47 @@
+{
+  "questionId": "L-PCTL-019",
+  "learningObjective": "Reason about how many samples are needed to estimate a p99 latency with reasonable confidence, and identify a common under-sampling mistake.",
+  "canonicalClaims": [
+    {
+      "claim": "Empirical p99 estimated from N samples corresponds to the ~ceil(0.99N)-th order statistic; with small N its variance is comparable to the tail spread. Defensible p99 estimates typically need N ≥ 10³ and should be reported with a confidence interval.",
+      "conditions": [
+        "Samples are i.i.d. from the target distribution.",
+        "The estimator of interest is a high tail quantile."
+      ],
+      "nonImplications": [
+        "Does not imply small N is useless for any statistic.",
+        "Does not imply large N is always feasible."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-profiler", "locator": "Percentile reporting" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "N=100 is enough for a reliable p99.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "The empirical p99 is dominated by 1-2 order statistics whose variance is on the scale of the tail.",
+      "sourceOrEvidence": "Order statistics theory"
+    },
+    {
+      "claim": "More samples yield less accurate percentiles.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Variance of the empirical percentile decreases with N.",
+      "sourceOrEvidence": "Statistics basics"
+    },
+    {
+      "claim": "p99 must equal 100× p50.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No such ratio constraint exists.",
+      "sourceOrEvidence": "Percentile definitions"
+    },
+    {
+      "claim": "Confidence intervals are unnecessary for percentile reports.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Without CIs the reader cannot judge whether the reported percentile is stable.",
+      "sourceOrEvidence": "SRE reporting practice"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,56 @@
+{
+  "questionId": "C-EAGER-015",
+  "learningObjective": "Distinguish eager execution (define-by-run) from static graph capture (define-and-run) and identify the correct implications of each.",
+  "canonicalClaims": [
+    {
+      "claim": "The essential difference between eager and static execution is whether a persistent computation graph is constructed before execution: eager dispatches operations immediately, while static capture builds an IR that later passes can optimize globally.",
+      "conditions": [
+        "The framework's default mode is being described (not overrides).",
+        "The comparison is at the graph representation level."
+      ],
+      "nonImplications": [
+        "Does not imply eager frameworks cannot compile subgraphs (torch.compile does).",
+        "Does not imply that eager is always slower than compiled; overhead varies with model and hardware."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:eac3", "locator": "AOT vs. JIT vs. interpretation" },
+        { "ref": "PAPER:pytorch2", "locator": "Eager vs. compiled execution" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Eager and static differ mainly in the file format of the graph.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The difference is when the graph is constructed, not the format.",
+      "sourceOrEvidence": "General framework docs"
+    },
+    {
+      "claim": "Static graph mode is always faster than eager.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Compile-time cost, dispatch overhead, and per-op efficiency all vary; eager competitive on many workloads.",
+      "sourceOrEvidence": "PyTorch 2 ASPLOS"
+    },
+    {
+      "claim": "Eager mode requires a JIT compiler for every Python line.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Eager dispatches to pre-compiled kernels; no per-line JIT is required.",
+      "sourceOrEvidence": "PyTorch docs"
+    },
+    {
+      "claim": "Eager mode is only for debugging.",
+      "errorType": "scope_error",
+      "whyWrong": "Eager is used in production workflows; it also underpins hybrid setups like torch.compile.",
+      "sourceOrEvidence": "PyTorch docs"
+    }
+  ],
+  "implementationFacts": [
+    "PyTorch eager: dispatch to ATen ops; no graph captured",
+    "torch.compile: capture subgraphs from Python bytecode; compile via Inductor",
+    "TensorFlow 1.x: define-and-run (Session/Graph); TF 2.x default is eager"
+  ],
+  "performanceScenarios": [
+    "Compiled subgraphs enable fusion and kernel-selection wins; eager execution retains Python flexibility for control flow and iteration."
+  ],
+  "versionSensitivity": "stable_principle"
+}

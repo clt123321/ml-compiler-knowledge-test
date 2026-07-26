@@ -1,0 +1,96 @@
+{
+  "id": "G-TILE-009",
+  "type": "single",
+  "module": "graph_opt_schedule",
+  "subtopic": "Tiling / Too-small vs. too-large trade-offs",
+  "learningObjective": "Diagnose why an autotuner-chosen tile size regressed on a new shape and identify the trade-off that triggered it.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (sm_80, A100)",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TVM MetaSchedule",
+    "frameworkVersionScope": "TVM 0.14 ~ 0.16",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "profileData": "Original tuned config: block=128\u00d7128, warp=64\u00d764. Peak on M=N=K=4096: 82% TC utilization.\nSame config on M=N=K=1024 shape: 34% TC utilization, only 8 blocks in grid, ~ 24 SMs idle on A100 (108 SMs).\nTest of block=64\u00d764 config on M=N=K=1024: 71% TC utilization, 256 blocks, all SMs busy.",
+  "stem": "An autotuned GEMM tile of block=128\u00d7128 is optimal at M=N=K=4096 but regresses to 34% TC utilization at M=N=K=1024. Retuning with block=64\u00d764 recovers to 71%. Which trade-off is the primary cause?",
+  "options": [
+    {
+      "id": "A",
+      "text": "At the smaller shape, the 128\u00d7128 tile produces too few grid blocks to fill all 108 SMs on A100; parallelism, not per-tile arithmetic intensity, becomes the bottleneck."
+    },
+    {
+      "id": "B",
+      "text": "The 128\u00d7128 tile causes register spills at smaller shapes; smaller tiles avoid the spill and recover throughput."
+    },
+    {
+      "id": "C",
+      "text": "A100 Tensor Cores require tile sizes that are exact multiples of 128 in each dimension; 1024 is not a valid choice for 128 tiles."
+    },
+    {
+      "id": "D",
+      "text": "The autotuner overfit to M=4096 hardware calibration; the same 128\u00d7128 tile is still optimal at 1024 but Nsight Compute misreports utilization on small grids."
+    }
+  ],
+  "correctAnswers": [
+    "A"
+  ],
+  "explanation": "For a 1024\u00d71024 GEMM with 128\u00d7128 tiles, the grid is (1024/128)\u00b2 = 64 blocks in the M-N plane before splitK; assuming no split-K, only 64 blocks are launched. A100 has 108 SMs; without persistent-kernel or split-K strategies, roughly 44 SMs are idle. Halving the tile to 64\u00d764 yields 256 blocks \u2014 2.4\u00d7 the SM count \u2014 which restores full SM occupancy and lifts effective throughput. This is the canonical 'tile-too-big for small shapes' regression. Register spills or Tensor-Core divisibility (1024 IS a multiple of 128) are not the issue; the autotuner did not misreport utilization, it simply chose parameters for a different workload.",
+  "optionExplanations": {
+    "A": "Correct: too-few grid blocks under-utilize SMs at the smaller shape.",
+    "B": "Wrong: no spill evidence is given; the profile shows idle SMs, not spill.",
+    "C": "Wrong: 1024 IS a multiple of 128; TC does not require this level of divisibility.",
+    "D": "Wrong: 34% TC utilization on an under-populated grid is a real signal, not a mis-report."
+  },
+  "assumptions": [
+    "No split-K is enabled in the original config.",
+    "Tensor Core M\u00d7N\u00d7K = 16\u00d716\u00d716 (or larger) is compatible with both 64\u00d764 and 128\u00d7128 blocks."
+  ],
+  "nonImplications": [
+    "Does not imply the fix must be 64\u00d764; alternatives include enabling split-K, persistent kernels, or shape-specialized tuning.",
+    "Does not imply block=128\u00d7128 is always suboptimal \u2014 at M=N=K=4096 it was the winner."
+  ],
+  "misconceptionTags": [
+    "tile_too_large_underutilization",
+    "tile_size_generalizes_across_shapes"
+  ],
+  "distractorRationales": {
+    "B": "Invents a spill without profile support.",
+    "C": "Fabricates a Tensor-Core divisibility rule.",
+    "D": "Blames the profiler for a real workload mismatch."
+  },
+  "sourceRefs": [
+    {
+      "ref": "PAPER:ansor",
+      "locator": "Section on shape-specialized tuning and tile-size search",
+      "supports": [
+        "A"
+      ]
+    },
+    {
+      "ref": "DOC:tvm-relax",
+      "locator": "MetaSchedule tile-size search space",
+      "supports": [
+        "A"
+      ]
+    }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Tile-size / grid-count trade-off on A100 GEMM at small shape",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/G/G-TILE-009.json",
+  "reviewStatus": "agent_reviewed",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-27"
+}

@@ -1,0 +1,47 @@
+{
+  "questionId": "L-COMPTIME-026",
+  "learningObjective": "Reason about when compile time should be reported alongside inference latency in benchmarks and how the choice affects fair comparison.",
+  "canonicalClaims": [
+    {
+      "claim": "Fair ML compiler benchmarks disclose compile time alongside inference latency because compile cost matters for iterative development, canary deploys, autoscaling and per-tenant compile scenarios; hiding it misleads readers even when steady-state latency is favorable.",
+      "conditions": [
+        "The benchmark compares systems with different compile-time budgets.",
+        "The intended workflow is not exclusively steady-state serving of a single model."
+      ],
+      "nonImplications": [
+        "Does not imply compile time must equal inference importance in every scenario.",
+        "Does not imply shorter compile is universally better."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:ansor", "locator": "Tuning budget discussion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Compile time is always amortized to zero.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Canary, autoscaling, and per-tenant workloads amortize poorly.",
+      "sourceOrEvidence": "Serving system design"
+    },
+    {
+      "claim": "Compile time can be omitted because it's offline.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Offline cost affects release cadence and rollback speed; still meaningful to disclose.",
+      "sourceOrEvidence": "MLOps practice"
+    },
+    {
+      "claim": "Two systems with equal inference latency are equivalent regardless of compile time.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Compile-cost differences shift developer velocity and deployment agility.",
+      "sourceOrEvidence": "System benchmarking papers"
+    },
+    {
+      "claim": "Compile-time benchmarks require running compile on every request.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Compile time is measured separately; it does not need to be added to per-request latency.",
+      "sourceOrEvidence": "Standard benchmark reporting"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,48 @@
+{
+  "questionId": "K-HET-029",
+  "learningObjective": "Reason about executing a single model across heterogeneous devices (CPU + GPU + specialized accelerator) coordinated by a runtime.",
+  "canonicalClaims": [
+    {
+      "claim": "Heterogeneous execution partitions the graph into device-specific subgraphs with explicit inter-device transfers; the partitioning cost model must account for asymmetric op coverage on accelerators and the transfer/sync cost of cross-device edges.",
+      "conditions": [
+        "The runtime supports pluggable execution providers or backends.",
+        "The target machine has multiple distinct devices with distinct op coverage."
+      ],
+      "nonImplications": [
+        "Does not imply hardware cache coherence is required.",
+        "Does not imply coarsest partition is always best."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Execution providers" },
+        { "ref": "DOC:iree", "locator": "HAL heterogeneous execution" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Heterogeneous execution requires hardware cache coherence.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Explicit transfers between distinct memory spaces work fine; coherence is convenient but not required.",
+      "sourceOrEvidence": "PCIe-attached GPU baseline"
+    },
+    {
+      "claim": "All devices in a heterogeneous partition support the same ops.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Accelerators typically have restricted op coverage; the partition must handle unsupported ops.",
+      "sourceOrEvidence": "OpenVINO NPU plugin docs"
+    },
+    {
+      "claim": "Cross-device transfer cost can be ignored in partitioning.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Transfer + synchronization can dominate fine-grained op savings.",
+      "sourceOrEvidence": "CUDA / PCIe cost models"
+    },
+    {
+      "claim": "Heterogeneous execution only benefits inference, never training.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Training can also span heterogeneous devices (e.g., CPU offload for optimizer states).",
+      "sourceOrEvidence": "ZeRO / DeepSpeed literature"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

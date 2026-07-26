@@ -1,0 +1,48 @@
+{
+  "questionId": "L-RACE-016",
+  "learningObjective": "Diagnose a race condition in a CUDA kernel from symptoms (non-deterministic output, small numerical drift across runs) and identify the missing synchronization primitive.",
+  "canonicalClaims": [
+    {
+      "claim": "Shared-memory reductions across an entire block require __syncthreads() between phases (load → reduce, and between reduction iterations). Without those barriers, threads may read partially-updated shared memory, producing non-deterministic results.",
+      "conditions": [
+        "Block size larger than a single warp.",
+        "Compute capability supports independent warp scheduling (Volta+)."
+      ],
+      "nonImplications": [
+        "Does not imply barriers eliminate all non-determinism (e.g., cross-block atomicAdd order still matters).",
+        "Does not imply barriers are free; they add small latency but are required."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "__syncthreads" },
+        { "ref": "BOOK:pmpp4", "locator": "Shared-memory reduction patterns" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Threads within a warp are always in lockstep, so __syncthreads is unnecessary at the warp level.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Since Volta, independent warp scheduling means intra-warp synchronization also requires explicit primitives (__syncwarp) for correctness.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "atomicAdd non-associativity explains intra-block races.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Atomic-associativity concerns are cross-block, not intra-block; intra-block races come from missing barriers.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Uninitialized shared memory contains device garbage.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Shared memory contents are undefined until written; the block only reads what it wrote.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "__syncthreads is a debug-only primitive.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a required correctness primitive for shared-memory-based algorithms.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

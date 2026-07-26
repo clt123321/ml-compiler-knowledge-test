@@ -1,0 +1,50 @@
+{
+  "questionId": "I-MOEROUT-020",
+  "learningObjective": "Describe the MoE routing pipeline: gating, top-k expert selection, and token dispatch to experts.",
+  "canonicalClaims": [
+    {
+      "claim": "Top-k MoE: gate scores are computed per token; top-k experts (usually k=2) are selected and normalized to get combining weights; each token contributes to the k selected experts' input batches and only those experts run on that token; outputs are combined weighted by gate scores.",
+      "conditions": [
+        "Sparse top-k MoE architecture.",
+        "Load balancing is addressed via auxiliary losses or capacity limits in training/serving."
+      ],
+      "nonImplications": [
+        "Does not imply every expert runs on every token.",
+        "Does not imply k > 1 requires k separate passes."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "MoE and conditional computation" },
+        { "ref": "DOC:vllm", "locator": "MoE serving and expert dispatch" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "MoE runs every expert on every token; sparsity is a soft-masking illusion.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Sparse MoE explicitly avoids running non-selected experts; this is where compute savings come from.",
+      "sourceOrEvidence": "Switch Transformer, Mixtral"
+    },
+    {
+      "claim": "k > 1 MoE requires k full forward passes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "k slots per token are handled in a single grouped dispatch (grouped GEMM or all-to-all).",
+      "sourceOrEvidence": "MegaBlocks, Mixtral inference"
+    },
+    {
+      "claim": "Only top-1 routing is used in modern MoE.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Both top-1 (Switch) and top-2 (Mixtral, GShard) are widely used.",
+      "sourceOrEvidence": "GShard, Mixtral papers"
+    }
+  ],
+  "implementationFacts": [
+    "Load imbalance: 'expert overloading' triggers token dropping when a capacity factor is exceeded.",
+    "In distributed setup, expert parallelism (EP) places experts on different devices and uses all-to-all to shuffle tokens."
+  ],
+  "performanceScenarios": [
+    "MoE achieves large parameter count per active flop but at the cost of routing overhead and imbalance risk.",
+    "Grouped GEMM (varying tile shapes per expert) is the standard efficient dense-kernel path."
+  ],
+  "versionSensitivity": "stable_principle"
+}
