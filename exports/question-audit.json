@@ -27,17 +27,17 @@
       "pass": true
     },
     "correct_longest_ratio": {
-      "value": 0.735,
+      "value": 0.795,
       "max": 0.25,
       "pass": false
     },
     "correct_wrong_length_gap": {
-      "value": 0.237,
+      "value": 0.248,
       "max": 0.15,
       "pass": false
     },
     "answer_position_bias": {
-      "value": 1.052,
+      "value": 0.734,
       "max": 0.35,
       "pass": false
     },
@@ -48,32 +48,32 @@
     }
   },
   "stats": {
-    "total": 260,
+    "total": 400,
     "bySingleAnswerPosition": {
-      "A": 99,
-      "B": 37,
-      "C": 30,
-      "D": 27
+      "A": 124,
+      "B": 62,
+      "C": 53,
+      "D": 47
     },
-    "correctLongestCount": 191,
-    "avgCorrectLen": 239.26,
-    "avgWrongLen": 193.38
+    "correctLongestCount": 318,
+    "avgCorrectLen": 243.68,
+    "avgWrongLen": 195.3
   },
   "issues": [
     {
       "level": "MAJOR",
       "category": "correct_longest_ratio",
-      "msg": "correct-as-longest ratio 73.5% > gate 25.0%"
+      "msg": "correct-as-longest ratio 79.5% > gate 25.0%"
     },
     {
       "level": "MAJOR",
       "category": "correct_wrong_length_gap",
-      "msg": "avg-length gap 23.7% > gate 15.0%"
+      "msg": "avg-length gap 24.8% > gate 15.0%"
     },
     {
       "level": "MAJOR",
       "category": "answer_position_bias",
-      "msg": "single-choice answer position bias 105.2%"
+      "msg": "single-choice answer position bias 73.4%"
     },
     {
       "level": "MAJOR",
@@ -87,28 +87,43 @@
     },
     {
       "level": "MAJOR",
-      "category": "coverage_shortfall",
-      "msg": "Module I archetype systems_dataflow: 0 < required 4"
+      "category": "kernel_vs_e2e_potential",
+      "msg": "I-CONV-016: potential kernel↔e2e confusion; review manually"
     },
     {
       "level": "MAJOR",
-      "category": "coverage_shortfall",
-      "msg": "Module J archetype performance_diagnosis: 0 < required 6"
+      "category": "kernel_vs_e2e_potential",
+      "msg": "K-ALLOC-008: potential kernel↔e2e confusion; review manually"
     },
     {
       "level": "MAJOR",
-      "category": "coverage_shortfall",
-      "msg": "Module J archetype systems_dataflow: 0 < required 3"
+      "category": "kernel_vs_e2e_potential",
+      "msg": "K-PLACE-007: potential kernel↔e2e confusion; review manually"
     },
     {
       "level": "MAJOR",
-      "category": "coverage_shortfall",
-      "msg": "Module L archetype performance_diagnosis: 5 < required 8"
+      "category": "kernel_vs_e2e_potential",
+      "msg": "L-E2E-020: potential kernel↔e2e confusion; review manually"
     },
     {
       "level": "MAJOR",
-      "category": "coverage_shortfall",
-      "msg": "Module N archetype paper_design_intent: 0 < required 6"
+      "category": "kernel_vs_e2e_potential",
+      "msg": "L-GOLDEN-009: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "N-ANSOR-003: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "N-PYT2-009: potential kernel↔e2e confusion; review manually"
+    },
+    {
+      "level": "MAJOR",
+      "category": "kernel_vs_e2e_potential",
+      "msg": "N-QUANT-010: potential kernel↔e2e confusion; review manually"
     }
   ]
 }

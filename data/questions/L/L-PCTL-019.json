@@ -1,0 +1,62 @@
+{
+  "id": "L-PCTL-019",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Percentile / variance reporting",
+  "learningObjective": "Reason about how many samples are needed to estimate a p99 latency with reasonable confidence, and identify a common under-sampling mistake.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "A team claims a service's p99 latency is 3.4 ms based on a benchmark of 100 samples. What is the correct critique of this claim, purely from a statistical standpoint?",
+  "options": [
+    { "id": "A", "text": "There is no critique — 100 samples is more than enough to estimate p99 within one significant figure, since p99 is defined as the 99th-largest value in any sample regardless of N and the estimator is unbiased for N ≥ 30." },
+    { "id": "B", "text": "With N = 100, the p99 estimator is highly unstable: the empirical p99 corresponds to (roughly) the 1-2 slowest samples, and its variance is on the order of the tail spread. A defensible p99 estimate needs on the order of 10³-10⁴ samples, and reporting should include a confidence interval." },
+    { "id": "C", "text": "100 samples are too many; percentile estimators become less accurate as N grows due to increased opportunity for outliers in the tail. A benchmark should use exactly 10 samples to minimize variance." },
+    { "id": "D", "text": "The critique is that the p99 must be reported alongside a p50 that is exactly 100× smaller, otherwise the p99 is meaningless. Since 3.4 ms is given, one can only accept the number if the p50 is 34 µs; otherwise the sample is biased." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "The empirical p99 with N = 100 samples is essentially one specific sample (the 99th-order statistic), so its variance is large — comparable to the tail spread of the underlying distribution. To estimate p99 with reasonable confidence you typically want at least 10³-10⁴ samples, and to communicate uncertainty you report a confidence interval. Options A, C, D fabricate rules that do not exist in statistics.",
+  "optionExplanations": {
+    "A": "Wrong: 100 samples give an unstable p99.",
+    "B": "Correct: matches basic sampling theory for order statistics.",
+    "C": "Wrong: fewer samples yield more, not less, variance.",
+    "D": "Wrong: no such p50/p99 ratio constraint exists."
+  },
+  "assumptions": [
+    "The samples are i.i.d. from the underlying latency distribution."
+  ],
+  "nonImplications": [
+    "Does not imply 100 samples are useless for any purpose; median and IQR are decently estimable with N = 100.",
+    "Does not imply that larger N is always feasible; some scenarios have limited samples and require accepting wider CIs."
+  ],
+  "misconceptionTags": ["p99_from_100_myth", "size_reduces_variance_myth"],
+  "distractorRationales": {
+    "A": "Fabricates unbiasedness threshold.",
+    "C": "Reverses variance direction.",
+    "D": "Fabricates p50/p99 ratio law."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-profiler", "locator": "Percentile reporting practices in profiler documentation", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Estimating p99 latency from a finite sample",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-PCTL-019.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

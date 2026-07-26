@@ -1,0 +1,50 @@
+{
+  "questionId": "I-EMB-017",
+  "learningObjective": "Characterize the embedding lookup as a gather kernel and identify its memory access pattern.",
+  "canonicalClaims": [
+    {
+      "claim": "Input embedding is a gather kernel: for each of B*N indices it reads one contiguous D-element row from the weight table. Zero FLOPs; the kernel is bandwidth-bound on the D bytes read per index, with coalesced access within a row and irregular row selection across the batch.",
+      "conditions": [
+        "Weight table is row-major [V, D].",
+        "A warp cooperatively loads a row rather than each thread selecting a different row."
+      ],
+      "nonImplications": [
+        "Does not describe the backward pass; that is a scatter-add / segment-sum.",
+        "Does not imply the embedding is a significant fraction of LLM runtime."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Gather patterns and coalescing" },
+        { "ref": "BOOK:sze-eff", "locator": "Embedding operator memory pattern" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Embedding lookup is materialized as one-hot times weight matrix.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No framework does this; it would blow up memory and compute needlessly.",
+      "sourceOrEvidence": "PyTorch nn.Embedding docs"
+    },
+    {
+      "claim": "Embedding is a reduction kernel producing [D].",
+      "errorType": "definition_confusion",
+      "whyWrong": "Output shape is [B, N, D]; no reduction happens.",
+      "sourceOrEvidence": "Definition of embedding lookup"
+    },
+    {
+      "claim": "Every element of the embedding lookup is uncoalesced.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Within a row, D elements are contiguous and coalesced; only row selection is irregular.",
+      "sourceOrEvidence": "GPU gather kernel design"
+    }
+  ],
+  "implementationFacts": [
+    "Backward: gradient scatter-add on the weight table, needing atomics or segment sum for duplicated indices.",
+    "For very large vocabularies, embedding weights can be sharded across devices."
+  ],
+  "performanceScenarios": [
+    "Embedding lookup runtime scales as O(B*N*D * sizeof(dtype)) HBM traffic; not the LLM bottleneck.",
+    "Backward can be slower than forward due to atomic contention for hot indices."
+  ],
+  "versionSensitivity": "stable_principle"
+}

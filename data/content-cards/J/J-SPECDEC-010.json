@@ -1,0 +1,49 @@
+{
+  "questionId": "J-SPECDEC-010",
+  "learningObjective": "Explain the mechanism of speculative decoding and its correctness property.",
+  "canonicalClaims": [
+    {
+      "claim": "Speculative decoding proposes k tokens with a small draft model, verifies them in one target-model forward pass, and uses rejection sampling to accept a prefix; the retained output distribution is exactly the target's sampling distribution.",
+      "conditions": [
+        "Draft and target share vocabulary.",
+        "Rejection sampling implemented correctly."
+      ],
+      "nonImplications": [
+        "Does not imply arbitrary speedup; depends on acceptance rate.",
+        "Does not imply the draft model's raw outputs reach the user."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:specdecode", "locator": "Sec 2-3" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Speculative decoding accepts the entire k-token proposal or rejects all of them via a joint-probability threshold.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Acceptance is per-token via rejection sampling on marginals; prefix length is variable.",
+      "sourceOrEvidence": "Leviathan et al. 2023"
+    },
+    {
+      "claim": "Speculative decoding is a form of quantization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a decoding-time algorithm; unrelated to numerical precision.",
+      "sourceOrEvidence": "Speculative decoding literature"
+    },
+    {
+      "claim": "Speculative decoding requires the target and draft models to have the same weights up to scaling.",
+      "errorType": "overgeneralization",
+      "whyWrong": "They can be entirely different architectures/checkpoints so long as vocab and tokenization match.",
+      "sourceOrEvidence": "Various spec-decode implementations"
+    }
+  ],
+  "implementationFacts": [
+    "EAGLE / Medusa / Lookahead are variants that use hidden-state prediction or n-gram heads as the draft.",
+    "Typical draft-to-target speedup is 1.5-3x on greedy or low-temperature sampling."
+  ],
+  "performanceScenarios": [
+    "Higher acceptance rate (better draft-target alignment) gives more speedup.",
+    "Cold or hard prompts where the draft mispredicts often yield modest gains."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,54 @@
+{
+  "questionId": "I-FLASH-005",
+  "learningObjective": "Explain FlashAttention's core algorithmic idea: block-tiled attention with online softmax and backward recomputation of the attention matrix.",
+  "canonicalClaims": [
+    {
+      "claim": "FlashAttention is an exact attention algorithm that block-tiles Q, K, V and uses online softmax to avoid materializing the N x N attention matrix in HBM; the backward recomputes the attention probabilities from stored (m, l) row statistics rather than reading them from HBM.",
+      "conditions": [
+        "SMEM is large enough to hold the tile of Q, K, V, and softmax stats.",
+        "Sequence length N is such that the N x N matrix would otherwise be HBM-resident."
+      ],
+      "nonImplications": [
+        "Does not change the O(N^2 d) FLOP count of attention.",
+        "Does not require lower precision (FP8) to be beneficial."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Alg. 1 (forward), Alg. 4 (backward)" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FlashAttention is an approximation that trades accuracy for speed.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FlashAttention is bit-exact (up to rounding order) to standard attention; the win is I/O, not approximation.",
+      "sourceOrEvidence": "FlashAttention paper Sec 1"
+    },
+    {
+      "claim": "FlashAttention reduces attention FLOP count.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "It reduces HBM I/O, not FLOPs; FLOPs remain O(N^2 d) (slightly more if backward recomputation is counted).",
+      "sourceOrEvidence": "FlashAttention paper Sec 3"
+    },
+    {
+      "claim": "FlashAttention gains come from FP8 or reduced precision.",
+      "errorType": "hardware_leak",
+      "whyWrong": "FA v1/v2 use FP16/BF16 like standard attention; the speedup comes from HBM traffic reduction.",
+      "sourceOrEvidence": "FlashAttention paper Sec 3-4"
+    },
+    {
+      "claim": "FlashAttention prunes low-weight tokens.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is a dense, exact algorithm; pruning is a separate line of work (sparse attention).",
+      "sourceOrEvidence": "FlashAttention paper Sec 1"
+    }
+  ],
+  "implementationFacts": [
+    "Forward stores per-row (m_i, l_i) statistics of size O(N); backward needs these plus Q, K, V to recompute P.",
+    "Backward performs an extra O(N^2 d) pass to reconstruct P block by block."
+  ],
+  "performanceScenarios": [
+    "Speedup grows with sequence length N because the avoided HBM traffic is O(N^2)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

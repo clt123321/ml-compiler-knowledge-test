@@ -1,0 +1,47 @@
+{
+  "questionId": "L-NAN-015",
+  "learningObjective": "Diagnose the appearance of NaN in a Transformer forward pass using loss / activation statistics and localize the source op.",
+  "canonicalClaims": [
+    {
+      "claim": "In FP16 Transformer forward passes, attention scores with magnitude > ~11 make exp(x) overflow FP16 range; naive softmax then produces NaN. Standard fixes upcast the softmax to FP32 or use a safe-softmax implementation (e.g., FlashAttention) that stably subtracts the running max.",
+      "conditions": [
+        "Attention scores are held in FP16 before softmax.",
+        "Softmax implementation does not do the max-subtract trick or does it in FP16."
+      ],
+      "nonImplications": [
+        "Does not imply FP16 training is unusable overall; targeted fixes suffice.",
+        "Does not imply FlashAttention is the only way to safely softmax."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Safe softmax" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GradScaler fixes forward-pass overflow.",
+      "errorType": "scope_error",
+      "whyWrong": "GradScaler manages the loss scale for backward; it does not affect forward attention scores.",
+      "sourceOrEvidence": "torch.cuda.amp docs"
+    },
+    {
+      "claim": "exp(28) overflows FP32.",
+      "errorType": "definition_confusion",
+      "whyWrong": "FP32 max ~3.4e38; exp(28) ≈ 1.4e12, well within range.",
+      "sourceOrEvidence": "IEEE 754"
+    },
+    {
+      "claim": "NaN in Transformer training is inevitably random and non-diagnosable.",
+      "errorType": "definition_confusion",
+      "whyWrong": "NaN causes are traceable via activation statistics and per-layer hooks.",
+      "sourceOrEvidence": "PyTorch debugging tools"
+    },
+    {
+      "claim": "FP64 is required to prevent softmax NaN.",
+      "errorType": "overgeneralization",
+      "whyWrong": "FP32 softmax is standard and sufficient for stability.",
+      "sourceOrEvidence": "Standard training recipes"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

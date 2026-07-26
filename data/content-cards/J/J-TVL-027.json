@@ -1,0 +1,49 @@
+{
+  "questionId": "J-TVL-027",
+  "learningObjective": "Reason about the throughput vs latency trade-off in LLM serving and identify how batch size affects each metric.",
+  "canonicalClaims": [
+    {
+      "claim": "Increasing batch size amortizes weight-HBM reads across more requests (raising throughput) but raises per-step wall time (raising per-request TPOT); beyond a threshold the workload transitions from bandwidth-bound to compute-bound with diminishing returns.",
+      "conditions": [
+        "Standard dense transformer decode.",
+        "Fixed hardware; batch size is the tuning knob."
+      ],
+      "nonImplications": [
+        "Does not imply the trade-off is linear.",
+        "Does not imply the optimum is universal across SLA classes."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 5" },
+        { "ref": "DOC:trtllm", "locator": "Tuning guide" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Latency and throughput are inverses (1/latency = throughput).",
+      "errorType": "definition_confusion",
+      "whyWrong": "Throughput is aggregate; latency is per-request. Batching separates them.",
+      "sourceOrEvidence": "Standard serving metric definitions"
+    },
+    {
+      "claim": "Increasing batch has no downside beyond memory.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Per-request TPOT increases with batch size; SLA can fail.",
+      "sourceOrEvidence": "vLLM benchmarks"
+    },
+    {
+      "claim": "Continuous batching removes the throughput-latency trade-off.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Continuous batching improves scheduling; the fundamental trade-off remains.",
+      "sourceOrEvidence": "Orca paper analysis"
+    }
+  ],
+  "implementationFacts": [
+    "TRT-LLM and vLLM benchmarks routinely show sub-linear throughput scaling past a certain batch size.",
+    "SLA-based auto-scaling picks batch to meet TPOT budget while maximizing aggregate throughput."
+  ],
+  "performanceScenarios": [
+    "Chatbot workloads prefer smaller batches for low TPOT; batch inference workloads (offline generation) prefer larger batches."
+  ],
+  "versionSensitivity": "stable_principle"
+}

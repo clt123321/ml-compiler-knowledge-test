@@ -1,0 +1,49 @@
+{
+  "questionId": "J-FUSION-016",
+  "learningObjective": "Identify which fusions are standard in production LLM inference stacks and what each fusion saves.",
+  "canonicalClaims": [
+    {
+      "claim": "Production LLM stacks fuse: QKV projection (one wide GEMM); RMSNorm (or as GEMM-input epilogue); SwiGLU (silu*up elementwise); attention (FlashAttention/PagedAttention keeps S on-chip); sampling (temperature + top-k/top-p).",
+      "conditions": [
+        "Modern data-center GPU with tensor cores.",
+        "Model uses recognizable patterns (SwiGLU, RMSNorm, MHA/GQA)."
+      ],
+      "nonImplications": [
+        "Does not imply full-block fusion.",
+        "Does not imply zero remaining HBM roundtrips."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:vllm", "locator": "Kernel fusion" },
+        { "ref": "DOC:trtllm", "locator": "Plugin kernels" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Full transformer block is fused into one kernel per layer in production.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Full-block fusion is a research direction; production uses targeted fusion.",
+      "sourceOrEvidence": "vLLM / TRT-LLM source"
+    },
+    {
+      "claim": "Modern GPUs' launch overhead is negligible for LLM decode.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Decode has many small kernels; per-kernel launch overhead is a significant fraction and motivates CUDA Graphs.",
+      "sourceOrEvidence": "vLLM CUDA Graph documentation"
+    },
+    {
+      "claim": "The entire model can be fused into one hardware kernel.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Hardware kernels are bounded by resource constraints; this is impractical.",
+      "sourceOrEvidence": "CUDA programming model"
+    }
+  ],
+  "implementationFacts": [
+    "FlashAttention/PagedAttention is the biggest single fusion win in LLM decode.",
+    "Sampling fusion combines softmax with temperature and top-k/top-p in a single kernel."
+  ],
+  "performanceScenarios": [
+    "The fusion set materially reduces HBM roundtrips of intermediates and kernel launch overhead in decode."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

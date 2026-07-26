@@ -1,0 +1,48 @@
+{
+  "questionId": "L-ASYNC-007",
+  "learningObjective": "Identify a subtle timing bug in a benchmark loop where the CPU timer records the wrong quantity because of async launch and CUDA stream ordering.",
+  "canonicalClaims": [
+    {
+      "claim": "A CPU timer around an async CUDA loop without synchronize measures only dispatch overhead; correct methodology synchronizes both before the start marker (to flush prior work) and before the end marker (to wait for all enqueued kernels to complete).",
+      "conditions": [
+        "The workload runs asynchronously on CUDA.",
+        "The measurement target is per-iteration GPU wall time."
+      ],
+      "nonImplications": [
+        "Does not imply CUDA events are unnecessary; they are an alternative or complement.",
+        "Does not imply CPU timers are unusable; wrapped with sync they are fine."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Timing methodology" },
+        { "ref": "DOC:torch-profiler", "locator": "Sync when timing PyTorch CUDA" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Disabling autograd fixes async-timing measurement bugs.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "no_grad does not synchronize CUDA; the timer still measures dispatch only.",
+      "sourceOrEvidence": "PyTorch autograd docs"
+    },
+    {
+      "claim": "time.perf_counter has insufficient resolution for microsecond-level events.",
+      "errorType": "definition_confusion",
+      "whyWrong": "perf_counter typically has hundreds of nanoseconds resolution on modern systems.",
+      "sourceOrEvidence": "Python time module documentation"
+    },
+    {
+      "claim": "Running more iterations resolves missing synchronize.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Without sync, every iteration measures dispatch alone regardless of count.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "Warmup runs synchronize as a side effect.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Warmup runs are also async; they help stabilize state but do not synchronize the subsequent timing loop.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

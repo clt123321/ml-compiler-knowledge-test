@@ -1,0 +1,48 @@
+{
+  "questionId": "K-CROSS-028",
+  "learningObjective": "Reason about cross compilation in the ML compilation stack: compiling on a host machine for a target device that differs in ISA, GPU architecture, or OS.",
+  "canonicalClaims": [
+    {
+      "claim": "Cross compilation produces artifacts on a host machine for a different target (ISA/GPU arch/OS). It relies on the compiler supporting the target back-end and typically uses static cost models or offline-recorded autotune tables when the target is unavailable for online measurement; portable IR (PTX, SPIR-V) with driver-time JIT is another strategy.",
+      "conditions": [
+        "The target back-end is supported by the toolchain.",
+        "Target hardware may or may not be available during build."
+      ],
+      "nonImplications": [
+        "Does not imply cross-compiled performance always matches native compilation.",
+        "Does not imply autotuning is impossible offline; some stacks record per-target measurements."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "PTX / cross emission" },
+        { "ref": "DOC:iree", "locator": "Cross-compilation flows" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "NVCC can only emit code for the host GPU.",
+      "errorType": "hardware_leak",
+      "whyWrong": "NVCC supports emitting PTX and SASS for a list of specified sm_XX targets.",
+      "sourceOrEvidence": "NVCC user guide"
+    },
+    {
+      "claim": "Autotuning can be replaced by static cost models with zero performance loss.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Static models are approximations; loss depends on how well they generalize to the target.",
+      "sourceOrEvidence": "Ansor / MetaSchedule design"
+    },
+    {
+      "claim": "PTX is target-specific and cannot be used for cross compilation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PTX is a portable IR that the driver JITs to the target SASS; that's why it enables cross compilation and forward compatibility.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Cross compilation is only relevant for embedded targets.",
+      "errorType": "scope_error",
+      "whyWrong": "It also applies to CI/CD pipelines building for cloud GPUs from a different developer machine.",
+      "sourceOrEvidence": "MLOps practice"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

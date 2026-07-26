@@ -1,0 +1,39 @@
+{
+  "questionId": "N-TVM-002",
+  "learningObjective": "Explain why TVM (and its Ansor/AutoTVM descendants) rely on real hardware measurement rather than a pure analytical cost model to select schedules.",
+  "canonicalClaims": [
+    {
+      "claim": "TVM's schedule search calls real hardware measurement (or a learned cost model trained on measurements) rather than a purely analytical performance model, because the effective performance of a schedule on a modern accelerator depends on many implementation-specific factors (cache behaviors, coalescing, register allocation, instruction mix, autotuner-selected block sizes) that are hard to capture in a closed-form analytical model.",
+      "conditions": [
+        "The target is a modern GPU or CPU with complex microarchitecture.",
+        "The schedule space is large enough that analytical ranking would produce many false optima."
+      ],
+      "nonImplications": [
+        "Does not imply that analytical models are useless; TVM uses them (or ML surrogates) to prune before measurement.",
+        "Does not imply that measurement is free — TVM's cost is dominated by autotuning time, which is a well-known trade-off."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:tvm", "locator": "§4–§5 schedule search + learned cost model motivation" },
+        { "ref": "PAPER:ansor", "locator": "§3 discussion of why measurement is necessary" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TVM uses measurement because analytical models are theoretically incorrect; a sufficiently detailed analytical model could always replace measurement.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The paper's argument is empirical: modern hardware has too many hard-to-model effects for practical closed-form models; it does not claim measurement is theoretically indispensable."
+    },
+    {
+      "claim": "TVM's use of measurement means it does not use any cost model at all; every schedule is executed on the target device.",
+      "errorType": "definition_confusion",
+      "whyWrong": "TVM (and Ansor) train a learned cost model on measurements and use it to rank / prune candidates so that only promising ones are measured."
+    },
+    {
+      "claim": "TVM's measurement approach is only used for GPUs; on CPUs the schedule can always be chosen by an analytical roofline argument.",
+      "errorType": "hardware_leak",
+      "whyWrong": "CPUs likewise expose complex microarchitectural effects (SIMD vs scalar, cache blocking, false sharing) that TVM/Ansor tune via measurement-driven search."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

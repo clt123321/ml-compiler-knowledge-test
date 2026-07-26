@@ -1,0 +1,64 @@
+{
+  "id": "L-RACE-016",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Race condition in a CUDA kernel",
+  "learningObjective": "Diagnose a race condition in a CUDA kernel from symptoms (non-deterministic output, small numerical drift across runs) and identify the missing synchronization primitive.",
+  "archetype": "code_implementation",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "CUDA",
+    "stability": "stable_principle"
+  },
+  "stem": "A CUDA reduction kernel produces slightly different outputs across runs with the same input (differences beyond floating-point tolerance and inconsistent across GPU model). The relevant kernel snippet is shown. What is the root cause?",
+  "codeSnippet": "__global__ void reduce_bug(const float* x, float* out, int N) {\n    __shared__ float smem[256];\n    int tid = threadIdx.x;\n    int i = blockIdx.x * blockDim.x + tid;\n    smem[tid] = (i < N) ? x[i] : 0.0f;\n    // MISSING __syncthreads() here\n    for (int s = blockDim.x / 2; s > 0; s >>= 1) {\n        if (tid < s) smem[tid] += smem[tid + s];\n        // MISSING __syncthreads() at end of loop body\n    }\n    if (tid == 0) atomicAdd(out, smem[0]);\n}",
+  "options": [
+    { "id": "A", "text": "Missing `__syncthreads()` between the load and the reduction loop (and inside the loop). Without the barrier, threads with different warp scheduling can read `smem[tid + s]` before other threads have finished writing it, producing non-deterministic partial sums. Adding `__syncthreads()` after the load and at the end of each loop iteration fixes the race." },
+    { "id": "B", "text": "The `atomicAdd` on `out` is non-associative for floats, and different launch orderings produce different accumulation orders; adding a `__threadfence()` before the atomicAdd would enforce a canonical order and eliminate the non-determinism." },
+    { "id": "C", "text": "The bug is that `smem` is not initialized to zero before the load; on some GPUs uninitialized shared memory contains garbage, and threads with `i >= N` read stale bank contents instead of writing zero." },
+    { "id": "D", "text": "The kernel uses `blockDim.x = 256` implicitly but should use `blockDim.x = 32` to match the warp size; different warp counts produce different rounding orders and this is the source of the observed non-determinism." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "The clear bug is missing `__syncthreads()` after the load-into-smem step and at the end of each reduction iteration. Threads within a block are not guaranteed to be synchronized in lockstep beyond a warp; without the barrier, some threads may read `smem[tid + s]` while others are still writing it. This produces non-deterministic results that vary by launch scheduling. The other options describe unrelated concerns: atomicAdd on floats is non-associative but the observed non-determinism inside the block is the real bug (B); shared memory is defined to hold whatever the thread writes (C); warp size ≠ block size (D).",
+  "optionExplanations": {
+    "A": "Correct: identifies the missing barriers and their necessity.",
+    "B": "Wrong: atomicAdd non-associativity produces small drift but not the racy behavior seen here.",
+    "C": "Wrong: shared memory reads only what is written by threads within the block.",
+    "D": "Wrong: block size is a separate concern from synchronization."
+  },
+  "assumptions": [
+    "Compute capability ≥ sm_70 (Volta+), where independent warp scheduling makes intra-block races more visible.",
+    "The kernel is launched with a block size ≥ 32 (larger than a single warp)."
+  ],
+  "nonImplications": [
+    "Does not imply that atomicAdd should be avoided; it is fine in this pattern given proper intra-block sync.",
+    "Does not imply that adding syncthreads has zero cost; barriers introduce a small stall but are required for correctness."
+  ],
+  "misconceptionTags": ["warp_lockstep_myth"],
+  "distractorRationales": {
+    "B": "Real but unrelated concern.",
+    "C": "Wrong shared-memory semantics.",
+    "D": "Confuses block size with warp size."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "__syncthreads and independent warp scheduling", "supports": ["A"] },
+    { "ref": "BOOK:pmpp4", "locator": "Reduction and shared-memory synchronization patterns", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-RACE-016.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

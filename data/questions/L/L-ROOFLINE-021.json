@@ -1,0 +1,70 @@
+{
+  "id": "L-ROOFLINE-021",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Roofline analysis of a memory-bound kernel",
+  "learningObjective": "Compute arithmetic intensity, place a kernel on a roofline chart, and identify whether measured throughput is close to the roofline.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (A100)",
+    "device": "GPU",
+    "requiredFeatures": ["HBM2e"]
+  },
+  "softwareContext": {
+    "framework": "generic (Nsight Compute)",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [[16777216]],
+    "dtypes": ["float32"],
+    "layouts": ["contiguous"]
+  },
+  "stem": "An FP32 elementwise kernel `out[i] = 3.0f * in[i] + 2.0f` runs on A100 (peak FP32 = 19.5 TFLOP/s, peak HBM = 2.0 TB/s). It reads 64 MB, writes 64 MB, and measures 40 ms. What is the arithmetic intensity and what does the roofline analysis say?",
+  "profileData": "Kernel: fma_bias\n  Input:  16,777,216 FP32 elements (64 MB read)\n  Output: 16,777,216 FP32 elements (64 MB written)\n  Ops per element: 1 fused multiply-add = 2 FLOPs\n  Measured wall time: 40 ms\n  A100 peak FP32: 19.5 TFLOP/s\n  A100 peak HBM:  2.0 TB/s\n  Roofline ridge point: 19.5e12 / 2.0e12 = ~9.75 FLOP/byte",
+  "options": [
+    { "id": "A", "text": "Arithmetic intensity ≈ 0.125 FLOP/byte (2 FLOPs / 16 bytes per element pair). The roofline predicts a compute-bound region since 0.125 > 9.75; the kernel should achieve near 19.5 TFLOP/s and the measured 40 ms indicates a bug." },
+    { "id": "B", "text": "Arithmetic intensity ≈ 0.125 FLOP/byte. The kernel is well below the ridge point (0.125 << 9.75), so it is memory-bound: expected time = 128 MB / 2.0 TB/s ≈ 62 µs (peak). Measured 40 ms is roughly 640× slower than peak — the kernel is highly inefficient or the measurement is wrong (launch overhead, missing sync, tiny grid)." },
+    { "id": "C", "text": "Arithmetic intensity ≈ 0.5 FLOP/byte (2 FLOPs / 4 bytes per element). The kernel is compute-bound and should achieve near 19.5 TFLOP/s; 40 ms is expected for this problem size." },
+    { "id": "D", "text": "Arithmetic intensity depends on the number of thread blocks and cannot be computed from bytes and FLOPs alone; roofline analysis is not applicable to elementwise kernels because they never hit the roof." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "Elementwise `y = a*x + b` performs 2 FLOPs per output element, touching 8 bytes (4 in + 4 out). Arithmetic intensity = 2 / 8 = 0.25 FLOP/byte, but since only one read and one write are counted per element pair, the intensity is 0.125–0.25 FLOP/byte depending on how one counts. Either way, it is far below the A100 ridge point of ~9.75 FLOP/byte, making the kernel deeply memory-bound. Peak-bound time for 128 MB of traffic at 2.0 TB/s is ~62 µs. The measured 40 ms is ~640× slower than roofline peak, indicating a serious inefficiency (launch overhead dominates, or the measurement contains async-timing errors, or the grid is undersized). Option A confuses direction; C mis-counts bytes; D wrongly claims roofline is inapplicable.",
+  "optionExplanations": {
+    "A": "Wrong: 0.125 is well below 9.75, so the kernel is memory-bound, not compute-bound.",
+    "B": "Correct: intensity + roofline + comparison to peak-bound time.",
+    "C": "Wrong: 4 bytes per element counts only one side; must include read and write.",
+    "D": "Wrong: roofline applies to all kernels; elementwise kernels typically sit at the memory-bound side."
+  },
+  "assumptions": [
+    "A100 peak FP32 and HBM numbers used above are from NVIDIA specs.",
+    "The 'measured' time is a valid wall-clock number (not itself buggy)."
+  ],
+  "nonImplications": [
+    "Does not imply the kernel can achieve peak HBM in practice; L2 hit rate and coalescing may cap effective bandwidth.",
+    "Does not imply the measurement is definitely wrong; it might reflect a badly-configured launch."
+  ],
+  "misconceptionTags": ["intensity_direction_error", "byte_counting_error"],
+  "distractorRationales": {
+    "A": "Reverses roofline comparison.",
+    "C": "Byte accounting error.",
+    "D": "Wrong applicability claim."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:pmpp4", "locator": "Roofline model derivation and application", "supports": ["B"] },
+    { "ref": "DOC:ncu", "locator": "Nsight Compute roofline analysis", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "FP32 elementwise FMA on A100; roofline vs measured 40 ms",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/L/L-ROOFLINE-021.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

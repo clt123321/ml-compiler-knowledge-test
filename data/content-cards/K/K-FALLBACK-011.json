@@ -1,0 +1,48 @@
+{
+  "questionId": "K-FALLBACK-011",
+  "learningObjective": "Explain the design and cost of a CPU fallback path when the compiler encounters an op with no GPU implementation.",
+  "canonicalClaims": [
+    {
+      "claim": "CPU fallback executes an unsupported op on the host by copying inputs D2H, running the CPU kernel, then copying outputs H2D before the next GPU op resumes; the PCIe round-trip can dominate the op's own cost for fine-grained ops.",
+      "conditions": [
+        "The op has no GPU implementation.",
+        "The surrounding graph is GPU-resident."
+      ],
+      "nonImplications": [
+        "Does not imply CPU fallback is always the wrong choice; some ops are inherently CPU-appropriate.",
+        "Does not imply that PCIe cost dominates for large ops."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Execution provider fallback" },
+        { "ref": "DOC:trt", "locator": "Unsupported op fallback / plugins" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GPUs can emulate CPU code natively via compatibility SMs.",
+      "errorType": "hardware_leak",
+      "whyWrong": "No such hardware feature exists; GPUs execute only kernels compiled for them.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Missing ops are silently dropped by the runtime.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Runtimes fail loudly or fall back; they do not silently omit computation.",
+      "sourceOrEvidence": "ONNX Runtime / TensorRT docs"
+    },
+    {
+      "claim": "Dual CPU+GPU execution is the standard fallback pattern.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Only one implementation is executed for correctness; dual execution would double cost with no benefit.",
+      "sourceOrEvidence": "ONNX Runtime design"
+    },
+    {
+      "claim": "CPU fallback has constant overhead independent of tensor size.",
+      "errorType": "performance_confusion",
+      "whyWrong": "PCIe copy cost scales with bytes transferred; larger tensors imply larger fallback cost.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

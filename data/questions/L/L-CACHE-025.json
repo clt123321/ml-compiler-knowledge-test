@@ -1,0 +1,65 @@
+{
+  "id": "L-CACHE-025",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Cache hit-rate diagnosis",
+  "learningObjective": "Interpret L1/L2 cache hit-rate metrics in Nsight Compute and decide whether the metric points to a real optimization opportunity or is expected for the workload.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere (A100)",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "Nsight Compute",
+    "stability": "stable_principle"
+  },
+  "stem": "Two elementwise FP32 kernels have identical implementations except for input size. Nsight Compute reports the following. Which conclusion is best supported?",
+  "profileData": "Kernel A: single-pass streaming over 1 GB (much larger than L2)\n  L1 Hit Rate: 40 %\n  L2 Hit Rate: 5 %\n  DRAM Throughput: 92 %\n\nKernel B: single-pass streaming over 8 MB (fits in L2)\n  L1 Hit Rate: 42 %\n  L2 Hit Rate: 78 %\n  DRAM Throughput: 22 %",
+  "options": [
+    { "id": "A", "text": "Kernel A's low L2 hit rate is a bug; adding a shared-memory blocking scheme (loading tiles into shared memory) will let the L2 hit rate climb to Kernel B's level, unlocking a proportional speedup." },
+    { "id": "B", "text": "Kernel B is compute-bound because its DRAM throughput is only 22%; the correct optimization is to add more math per element to raise arithmetic intensity toward the ridge point of the roofline." },
+    { "id": "C", "text": "The L2 hit rates prove the L2 is unreliable on Ampere; disabling the L2 (via `cudaFuncSetAttribute` with CU_CTX_CACHE_L2_NONE) will make DRAM utilization consistent between the two kernels and improve total throughput." },
+    { "id": "D", "text": "Kernel A's low L2 hit rate is expected for a single-pass stream over data larger than L2 — each cache line is touched once and evicted before reuse. The kernel is memory-bound at 92% DRAM and shared-memory blocking cannot reduce the total number of unique bytes that must be read." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "For a single-pass streaming kernel over data much larger than L2, cache is not reusable — the working set exceeds L2 capacity so lines are evicted before reuse. Low L2 hit rate is expected and not fixable by better locality. Kernel A's 92% DRAM utilization confirms it is near HBM peak. Blocking helps when there is reuse to expose, which is not the case here. Options A/B/C fabricate mechanisms: A misapplies blocking, B confuses low DRAM with compute-bound (it's simply that Kernel B mostly hits L2), C fabricates an L2-disable API.",
+  "optionExplanations": {
+    "A": "Wrong: no data reuse to expose in a single-pass stream over data >> L2.",
+    "B": "Wrong: Kernel B's low DRAM is because L2 is serving reads, not because it's compute-bound.",
+    "C": "Wrong: disabling L2 is not a real optimization path.",
+    "D": "Correct: matches roofline / working-set analysis for streaming."
+  },
+  "assumptions": [
+    "A100 has ~40 MB L2 cache; 1 GB is well beyond it, 8 MB fits comfortably.",
+    "The elementwise kernel has no cross-element reuse in either case."
+  ],
+  "nonImplications": [
+    "Does not imply cache-blocking is useless in general; it is critical for GEMM/attention where reuse exists.",
+    "Does not imply L2 hit rate is uninformative; combined with working-set size it is a meaningful diagnostic."
+  ],
+  "misconceptionTags": ["cache_blocking_universal_myth", "low_dram_compute_bound_myth"],
+  "distractorRationales": {
+    "A": "Applies blocking where no reuse exists.",
+    "B": "Misreads DRAM saturation.",
+    "C": "Fabricates API."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:ncu", "locator": "Cache hit rate metrics and interpretation", "supports": ["D"] },
+    { "ref": "BOOK:pmpp4", "locator": "Working set vs cache size and locality optimization limits", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Single-pass streaming FP32 kernel over data larger vs smaller than L2 on A100",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/L/L-CACHE-025.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,62 @@
+{
+  "id": "K-BOUND-001",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "Compiler / Runtime boundary",
+  "learningObjective": "Distinguish which decisions belong to compile-time (ahead-of-time lowering, kernel selection, memory planning) and which belong to run-time (dispatch, allocator calls, dynamic shape adaptation).",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "textbook",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement best characterizes the boundary between the compiler and the runtime in a typical ML compilation stack (e.g., IREE, TVM, XLA)?",
+  "options": [
+    { "id": "A", "text": "The compiler emits target-specific kernels and a lowered artifact whose scheduling, buffer plan and kernel selection are fixed; the runtime dispatches kernels, manages memory and streams, and services shape-dependent branches within the pre-planned strategy." },
+    { "id": "B", "text": "The compiler and runtime are the same component; both perform kernel selection, memory allocation and dispatch in a single execution phase where lowering happens each time an input tensor arrives." },
+    { "id": "C", "text": "The compiler owns memory allocation and stream scheduling at run time, while the runtime is a thin wrapper that only records timing events and forwards inputs to precompiled kernels without touching allocation or streams." },
+    { "id": "D", "text": "The compiler performs only front-end parsing (op resolution, type inference); every optimization pass — including fusion, tiling and kernel selection — is deferred to the runtime and re-executed on every invocation." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "The canonical division of labor is: the compiler performs lowering, optimization, kernel selection and static memory planning ahead of time (or JIT-once), producing an artifact (bytecode, VM program, .so, plan file). The runtime consumes that artifact and handles device state at execution time — allocator calls, stream/event management, dispatch, and shape-dependent branches within the plan. Boundaries can shift (JIT vs AOT), but memory allocation and dispatch are runtime responsibilities in essentially every mainstream stack.",
+  "optionExplanations": {
+    "A": "Correct: describes the standard compiler-emits-artifact / runtime-executes-artifact split used by IREE, TVM, XLA, TensorRT, AOTInductor.",
+    "B": "Wrong: conflates compiler and runtime; even JIT stacks separate the lowering phase from the execution phase.",
+    "C": "Wrong: reverses the responsibilities. Compilers do not manage allocators or streams at run time.",
+    "D": "Wrong: fusion, tiling and kernel selection are compile-time (or JIT-once) transformations, not per-invocation runtime work."
+  },
+  "assumptions": [
+    "A conventional two-phase (compile-then-run) ML system, not a purely interpreter-based one."
+  ],
+  "nonImplications": [
+    "Does not imply that the boundary is rigid; some systems perform partial JIT specialization at first invocation, but the split of responsibilities still holds.",
+    "Does not imply that the runtime is stateless; runtimes typically own allocator pools, streams, and cached artifacts."
+  ],
+  "misconceptionTags": ["compiler_runtime_confusion"],
+  "distractorRationales": {
+    "B": "Merges two orthogonal phases.",
+    "C": "Reverses allocator/stream ownership.",
+    "D": "Confuses AOT compile-time work with per-invocation dispatch."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:iree", "locator": "Compiler / Runtime separation overview", "supports": ["A"] },
+    { "ref": "DOC:tvm-relax", "locator": "IRModule → build → runtime.Module boundary", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-BOUND-001.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

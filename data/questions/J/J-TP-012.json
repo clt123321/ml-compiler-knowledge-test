@@ -1,0 +1,64 @@
+{
+  "id": "J-TP-012",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Tensor parallelism / Row-column sharding for MLP and Attention",
+  "learningObjective": "Explain how tensor parallelism shards MLP and attention weights across devices and what collective is required per layer.",
+  "archetype": "systems_dataflow",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "multi-GPU node with NVLink",
+    "device": "GPU",
+    "requiredFeatures": ["NVLink or equivalent fast interconnect"]
+  },
+  "softwareContext": {
+    "framework": "generic (Megatron-LM / vLLM / TRT-LLM)",
+    "stability": "stable_principle"
+  },
+  "stem": "In Megatron-LM-style tensor parallelism with TP degree T, the MLP block up projection W_up is column-parallel (sharded along output dim) and the MLP down projection W_down is row-parallel (sharded along input dim). Which characterization of the resulting dataflow is correct?",
+  "options": [
+    { "id": "A", "text": "Each of the T devices holds the full [D, F] W_up and computes the full output; only W_down is sharded, requiring one AllGather per MLP block after the activation." },
+    { "id": "B", "text": "Column-parallel W_up: each device computes x @ W_up_shard producing 1/T of the intermediate columns; row-parallel W_down: each device multiplies its intermediate slice by its 1/T rows of W_down. A single AllReduce sums partial outputs across devices at the end of each MLP (and separately at the end of each attention block)." },
+    { "id": "C", "text": "The column-then-row parallel arrangement is chosen because it requires no communication at all; the intermediate slices align exactly so that each device's partial down-output equals the correct global output for its shard, so all-to-all is unnecessary." },
+    { "id": "D", "text": "Column-parallel W_up requires an AllGather of x to every device (since each device needs the full input to multiply against its columns); row-parallel W_down then requires an AllGather of the intermediate; two AllGathers per MLP block are needed and TP scaling is bounded by interconnect bandwidth." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "The column-then-row parallel arrangement (Megatron-LM's design) works as follows: (1) The input x is fully replicated on all devices. (2) W_up column-parallel: each device holds F/T columns of W_up and produces 1/T slice of the intermediate. (3) Activation is elementwise, applied per-device. (4) W_down row-parallel: each device holds F/T rows of W_down and multiplies its intermediate slice, yielding a partial output. (5) One AllReduce sums partial outputs across devices. The same pattern applies to attention (QKV column-parallel, output-proj row-parallel with one AllReduce). This is one AllReduce per MLP and one per attention (2 per transformer block).",
+  "optionExplanations": {
+    "B": "Correct: standard Megatron TP pattern with a single AllReduce per MLP.",
+    "A": "Wrong: W_up is sharded; the whole point is to shard both to save memory.",
+    "C": "Wrong: an AllReduce is necessary to sum partial outputs.",
+    "D": "Wrong: no AllGather is required; the sharded pattern is deliberately designed for a single AllReduce."
+  },
+  "assumptions": [
+    "Standard Megatron-LM-style TP.",
+    "Input x is replicated across TP ranks at the start of each transformer block."
+  ],
+  "nonImplications": [
+    "Does not imply TP is always the best parallel strategy; PP and DP have different trade-offs.",
+    "Does not imply zero communication overhead; AllReduce cost can be significant."
+  ],
+  "misconceptionTags": ["tp_allgather_myth", "tp_no_comm_myth"],
+  "distractorRationales": {
+    "A": "Denies W_up sharding.",
+    "C": "Denies necessary communication.",
+    "D": "Fabricates AllGather requirement."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:trtllm", "locator": "TP model parallelism design", "supports": ["B"] },
+    { "ref": "DOC:vllm", "locator": "Tensor parallel implementation", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Megatron-style TP MLP dataflow and required collective",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-TP-012.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

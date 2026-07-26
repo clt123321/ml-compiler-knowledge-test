@@ -1,0 +1,50 @@
+{
+  "questionId": "I-FUSEDQKV-010",
+  "learningObjective": "Explain why the three Q, K, V linear projections are fused into a single GEMM and what the correctness and performance requirements are.",
+  "canonicalClaims": [
+    {
+      "claim": "Fused QKV projection concatenates W_Q, W_K, W_V column-wise into one [D, D_out] weight matrix; X is read once from HBM, the wider GEMM has the same FLOPs as three separate ones, and the result is sliced into Q, K, V.",
+      "conditions": [
+        "Weights are pre-concatenated offline.",
+        "Output tensor is large enough to make one launch amortize launch overhead."
+      ],
+      "nonImplications": [
+        "Does not change total FLOPs.",
+        "Does not depend on MHA vs MQA vs GQA — the concatenated width just changes."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Fusion and launch amortization" },
+        { "ref": "BOOK:pmpp4", "locator": "Shared-input reuse in GEMM" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Fused QKV changes numerical results because the accumulator is shared.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Each output column has its own accumulator; there is no cross-column numerical coupling.",
+      "sourceOrEvidence": "GEMM semantics"
+    },
+    {
+      "claim": "Fused QKV doubles or triples FLOPs.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Three GEMMs of size [B*N, D] x [D, D] equals one GEMM of size [B*N, D] x [D, 3D] in FLOPs.",
+      "sourceOrEvidence": "GEMM FLOP counting"
+    },
+    {
+      "claim": "MQA/GQA break fused QKV.",
+      "errorType": "overgeneralization",
+      "whyWrong": "MQA/GQA just concatenate a rectangular [D, D + 2*H_kv*d_head] matrix.",
+      "sourceOrEvidence": "Any MQA/GQA implementation"
+    }
+  ],
+  "implementationFacts": [
+    "Common practice in cuBLAS/cutlass-based transformer implementations.",
+    "The slicing into Q, K, V is a zero-copy view when strides align."
+  ],
+  "performanceScenarios": [
+    "Especially beneficial in decode where B*N is small and launch amortization matters most.",
+    "Enables fusing bias-add or RMSNorm as an epilogue in some implementations."
+  ],
+  "versionSensitivity": "stable_principle"
+}

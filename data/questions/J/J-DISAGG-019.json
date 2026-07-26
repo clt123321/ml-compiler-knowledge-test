@@ -1,0 +1,66 @@
+{
+  "id": "J-DISAGG-019",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Disaggregated prefill/decode / Split serving architecture",
+  "learningObjective": "Explain the motivation and dataflow of disaggregated prefill/decode serving.",
+  "archetype": "systems_dataflow",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "multi-GPU cluster with high-speed interconnect",
+    "device": "GPU",
+    "requiredFeatures": ["cross-node KV cache transfer capability"]
+  },
+  "softwareContext": {
+    "framework": "generic disaggregated serving (e.g., DistServe, SplitWise)",
+    "frameworkVersionScope": "current research/production stacks",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Disaggregated prefill/decode (as in DistServe / SplitWise / TRT-LLM disagg mode) serves prefill and decode on different physical GPU pools. What is the primary motivation?",
+  "options": [
+    { "id": "A", "text": "Different LLMs are used for prefill and decode; disaggregation lets each pool run a model best suited to its phase, improving quality without doubling parameter memory." },
+    { "id": "B", "text": "Prefill is compute-bound and benefits from high compute density (large batches on high-flops GPUs); decode is memory-bandwidth bound and benefits from high HBM bandwidth per token. Serving them on separate pools lets each pool be provisioned and scheduled independently (avoiding mutual interference), at the cost of transferring KV cache from prefill pool to decode pool once per request." },
+    { "id": "C", "text": "The two phases have different numerical precision requirements; prefill is run in FP32 on CPUs while decode runs in FP16/BF16 on GPUs. Disaggregation is fundamentally a precision-partitioning technique." },
+    { "id": "D", "text": "Disaggregation is a security-driven design that isolates prefill (which handles user prompts) from decode (which produces model outputs) into different trust domains; the performance benefits are secondary." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "Disaggregated prefill/decode splits serving into two GPU pools because prefill and decode have opposing performance profiles: prefill is compute-bound (large-batch matmuls), decode is memory-bandwidth bound (batch-1 GEMV per weight matrix). Co-locating them on the same GPUs creates mutual interference (prefill's compute-heavy iterations spike TPOT for decode; decode's small kernels hurt prefill batching). Disaggregation trades a per-request KV cache transfer between pools for independent scheduling, provisioning, and hardware choice per phase.",
+  "optionExplanations": {
+    "B": "Correct: prefill/decode asymmetry motivates disaggregation.",
+    "A": "Wrong: same model on both pools; disaggregation is about phase-splitting, not model-splitting.",
+    "C": "Wrong: no precision partitioning here.",
+    "D": "Wrong: security is not the motivation."
+  },
+  "assumptions": [
+    "High-bandwidth interconnect (NVLink or InfiniBand) is available for KV transfer.",
+    "The extra KV transfer cost is small relative to gained scheduling flexibility."
+  ],
+  "nonImplications": [
+    "Does not imply disaggregation is always a win; small clusters or short prompts may not benefit.",
+    "Does not imply that co-located serving is obsolete; many production deployments still co-locate."
+  ],
+  "misconceptionTags": ["disagg_model_split_myth", "disagg_precision_myth"],
+  "distractorRationales": {
+    "A": "Wrong motivation.",
+    "C": "Fabricates precision partition.",
+    "D": "Fabricates security rationale."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:trtllm", "locator": "Disaggregated serving support", "supports": ["B"] },
+    { "ref": "PAPER:orca", "locator": "Discussion of prefill/decode scheduling asymmetry", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Disaggregated prefill/decode architecture motivation",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-DISAGG-019.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

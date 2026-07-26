@@ -1,0 +1,63 @@
+{
+  "id": "K-AOTIRT-023",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "AOTInductor runtime characteristics",
+  "learningObjective": "Identify correct statements about executing an AOTInductor-compiled artifact at runtime.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch AOTInductor",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Which statements about running an AOTInductor-compiled artifact are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "The artifact exposes a C-ABI entry function; callers pass input tensors as device-memory pointers with shape/stride metadata and receive output tensors similarly, without requiring the Python runtime." },
+    { "id": "B", "text": "The artifact still requires the Inductor compiler at runtime; on first invocation Inductor is re-invoked to lower the graph, which is what allows the artifact to accept new shapes at inference time." },
+    { "id": "C", "text": "The artifact bundles the generated Triton/CUDA kernels needed to execute the model, and the runtime loads them via the shared library's loader; no separate kernel binaries need to be shipped alongside the .so." },
+    { "id": "D", "text": "The artifact automatically links against `libtorch.so` at runtime and requires the full PyTorch binary distribution to be present on the deployment machine; without libtorch the .so cannot be loaded." }
+  ],
+  "correctAnswers": ["A", "C"],
+  "explanation": "A: AOTInductor exposes a stable C interface for driving the compiled model, without requiring Python. C: The generated kernels are bundled with the .so and dispatched by the artifact itself. B is wrong: the whole point of AOT is that Inductor is not needed at runtime; new shapes work only if the artifact was built with dynamic dims. D is wrong: AOTInductor is designed to avoid a full libtorch dependency; it links against a minimal C shim.",
+  "optionExplanations": {
+    "A": "Correct: stable C interface for calling into the artifact.",
+    "B": "Wrong: Inductor is not present at runtime; artifacts run without the compiler.",
+    "C": "Correct: kernels are bundled into the artifact.",
+    "D": "Wrong: the artifact links against a minimal C shim, not full libtorch."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 AOTInductor path.",
+    "The artifact was built for the target GPU architecture."
+  ],
+  "nonImplications": [
+    "Does not imply arbitrary shapes are supported; only those declared as dynamic at build time.",
+    "Does not imply the C ABI has been permanently frozen; the interface is stable within a major version but may evolve."
+  ],
+  "misconceptionTags": ["aoti_needs_inductor_myth", "aoti_needs_libtorch_myth"],
+  "distractorRationales": {
+    "B": "Contradicts AOT design.",
+    "D": "Overstates runtime dependency."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-aoti", "locator": "AOTInductor runtime and C ABI details", "supports": ["A", "C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-AOTIRT-023.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

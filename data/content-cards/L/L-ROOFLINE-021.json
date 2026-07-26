@@ -1,0 +1,47 @@
+{
+  "questionId": "L-ROOFLINE-021",
+  "learningObjective": "Compute arithmetic intensity, place a kernel on a roofline chart, and identify whether measured throughput is close to the roofline.",
+  "canonicalClaims": [
+    {
+      "claim": "For an elementwise FP32 kernel doing one FMA per element, arithmetic intensity is on the order of 0.1-0.25 FLOP/byte — well below the A100 ridge (~9.75 FLOP/byte) — placing it firmly in the memory-bound region. Expected wall time is bounded by total bytes / peak HBM.",
+      "conditions": [
+        "FP32 elementwise op with one read + one write per element.",
+        "Reference platform is A100 with HBM2e."
+      ],
+      "nonImplications": [
+        "Does not imply the kernel achieves peak HBM in practice.",
+        "Does not imply that any measurement above the roofline lower bound indicates a bug."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Roofline model" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "0.125 FLOP/byte > ridge point ⇒ compute-bound.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The comparison is reversed; below the ridge is memory-bound.",
+      "sourceOrEvidence": "PMPP text"
+    },
+    {
+      "claim": "Only bytes on one side (read or write) count in arithmetic intensity.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both read and write bytes count toward the memory traffic denominator.",
+      "sourceOrEvidence": "Roofline paper"
+    },
+    {
+      "claim": "Roofline is inapplicable to elementwise kernels.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Roofline applies to all kernels; elementwise typically sits on the memory-bound side.",
+      "sourceOrEvidence": "PMPP text"
+    },
+    {
+      "claim": "40 ms for 128 MB traffic is close to peak on A100.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Peak-bound is ~62 µs; 40 ms is orders of magnitude slower.",
+      "sourceOrEvidence": "A100 HBM peak specs"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

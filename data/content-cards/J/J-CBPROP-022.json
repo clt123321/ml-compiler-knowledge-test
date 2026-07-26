@@ -1,0 +1,49 @@
+{
+  "questionId": "J-CBPROP-022",
+  "learningObjective": "Distinguish real benefits and limits of continuous batching from common overclaims.",
+  "canonicalClaims": [
+    {
+      "claim": "Continuous batching removes head-of-line blocking under variable-length outputs and boosts aggregate throughput; per-request TPOT does not decrease vs solo execution and can slightly increase due to shared-batch interference.",
+      "conditions": [
+        "Iteration-level scheduling is available.",
+        "Workload has mixed output lengths."
+      ],
+      "nonImplications": [
+        "Does not decrease per-request TPOT.",
+        "Does not help a single-request workload."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:orca", "locator": "Sec 3-4" },
+        { "ref": "DOC:vllm", "locator": "Continuous batching design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Continuous batching reduces per-request TPOT.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "It improves throughput and fairness, not per-request latency.",
+      "sourceOrEvidence": "vLLM/Orca benchmarks"
+    },
+    {
+      "claim": "Continuous batching applies only to MoE models.",
+      "errorType": "scope_error",
+      "whyWrong": "Dense models are the primary beneficiaries.",
+      "sourceOrEvidence": "vLLM design"
+    },
+    {
+      "claim": "Continuous batching requires per-request CUDA streams.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The mechanism is scheduling granularity; requests share a single batched forward.",
+      "sourceOrEvidence": "Orca paper"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM, TRT-LLM, SGLang all implement continuous batching as core functionality.",
+    "Combined with chunked prefill, continuous batching also handles prefill/decode interleaving."
+  ],
+  "performanceScenarios": [
+    "The larger the output-length variance, the larger the throughput improvement over static batching."
+  ],
+  "versionSensitivity": "stable_principle"
+}

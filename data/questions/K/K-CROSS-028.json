@@ -1,0 +1,60 @@
+{
+  "id": "K-CROSS-028",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "Cross compilation",
+  "learningObjective": "Reason about cross compilation in the ML compilation stack: compiling on a host machine for a target device that differs in ISA, GPU architecture, or OS.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about cross compilation for ML deployment are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "Cross compilation means building an artifact on one host (e.g., x86 Linux with sm_80 dev box) that runs on a different target (e.g., aarch64 Linux with sm_75) — the compiler must be able to emit code for the target's ISA, GPU architecture, and OS ABI without executing on the target." },
+    { "id": "B", "text": "Autotuning that measures kernel latency on the target device cannot be replaced by pure static cost models; if the target is unavailable, cross compilation typically uses conservative heuristics or previously measured latency tables rather than online measurement." },
+    { "id": "C", "text": "Cross compilation is impossible for GPU code because NVCC (or ROCm) can only emit machine code that has already been JIT-compiled by the target driver at compile time on the target machine itself." },
+    { "id": "D", "text": "Emitting portable IR (e.g., PTX, SPIR-V) and deferring final lowering to the target driver at load time is one strategy for handling cross compilation when the exact target architecture is unknown at build time." }
+  ],
+  "correctAnswers": ["A", "B", "D"],
+  "explanation": "A: cross compilation targets a different ISA / OS / GPU arch than the build host — standard for embedded and edge deploys. B: autotuning benefits from on-target measurement; when unavailable, static heuristics or cached tables replace it, with some performance loss. D: leaving PTX or SPIR-V in the artifact lets the target driver finalize codegen at load time (JIT). C is wrong: NVCC / ROCm can emit PTX and native SASS for many architectures without running on the target device.",
+  "optionExplanations": {
+    "A": "Correct: canonical cross-compilation setup.",
+    "B": "Correct: autotuning-vs-static-cost is a live trade-off.",
+    "C": "Wrong: NVCC supports cross emission of PTX/SASS for multiple targets.",
+    "D": "Correct: JIT-from-PTX / SPIR-V is a widespread strategy."
+  },
+  "assumptions": [
+    "The developer knows the target ISA, GPU architecture and OS ABI, or at least a range."
+  ],
+  "nonImplications": [
+    "Does not imply cross compilation is always exact; specialization to actual target features may be reduced.",
+    "Does not imply autotuning is dead in cross-compile scenarios; some stacks record measurements offline on a fleet of target devices."
+  ],
+  "misconceptionTags": ["nvcc_target_only_myth"],
+  "distractorRationales": {
+    "C": "Wrong claim about NVCC capabilities."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "PTX, JIT, cross emission of sm_XX code", "supports": ["A", "D"] },
+    { "ref": "DOC:iree", "locator": "Cross-compilation flows for edge / mobile targets", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-CROSS-028.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "K-TRTPLAN-020",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "TensorRT engine portability",
+  "learningObjective": "Reason about the portability constraints of a serialized TensorRT engine across GPU architectures, driver versions and TensorRT major versions.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any TensorRT-supported",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TensorRT",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about the portability of a serialized TensorRT engine (plan file) are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "A plan file built for one GPU compute capability (e.g., sm_80, A100) is not guaranteed to run on a different one (e.g., sm_90, H100); the builder emits kernels for the target architecture used at build time." },
+    { "id": "B", "text": "A plan file built with TensorRT major version X is not generally deserializable by a TensorRT runtime of major version Y ≠ X, because plan serialization is not backward/forward compatible across major versions." },
+    { "id": "C", "text": "Dynamic input shape ranges (optimization profiles) supported by the runtime are baked into the plan at build time; if the runtime feeds a shape outside the built ranges the engine cannot execute it and must be rebuilt." },
+    { "id": "D", "text": "The plan file is a wrapper around the ONNX file it was built from; deleting the ONNX file makes the plan invalid because the runtime re-parses ONNX on deserialization." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "Plan files are architecture-specific (A), TensorRT-major-version-specific (B), and shape-range-specific (C). D is false: the plan is self-contained — it does not require the source ONNX at runtime.",
+  "optionExplanations": {
+    "A": "Correct: TensorRT documentation states plans are compute-capability-specific.",
+    "B": "Correct: cross-major-version compatibility is not guaranteed.",
+    "C": "Correct: optimization profiles are baked in at build.",
+    "D": "Wrong: the plan is self-contained and does not need the source ONNX."
+  },
+  "assumptions": [
+    "Standard TensorRT deployment without explicit version-compatibility mode enabled."
+  ],
+  "nonImplications": [
+    "Does not imply cross-arch is never possible; TensorRT has optional 'hardware compatibility' modes that trade performance for wider portability.",
+    "Does not imply cross-minor-version is broken; minor-version compatibility is typically maintained."
+  ],
+  "misconceptionTags": ["engine_needs_onnx", "cross_arch_myth"],
+  "distractorRationales": {
+    "D": "Fabricates dependency on the source file."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:trt", "locator": "Engine portability, compute capability, version compatibility, optimization profiles", "supports": ["A", "B", "C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/K/K-TRTPLAN-020.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

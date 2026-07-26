@@ -1,0 +1,69 @@
+{
+  "id": "I-MHAMQA-007",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "MHA vs MQA vs GQA / KV cache footprint",
+  "learningObjective": "Compare per-token KV-cache footprint of MHA, MQA, and GQA and its effect on decode-time HBM traffic.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [["B", "N", "H", "d"], ["B", "N", "H_kv", "d"]],
+    "dtypes": ["float16", "float16"],
+    "layouts": ["contiguous", "contiguous"]
+  },
+  "stem": "A transformer has H query heads and head dim d. Which comparison of per-token KV-cache size and decode-time HBM traffic is correct? (K and V each contribute one head dim per KV head.)",
+  "options": [
+    { "id": "A", "text": "MHA has H_kv = H, so per-token KV footprint (K+V) is 2*H*d elements per layer; MQA has H_kv = 1 (2*d per layer); GQA has 1 < H_kv < H (2*H_kv*d per layer). Decode-time HBM traffic is dominated by streaming KV each step, so MQA cuts KV bandwidth by a factor of H relative to MHA and GQA sits between MQA and MHA." },
+    { "id": "B", "text": "MHA, MQA, and GQA all use H_kv = H; they only differ in how the QK^T scores are shared across heads at the software level and therefore have identical KV footprint per token. The performance difference is entirely due to different attention kernels." },
+    { "id": "C", "text": "MHA has H_kv = 1 (one shared K, V), MQA has H_kv = H, and GQA has H_kv in between. The naming follows 'multi' for the multi-headed K/V design in MHA and 'multi-query' for the multi-headed Q design in MQA." },
+    { "id": "D", "text": "MQA halves KV cache versus MHA (H_kv = H/2) and GQA halves it again (H_kv = H/4); both are fixed ratios and independent of the number of query heads." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Per-token KV cache is 2 * H_kv * d elements per layer (one entry each for K and V, per KV head). MHA has H_kv = H (each query head has its own KV). MQA has H_kv = 1 (all query heads share one KV). GQA groups query heads into G groups, H_kv = G with 1 < G < H. Decode is memory-bound on KV cache reads, so KV footprint per token is proportional to KV bandwidth per step. Cutting H_kv from H to 1 (MQA) cuts KV bandwidth per token by H×.",
+  "optionExplanations": {
+    "A": "Correct: this is the canonical definition and consequence.",
+    "B": "Wrong: MQA/GQA explicitly reduce KV heads, not just re-share scores.",
+    "C": "Wrong: swaps MHA and MQA definitions.",
+    "D": "Wrong: fabricates fixed ratios; H_kv is a design choice, not a fixed fraction."
+  },
+  "assumptions": [
+    "Discussion is about the KV cache of a decoder-only transformer at inference; per-token cache excludes Q since Q is not cached.",
+    "GQA uses H_kv = G groups; each group of query heads shares one K and one V head."
+  ],
+  "nonImplications": [
+    "Does not imply that MQA is always better; MQA typically loses some quality vs MHA (GQA is the common compromise).",
+    "Does not imply that per-token KV footprint alone determines wall-clock latency; batch size and paging efficiency also matter."
+  ],
+  "misconceptionTags": ["mqa_mha_swapped", "mqa_gqa_fixed_ratio"],
+  "distractorRationales": {
+    "B": "Denies the KV-head reduction.",
+    "C": "Swaps definitions.",
+    "D": "Invents fixed ratios."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:sze-eff", "locator": "Attention variants and memory footprint", "supports": ["A"] },
+    { "ref": "PAPER:flashattn", "locator": "Related work — MHA/MQA footprint discussion", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Per-token KV cache footprint under MHA / MQA / GQA",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-MHAMQA-007.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

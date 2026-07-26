@@ -1,0 +1,68 @@
+{
+  "id": "I-SWIGLU-013",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "SwiGLU MLP / Parameter count and compute",
+  "learningObjective": "Characterize the SwiGLU MLP block: three linear layers with a gated activation and its parameter/compute compared to a standard two-linear MLP.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [["B", "N", "D"], ["D", "F"], ["D", "F"], ["F", "D"], ["B", "N", "D"]],
+    "dtypes": ["float16", "float16", "float16", "float16", "float16"],
+    "layouts": ["contiguous", "contiguous", "contiguous", "contiguous", "contiguous"]
+  },
+  "stem": "The SwiGLU MLP block used in Llama-style LLMs computes y = (silu(x @ W_gate) * (x @ W_up)) @ W_down where W_gate, W_up are [D, F] and W_down is [F, D]. Which characterization is correct?",
+  "options": [
+    { "id": "A", "text": "SwiGLU is a bilinear activation between x @ W_gate and x @ W_up; the elementwise product of these two projections replaces the ReLU/GELU nonlinearity but does not increase parameter count over a standard MLP because the gate and up projections share weights via a symmetry constraint." },
+    { "id": "B", "text": "SwiGLU is equivalent to a GELU MLP with intermediate dim F, but requires an extra elementwise multiplication that raises per-token FLOPs by 50% compared to a two-linear MLP with the same F; parameter count is the same." },
+    { "id": "C", "text": "SwiGLU uses three linear layers (gate, up, down), which triples both parameters and FLOPs relative to a standard two-linear MLP at the same intermediate dim F; to keep parameter budget constant, implementations must halve F when switching from GELU to SwiGLU." },
+    { "id": "D", "text": "SwiGLU has three linear layers (gate, up, down) — 3 * D * F parameters vs 2 * D * F for a standard two-linear MLP at intermediate dim F. To keep parameter/FLOP budget constant when moving from a GELU MLP with intermediate dim F to SwiGLU, implementations typically use SwiGLU with intermediate dim (2/3) * F." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "SwiGLU introduces a third linear layer (the 'gate' projection) in addition to the up and down projections of a standard MLP, giving 3 * D * F parameters (and correspondingly 50% more compute) at the same intermediate dim F. To keep parameter/FLOP budget matched with a GELU MLP with dim F_std, SwiGLU is typically deployed with F_SwiGLU = (2/3) * F_std. This is the recipe in the original GLU-variants paper and used in Llama.",
+  "optionExplanations": {
+    "D": "Correct: three-linear-layer accounting and the (2/3) F rescale.",
+    "A": "Wrong: gate and up projections have distinct learnable weights, not tied.",
+    "B": "Wrong: SwiGLU has 50% more parameters, not just 50% more FLOPs at same F.",
+    "C": "Wrong: the ratio is 3/2 (up/gate/down vs up/down), not 3, so F is scaled by 2/3, not 1/2."
+  },
+  "assumptions": [
+    "The comparison baseline is a two-linear GELU MLP: up [D, F] and down [F, D].",
+    "silu(x) = x * sigmoid(x) is the elementwise nonlinearity on the gate branch."
+  ],
+  "nonImplications": [
+    "Does not imply SwiGLU is universally better; it is an empirical improvement in language modeling.",
+    "Does not imply that the (2/3) F recipe is the only sensible choice; some models pick different ratios."
+  ],
+  "misconceptionTags": ["swiglu_shared_weights_myth", "swiglu_scale_factor"],
+  "distractorRationales": {
+    "A": "Denies the extra parameter.",
+    "B": "Miscounts parameters.",
+    "C": "Wrong scale factor."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:sze-eff", "locator": "MLP variants in modern LLMs", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "SwiGLU parameter and compute compared to GELU MLP",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-SWIGLU-013.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

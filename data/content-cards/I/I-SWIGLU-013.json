@@ -1,0 +1,48 @@
+{
+  "questionId": "I-SWIGLU-013",
+  "learningObjective": "Characterize the SwiGLU MLP block: three linear layers with a gated activation and its parameter/compute compared to a standard two-linear MLP.",
+  "canonicalClaims": [
+    {
+      "claim": "SwiGLU uses three linear layers (gate, up, down), giving 3 * D * F parameters vs 2 * D * F for a GELU MLP at intermediate dim F; to match parameter budget, SwiGLU is typically used with intermediate dim (2/3) * F.",
+      "conditions": [
+        "Baseline is a two-linear MLP with intermediate dim F.",
+        "SwiGLU applies silu on the gate branch, then elementwise product with the up branch, then down projection."
+      ],
+      "nonImplications": [
+        "Does not imply SwiGLU is always superior; it is an empirical improvement for LLMs.",
+        "Does not imply weight sharing between gate and up projections."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "MLP variants in modern LLMs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Gate and up projections in SwiGLU share weights via a symmetry constraint.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They are independent learnable matrices.",
+      "sourceOrEvidence": "Shazeer 2020 (GLU variants)"
+    },
+    {
+      "claim": "SwiGLU has the same parameter count as a two-linear MLP at the same F.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It has 50% more parameters (three linear layers vs two) at the same F.",
+      "sourceOrEvidence": "Standard SwiGLU accounting"
+    },
+    {
+      "claim": "To match a GELU MLP budget, SwiGLU must halve F.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The correct factor is 2/3, not 1/2, because the ratio of parameters is 3/2.",
+      "sourceOrEvidence": "Llama architecture papers"
+    }
+  ],
+  "implementationFacts": [
+    "Llama, Mistral, and derivatives use SwiGLU with intermediate dim ≈ (2/3) * 4D rounded to a hardware-friendly multiple.",
+    "gate and up projections can be fused into one wide GEMM (like fused QKV) to share the input read."
+  ],
+  "performanceScenarios": [
+    "Fused gate/up GEMM + silu + elementwise product is a standard fusion in inductor / cutlass / tensorrt-llm."
+  ],
+  "versionSensitivity": "stable_principle"
+}

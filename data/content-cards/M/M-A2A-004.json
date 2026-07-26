@@ -1,0 +1,39 @@
+{
+  "questionId": "M-A2A-004",
+  "learningObjective": "Identify All-to-All as the collective that permutes per-rank shards and its canonical role in MoE dispatch.",
+  "canonicalClaims": [
+    {
+      "claim": "All-to-All is a data-permutation collective in which each rank sends a distinct 1/N-shard to every other rank and receives a distinct 1/N-shard from every other rank, and it is the standard primitive for dispatching / combining tokens across experts in expert-parallel MoE.",
+      "conditions": [
+        "The input tensor on each rank is logically partitioned into N shards, one per destination rank.",
+        "The volume moved per rank is (N-1)/N · S bytes over the fabric (self-shard stays local)."
+      ],
+      "nonImplications": [
+        "Does not imply any arithmetic reduction is applied to the payloads.",
+        "Does not imply that All-to-All is the cheapest way to redistribute all data; when the whole tensor is needed on every rank, AllGather is preferred."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 collective communication" },
+        { "ref": "PAPER:gspmd", "locator": "§ discussion of All-to-All patterns for expert parallelism" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "All-to-All is a broadcast: every rank sends its entire tensor to every other rank and receives a copy of every peer's tensor.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That is AllGather (with N-way replication). All-to-All sends and receives distinct 1/N-shards, so no rank ends with N-fold data."
+    },
+    {
+      "claim": "All-to-All performs a summation of per-rank shards, analogous to AllReduce along one axis.",
+      "errorType": "definition_confusion",
+      "whyWrong": "All-to-All is pure data movement with no reduction; it only permutes shards across ranks."
+    },
+    {
+      "claim": "All-to-All is unnecessary in expert-parallel MoE because AllReduce over expert outputs achieves the same routing.",
+      "errorType": "scope_error",
+      "whyWrong": "MoE routing needs to send each token to the specific expert that owns it and later return it to the origin rank; this is a permutation, not a reduction. AllReduce would destroy per-token identity."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

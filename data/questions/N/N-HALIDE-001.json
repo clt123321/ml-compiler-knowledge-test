@@ -1,0 +1,61 @@
+{
+  "id": "N-HALIDE-001",
+  "type": "single",
+  "module": "paper_design",
+  "subtopic": "Halide: algorithm/schedule separation",
+  "learningObjective": "Explain why the Halide paper separates the algorithm (what to compute) from the schedule (how to compute) and identify the design intent behind this separation.",
+  "archetype": "paper_design_intent",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "The Halide paper is best known for separating the algorithm (what to compute) from the schedule (how to compute). Which statement best captures the design intent argued in the paper?",
+  "options": [
+    { "id": "A", "text": "The separation exists so that the compiler can hide the algorithm behind an opaque API; users interact only with schedules." },
+    { "id": "B", "text": "The separation lets a single, portable algorithm be re-scheduled (tiled, vectorized, parallelized, fused, recomputed) without changing its semantics, so many performance-relevant strategies can be explored on each target without rewriting the pipeline." },
+    { "id": "C", "text": "The separation is required for correctness: only by moving loop order out of the algorithm can Halide guarantee that per-pixel updates remain race-free on multi-core CPUs." },
+    { "id": "D", "text": "The separation is a legacy artifact from Halide's origins as a C++ template library; in modern implementations the two parts are merged and the design contribution is largely obsolete." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "Halide's §1–§3 explicitly argue that the algorithm/schedule split is the central design contribution: the algorithm is a portable, semantics-only description; the schedule expresses per-target loop nesting, tiling, parallelization and storage/recomputation trade-offs. Users can enumerate many schedules cheaply, autotuners can search over them, and the compiler guarantees each legal schedule preserves the algorithm's output.",
+  "optionExplanations": {
+    "A": "Wrong: the paper argues for exposing schedules to programmers, not hiding algorithms.",
+    "B": "Correct: matches the paper's stated design intent — portability + tunability without rewriting.",
+    "C": "Wrong: correctness is preserved by dependence analysis, not by the syntactic separation itself.",
+    "D": "Wrong: the separation is Halide's flagship contribution, not a legacy artifact."
+  },
+  "assumptions": [
+    "Familiarity with Halide paper Sections 1–3.",
+    "Understanding that a 'schedule' in Halide covers loop order, tiling, storage, parallel/vector directives, and produce-consume relations."
+  ],
+  "nonImplications": [
+    "Does not imply that any schedule is beneficial; most are worse than the default.",
+    "Does not imply Halide's schedule language is complete for every optimization; some transformations (e.g. arbitrary polyhedral reordering) fall outside its scope."
+  ],
+  "misconceptionTags": ["halide_hides_algorithm", "halide_correctness_only"],
+  "distractorRationales": {
+    "A": "Reverses the visibility direction.",
+    "C": "Confuses dependence analysis with algorithm/schedule separation.",
+    "D": "Fabricated legacy narrative."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:halide", "locator": "§1–§3 algorithm/schedule separation and motivation", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/N/N-HALIDE-001.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

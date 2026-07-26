@@ -1,0 +1,48 @@
+{
+  "questionId": "K-ABI-005",
+  "learningObjective": "Explain why an ML compiler that ships a .so/.dll artifact must define a stable C ABI at the artifact boundary, not a C++ one, and what breaks when the boundary is not stable.",
+  "canonicalClaims": [
+    {
+      "claim": "A dynamic ML artifact exposes a C ABI at its boundary — extern \"C\" entry points, POD structs, opaque handles — because C++ name mangling, exception ABI and STL layout differ across compilers and standard-library versions.",
+      "conditions": [
+        "The artifact is loaded by a process compiled with a potentially different toolchain.",
+        "The artifact ships as a shared library or plan file with a defined entry point."
+      ],
+      "nonImplications": [
+        "Does not imply that internals must be C; only the boundary is C.",
+        "Does not imply GPU driver ABI issues do not exist; they do, but they are handled by driver versioning."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-aoti", "locator": "AOTInductor C shim" },
+        { "ref": "DOC:trt", "locator": "TensorRT ABI notes" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "std::vector is ABI-stable across compilers.",
+      "errorType": "definition_confusion",
+      "whyWrong": "STL container layouts and semantics vary across libstdc++ and libc++ versions; passing them across shared-library boundaries is unsafe.",
+      "sourceOrEvidence": "Itanium C++ ABI reference"
+    },
+    {
+      "claim": "Dynamic loaders rewrite mangled C++ symbols.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Loaders resolve exact symbols; mismatched mangling causes load or runtime failure.",
+      "sourceOrEvidence": "dlopen/ld.so manpage"
+    },
+    {
+      "claim": "Dynamic libraries are unnecessary for ML artifacts.",
+      "errorType": "scope_error",
+      "whyWrong": "Almost every deployed ML compiler uses shared libraries or plan files exactly to decouple build and load.",
+      "sourceOrEvidence": "AOTInductor / TensorRT / IREE deployment"
+    },
+    {
+      "claim": "ABI stability is a purely aesthetic concern.",
+      "errorType": "overgeneralization",
+      "whyWrong": "ABI mismatches cause crashes, undefined behavior, and platform-specific failures — not merely inconvenience.",
+      "sourceOrEvidence": "Any C++ ABI-break bug tracker"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

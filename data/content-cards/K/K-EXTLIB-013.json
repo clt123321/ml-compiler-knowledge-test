@@ -1,0 +1,47 @@
+{
+  "questionId": "K-EXTLIB-013",
+  "learningObjective": "Reason about the trade-offs of calling external libraries (cuBLAS, cuDNN, cutlass, MKL) from a compiled runtime versus emitting compiler-generated kernels.",
+  "canonicalClaims": [
+    {
+      "claim": "External vendor libraries usually outperform compiler-generated kernels on standard GEMM/Conv patterns due to hand-tuned per-architecture code; compilers earn back an advantage by fusing ops adjacent to those kernels (bias, activation, epilogue) that the library cannot see.",
+      "conditions": [
+        "Standard shapes and dtypes supported by the vendor library.",
+        "Compiler has the capability to fuse producer/epilogue ops into a single kernel."
+      ],
+      "nonImplications": [
+        "Does not imply compilers always lose in isolation; specialized shapes/dtypes may favor generation.",
+        "Does not imply fusion is universally possible."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "External kernel and fusion boundary" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "External libraries replace the runtime allocator.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Libraries request workspace from the runtime; they do not own the allocator.",
+      "sourceOrEvidence": "cuBLAS workspace API"
+    },
+    {
+      "claim": "cuBLAS/cuDNN outputs are bitwise stable across versions.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Algorithm selection can change across versions, changing low-order bits.",
+      "sourceOrEvidence": "cuBLAS release notes"
+    },
+    {
+      "claim": "Compiler-generated kernels are always faster than vendor libs.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Generation wins primarily via fusion; isolated GEMM/Conv usually favors the vendor lib.",
+      "sourceOrEvidence": "TorchInductor benchmark discussions"
+    },
+    {
+      "claim": "Calling external libs is free of ABI risk.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Library ABI upgrades can break loading or change semantics; version pinning matters.",
+      "sourceOrEvidence": "cuBLAS ABI notes"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,64 @@
+{
+  "questionId": "N-QUANT-010",
+  "learningObjective": "Recognise the scope limits and common overclaims around single-paper quantization results (SmoothQuant, GPTQ, AWQ).",
+  "canonicalClaims": [
+    {
+      "claim": "Quantization papers such as SmoothQuant, GPTQ and AWQ report accuracy and speedup on specific model families, specific bit widths, specific calibration sets and specific hardware/kernels; treating any of these results as universal LLM properties (across model families, sizes, tasks, or hardware) overgeneralizes their conclusions.",
+      "conditions": [
+        "The paper's evaluation defines the model families, tasks, and calibration corpora.",
+        "The kernel/hardware combination is stated explicitly."
+      ],
+      "nonImplications": [
+        "Does not imply the techniques never generalize; empirically they often do, but each application must be re-evaluated.",
+        "Does not imply the papers' comparisons among themselves are invalid within their own reported settings."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:smoothquant", "locator": "§4 experimental setup and per-model results" },
+        { "ref": "PAPER:gptq", "locator": "§4 evaluation methodology" },
+        { "ref": "PAPER:awq", "locator": "§4–§5 evaluated models and hardware" }
+      ]
+    },
+    {
+      "claim": "Reported end-to-end speedup from a quantization paper depends on the availability of an efficient dequantized-GEMM kernel for the target precision/granularity on the target hardware; the same quantization scheme can be faster on one GPU generation and no faster (or slower) on another due to Tensor Core precision support and library kernels.",
+      "conditions": [
+        "The claim is about wall-clock speedup, not model size."
+      ],
+      "nonImplications": [
+        "Does not imply memory footprint reduction from quantization is hardware-dependent; footprint reduction is largely arithmetic and hardware-independent."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:awq", "locator": "§5 kernel implementation and hardware conditions" }
+      ]
+    },
+    {
+      "claim": "An ablation supports only the specific factor it isolates; e.g. SmoothQuant's ablation of the migration factor α supports that α trades off activation vs weight quantization difficulty, but does not by itself establish that SmoothQuant is superior to GPTQ or AWQ at every setting.",
+      "conditions": [
+        "The ablation isolates the intended variable."
+      ],
+      "nonImplications": [
+        "Does not imply ablations are irrelevant to cross-paper comparisons; they inform mechanism, not head-to-head verdicts."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:smoothquant", "locator": "§3–§4 ablation on the migration factor" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Because SmoothQuant, GPTQ and AWQ all report high accuracy at 4-bit/8-bit, one can conclude that 'LLMs are always safe to quantize to 4 bits with negligible accuracy loss'.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Papers report on specific model families, sizes and tasks. Long-tail tasks, smaller models, math and code tasks often suffer more; the universal claim exceeds the evidence."
+    },
+    {
+      "claim": "A quantization paper's reported speedup is a property of the bit width alone and is independent of hardware and available kernels.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Speedup depends on kernel availability for the specific precision/granularity on the target hardware; without an efficient dequant-GEMM, memory savings do not translate to latency savings."
+    },
+    {
+      "claim": "An ablation study of a single hyperparameter in a paper establishes that the paper's method is superior to all competing methods at all settings.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Ablations isolate a mechanism; they do not perform head-to-head comparison against other papers' methods."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

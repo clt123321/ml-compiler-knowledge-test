@@ -1,0 +1,63 @@
+{
+  "id": "L-PROF-030",
+  "type": "multiple",
+  "module": "profiling_debug",
+  "subtopic": "PyTorch Profiler vs Nsight Systems: choosing the right tool",
+  "learningObjective": "Compare PyTorch Profiler with Nsight Systems/Compute and choose the appropriate tool for a given debugging task.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch Profiler / Nsight Systems / Nsight Compute",
+    "frameworkVersionScope": "PyTorch 2.0+; Nsight Systems 2023+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about the split between PyTorch Profiler, Nsight Systems, and Nsight Compute are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "PyTorch Profiler is the appropriate tool when you need op-level attribution (which aten op or Python line launched which kernel) and a timeline view that unifies CPU-side dispatcher work, autograd events, and CUDA kernel launches." },
+    { "id": "B", "text": "Nsight Systems is oriented at system-level tracing (CPU, GPU, CUDA API, NVTX, cuDNN library calls, stream utilization); it is the right tool for diagnosing CPU launch gaps, PCIe bottlenecks, and cross-stream concurrency issues." },
+    { "id": "C", "text": "Nsight Compute samples inside a single kernel (SM utilization, warp stall reasons, memory throughput, cache hit rate); it is the right tool for optimizing a specific kernel that you have already identified as the bottleneck via Nsight Systems or PyTorch Profiler." },
+    { "id": "D", "text": "All three tools show the same information — kernel timeline, SM utilization, and warp stall reasons — with different UIs; picking one is a matter of preference and not of debugging need." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "PyTorch Profiler gives Python/aten-level attribution; Nsight Systems gives system-wide timeline (CPU/GPU/PCIe/library calls); Nsight Compute gives deep per-kernel metrics. Each tool has a distinct role and picking the right one for the question saves time. D is wrong: the tools do not overlap fully; e.g., Nsight Systems does not typically expose per-kernel warp stall reasons, and PyTorch Profiler does not expose kernel-internal metrics.",
+  "optionExplanations": {
+    "A": "Correct: op-level attribution is PyTorch Profiler's strength.",
+    "B": "Correct: system tracing is Nsight Systems's scope.",
+    "C": "Correct: per-kernel deep dive is Nsight Compute's scope.",
+    "D": "Wrong: tools do not fully overlap."
+  },
+  "assumptions": [
+    "Modern versions of all three tools as of 2024-2025."
+  ],
+  "nonImplications": [
+    "Does not imply one tool is 'best'; the workflow typically composes them (system → op → kernel).",
+    "Does not imply the tools always agree numerically; slightly different measurement scopes can produce different numbers."
+  ],
+  "misconceptionTags": ["profiler_equivalence_myth"],
+  "distractorRationales": {
+    "D": "Overstates tool overlap."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-profiler", "locator": "PyTorch Profiler overview", "supports": ["A"] },
+    { "ref": "DOC:nsys", "locator": "Nsight Systems scope: system tracing", "supports": ["B"] },
+    { "ref": "DOC:ncu", "locator": "Nsight Compute scope: per-kernel analysis", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-PROF-030.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

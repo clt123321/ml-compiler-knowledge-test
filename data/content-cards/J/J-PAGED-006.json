@@ -1,0 +1,49 @@
+{
+  "questionId": "J-PAGED-006",
+  "learningObjective": "Explain the paged KV cache abstraction used by vLLM's PagedAttention and its motivation.",
+  "canonicalClaims": [
+    {
+      "claim": "PagedAttention stores KV in fixed-size physical blocks; each sequence has a block table mapping logical positions to physical blocks. Motivation: eliminate external fragmentation and internal reservation waste caused by pre-allocating each sequence's full max-length KV, and enable prefix/beam sharing.",
+      "conditions": [
+        "Block size is fixed (typical 8-32 tokens).",
+        "Attention kernel is aware of the block table."
+      ],
+      "nonImplications": [
+        "Does not imply zero indirection overhead.",
+        "Does not imply the block size is universal."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 3" },
+        { "ref": "DOC:vllm", "locator": "PagedAttention" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Paged KV cache uses a hash table for random access.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It uses a per-sequence block table (an array), analogous to OS page tables.",
+      "sourceOrEvidence": "vLLM paper Sec 3"
+    },
+    {
+      "claim": "Paging refers to quantization block granularity, not memory layout.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Paging is a memory-management technique; unrelated to quantization.",
+      "sourceOrEvidence": "vLLM paper terminology"
+    },
+    {
+      "claim": "PagedAttention allocates each sequence's full max-length KV contiguously up front.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The whole point is to avoid this reservation waste.",
+      "sourceOrEvidence": "vLLM paper Sec 2 motivation"
+    }
+  ],
+  "implementationFacts": [
+    "Typical block size in vLLM: 16 tokens.",
+    "Block tables are small (one integer per block per sequence) and reside in HBM alongside KV blocks."
+  ],
+  "performanceScenarios": [
+    "Prefix caching, beam-search sharing, and swap-to-CPU rely on the block indirection layer."
+  ],
+  "versionSensitivity": "stable_principle"
+}

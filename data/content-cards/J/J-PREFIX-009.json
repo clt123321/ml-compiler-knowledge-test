@@ -1,0 +1,50 @@
+{
+  "questionId": "J-PREFIX-009",
+  "learningObjective": "Explain prefix caching, its correctness conditions, and its effect on TTFT.",
+  "canonicalClaims": [
+    {
+      "claim": "Prefix caching stores per-position KV blocks keyed by prompt token ids and reuses them for new requests with matching prefixes; reuse is exact and cuts prefill (and thus TTFT) for the matched prefix length.",
+      "conditions": [
+        "Identical tokenization across requests.",
+        "System supports KV block reuse (typically via paged KV)."
+      ],
+      "nonImplications": [
+        "Does not help without shared prefixes.",
+        "Does not require deterministic decoding."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:sglang", "locator": "RadixAttention" },
+        { "ref": "DOC:vllm", "locator": "Prefix caching" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Prefix caching stores model output strings.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It stores KV cache blocks, not decoded strings.",
+      "sourceOrEvidence": "vLLM/SGLang docs"
+    },
+    {
+      "claim": "Prefix caching requires temperature = 0.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Prefix cache is about the prefill; sampling still operates normally on top.",
+      "sourceOrEvidence": "SGLang docs"
+    },
+    {
+      "claim": "Prefix caching approximates KV via cosine similarity.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is an exact reuse keyed on token ids; no approximation.",
+      "sourceOrEvidence": "SGLang / vLLM design"
+    }
+  ],
+  "implementationFacts": [
+    "SGLang uses a radix tree keyed by token ids for O(prefix-len) matching.",
+    "vLLM offers 'automatic prefix caching' as an opt-in feature."
+  ],
+  "performanceScenarios": [
+    "Long system prompts (few-shot templates, tool-use scaffolds) benefit most.",
+    "Per-request unique prompts see no benefit."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

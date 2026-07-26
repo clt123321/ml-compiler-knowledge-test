@@ -1,0 +1,49 @@
+{
+  "questionId": "I-KVCACHE-009",
+  "learningObjective": "Distinguish the KV cache read/write pattern in prefill vs decode and characterize the resulting HBM traffic per token.",
+  "canonicalClaims": [
+    {
+      "claim": "In decode, each step writes exactly one KV entry (O(H_kv * d)) and reads the entire current KV cache (of length P + t). Summed over T steps this gives Θ(T * (P + T) * H_kv * d) read traffic.",
+      "conditions": [
+        "Standard causal decoder attention.",
+        "KV cache entries are written once and not overwritten in normal operation."
+      ],
+      "nonImplications": [
+        "Does not depend on paged vs contiguous layout; only the total bytes read.",
+        "Does not include weight-matrix reads (separate stream)."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 2 — attention access patterns" },
+        { "ref": "BOOK:sze-eff", "locator": "Transformer inference memory analysis" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "KV cache entries are rewritten every step to keep them fresh.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Each cache entry is written exactly once when its token is processed.",
+      "sourceOrEvidence": "vLLM paper Sec 2"
+    },
+    {
+      "claim": "Decode re-reads previous Q vectors from HBM, not KV.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Q is recomputed each step from the current token's hidden state; KV is the cached quantity.",
+      "sourceOrEvidence": "Standard transformer inference"
+    },
+    {
+      "claim": "Prefill never reads KV cache because everything is done in one call.",
+      "errorType": "scope_error",
+      "whyWrong": "Attention within prefill still reads KV of earlier positions; a FlashAttention-style kernel streams the reads on-chip but they still exist logically.",
+      "sourceOrEvidence": "FlashAttention paper"
+    }
+  ],
+  "implementationFacts": [
+    "Decode KV cache reads grow linearly with sequence length, which is why long-context decode becomes memory-bandwidth bound on KV.",
+    "MQA/GQA reduce H_kv, cutting the constant factor of KV read traffic per token."
+  ],
+  "performanceScenarios": [
+    "At long context, KV read bandwidth per step can dominate weight-matrix reads; this motivates KV cache quantization."
+  ],
+  "versionSensitivity": "stable_principle"
+}

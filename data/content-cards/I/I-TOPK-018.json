@@ -1,0 +1,49 @@
+{
+  "questionId": "I-TOPK-018",
+  "learningObjective": "Explain the standard GPU strategy for computing top-k over a large vocabulary and why full sort is not required.",
+  "canonicalClaims": [
+    {
+      "claim": "GPU top-k over a large [B, V] tensor is implemented with partition + local top-k + merge: each block computes a top-k candidate set with a small in-register or SMEM structure, then a final reduction merges into a global top-k. Total work is O(V log k), avoiding the O(V log V) cost of full sort.",
+      "conditions": [
+        "V >> k.",
+        "Ties broken by a consistent rule."
+      ],
+      "nonImplications": [
+        "Does not produce a fully sorted output; only the top-k with indices.",
+        "Does not preclude approximate top-k algorithms (radix, bucketed) that may be even faster."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Sort and selection primitives" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GPU top-k must fully sort each row.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Partition + local top-k + merge is O(V log k) and standard.",
+      "sourceOrEvidence": "GPU top-k literature"
+    },
+    {
+      "claim": "Top-k selection is inherently serial.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Top-k is a well-parallelizable reduction over row partitions.",
+      "sourceOrEvidence": "GPU sort/select algorithms"
+    },
+    {
+      "claim": "Softmax threshold at 1/(kV) yields top-k without sort.",
+      "errorType": "definition_confusion",
+      "whyWrong": "No such algebraic identity; softmax probabilities are not aligned with rank in this way.",
+      "sourceOrEvidence": "Softmax definition"
+    }
+  ],
+  "implementationFacts": [
+    "cub::DeviceRadixSort::SortKeys followed by taking top-k works but is more expensive than the partition + merge pattern.",
+    "Inference libraries typically fuse top-k with temperature/top-p sampling into one kernel."
+  ],
+  "performanceScenarios": [
+    "For k=1 (greedy), top-k reduces to argmax which is a single reduction pass.",
+    "For k up to a few hundred, the partition + merge pattern is preferred; beyond that, radix or hybrid approaches win."
+  ],
+  "versionSensitivity": "stable_principle"
+}

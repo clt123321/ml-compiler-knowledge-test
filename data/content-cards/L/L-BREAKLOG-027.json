@@ -1,0 +1,48 @@
+{
+  "questionId": "L-BREAKLOG-027",
+  "learningObjective": "Diagnose torch.compile graph breaks and recompiles from the TORCH_LOGS='+dynamo,recompiles' output and identify remediation strategies.",
+  "canonicalClaims": [
+    {
+      "claim": "torch.compile splits a function into subgraphs at data-dependent Python control flow (graph breaks) and keeps a shape-guarded compilation cache; enabling mark_dynamic on an input dim replaces multiple shape-specialized recompiles with one shape-generic compile.",
+      "conditions": [
+        "torch.compile 2.3 ~ 2.5 default mode.",
+        "The function contains data-dependent Python conditions or varying input shapes."
+      ],
+      "nonImplications": [
+        "Does not imply mark_dynamic always speeds up steady-state execution.",
+        "Does not imply all graph breaks are avoidable."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Guards, graph breaks, recompiles" },
+        { "ref": "PAPER:pytorch2", "locator": "TorchDynamo" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Graph breaks and shape-guard recompiles are the same issue.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Graph breaks come from Python-level control flow; guard recompiles from shape/dtype changes.",
+      "sourceOrEvidence": "TorchDynamo overview"
+    },
+    {
+      "claim": "Eliminating a graph break has no effect on compile behavior.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Removing a break re-merges subgraphs, unlocks cross-branch fusion, and can reduce overall compile churn.",
+      "sourceOrEvidence": "TorchInductor docs"
+    },
+    {
+      "claim": "torch.compile always recompiles when shapes change.",
+      "errorType": "overgeneralization",
+      "whyWrong": "With mark_dynamic or dynamic=True, one compilation covers a shape range.",
+      "sourceOrEvidence": "torch.compile dynamic docs"
+    },
+    {
+      "claim": "cache_size_limit is unrelated to shape guards.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The cache stores shape-specialized entries; the limit governs how many can coexist before eviction.",
+      "sourceOrEvidence": "torch._dynamo.config docs"
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

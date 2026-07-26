@@ -1,0 +1,49 @@
+{
+  "questionId": "I-RMSPROP-027",
+  "learningObjective": "Distinguish correct claims about RMSNorm's compute pattern from common overgeneralizations.",
+  "canonicalClaims": [
+    {
+      "claim": "RMSNorm is memory-bandwidth bound: HBM traffic (read x, read weight, write y) dominates; the reduction and rsqrt are negligible in wall-clock cost on modern GPUs.",
+      "conditions": [
+        "Row length fits typical hardware tile; extreme long rows require online algorithms.",
+        "FP32 accumulation is used for stability."
+      ],
+      "nonImplications": [
+        "Does not imply the reduction cost is exactly zero; on very short rows it can matter.",
+        "Does not imply RMSNorm and LayerNorm are numerically equivalent."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Normalization operators" },
+        { "ref": "DOC:cuda-guide", "locator": "Row-parallel norm kernels" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "RMSNorm is compute-bound because it uses rsqrt.",
+      "errorType": "definition_confusion",
+      "whyWrong": "rsqrt is a single cheap instruction per row; HBM traffic dominates.",
+      "sourceOrEvidence": "GPU norm kernel analysis"
+    },
+    {
+      "claim": "RMSNorm equals LayerNorm on zero-mean inputs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "They differ in bias term and in whether mean is subtracted; parameterizations differ.",
+      "sourceOrEvidence": "RMSNorm paper (Zhang & Sennrich 2019)"
+    },
+    {
+      "claim": "RMSNorm requires two reductions.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Only sum(x^2) is needed; mean of x is not used.",
+      "sourceOrEvidence": "RMSNorm definition"
+    }
+  ],
+  "implementationFacts": [
+    "Row-parallel Triton RMSNorm kernels typically use BLOCK == row length for a single-pass reduction.",
+    "For rows exceeding on-chip capacity, an online (two-pass) variant is used."
+  ],
+  "performanceScenarios": [
+    "RMSNorm is commonly fused with the previous residual add and the next linear projection input read."
+  ],
+  "versionSensitivity": "stable_principle"
+}

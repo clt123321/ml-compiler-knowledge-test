@@ -1,0 +1,64 @@
+{
+  "id": "I-KVCACHE-009",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "KV Cache / Read-write pattern in prefill vs decode",
+  "learningObjective": "Distinguish the KV cache read/write pattern in prefill vs decode and characterize the resulting HBM traffic per token.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Consider a decoder-only transformer running (a) prefill on an input of length P, then (b) autoregressive decode for T new tokens. For a single attention layer with H_kv KV heads and head dim d, which characterization of KV cache HBM traffic is correct?",
+  "options": [
+    { "id": "A", "text": "Prefill writes P tokens' KV once (O(P * H_kv * d)) and reads nothing; decode reads the growing cache once per step but does not write, so total KV bandwidth is O(P * H_kv * d + T * (P+T) * H_kv * d / 2) roughly." },
+    { "id": "B", "text": "Prefill and decode both write and read the entire KV cache every step: prefill because each token attends to all previous tokens, and decode because each step re-verifies previously written entries. Total KV bandwidth is O((P+T)^2 * H_kv * d)." },
+    { "id": "C", "text": "KV cache is never touched in decode; decode only recomputes K and V from the current token and multiplies by all previous Q vectors that are re-read from HBM. Total KV bandwidth is therefore O(T * H_kv * d)." },
+    { "id": "D", "text": "Prefill writes each of the P tokens' KV once and reads the growing cache for the causal attention (roughly O(P^2 * H_kv * d) reads inside a FlashAttention-style kernel this collapses to O(P^2 d / M) HBM). Decode writes exactly 1 new KV entry per step and reads the entire current cache (P + t) each step, giving read traffic Σ_{t=1..T} (P+t) * H_kv * d ≈ O(T*(P+T) * H_kv * d)." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "Prefill processes all P tokens in one attention call: it writes each token's K, V once (O(P*H_kv*d)) and computes causal attention which conceptually reads all pairs; with FlashAttention this HBM cost collapses. Decode is autoregressive: at step t (with cache length P + t − 1), the model writes one new K, V (O(H_kv * d)) and reads the entire cache (P + t) once. Summed over T steps, decode reads Σ_{t=1..T} (P + t) * H_kv * d ≈ T * (P + T/2) * H_kv * d.",
+  "optionExplanations": {
+    "D": "Correct: standard KV cache access pattern.",
+    "A": "Wrong: prefill also reads the growing cache internally (attention over previously written tokens), and decode does write one entry per step.",
+    "B": "Wrong: no rewrite; each cache entry is written exactly once when the token is processed.",
+    "C": "Wrong: decode reads KV cache, not previous Q vectors; Q is recomputed each step from the current token."
+  },
+  "assumptions": [
+    "Standard causal decoder attention (each token attends to all earlier positions including itself).",
+    "KV cache is a monotonically growing tensor; entries are written once and never overwritten (except on preemption)."
+  ],
+  "nonImplications": [
+    "Does not imply that PagedAttention changes the total bytes read, only the memory layout.",
+    "Does not imply that MQA/GQA changes this pattern qualitatively — it only scales H_kv."
+  ],
+  "misconceptionTags": ["kv_rewrite_myth", "decode_re_reads_q"],
+  "distractorRationales": {
+    "A": "Denies prefill reads and decode writes.",
+    "B": "Fabricates rewrites.",
+    "C": "Confuses which tensors are cached."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:vllm", "locator": "Sec 2 — attention memory access patterns in prefill vs decode", "supports": ["D"] },
+    { "ref": "BOOK:sze-eff", "locator": "Transformer inference memory analysis", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Prefill vs decode KV cache HBM traffic characterization",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-KVCACHE-009.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

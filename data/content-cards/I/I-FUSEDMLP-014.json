@@ -1,0 +1,50 @@
+{
+  "questionId": "I-FUSEDMLP-014",
+  "learningObjective": "Reason about which parts of an MLP block can be fused into a single GPU kernel and where the fusion boundary lies for a Fused-QKV/-MLP style optimization.",
+  "canonicalClaims": [
+    {
+      "claim": "In modern LLM MLP blocks, the standard fusion boundary is 'up + activation' fused into one kernel with the down GEMM kept separate; the [B, N, F] intermediate is written to HBM once between them.",
+      "conditions": [
+        "F > D (typical MLP expansion).",
+        "Activation is elementwise (GELU/SiLU/etc.)."
+      ],
+      "nonImplications": [
+        "Does not imply full-block fusion is impossible, but it is uncommon in production libraries.",
+        "Does not imply that the intermediate write to HBM is free — it is a real cost, just less than the alternative fusion penalties."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Pointwise + reduction fusion" },
+        { "ref": "DOC:cuda-best", "locator": "GEMM epilogue and fusion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "up + activation + down can be trivially fused into a single kernel by fusing along the F dimension.",
+      "errorType": "overgeneralization",
+      "whyWrong": "down accumulates over F, so fusion would require restructuring down's tiling; standard MLP shapes rarely benefit.",
+      "sourceOrEvidence": "TorchInductor / cutlass epilogue design"
+    },
+    {
+      "claim": "Any fusion of MLP components hurts due to register pressure.",
+      "errorType": "overgeneralization",
+      "whyWrong": "up + elementwise activation is a well-known robust fusion win.",
+      "sourceOrEvidence": "TorchInductor docs"
+    },
+    {
+      "claim": "up and down can be concatenated into a single wide GEMM.",
+      "errorType": "definition_confusion",
+      "whyWrong": "up reduces over D and down reduces over F; different reduction axes cannot be merged.",
+      "sourceOrEvidence": "GEMM semantics"
+    }
+  ],
+  "implementationFacts": [
+    "cuBLASLt and CUTLASS support elementwise epilogues on the up GEMM output.",
+    "For SwiGLU, the gate and up GEMMs can also be fused into one wide GEMM (sharing the input read), then silu*up elementwise, then down."
+  ],
+  "performanceScenarios": [
+    "Memory-bound elementwise activation folded into the GEMM epilogue is essentially free.",
+    "The extra [B, N, F] HBM roundtrip for the intermediate is the main remaining cost."
+  ],
+  "versionSensitivity": "stable_principle"
+}

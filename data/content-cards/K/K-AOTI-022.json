@@ -1,0 +1,47 @@
+{
+  "questionId": "K-AOTI-022",
+  "learningObjective": "Explain what AOTInductor produces (a self-contained shared library that runs a compiled PyTorch model without a Python runtime) and how that differs from torch.compile in JIT mode.",
+  "canonicalClaims": [
+    {
+      "claim": "AOTInductor takes a torch.export'd graph and ahead-of-time compiles it into a native shared library plus generated kernels. The resulting artifact runs without Python and without the Inductor compiler; JIT torch.compile compiles lazily and requires Python+Inductor at run time.",
+      "conditions": [
+        "PyTorch 2.3 ~ 2.5 AOTInductor path.",
+        "The model is torch.export-compatible (no unsupported dynamism)."
+      ],
+      "nonImplications": [
+        "Does not imply full feature parity with JIT torch.compile.",
+        "Does not imply zero build cost."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-aoti", "locator": "AOTInductor deployment" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "AOTInductor embeds a MicroPython interpreter.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The artifact is a native shared library; no interpreter is embedded.",
+      "sourceOrEvidence": "AOTInductor documentation"
+    },
+    {
+      "claim": "AOTInductor replaces the CUDA driver.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It calls into CUDA via generated kernels and standard driver APIs.",
+      "sourceOrEvidence": "AOTInductor codegen"
+    },
+    {
+      "claim": "AOTInductor emits .pyc files.",
+      "errorType": "definition_confusion",
+      "whyWrong": "AOTInductor emits .so (or .dll) shared libraries and generated CUDA/Triton kernels.",
+      "sourceOrEvidence": "PyTorch documentation"
+    },
+    {
+      "claim": "AOTInductor eliminates the need for torch.export.",
+      "errorType": "scope_error",
+      "whyWrong": "AOTInductor operates on the output of torch.export.",
+      "sourceOrEvidence": "PyTorch documentation"
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

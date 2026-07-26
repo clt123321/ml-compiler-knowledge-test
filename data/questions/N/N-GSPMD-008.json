@@ -1,0 +1,60 @@
+{
+  "id": "N-GSPMD-008",
+  "type": "multiple",
+  "module": "paper_design",
+  "subtopic": "Peak vs geomean; paper-scope discipline",
+  "learningObjective": "Distinguish peak (best-case) speedup from geometric-mean speedup and understand the scope-limits of reported paper numbers such as those in GSPMD.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "N/A",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A colleague summarizes GSPMD as 'partitioning gives 2× speedup end-to-end', citing a peak result from one model in the paper. Which TWO statements about interpreting such paper speedups are correct?",
+  "options": [
+    { "id": "A", "text": "A paper's 'peak' speedup is the best-case observation on one (workload, hardware) pair; the geometric-mean speedup across the paper's full workload suite is typically smaller, so summarizing the paper by the peak overstates typical benefits." },
+    { "id": "B", "text": "Reported speedups are conditioned on that paper's hardware, software stack, workload set and baseline; treating them as a general property of the technique that transfers to arbitrary settings requires additional justification." },
+    { "id": "C", "text": "Peak and geometric-mean speedup are the same metric computed differently and can be used interchangeably as long as the workload set is identical." },
+    { "id": "D", "text": "Any speedup reported in a systems paper is a property of the technique alone and is independent of the baseline; comparing against an older framework version is equivalent to comparing against its current version." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "A: peak is by definition the max, typically strictly larger than the geomean summary across a suite; using peak as a general claim overstates. B: paper speedups are conditioned on hardware, software stack, workload and baseline; the paper's numbers require restatement of conditions when generalized. C confuses two distinct statistics. D ignores that baselines evolve — comparing against an outdated baseline is not the same as comparing against a current one.",
+  "optionExplanations": {
+    "A": "Correct: peak-vs-geomean semantics and the overstatement risk.",
+    "B": "Correct: paper numbers are conditioned on the paper's setup.",
+    "C": "Wrong: peak and geomean are different summaries.",
+    "D": "Wrong: baselines matter and evolve."
+  },
+  "assumptions": [
+    "The reader understands geometric mean as (∏ speedup_i)^(1/N).",
+    "The comparison is across a multi-workload benchmark suite."
+  ],
+  "nonImplications": [
+    "Does not imply peak numbers are useless; they are useful for characterizing best case.",
+    "Does not imply a paper's technique fails outside its evaluated setup; it means quantitative claims must be re-supported."
+  ],
+  "misconceptionTags": ["peak_equals_geomean", "speedup_baseline_independent"],
+  "distractorRationales": {
+    "C": "Confuses the two summary statistics.",
+    "D": "Ignores baseline-dependence."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:gspmd", "locator": "§6 benchmark methodology and per-model results", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/N/N-GSPMD-008.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

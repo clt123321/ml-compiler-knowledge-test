@@ -1,0 +1,63 @@
+{
+  "id": "M-COSTMODEL-010",
+  "type": "single",
+  "module": "distributed",
+  "subtopic": "α + βS communication cost model",
+  "learningObjective": "Apply the α + βS communication cost model to distinguish latency-dominated from bandwidth-dominated regimes for small vs large collectives.",
+  "archetype": "formula_performance",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "Point-to-point link, α = 10 μs, β = 10 GB/s (⇒ 1/β = 0.1 ns/byte)",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "A collective has an effective point-to-point cost model T(S) = α + β·S with α = 10 μs and effective bandwidth 10 GB/s (β = 100 ps/byte). Consider two payloads: S1 = 1 KB and S2 = 10 MB. Which statement is correct?",
+  "options": [
+    { "id": "A", "text": "T(1 KB) ≈ 10 μs (latency-dominated); T(10 MB) ≈ 1 ms (bandwidth-dominated). Increasing S1 tenfold to 10 KB barely changes T because α ≫ β·S in this regime." },
+    { "id": "B", "text": "T(1 KB) ≈ 100 ns (bandwidth-dominated at any size); T(10 MB) ≈ 1 ms. Since 10 GB/s bandwidth is high, α is negligible at all payload sizes and the cost ratio equals the byte ratio." },
+    { "id": "C", "text": "T(1 KB) ≈ 10 ms; T(10 MB) ≈ 10 μs. Larger payloads amortize α so effectively no time is spent on very large messages, and small ones are dominated by α scaled up by S." },
+    { "id": "D", "text": "T(1 KB) ≈ 1 μs; T(10 MB) ≈ 100 s. The bandwidth term should be interpreted as S · β with β=10 GB, giving super-linear scaling with S." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "T(S) = α + β·S. Compute: β = 100 ps/byte ⇒ β·(1 KB) = 100 ps × 1024 ≈ 100 ns, so T(1 KB) ≈ 10 μs + 0.1 μs ≈ 10 μs (α dominates). β·(10 MB) = 100 ps × 10⁷ = 10⁶ ns = 1 ms, so T(10 MB) ≈ 10 μs + 1 ms ≈ 1 ms (β·S dominates). In the small-message regime, S can change by 10× and T barely moves — bucketing is designed to exit this regime.",
+  "optionExplanations": {
+    "A": "Correct: matches the two regimes and the (in)variance of T with S when α dominates.",
+    "B": "Wrong: at 1 KB, α (10 μs) is orders of magnitude larger than β·S (100 ns), so latency dominates.",
+    "C": "Wrong: units and direction of the model are inverted.",
+    "D": "Wrong: misinterprets β as 10 GB (giving super-linear scaling)."
+  },
+  "assumptions": [
+    "α and β are constants over the size range considered.",
+    "No pipelining or concurrent messages."
+  ],
+  "nonImplications": [
+    "Does not imply the crossover S* = α/β is a hardware constant across collectives (algorithms change effective α, β).",
+    "Does not imply that a real GPU collective always achieves peak β; contention and topology can reduce effective β."
+  ],
+  "misconceptionTags": ["cost_model_linear", "alpha_negligible_on_fast_fabric"],
+  "distractorRationales": {
+    "B": "Ignores α at small payloads.",
+    "C": "Inverts model direction and units.",
+    "D": "Misinterprets β units."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:hp6", "locator": "Ch. 6 latency-vs-bandwidth cost model", "supports": ["A"] },
+    { "ref": "PAPER:gspmd", "locator": "§3 cost model", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "α + βS model with α=10 μs, β=100 ps/byte",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-COSTMODEL-010.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

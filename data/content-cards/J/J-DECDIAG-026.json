@@ -1,0 +1,49 @@
+{
+  "questionId": "J-DECDIAG-026",
+  "learningObjective": "Diagnose memory-bandwidth-bound decode from profile data and identify effective vs ineffective mitigations.",
+  "canonicalClaims": [
+    {
+      "claim": "Batch-1 decode of a dense transformer is memory-bandwidth bound on weight reads; effective mitigations reduce weight bytes (quantization), amortize weight reads over batch (continuous batching), or eliminate launch overhead (CUDA Graphs).",
+      "conditions": [
+        "Weight bytes >> KV bytes per step (typical for shorter context).",
+        "Bandwidth already near hardware peak."
+      ],
+      "nonImplications": [
+        "Does not imply mitigations preserve quality.",
+        "Does not imply low SM utilization is a bug — it is expected under bandwidth-bound."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 2" },
+        { "ref": "DOC:trtllm", "locator": "Decode bandwidth analysis" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Low SM utilization indicates need for more compute.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "It indicates memory-bandwidth bound behavior; compute is intentionally idle waiting on memory.",
+      "sourceOrEvidence": "Roofline analysis, Nsight Compute docs"
+    },
+    {
+      "claim": "INT4 quantization always speeds up decode by 4x.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "Speedup depends on kernel availability and dequant overhead; typical is 2-3x on well-tuned stacks.",
+      "sourceOrEvidence": "AWQ / GPTQ benchmarks"
+    },
+    {
+      "claim": "Continuous batching alone eliminates memory-bandwidth bound behavior.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Batching raises intensity but eventually hits either compute-bound or a different bandwidth ceiling (KV).",
+      "sourceOrEvidence": "vLLM benchmarks"
+    }
+  ],
+  "implementationFacts": [
+    "A100 HBM peak ~2 TB/s; H100 SXM ~3.3 TB/s.",
+    "INT4 dequant + FP16 matmul kernels (AWQ, GPTQ) are the standard batch-1 decode path."
+  ],
+  "performanceScenarios": [
+    "Batch=1 decode of a 13B FP16 model near peak HBM gives ~14-15 ms/token on A100; INT4 can reach ~5-7 ms/token."
+  ],
+  "versionSensitivity": "stable_principle"
+}

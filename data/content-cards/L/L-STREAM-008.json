@@ -1,0 +1,47 @@
+{
+  "questionId": "L-STREAM-008",
+  "learningObjective": "Reason about a subtle event-timing bug where an event recorded on one stream is elapsed against an event recorded on another stream, giving a wall-time reading that is not the intended per-stream cost.",
+  "canonicalClaims": [
+    {
+      "claim": "Under legacy default-stream semantics, events recorded on the default stream synchronize with all other user streams; to isolate one stream's timing, both start and end events must be explicitly recorded on that stream.",
+      "conditions": [
+        "Legacy default-stream mode (CUDA_LAUNCH_BLOCKING or default per-context).",
+        "Multiple user streams with concurrent work exist."
+      ],
+      "nonImplications": [
+        "Does not imply per-thread default stream mode has the same issue; that mode changes default-stream sync behavior.",
+        "Does not imply zero cross-stream interference; shared resources can still cause slowdown."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Default stream semantics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Events cannot isolate per-stream timing.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Events recorded on a specific stream do isolate that stream's progress.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "elapsed_time returns a union of concurrent activity; divide by stream count.",
+      "errorType": "definition_confusion",
+      "whyWrong": "elapsed_time is the GPU wall time between two event completions; no divide semantics exists.",
+      "sourceOrEvidence": "CUDA Runtime API reference"
+    },
+    {
+      "claim": "event.synchronize() drains the whole device.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It only waits for the specific event to complete.",
+      "sourceOrEvidence": "CUDA Runtime API reference"
+    },
+    {
+      "claim": "Recording an event without specifying a stream is equivalent to recording on the target stream.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Without a stream argument the event is recorded on the default stream, which has special sync behavior.",
+      "sourceOrEvidence": "CUDA Runtime API reference"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

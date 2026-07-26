@@ -1,0 +1,17 @@
+{
+  "module": "paper_design",
+  "code": "N",
+  "expectedCount": 10,
+  "questions": [
+    { "id": "N-HALIDE-001", "file": "data/questions/N/N-HALIDE-001.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-HALIDE-001.json", "version": 1 },
+    { "id": "N-TVM-002", "file": "data/questions/N/N-TVM-002.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-TVM-002.json", "version": 1 },
+    { "id": "N-ANSOR-003", "file": "data/questions/N/N-ANSOR-003.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-ANSOR-003.json", "version": 1 },
+    { "id": "N-MLIR-004", "file": "data/questions/N/N-MLIR-004.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-MLIR-004.json", "version": 1 },
+    { "id": "N-TRITON-005", "file": "data/questions/N/N-TRITON-005.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-TRITON-005.json", "version": 1 },
+    { "id": "N-FLASH-006", "file": "data/questions/N/N-FLASH-006.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-FLASH-006.json", "version": 1 },
+    { "id": "N-VLLM-007", "file": "data/questions/N/N-VLLM-007.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-VLLM-007.json", "version": 1 },
+    { "id": "N-GSPMD-008", "file": "data/questions/N/N-GSPMD-008.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-GSPMD-008.json", "version": 1 },
+    { "id": "N-PYT2-009", "file": "data/questions/N/N-PYT2-009.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-PYT2-009.json", "version": 1 },
+    { "id": "N-QUANT-010", "file": "data/questions/N/N-QUANT-010.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/N/N-QUANT-010.json", "version": 1 }
+  ]
+}

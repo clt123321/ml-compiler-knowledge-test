@@ -1,0 +1,65 @@
+{
+  "id": "L-BREAKLOG-027",
+  "type": "multiple",
+  "module": "profiling_debug",
+  "subtopic": "Graph break and recompile log diagnosis",
+  "learningObjective": "Diagnose torch.compile graph breaks and recompiles from the TORCH_LOGS='+dynamo,recompiles' output and identify remediation strategies.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch (torch.compile)",
+    "frameworkVersionScope": "PyTorch 2.3 ~ 2.5",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "The following TORCH_LOGS output was captured for a torch.compile'd function processing a variable-length batch. Which conclusions are correct? (Select all that apply.)",
+  "profileData": "TORCH_LOGS='+dynamo,recompiles' output for f(x, mask):\n\n[0] torch._dynamo.convert_frame: Recompiling function f (call 1) — new signature\n[0] torch._dynamo.symbolic_convert: graph break on `if mask.any():` — data-dependent branch\n[0] torch._inductor: compiled subgraph #0 (before break), #1 (after break)\n\n[1] torch._dynamo.convert_frame: Recompiling function f (call 2) — guard failure: tensor 'x' size changed 128 → 256\n[1] torch._inductor: recompile of #0 and #1\n\n[2] torch._dynamo.convert_frame: Recompiling function f (call 3) — guard failure: tensor 'x' size changed 256 → 128\n[2] torch._inductor: cache hit on #0 (size 128 already compiled), cache hit on #1",
+  "options": [
+    { "id": "A", "text": "The `if mask.any():` triggers a graph break because it is a data-dependent Python control flow; the compiled region is split into two subgraphs (#0 before and #1 after) with eager execution of the branch decision itself in between." },
+    { "id": "B", "text": "The recompile at call 2 is due to a shape guard failure (128 → 256); enabling dynamic shapes for `x` (`torch._dynamo.mark_dynamic(x, 0)`) would avoid the recompile by generating a shape-generic compiled graph that handles both sizes." },
+    { "id": "C", "text": "The 'cache hit' at call 3 shows that torch.compile keeps compiled subgraphs indexed by (shape, dtype) guard set — bouncing between two sizes stops paying compile cost after both have been seen once, but each still uses shape-specific code." },
+    { "id": "D", "text": "Replacing `if mask.any():` with `torch.where(mask, x, 0)` — an eager pattern that avoids the graph break — would still cause the same recompiles because guard failures on tensor shapes are unrelated to control flow." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A: data-dependent Python control flow forces a graph break, splitting compilation. B: enabling dynamic shape (`mark_dynamic`) avoids per-shape recompiles. C: torch.compile keeps compiled subgraphs indexed by shape/dtype guards, so bouncing between two known sizes stops paying compile cost after both have been seen. D is wrong because rewriting `if mask.any():` to `torch.where` removes the graph break (unlocking fusion across the branch); that is a real, separate benefit from what shape guards do. The claim that the rewrite has no effect on compile behavior conflates the two orthogonal mechanisms.",
+  "optionExplanations": {
+    "A": "Correct: data-dependent branch = graph break.",
+    "B": "Correct: mark_dynamic avoids shape-guard recompiles.",
+    "C": "Correct: cache-indexed compiles stabilize after all shapes seen.",
+    "D": "Wrong: the rewrite would eliminate the graph break (unlocking fusion across the branch) even if it does not affect shape-guard recompiles; the claim that 'rewriting has no effect' is misleading."
+  },
+  "assumptions": [
+    "PyTorch 2.3 ~ 2.5 torch.compile behavior.",
+    "cache_size_limit is not being exceeded by the two shapes in the log."
+  ],
+  "nonImplications": [
+    "Does not imply mark_dynamic has zero cost; the compiled shape-generic kernel can be slower per iteration.",
+    "Does not imply graph breaks are always bad; some are unavoidable and negligible."
+  ],
+  "misconceptionTags": ["control_flow_vs_shape_guard_conflation"],
+  "distractorRationales": {
+    "D": "Conflates shape guard with graph break impact."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-compile", "locator": "torch._dynamo recompile / guard failure / graph break docs", "supports": ["A", "B", "C"] },
+    { "ref": "PAPER:pytorch2", "locator": "TorchDynamo: guards, graph breaks, recompiles", "supports": ["A", "B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "torch.compile dynamo/recompile log interpretation",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-BREAKLOG-027.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

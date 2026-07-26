@@ -1,0 +1,57 @@
+{
+  "questionId": "N-FLASH-006",
+  "learningObjective": "Explain FlashAttention's core IO-aware optimization, the mechanism (tiling + online softmax + recomputation), and identify when the speedup is largest.",
+  "canonicalClaims": [
+    {
+      "claim": "FlashAttention's core IO-optimization is to compute attention block-by-block in SRAM using an online (numerically stable) softmax and to avoid materializing the full N×N attention matrix in HBM; in the backward pass it recomputes intermediates from stored statistics rather than storing the full matrix, so total HBM traffic is reduced from Θ(N²) to Θ(N²·d/M) (where M is SRAM budget).",
+      "conditions": [
+        "The attention block dimensions fit into on-chip SRAM.",
+        "The kernel is fused end-to-end so no intermediate goes to HBM.",
+        "The softmax is computed incrementally with running-max and running-sum statistics."
+      ],
+      "nonImplications": [
+        "Does not imply a change in the attention algorithm's output (up to floating-point ordering).",
+        "Does not imply that FlashAttention's speedup is uniform across shapes; it is largest when sequence length N is large enough that HBM traffic for the N×N matrix dominates."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "§3 algorithm and IO analysis; §4 backward with recomputation" }
+      ]
+    },
+    {
+      "claim": "FlashAttention's speedup versus a naive attention kernel is largest when the sequence length N is large (memory-bound regime), and it can be smaller — or negative once launch overhead is included — for very short sequences where the naive kernel is compute-bound on the SM.",
+      "conditions": [
+        "Comparison is against an unfused naive attention baseline.",
+        "Sequence length is the primary axis being varied; head dim d is held moderate."
+      ],
+      "nonImplications": [
+        "Does not imply FlashAttention is always faster than every attention kernel; specialized library kernels for short sequences may match or beat it."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "§5 benchmarks across sequence lengths" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "FlashAttention changes the attention algorithm's outputs to gain speed (approximate attention).",
+      "errorType": "definition_confusion",
+      "whyWrong": "FlashAttention is exact attention (up to floating-point ordering); it does not approximate."
+    },
+    {
+      "claim": "FlashAttention's core speedup comes from switching to Tensor Cores; without Tensor Cores there would be no benefit over naive attention.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The speedup is from HBM-traffic reduction via tiling and online softmax; Tensor Cores affect FLOP throughput but not the IO cost that FlashAttention primarily eliminates."
+    },
+    {
+      "claim": "FlashAttention gives the same ~2–4× speedup at any sequence length on any GPU; the numbers reported in the paper are hardware-independent constants.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Speedup magnitude depends on shape (large N, moderate d) and hardware (SRAM size, HBM bandwidth, launch overhead); the paper reports specific measurements on specific GPUs."
+    },
+    {
+      "claim": "FlashAttention's advantage in the backward pass comes from storing the entire N×N attention matrix during forward and reusing it during backward.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The paper deliberately does NOT store the N×N matrix; the backward pass recomputes from stored per-row softmax statistics (running-max and running-sum), which is why total memory is Θ(N)."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

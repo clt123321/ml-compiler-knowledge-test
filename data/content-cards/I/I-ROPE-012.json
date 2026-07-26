@@ -1,0 +1,50 @@
+{
+  "questionId": "I-ROPE-012",
+  "learningObjective": "Explain the elementwise rotation pattern of RoPE and where in the transformer stack it is applied.",
+  "canonicalClaims": [
+    {
+      "claim": "RoPE rotates pairs of features of Q and K (not V) by position-dependent angles applied pointwise per token; the rotation encodes position such that <RoPE(q, m), RoPE(k, n)> depends only on m - n.",
+      "conditions": [
+        "d_head is even.",
+        "RoPE is applied after the linear QKV projection and before QK^T."
+      ],
+      "nonImplications": [
+        "Does not imply RoPE is applied to V.",
+        "Does not imply cross-token reduction; each token's rotation is independent."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Positional encoding variants" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "RoPE is an additive learned position embedding.",
+      "errorType": "definition_confusion",
+      "whyWrong": "RoPE is a multiplicative rotation in feature space, not an additive embedding.",
+      "sourceOrEvidence": "RoFormer paper"
+    },
+    {
+      "claim": "RoPE is applied to the attention score matrix as an additive relative-position bias.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That description matches ALiBi; RoPE achieves relative position via feature rotation of Q, K.",
+      "sourceOrEvidence": "RoFormer / ALiBi comparison"
+    },
+    {
+      "claim": "RoPE requires a reduction over the sequence dimension.",
+      "errorType": "definition_confusion",
+      "whyWrong": "RoPE is pointwise per token; only the token's own features and position matter.",
+      "sourceOrEvidence": "RoFormer paper"
+    }
+  ],
+  "implementationFacts": [
+    "cos/sin tables are typically precomputed once per max position and cached.",
+    "RoPE fuses naturally as a small epilogue on the QKV projection kernel.",
+    "Long-context extensions (NTK, YaRN) modify the frequency schedule but keep the rotation structure."
+  ],
+  "performanceScenarios": [
+    "RoPE is essentially free per token — a handful of muls/adds and one cos/sin table lookup.",
+    "Because K is rotated before caching, KV cache stores post-RoPE K; decode does not re-rotate cached K."
+  ],
+  "versionSensitivity": "stable_principle"
+}

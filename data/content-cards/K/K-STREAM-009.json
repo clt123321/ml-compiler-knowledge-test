@@ -1,0 +1,47 @@
+{
+  "questionId": "K-STREAM-009",
+  "learningObjective": "State the semantics of a CUDA stream (an in-order queue of device work) and a CUDA event (a synchronization point recordable on a stream), and their role in a runtime.",
+  "canonicalClaims": [
+    {
+      "claim": "A CUDA stream is a logical in-order queue: within a stream, operations execute in issue order; across streams, operations may execute concurrently. Events are synchronization markers recorded on a stream that other streams or the host can wait on.",
+      "conditions": [
+        "Single CUDA context.",
+        "Sufficient device resources to permit inter-stream concurrency when data dependencies permit."
+      ],
+      "nonImplications": [
+        "Does not imply that cross-stream operations always run concurrently; they may serialize when resource-limited.",
+        "Does not imply events are the only synchronization mechanism; stream-level and device-level synchronize APIs exist."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Streams and Events" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "A stream is bound to a specific SM group.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Streams are logical queues; the scheduler assigns work to SMs dynamically.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Events are performance counters.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Events are synchronization primitives; performance counters live in Nsight Compute's metrics.",
+      "sourceOrEvidence": "CUDA Runtime API reference"
+    },
+    {
+      "claim": "Streams are shared memory buffers.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Streams do not contain data; they are execution queues.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Kernel ordering ignores streams.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Within-stream ordering is guaranteed by the API contract.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

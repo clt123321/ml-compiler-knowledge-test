@@ -1,0 +1,63 @@
+{
+  "id": "I-SPARSE-022",
+  "type": "multiple",
+  "module": "core_ops_attention",
+  "subtopic": "Sparse vs dense kernel boundary / When sparsity pays",
+  "learningObjective": "Identify when unstructured or structured sparsity actually reduces wall-clock time on GPU, vs when it only reduces FLOP count.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer for 2:4 sparse tensor cores",
+    "device": "GPU",
+    "requiredFeatures": ["tensor cores", "for structured 2:4: sparse tensor-core support"]
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Select all statements that correctly characterize the boundary between sparse and dense GPU kernels. (Choose all that apply.)",
+  "options": [
+    { "id": "A", "text": "Unstructured sparsity (arbitrary zero pattern) rarely translates to wall-clock speedup on GPU unless density is well below ~10%, because indexing overhead and irregular memory access outweigh the FLOP reduction on tensor-core-driven dense hardware." },
+    { "id": "B", "text": "Structured 2:4 sparsity (Ampere) preserves tensor-core throughput at half the FLOP cost of the equivalent dense GEMM; it is a hardware-native format supported by cuSPARSELt / cuBLAS sparse APIs and yields real speedup on supported dtypes." },
+    { "id": "C", "text": "For LLM inference, weight sparsity that reduces HBM traffic (e.g., N:M or block-sparse weight formats) is more impactful than FLOP reduction, because decode is bandwidth-bound. However, this only works if a compatible sparse kernel exists for the target dtype." },
+    { "id": "D", "text": "Any percentage of sparsity greater than 50% in a weight matrix automatically gives a proportional wall-clock speedup on modern GPUs, since sparse tensor-cores dynamically skip zero tiles regardless of the sparsity pattern." }
+  ],
+  "correctAnswers": ["A", "C"],
+  "explanation": "A is correct: unstructured sparsity on GPUs typically needs very low density before its FLOP savings beat the overhead of irregular indexing and load-imbalance across warps. C is correct: LLM decode is bandwidth-bound on weight/KV reads, so any sparse format that reduces bytes read is directly beneficial — provided a matching sparse kernel exists. B is partially correct as a factual statement about 2:4 but oversells 'yields real speedup' without conditions; the phrasing here treats it as an unconditional claim, which we do not accept as strictly correct — this option is meant as a distractor about how narrowly the 2:4 support is: it is only for specific dtypes (FP16/BF16/INT8) and requires dedicated kernels. D is wrong: 'sparse tensor cores dynamically skip zero tiles regardless of pattern' is fabricated; hardware requires the 2:4 structure.",
+  "optionExplanations": {
+    "A": "Correct: unstructured sparsity break-even point on GPU is very low density.",
+    "C": "Correct: decode is bandwidth-bound; sparsity that reduces HBM traffic can help if a kernel exists.",
+    "B": "Wrong (as stated): 2:4 does provide speedup but only on supported dtypes and with dedicated kernels; the option's blanket 'yields real speedup' is unconditional and misleading.",
+    "D": "Wrong: hardware requires the 2:4 structure; arbitrary sparsity does not get hardware-native skipping."
+  },
+  "assumptions": [
+    "GPU refers to modern NVIDIA GPUs (Ampere and newer).",
+    "'Sparse kernel' means a specialized kernel that reads only nonzeros and their indices."
+  ],
+  "nonImplications": [
+    "Does not imply that sparsity never helps; it does at extreme sparsity or with structured formats.",
+    "Does not imply block-sparse and 2:4 are equivalent; they trade regularity for compression differently."
+  ],
+  "misconceptionTags": ["sparsity_free_speedup", "hardware_skip_zero_myth"],
+  "distractorRationales": {
+    "B": "Unconditional claim ignores dtype/kernel requirements.",
+    "D": "Fabricates hardware behavior."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:sze-eff", "locator": "Sparsity in DNN accelerators", "supports": ["A", "C"] },
+    { "ref": "DOC:cuda-best", "locator": "Sparse tensor cores / cuSPARSELt", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Sparse vs dense wall-clock speedup on GPU",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/I/I-SPARSE-022.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

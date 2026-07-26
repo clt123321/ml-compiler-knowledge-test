@@ -1,0 +1,39 @@
+{
+  "questionId": "N-VLLM-007",
+  "learningObjective": "Explain vLLM's PagedAttention design intent: the KV-cache memory-fragmentation problem it targets.",
+  "canonicalClaims": [
+    {
+      "claim": "PagedAttention (vLLM) targets KV-cache memory inefficiency in transformer inference: when each sequence's KV cache is stored as one contiguous buffer sized to a worst-case sequence length, internal fragmentation (unused reserved slots) and external fragmentation (holes between finished and active sequences) waste GPU memory; PagedAttention stores KV in fixed-size blocks with a page table, enabling near-zero internal waste and better memory utilization.",
+      "conditions": [
+        "Serving multiple concurrent sequences with varying lengths.",
+        "GPU HBM is the constrained resource.",
+        "The attention kernel supports non-contiguous KV access via a page table."
+      ],
+      "nonImplications": [
+        "Does not imply PagedAttention reduces attention compute or FLOPs; the speedup at the system level comes from higher effective batch size on the same GPU, not per-token compute.",
+        "Does not imply that PagedAttention's specific throughput numbers generalize to arbitrary hardware; the paper reports measurements on specific GPUs and workloads."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "§3 KV cache fragmentation problem and PagedAttention design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PagedAttention accelerates the attention kernel itself by using paged memory access patterns that improve GPU cache locality.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The primary contribution is memory-management (better KV utilization ⇒ larger effective batch); the paged attention kernel is designed to match, not exceed, contiguous-KV kernel throughput per token."
+    },
+    {
+      "claim": "PagedAttention eliminates KV cache entirely, storing keys and values only when needed via recomputation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PagedAttention does not eliminate the KV cache; it stores it in paged blocks so that memory is used more efficiently."
+    },
+    {
+      "claim": "PagedAttention's design assumes all sequences have the same length; it does not help when sequence lengths vary widely.",
+      "errorType": "scope_error",
+      "whyWrong": "The design specifically targets variable-length sequences; that is where contiguous-KV reservation wastes the most memory."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,63 @@
+{
+  "id": "J-DIAG-021",
+  "type": "multiple",
+  "module": "llm_inference",
+  "subtopic": "TTFT and TPOT diagnosis / Metric decomposition",
+  "learningObjective": "Diagnose per-metric bottlenecks (TTFT vs TPOT) from serving-side data.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic serving stack",
+    "stability": "stable_principle"
+  },
+  "stem": "A team observes the following per-request metrics under moderate load. Select all diagnoses that are consistent with the data. (Choose all that apply.)",
+  "profileData": "Workload: 4K-token prompts on average, 200-token outputs. TP=1, batch scheduler = continuous batching.\n  P50 TTFT: 800 ms\n  P99 TTFT: 3.2 s\n  P50 TPOT: 45 ms/token\n  P99 TPOT: 60 ms/token\n  GPU compute utilization during prefill windows: 92%\n  GPU compute utilization during pure decode windows: 25%\n  KV cache usage: ~85% of budget under steady load\n  Preemption rate: 12% of requests are preempted at least once",
+  "options": [
+    { "id": "A", "text": "P99 TTFT >> P50 TTFT combined with a 12% preemption rate is consistent with head-of-line blocking or queueing under load: new prefills wait for KV space, and preempted sequences pay extra prefill on resume. TTFT tail is largely a queueing / preemption problem." },
+    { "id": "B", "text": "P50 TPOT ~ 45 ms/token combined with decode-window utilization ~25% is consistent with decode being memory-bandwidth bound (low compute utilization, low SM occupancy per token, but bandwidth spent on weight and KV reads). Adding more compute density would not directly reduce TPOT." },
+    { "id": "C", "text": "Prefill compute utilization ~92% indicates prefill is memory-bound; the fix is to increase batch size for prefill to reduce arithmetic intensity, since bandwidth is the current bottleneck." },
+    { "id": "D", "text": "High KV cache usage (~85%) plus a nontrivial preemption rate is a symptom that batch size is constrained by KV memory; MQA/GQA if applicable, KV quantization, or shorter contexts are direct levers to raise effective batch and reduce preemption." }
+  ],
+  "correctAnswers": ["A", "B", "D"],
+  "explanation": "A is correct: preemptions extend affected requests' TTFT dramatically, showing up as P99 tails. B is correct: decode is bandwidth-bound so low compute utilization is expected; TPOT is set by memory bandwidth, not SM occupancy. D is correct: high KV usage pushes preemption; the direct memory-side levers are MQA/GQA, KV quant, and shorter context. C is wrong: 92% compute utilization means prefill is compute-bound; increasing batch would improve arithmetic intensity if we were memory-bound, but we're already compute-saturated.",
+  "optionExplanations": {
+    "A": "Correct: HoL/queueing + preemption explains P99 TTFT tail.",
+    "B": "Correct: low decode utilization with bandwidth-bound TPOT is the standard signature.",
+    "D": "Correct: high KV usage → preemption → memory levers apply.",
+    "C": "Wrong: reverses the direction — 92% utilization already indicates compute-saturated prefill."
+  },
+  "assumptions": [
+    "Compute utilization is measured as active-SM fraction inside kernels.",
+    "Baseline model is a dense transformer (non-MoE)."
+  ],
+  "nonImplications": [
+    "Does not imply KV quantization is always safe accuracy-wise.",
+    "Does not imply preemption is always fixable within a single GPU; sometimes throughput-preserving preemption is intrinsic."
+  ],
+  "misconceptionTags": ["utilization_direction_confusion", "batch_always_helps"],
+  "distractorRationales": {
+    "C": "Confuses utilization direction — 92% = compute-bound, not memory-bound."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:vllm", "locator": "Metrics + preemption analysis", "supports": ["A", "B", "D"] },
+    { "ref": "PAPER:vllm", "locator": "Sec 4 — preemption and KV pressure", "supports": ["A", "D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "TTFT tail and TPOT bottleneck diagnosis",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-DIAG-021.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

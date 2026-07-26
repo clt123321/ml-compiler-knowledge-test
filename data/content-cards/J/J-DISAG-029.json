@@ -1,0 +1,50 @@
+{
+  "questionId": "J-DISAG-029",
+  "learningObjective": "Distinguish correct claims about disaggregated prefill/decode serving from common overclaims.",
+  "canonicalClaims": [
+    {
+      "claim": "Disaggregation improves TPOT by shielding decode from prefill contention, at the cost of a per-request KV transfer between prefill and decode pools; high-bandwidth interconnects are needed to keep this cost manageable.",
+      "conditions": [
+        "Mixed prefill+decode workload with meaningful contention on co-located pool.",
+        "Sufficient interconnect bandwidth."
+      ],
+      "nonImplications": [
+        "Does not eliminate KV cache on decode nodes.",
+        "Does not reduce total GPU count needed."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "Disaggregated serving" },
+        { "ref": "PAPER:orca", "locator": "Prefill/decode scheduling" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Disaggregation removes the need for KV cache.",
+      "errorType": "definition_confusion",
+      "whyWrong": "KV is transferred and used on decode nodes; still needed.",
+      "sourceOrEvidence": "DistServe/SplitWise designs"
+    },
+    {
+      "claim": "Disaggregation reduces total GPU count.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The workload's compute demand does not disappear; disaggregation reorganizes scheduling.",
+      "sourceOrEvidence": "DistServe evaluation"
+    },
+    {
+      "claim": "The KV transfer between pools is negligible.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Transfer size scales with prompt length; without high-bandwidth interconnect, it is significant.",
+      "sourceOrEvidence": "SplitWise Sec 4"
+    }
+  ],
+  "implementationFacts": [
+    "DistServe uses zero-copy NVLink/RDMA for KV transfer.",
+    "SplitWise showed 1.5-2x throughput at fixed SLA on realistic workloads."
+  ],
+  "performanceScenarios": [
+    "Small clusters and short prompts don't benefit; larger clusters with long prompts do.",
+    "Disaggregation composes with chunked prefill and continuous batching within each pool."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

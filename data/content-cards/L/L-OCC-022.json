@@ -1,0 +1,47 @@
+{
+  "questionId": "L-OCC-022",
+  "learningObjective": "Diagnose whether a kernel with low achieved occupancy is actually occupancy-limited or is memory-bound at high occupancy.",
+  "canonicalClaims": [
+    {
+      "claim": "In high-performance tile-based GEMM, low occupancy is a deliberate consequence of large tiles (high register + shared memory per block); if SM utilization is high and top stall is issue-slot pressure, raising occupancy by reducing tile size typically hurts performance.",
+      "conditions": [
+        "Kernel uses large tiles that intentionally consume many resources per block.",
+        "SM utilization is near 100% and top stall reason is not memory."
+      ],
+      "nonImplications": [
+        "Does not imply low occupancy is always fine.",
+        "Does not imply the kernel is at absolute peak; further Nsight sections must confirm."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:ncu", "locator": "Occupancy and stall reasons" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Raising occupancy always improves performance.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Occupancy is a means to hide latency; SM utilization is the actual output metric.",
+      "sourceOrEvidence": "PMPP text; Nsight Compute docs"
+    },
+    {
+      "claim": "25% DRAM throughput indicates memory-bound.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Memory-bound is indicated by DRAM near peak; 25% is well below.",
+      "sourceOrEvidence": "Nsight Compute SoL definitions"
+    },
+    {
+      "claim": "Peak throughput = occupancy × SM utilization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "This is not how peak is calculated; SoL metrics involve different measurements.",
+      "sourceOrEvidence": "Nsight Compute SoL definitions"
+    },
+    {
+      "claim": "168 registers/thread is always excessive.",
+      "errorType": "overgeneralization",
+      "whyWrong": "High-performance GEMM legitimately uses many registers to hold tile fragments.",
+      "sourceOrEvidence": "cuBLAS / cutlass GEMM design"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,48 @@
+{
+  "questionId": "I-ONLINESM-004",
+  "learningObjective": "State the online softmax update rules that let a single-pass streaming algorithm compute exact softmax over a partitioned row.",
+  "canonicalClaims": [
+    {
+      "claim": "Online softmax merges two partial (max, denominator) states (m_t, d_t) and (m', d') into (m_{t+1}, d_{t+1}) where m_{t+1} = max(m_t, m') and d_{t+1} = d_t * exp(m_t - m_{t+1}) + d' * exp(m' - m_{t+1}).",
+      "conditions": [
+        "Both partial sums use the safe-softmax convention (subtract the local max).",
+        "Rescale factors are applied to both partial sums when the global max moves."
+      ],
+      "nonImplications": [
+        "Does not imply the algorithm avoids all rounding artifacts.",
+        "Does not imply online softmax always outperforms two-pass softmax on all hardware; it primarily wins when re-reading the row is expensive."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Sec 3.1 — online softmax recurrence" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Running max is combined by summation: m_{t+1} = m_t + m'.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Max is not additive; it is an elementwise maximum.",
+      "sourceOrEvidence": "Definition of max"
+    },
+    {
+      "claim": "Denominators can be summed directly without rescaling because both are 'already normalized'.",
+      "errorType": "wrong_condition",
+      "whyWrong": "They are normalized to different local maxes; the sums use different reference points and cannot be added.",
+      "sourceOrEvidence": "FlashAttention Sec 3.1"
+    },
+    {
+      "claim": "Only the new tile needs a rescale; the running sum is authoritative.",
+      "errorType": "scope_error",
+      "whyWrong": "If the new tile has a larger max, the old running sum needs to be re-referenced to the new max via exp(m_t - m_{t+1}) <= 1.",
+      "sourceOrEvidence": "FlashAttention Sec 3.1"
+    }
+  ],
+  "implementationFacts": [
+    "In FlashAttention, this recurrence also carries the running output O_t through the same rescale factor.",
+    "Rescale factors are always <= 1 because both m_t and m' <= m_{t+1}."
+  ],
+  "performanceScenarios": [
+    "Enables single-pass attention over long sequences without materializing the full attention matrix in HBM."
+  ],
+  "versionSensitivity": "stable_principle"
+}

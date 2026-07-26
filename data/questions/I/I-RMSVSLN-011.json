@@ -1,0 +1,69 @@
+{
+  "id": "I-RMSVSLN-011",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "RMSNorm vs LayerNorm / Compute and memory pattern",
+  "learningObjective": "Compare compute and memory patterns of RMSNorm vs LayerNorm and identify which reduction operations each requires.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [["M", "N"], ["N"], ["M", "N"]],
+    "dtypes": ["float16", "float16", "float16"],
+    "layouts": ["contiguous", "contiguous", "contiguous"]
+  },
+  "stem": "Compare a per-row RMSNorm — y = x * rsqrt(mean(x^2) + eps) * g — with LayerNorm — y = (x - mean(x)) / sqrt(var(x) + eps) * g + b. Which comparison of reductions and memory is correct?",
+  "options": [
+    { "id": "A", "text": "Both require exactly one reduction (over the row); RMSNorm reduces sum(x), LayerNorm reduces sum(x^2). Total HBM traffic is identical because both read the row once and write the row once." },
+    { "id": "B", "text": "LayerNorm requires two reductions over the row (mean and variance) that must be executed in two passes; RMSNorm requires two reductions as well (sum of x and sum of x^2) because rsqrt needs both statistics." },
+    { "id": "C", "text": "RMSNorm needs one reduction (sum of x^2); LayerNorm can be computed with one reduction (using E[x^2] - E[x]^2) but requires two moments (sum and sum of squares). HBM read of x is once per row in both; RMSNorm skips the mean subtraction and the bias b, giving fewer per-element ops." },
+    { "id": "D", "text": "RMSNorm requires two passes over x (one to compute mean(x^2), one to normalize); LayerNorm is single-pass because the numerator can subsume the mean in a running formula." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "RMSNorm needs only sum(x^2) to compute rsqrt(mean(x^2) + eps); it does not use the mean of x. LayerNorm needs both mean and variance, but variance can be computed as E[x^2] - E[x]^2, so the two moments can be gathered in a single reduction pass. HBM traffic per row is the same order — one read of x, one write of y — but per-element compute differs: RMSNorm skips the (x - mean) subtraction and does not use bias b. This makes RMSNorm slightly cheaper per element and is why many modern LLMs use it.",
+  "optionExplanations": {
+    "C": "Correct: RMSNorm needs one moment (E[x^2]); LayerNorm needs two but can be fused into one pass.",
+    "A": "Wrong: RMSNorm uses sum(x^2), not sum(x); mixes up the reductions.",
+    "B": "Wrong: RMSNorm only needs sum(x^2), not both moments; and LayerNorm can be done in one reduction pass.",
+    "D": "Wrong: both can be done in a single pass with an appropriate algorithm (Welford or two-moment reduction)."
+  },
+  "assumptions": [
+    "The full row fits in one program's registers / SMEM for a single-pass implementation; if not, an online algorithm is needed.",
+    "eps is a positive scalar to avoid division by zero."
+  ],
+  "nonImplications": [
+    "Does not imply RMSNorm is always faster; both are memory-bound and the difference is small in practice.",
+    "Does not imply that RMSNorm is a mathematically identical simplification of LayerNorm; they compute different values."
+  ],
+  "misconceptionTags": ["rmsnorm_uses_mean", "layernorm_two_passes"],
+  "distractorRationales": {
+    "A": "Wrong reduction for RMSNorm.",
+    "B": "Overcounts RMSNorm reductions.",
+    "D": "Wrong pass count for both."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:sze-eff", "locator": "Normalization operators — compute pattern", "supports": ["C"] },
+    { "ref": "DOC:cuda-guide", "locator": "Row-parallel reduction kernels", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "RMSNorm vs LayerNorm compute and reduction pattern",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-RMSVSLN-011.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

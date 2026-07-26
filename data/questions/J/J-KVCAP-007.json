@@ -1,0 +1,68 @@
+{
+  "id": "J-KVCAP-007",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "KV cache capacity / Memory budget arithmetic",
+  "learningObjective": "Compute the KV cache memory footprint of a specific model configuration and reason about capacity limits.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "A100 80GB",
+    "device": "GPU",
+    "requiredFeatures": ["80 GB HBM"]
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Model configuration: 32 layers, H_kv = 8 KV heads, head_dim = 128, FP16 KV. The model weights occupy 26 GB on an 80 GB GPU. Which computation of KV cache capacity and its implication is correct?",
+  "profileData": "GPU: A100 80 GB (usable HBM ≈ 76 GB after runtime/allocator overhead)\nModel weights (FP16): 26 GB\nActivation + workspace budget: ~4 GB\nAvailable for KV cache: ~46 GB\nModel config: L=32 layers, H_kv=8, d=128, FP16 (2 bytes)\nPer-token KV = 2 (K and V) * L * H_kv * d * 2 B = 2 * 32 * 8 * 128 * 2 = 131,072 B ≈ 128 KB",
+  "options": [
+    { "id": "A", "text": "Per-token KV is ~256 KB; the cache holds ~180,000 tokens. If the average sequence length is 2000 tokens, that supports about 90 concurrent sequences before running out of KV cache." },
+    { "id": "B", "text": "Per-token KV is 8 * 128 * 2 = 2 KB (one KV entry across all layers). The cache holds ~23 million tokens. KV capacity is effectively unlimited for realistic workloads and cannot be a bottleneck on an 80 GB A100." },
+    { "id": "C", "text": "KV cache capacity is fixed by the model architecture alone (32 layers * 8 heads * 128 * 2 bytes = 65 KB) and does not scale with sequence length; capacity per GPU is therefore just ~700,000 sequences regardless of context length." },
+    { "id": "D", "text": "Per-token KV = 2 (K and V) * L * H_kv * d * 2 B = 128 KB. With 46 GB available for KV: 46 * 1024^3 / 131072 ≈ 376,832 tokens total. At 2000 tokens per sequence, that's ~188 concurrent sequences. Long-context (say 32K tokens/seq) drops this to ~11 concurrent sequences — a direct capacity constraint on batch size." },
+    { "id": "E", "text": "Per-token KV depends on the number of query heads H, not H_kv; using H = 32, per-token KV would be 512 KB, giving only ~90,000 total tokens and 45 concurrent 2K-token sequences." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "Per-token KV footprint (FP16, both K and V, across all layers) = 2 * L * H_kv * d * 2 B = 2 * 32 * 8 * 128 * 2 = 131,072 B (128 KB). With 46 GB available for KV, that supports 46 * 2^30 / 131072 ≈ 376,832 tokens in aggregate. If average sequence uses 2000 tokens of KV, the server can hold ~188 concurrent sequences. At 32K/sequence, only ~11 sequences fit — the direct reason long-context LLM serving has tiny effective batch sizes.",
+  "optionExplanations": {
+    "D": "Correct: standard KV cache arithmetic and its implication for batch size.",
+    "A": "Wrong: 256 KB is double the correct value; likely double-counts the (K and V) factor or misuses H.",
+    "B": "Wrong: forgets to multiply by number of layers and (K and V).",
+    "C": "Wrong: KV cache scales linearly with tokens; the whole 'capacity' is per token per sequence position.",
+    "E": "Wrong: KV cache is per KV head (H_kv), not per query head (H); this is the whole point of MQA/GQA."
+  },
+  "assumptions": [
+    "FP16 KV storage (2 bytes per element).",
+    "L=32 layers, all with the same KV shape."
+  ],
+  "nonImplications": [
+    "Does not imply the exact concurrent-sequence count matches production; batching efficiency and paging fragmentation eat some capacity.",
+    "Does not imply KV cache quantization is the only lever; MQA/GQA and shorter contexts also help."
+  ],
+  "misconceptionTags": ["kv_capacity_forgets_layers", "kv_capacity_uses_H_not_Hkv"],
+  "distractorRationales": {
+    "A": "Double-counts.",
+    "B": "Forgets layer multiplier.",
+    "C": "Denies token-scaling.",
+    "E": "Uses H instead of H_kv."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:vllm", "locator": "Sec 2 — KV cache memory budget analysis", "supports": ["D"] },
+    { "ref": "DOC:vllm", "locator": "KV cache sizing formulas", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "KV cache capacity calculation for a specific 32-layer GQA model on A100 80GB",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-KVCAP-007.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

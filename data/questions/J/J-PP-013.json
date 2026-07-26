@@ -1,0 +1,64 @@
+{
+  "id": "J-PP-013",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Pipeline parallelism / Layer partition and bubble",
+  "learningObjective": "Explain how pipeline parallelism shards a model across devices and what causes pipeline bubbles.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "multi-GPU node or multi-node",
+    "device": "GPU",
+    "requiredFeatures": ["inter-device interconnect"]
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Pipeline parallelism (PP) with P stages splits a model's layers across P devices. Which characterization of PP for LLM inference is correct?",
+  "options": [
+    { "id": "A", "text": "Each PP stage holds a copy of the full model and processes different tokens of the same request in parallel; the pipeline works because each token can be processed independently along the layer dimension after residual connections." },
+    { "id": "B", "text": "PP partitions attention heads across devices (like TP) but with additional latency-hiding across P forward passes; per-token latency in decode is P times faster than a single-device baseline because P stages run concurrently." },
+    { "id": "C", "text": "In inference, PP has no bubble because there is no backward pass; a single request can flow through all P stages with perfectly overlapped stage execution, and per-token latency drops by P× under any load." },
+    { "id": "D", "text": "PP partitions layers into P contiguous groups, one per device. In decode inference, a single-request forward passes sequentially through P stages, so per-request latency is not reduced (only memory is shared); throughput improves only with multiple in-flight requests, and imbalanced stages create bubbles." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "PP partitions the model layer-wise: each device holds a contiguous group of layers. For a single request in decode, the forward is sequential across stages, so per-token latency is not reduced (in fact slightly increased by inter-stage transfer). PP improves throughput only by running multiple requests through the pipeline in parallel (each stage is busy with a different request at each moment). Imbalanced stage compute or memory creates 'bubbles' where some devices idle. In inference the backward-pass bubble of training does not exist, but pipeline scheduling still matters.",
+  "optionExplanations": {
+    "D": "Correct: layer-partition, sequential forward for one request, throughput-oriented benefit.",
+    "A": "Wrong: PP does not replicate the model; each stage holds only its layer group.",
+    "B": "Wrong: describes something like TP, not PP; PP does not speed up single-request decode.",
+    "C": "Wrong: single-request latency is not reduced by PP."
+  },
+  "assumptions": [
+    "Standard layer-wise PP as in GPipe / PipeDream / Megatron-LM.",
+    "Stage transfer overhead is small relative to stage compute."
+  ],
+  "nonImplications": [
+    "Does not imply PP is useless; it is essential when the model does not fit on one device.",
+    "Does not imply zero bubble; imbalance and inter-stage latency still create idle time."
+  ],
+  "misconceptionTags": ["pp_reduces_latency_myth", "pp_replicates_model_myth"],
+  "distractorRationales": {
+    "A": "Confuses PP with DP replication.",
+    "B": "Confuses PP with TP.",
+    "C": "Fabricates zero-bubble inference."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:trtllm", "locator": "Pipeline parallel design", "supports": ["D"] },
+    { "ref": "DOC:vllm", "locator": "Pipeline parallel support", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Pipeline parallelism for LLM inference: layer partition, throughput vs latency",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-PP-013.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

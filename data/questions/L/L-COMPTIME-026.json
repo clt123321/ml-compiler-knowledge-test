@@ -1,0 +1,62 @@
+{
+  "id": "L-COMPTIME-026",
+  "type": "multiple",
+  "module": "profiling_debug",
+  "subtopic": "Compile time as a benchmark axis",
+  "learningObjective": "Reason about when compile time should be reported alongside inference latency in benchmarks and how the choice affects fair comparison.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic (torch.compile, TensorRT, TVM)",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about compile time in ML performance benchmarks are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "Reporting only steady-state inference latency without disclosing compile time can hide significant real-world cost, particularly for auto-tuners (TVM Ansor, TensorRT builder tactic search) that can take minutes to hours per shape/model." },
+    { "id": "B", "text": "Compile time is fully amortizable in every deployment scenario: since the model is compiled once and served millions of times, per-request amortized compile time is always negligible and does not need to be reported." },
+    { "id": "C", "text": "For iterative research workflows (e.g., quickly iterating on model architecture), long compile times can dominate wall-clock development cost; a fair benchmark for these workflows must include compile time." },
+    { "id": "D", "text": "Benchmarks that compare compilers with different compile-time budgets (10 s vs 30 min) but the same inference latency should be treated as equivalent for deployment because compile is offline." }
+  ],
+  "correctAnswers": ["A", "C"],
+  "explanation": "A: hiding compile time misleads readers. C: for iterative workflows compile dominates. B is too strong (there are common cases — canary deploys, autoscaling, per-tenant compile — where amortization fails). D is also wrong: even for deployment, a 30-minute compile impacts release cadence, canary strategy and rollback speed; the tradeoff is real, even if not per-request.",
+  "optionExplanations": {
+    "A": "Correct: standard reporting caveat.",
+    "B": "Wrong: canary deploys, autoscaling, per-tenant models all amortize poorly.",
+    "C": "Correct: developer workflows are compile-cost-sensitive.",
+    "D": "Wrong: compile time affects release cadence and operational agility."
+  },
+  "assumptions": [
+    "The benchmark is representative of a real workflow (development, canary, per-tenant, or steady-state)."
+  ],
+  "nonImplications": [
+    "Does not imply compile time must always be equal to inference; different scenarios weight them differently.",
+    "Does not imply short compile is always preferable; some workloads benefit from investing time in tuning."
+  ],
+  "misconceptionTags": ["compile_time_free_myth"],
+  "distractorRationales": {
+    "B": "Overstates amortization.",
+    "D": "Ignores operational impact of long compiles."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:ansor", "locator": "Ansor tuning budget vs performance discussion", "supports": ["A", "C"] },
+    { "ref": "DOC:trt", "locator": "TensorRT builder cost and deployment amortization", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Compile time reporting policy in ML compiler benchmarks",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-COMPTIME-026.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

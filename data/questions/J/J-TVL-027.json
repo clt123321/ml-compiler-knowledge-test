@@ -1,0 +1,63 @@
+{
+  "id": "J-TVL-027",
+  "type": "multiple",
+  "module": "llm_inference",
+  "subtopic": "Throughput vs latency trade-off / Batch-size lever",
+  "learningObjective": "Reason about the throughput vs latency trade-off in LLM serving and identify how batch size affects each metric.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Select all correct statements about the throughput vs latency trade-off in LLM decode serving. (Choose all that apply.)",
+  "options": [
+    { "id": "A", "text": "Increasing batch size always reduces both TPOT and total request latency because more compute is used in parallel per step; there is no downside to arbitrarily large batches other than memory limits." },
+    { "id": "B", "text": "Increasing batch size amortizes weight-HBM reads across more requests, raising aggregate tokens/second (throughput), but each batched step takes slightly longer (because of extra compute and possibly attention I/O), so per-request TPOT increases mildly." },
+    { "id": "C", "text": "Latency and throughput are the same metric expressed in different units (1/latency = throughput); optimizing one always optimizes the other." },
+    { "id": "D", "text": "Beyond some batch size, the workload transitions from memory-bandwidth bound to compute-bound; further batch-size increases raise per-step compute time proportionally with fewer amortization gains, giving diminishing returns on aggregate throughput and larger per-request TPOT penalties." }
+  ],
+  "correctAnswers": ["B", "D"],
+  "explanation": "B is correct: batching amortizes weight reads (good for throughput) but each batched step is slightly slower per-request (bad for TPOT). D is correct: as batch grows, the operator transitions from bandwidth-bound to compute-bound and further gains diminish while TPOT rises. A is wrong: larger batches raise TPOT (per-token latency per request), so latency and throughput trade off. C is wrong: throughput = tokens/sec across all users; latency = time per request. They are not reciprocals and can move independently.",
+  "optionExplanations": {
+    "B": "Correct: throughput up, per-request TPOT up.",
+    "D": "Correct: bandwidth→compute transition and diminishing returns.",
+    "A": "Wrong: larger batches raise TPOT.",
+    "C": "Wrong: throughput and latency are different metrics."
+  },
+  "assumptions": [
+    "'Latency' = per-request TPOT or total request latency.",
+    "'Throughput' = aggregate output tokens/sec across all users."
+  ],
+  "nonImplications": [
+    "Does not imply the optimal batch size is universal; it depends on SLA constraints.",
+    "Does not imply that continuous batching removes this trade-off; it only makes the batch composition dynamic."
+  ],
+  "misconceptionTags": ["latency_throughput_reciprocal", "batch_no_downside"],
+  "distractorRationales": {
+    "A": "Denies the TPOT cost.",
+    "C": "Confuses metrics."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:vllm", "locator": "Sec 5 — throughput/latency evaluation", "supports": ["B", "D"] },
+    { "ref": "DOC:trtllm", "locator": "Latency-throughput tuning guide", "supports": ["B", "D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Batch-size lever for throughput vs latency in LLM decode",
+    "evidenceType": "paper_result",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-TVL-027.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

@@ -1,0 +1,50 @@
+{
+  "questionId": "I-MHAMQA-007",
+  "learningObjective": "Compare per-token KV-cache footprint of MHA, MQA, and GQA and its effect on decode-time HBM traffic.",
+  "canonicalClaims": [
+    {
+      "claim": "Per-token KV cache per layer is 2 * H_kv * d elements: MHA has H_kv = H, MQA has H_kv = 1, GQA has 1 < H_kv < H. Decode-time HBM bandwidth spent reading KV is proportional to H_kv * d.",
+      "conditions": [
+        "H_kv is the number of KV heads used by the variant.",
+        "Discussion is of inference decode, where KV cache is re-read every step."
+      ],
+      "nonImplications": [
+        "Does not imply MQA always beats MHA in quality.",
+        "Does not imply KV footprint alone determines latency."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Attention variants and memory footprint" },
+        { "ref": "PAPER:flashattn", "locator": "Related work — MHA/MQA footprint discussion" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "MHA and MQA differ only in how attention scores are shared; KV footprint is identical.",
+      "errorType": "definition_confusion",
+      "whyWrong": "MQA reduces the number of KV heads to 1; that is what shrinks KV cache.",
+      "sourceOrEvidence": "MQA/GQA original definitions"
+    },
+    {
+      "claim": "MQA and GQA use fixed ratios of KV heads to query heads (1/2, 1/4).",
+      "errorType": "overgeneralization",
+      "whyWrong": "H_kv is a design choice; MQA is exactly 1 by definition, GQA is any G with 1 < G < H.",
+      "sourceOrEvidence": "GQA paper"
+    },
+    {
+      "claim": "MQA uses more KV heads than MHA.",
+      "errorType": "definition_confusion",
+      "whyWrong": "MQA reduces KV heads to 1 while keeping H query heads; the 'multi-query' name refers to Q heads.",
+      "sourceOrEvidence": "MQA original description"
+    }
+  ],
+  "implementationFacts": [
+    "GQA is the common LLM choice (Llama 2/3 70B, etc.) trading quality vs footprint.",
+    "KV cache is written in prefill and read every decode step; the amortized cost is dominated by decode reads."
+  ],
+  "performanceScenarios": [
+    "For long context, per-token KV footprint is the main lever on decode-time HBM bandwidth and KV cache capacity.",
+    "Batch size for LLM decode is often limited by aggregate KV cache size, so lower H_kv enables higher batch."
+  ],
+  "versionSensitivity": "stable_principle"
+}

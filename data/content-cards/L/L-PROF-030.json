@@ -1,0 +1,48 @@
+{
+  "questionId": "L-PROF-030",
+  "learningObjective": "Compare PyTorch Profiler with Nsight Systems/Compute and choose the appropriate tool for a given debugging task.",
+  "canonicalClaims": [
+    {
+      "claim": "The three profilers occupy distinct roles: PyTorch Profiler for op-level attribution (which Python/aten op launched which kernel), Nsight Systems for system-level tracing (CPU/GPU/PCIe/library), and Nsight Compute for per-kernel deep-dive metrics.",
+      "conditions": [
+        "The user is debugging a specific class of issue (op attribution, system-level, kernel-internal)."
+      ],
+      "nonImplications": [
+        "Does not imply one tool subsumes the others.",
+        "Does not imply the tools always agree numerically."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-profiler", "locator": "PyTorch Profiler" },
+        { "ref": "DOC:nsys", "locator": "Nsight Systems" },
+        { "ref": "DOC:ncu", "locator": "Nsight Compute" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Nsight Systems shows per-kernel warp stall reasons.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Warp stall reasons are Nsight Compute's domain.",
+      "sourceOrEvidence": "Nsight Systems / Compute docs"
+    },
+    {
+      "claim": "PyTorch Profiler exposes per-kernel SM utilization.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PyTorch Profiler stops at CUDA kernel launch attribution; kernel-internal metrics come from Nsight Compute.",
+      "sourceOrEvidence": "PyTorch Profiler docs"
+    },
+    {
+      "claim": "The three tools produce identical measurements.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Different sampling and instrumentation lead to slightly different numbers.",
+      "sourceOrEvidence": "Nsight release notes"
+    },
+    {
+      "claim": "Using all three is always necessary for any performance issue.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Simple issues (missing sync, obvious launch overhead) often need only one tool.",
+      "sourceOrEvidence": "Profiling workflow guidance"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

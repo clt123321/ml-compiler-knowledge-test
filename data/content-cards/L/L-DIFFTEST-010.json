@@ -1,0 +1,47 @@
+{
+  "questionId": "L-DIFFTEST-010",
+  "learningObjective": "Identify correct properties of differential testing (running two implementations of the same spec on many random inputs and comparing outputs) versus golden testing.",
+  "canonicalClaims": [
+    {
+      "claim": "Differential testing compares two independent implementations on many random inputs to surface corner-case bugs; usable differential testing must record inputs so failures are reproducible.",
+      "conditions": [
+        "The two implementations are truly independent.",
+        "The framework records seeds and states of triggering inputs."
+      ],
+      "nonImplications": [
+        "Does not imply bit equality is required between implementations.",
+        "Does not imply golden testing is obsolete."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:pytorch2", "locator": "Compiler validation methodology" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Any discrepancy between eager and compiled PyTorch is a bug.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Compiler reordering can change low-order bits; tolerance is expected.",
+      "sourceOrEvidence": "Floating-point non-associativity"
+    },
+    {
+      "claim": "Differential testing replaces golden tests.",
+      "errorType": "scope_error",
+      "whyWrong": "Golden tests document known-hard cases and provide deterministic reproducibility.",
+      "sourceOrEvidence": "Software testing practice"
+    },
+    {
+      "claim": "Random inputs alone are sufficient for coverage.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Random distributions may miss adversarial or structural cases; targeted inputs still matter.",
+      "sourceOrEvidence": "Fuzzing literature"
+    },
+    {
+      "claim": "Diff-tests need not record seeds because failures are exposed on rerun.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Without seeds, reruns produce different random inputs; failures become non-reproducible.",
+      "sourceOrEvidence": "Property-based testing practice"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

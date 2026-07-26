@@ -1,0 +1,49 @@
+{
+  "questionId": "I-GEMV-002",
+  "learningObjective": "Explain why GEMV is memory-bound on GPU and how per-row parallelism does not change its roofline classification.",
+  "canonicalClaims": [
+    {
+      "claim": "GEMV has arithmetic intensity ~1 flop/byte for FP16 (2 flops per FMA over M*N bytes of A streaming), well below the ridge point of modern GPUs; runtime is bandwidth-limited by streaming A.",
+      "conditions": [
+        "A is [M, N] and not cache-resident (M*N far exceeds L2).",
+        "The kernel does not artificially reuse A across many GEMVs (which would turn it into batched GEMM)."
+      ],
+      "nonImplications": [
+        "Does not imply that GEMV can never use tensor cores.",
+        "Does not imply that quantizing weights automatically speeds up GEMV without a compatible dequant kernel."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "GEMV / reduction kernels" },
+        { "ref": "BOOK:sze-eff", "locator": "Roofline and DNN operator classification" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GEMV is compute-bound when N is large.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Both flops and bytes scale linearly in N; the ratio (intensity) is constant, not growing.",
+      "sourceOrEvidence": "Roofline analysis"
+    },
+    {
+      "claim": "GEMV bottleneck is the log(N) reduction depth on each row.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The reduction is trivially parallel and short; the streaming HBM read of A dominates wall time.",
+      "sourceOrEvidence": "GEMV performance analysis, PMPP"
+    },
+    {
+      "claim": "Using tensor cores automatically turns GEMV compute-bound.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Tensor cores raise peak flops but do not change intensity or HBM bandwidth; a bandwidth-bound kernel remains bandwidth-bound.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    }
+  ],
+  "implementationFacts": [
+    "Typical GEMV kernel: one warp or CTA per row; use warp-shuffle for the inner reduction.",
+    "Weight-only INT4 quantization is popular for LLM decode because it cuts A bandwidth ~4x."
+  ],
+  "performanceScenarios": [
+    "LLM decode step per layer is essentially a batch-1 GEMV per weight matrix; memory bandwidth of weights dominates."
+  ],
+  "versionSensitivity": "stable_principle"
+}

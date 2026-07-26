@@ -1,0 +1,63 @@
+{
+  "id": "K-ALLOC-008",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "Memory allocator / caching pool",
+  "learningObjective": "Explain why deep-learning runtimes use a caching memory allocator (a pool of previously freed device blocks) instead of calling cudaMalloc/cudaFree per tensor.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch caching allocator / TensorRT / TVM",
+    "stability": "stable_principle"
+  },
+  "stem": "Deep-learning runtimes (PyTorch, TensorFlow, TVM) implement a caching memory allocator on the GPU rather than calling `cudaMalloc`/`cudaFree` for each tensor. Which reason is the strongest?",
+  "options": [
+    { "id": "A", "text": "`cudaMalloc` and `cudaFree` are synchronous with respect to all CUDA streams and take microseconds to milliseconds; calling them on every tensor allocation would serialize the stream and dominate end-to-end latency. A caching allocator amortizes this by pooling freed blocks and reusing them without touching the driver." },
+    { "id": "B", "text": "`cudaMalloc` returns memory that cannot be used as a kernel argument until a `cudaMemcpy` initializes it; a caching allocator writes zeros lazily so kernels can read uninitialized memory safely without additional API calls." },
+    { "id": "C", "text": "The CUDA driver limits the number of live allocations per process to 1024; a caching allocator sidesteps this by keeping a single large allocation for the lifetime of the process regardless of workload." },
+    { "id": "D", "text": "A caching allocator eliminates memory fragmentation entirely because it always returns exactly the requested size and rounds up to a multiple of one byte, meaning no wasted padding ever occurs across tensor lifetimes." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "`cudaMalloc`/`cudaFree` synchronize with the device and cost microseconds to milliseconds — orders of magnitude more than a well-tuned pool lookup. A caching allocator holds freed device blocks in size-classed pools and reuses them on subsequent allocation requests, avoiding the driver call in the fast path. Fragmentation is a real concern; the allocator manages it via block splitting/coalescing but does not eliminate it (D is false). B and C fabricate driver behavior.",
+  "optionExplanations": {
+    "A": "Correct: this is the documented motivation for PyTorch's caching allocator and equivalent designs.",
+    "B": "Wrong: cudaMalloc'd memory is usable as a kernel argument; nothing forces zero-init.",
+    "C": "Wrong: there is no such 1024-allocation limit.",
+    "D": "Wrong: caching allocators still have fragmentation; they mitigate it but do not eliminate it."
+  },
+  "assumptions": [
+    "The workload allocates and frees tensors frequently (training steps, iterative decoding), so per-step allocator cost matters."
+  ],
+  "nonImplications": [
+    "Does not imply that caching allocators are always ideal; long-running services may need periodic empty-cache calls to release memory back to the OS.",
+    "Does not imply fragmentation is negligible; long training runs with variable shapes can suffer OOM from fragmentation."
+  ],
+  "misconceptionTags": ["cudamalloc_free_myth", "fragmentation_free_myth"],
+  "distractorRationales": {
+    "B": "Fabricates driver requirement.",
+    "C": "Fabricates driver limit.",
+    "D": "Overstates fragmentation elimination."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "cudaMalloc/cudaFree synchronization semantics", "supports": ["A"] },
+    { "ref": "DOC:cuda-best", "locator": "Memory allocation best practices; pooling", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Frequent-allocation ML workloads on NVIDIA GPUs",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/K/K-ALLOC-008.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

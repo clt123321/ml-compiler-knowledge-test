@@ -1,0 +1,47 @@
+{
+  "questionId": "K-TVMRT-024",
+  "learningObjective": "Describe TVM's Relax VM: a bytecode VM that dispatches PackedFunc kernels and manages allocators and streams for a compiled model.",
+  "canonicalClaims": [
+    {
+      "claim": "The Relax VM is an execution engine that interprets a compiled Relax program's bytecode, dispatches PackedFunc kernels, manages allocations via runtime storage, and handles dynamic shape branches; it does not perform compile-time optimization passes.",
+      "conditions": [
+        "TVM Unity design with Relax + VMExecutable + PackedFunc kernels.",
+        "The user has produced a VMExecutable via the Relax build pipeline."
+      ],
+      "nonImplications": [
+        "Does not imply GraphExecutor is deprecated; simpler execution modes exist.",
+        "Does not imply the VM's overhead dominates for large kernels."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "Relax VM design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The Relax VM performs fusion at execution time.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion is a compile-time transformation before VMExecutable is emitted.",
+      "sourceOrEvidence": "TVM Relax pipeline docs"
+    },
+    {
+      "claim": "The Relax VM is a Python REPL.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is an execution engine invoked programmatically.",
+      "sourceOrEvidence": "TVM API"
+    },
+    {
+      "claim": "The Relax VM computes gradients.",
+      "errorType": "scope_error",
+      "whyWrong": "Autograd is not the VM's role; TVM's gradient support lives elsewhere.",
+      "sourceOrEvidence": "TVM documentation"
+    },
+    {
+      "claim": "The VM re-JITs kernels on every call.",
+      "errorType": "definition_confusion",
+      "whyWrong": "PackedFunc kernels are precompiled; the VM dispatches them.",
+      "sourceOrEvidence": "TVM runtime API"
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

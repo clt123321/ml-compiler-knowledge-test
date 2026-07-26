@@ -1,0 +1,49 @@
+{
+  "questionId": "I-RMSVSLN-011",
+  "learningObjective": "Compare compute and memory patterns of RMSNorm vs LayerNorm and identify which reduction operations each requires.",
+  "canonicalClaims": [
+    {
+      "claim": "RMSNorm requires exactly one reduction (E[x^2]) and no mean subtraction; LayerNorm requires two moments (E[x] and E[x^2]) which can be gathered in a single reduction pass and includes a mean-subtract and bias add per element.",
+      "conditions": [
+        "Row fits in one program's on-chip working set for single-pass implementation.",
+        "Both are per-row (last-axis) normalizations on the same input shape."
+      ],
+      "nonImplications": [
+        "Does not imply RMSNorm and LayerNorm are numerically equivalent.",
+        "Does not imply RMSNorm always yields measurable wall-clock speedup; both are memory-bound."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "Normalization operators" },
+        { "ref": "DOC:cuda-guide", "locator": "Row-parallel reduction kernels" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "RMSNorm requires computing the mean of x.",
+      "errorType": "definition_confusion",
+      "whyWrong": "RMSNorm uses only mean(x^2); the mean of x is not part of the formula.",
+      "sourceOrEvidence": "RMSNorm original paper (Zhang & Sennrich 2019)"
+    },
+    {
+      "claim": "LayerNorm needs two separate passes over x to gather mean and variance.",
+      "errorType": "overgeneralization",
+      "whyWrong": "One pass accumulating both sum and sum-of-squares (or Welford) suffices.",
+      "sourceOrEvidence": "Standard fused LN implementations"
+    },
+    {
+      "claim": "RMSNorm and LayerNorm have identical per-element compute cost.",
+      "errorType": "definition_confusion",
+      "whyWrong": "RMSNorm skips (x - mean) subtraction and often the bias add; per-element ops are slightly fewer.",
+      "sourceOrEvidence": "RMSNorm paper"
+    }
+  ],
+  "implementationFacts": [
+    "Modern LLMs (Llama, Mistral) adopt RMSNorm for slight efficiency gains and empirical training stability.",
+    "Both are typically fused with the following linear op's input read to save HBM traffic."
+  ],
+  "performanceScenarios": [
+    "Both are memory-bound; runtime is dominated by streaming x once and writing y once."
+  ],
+  "versionSensitivity": "stable_principle"
+}

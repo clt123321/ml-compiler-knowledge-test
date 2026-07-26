@@ -1,0 +1,39 @@
+{
+  "questionId": "N-PYT2-009",
+  "learningObjective": "Distinguish end-to-end model speedup from kernel-level speedup when interpreting the PyTorch 2 paper's `torch.compile` results.",
+  "canonicalClaims": [
+    {
+      "claim": "The PyTorch 2 paper's headline speedups (e.g. geomean speedup on the TorchBench-style suites) are end-to-end model speedups measured against eager execution on the same hardware; individual kernels inside those runs can be much faster or much slower, and kernel-level speedups from generated Triton kernels cannot be reported as end-to-end speedups without accounting for graph breaks, launch overhead, host-side work, and non-compiled parts of the program.",
+      "conditions": [
+        "The comparison baseline is eager PyTorch on the same hardware and PyTorch version.",
+        "The workload includes host-side Python overhead, data-loading and possibly graph breaks."
+      ],
+      "nonImplications": [
+        "Does not imply that a kernel improvement always yields the same end-to-end improvement; Amdahl's law limits the benefit.",
+        "Does not imply the reported numbers hold for arbitrary models; they are conditioned on the paper's benchmark suite."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:pytorch2", "locator": "§ evaluation methodology and reported end-to-end speedups" },
+        { "ref": "DOC:torch-compile", "locator": "torch.compile output and graph-break behavior" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "If TorchInductor's generated Triton attention kernel is 3× faster than the eager attention kernel, the whole model runs ~3× faster under `torch.compile`.",
+      "errorType": "kernel_vs_e2e_confusion",
+      "whyWrong": "Amdahl's law: end-to-end speedup depends on the fraction of runtime spent in that kernel and on non-accelerated portions (host-side code, non-compiled subgraphs). Kernel-level speedup rarely equals end-to-end speedup."
+    },
+    {
+      "claim": "`torch.compile` end-to-end speedups over eager are hardware-independent; a paper's numbers on A100 apply directly to any GPU.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Kernel choice, memory-bandwidth ratios, Tensor Core precision availability and compile time all depend on hardware; the paper's numbers are conditioned on the specific evaluation setup."
+    },
+    {
+      "claim": "The paper's reported speedups include compile time in the total, so 'end-to-end' means 'compile + inference' latency.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "The PyTorch 2 paper distinguishes compile-time and steady-state throughput; headline speedups are typically steady-state after warm-up, and compile time is reported separately."
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

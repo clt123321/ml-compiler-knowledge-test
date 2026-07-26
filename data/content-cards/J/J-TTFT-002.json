@@ -1,0 +1,50 @@
+{
+  "questionId": "J-TTFT-002",
+  "learningObjective": "Define TTFT precisely and use timeline data to diagnose which phase drives it.",
+  "canonicalClaims": [
+    {
+      "claim": "TTFT is the wall-clock time from request arrival to delivery of the first output token; for long prompts on batch-1 it is typically dominated by the prefill phase.",
+      "conditions": [
+        "Streaming output (first token delivered as soon as available).",
+        "Batch-1 single-tenant scenario."
+      ],
+      "nonImplications": [
+        "Does not describe generation latency; total latency includes all decode steps.",
+        "Does not equal TPOT / inter-token latency."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:vllm", "locator": "Serving metrics" },
+        { "ref": "DOC:trtllm", "locator": "TRT-LLM metrics" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TTFT is the average inter-token latency of the decode phase.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That is TPOT; TTFT is the latency until the first token.",
+      "sourceOrEvidence": "vLLM metrics docs"
+    },
+    {
+      "claim": "TTFT = queueing time only.",
+      "errorType": "scope_error",
+      "whyWrong": "TTFT covers queue + tokenize + prefill + first-token generation.",
+      "sourceOrEvidence": "vLLM metrics docs"
+    },
+    {
+      "claim": "Reducing prefill always reduces TTFT proportionally.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Under load, queueing can dominate; reducing prefill has diminishing returns.",
+      "sourceOrEvidence": "Real-world serving profiles"
+    }
+  ],
+  "implementationFacts": [
+    "Chunked prefill breaks the prompt into pieces to interleave with other requests' decode steps.",
+    "Prefix caching skips prefill for shared prefixes (system prompts, few-shot examples)."
+  ],
+  "performanceScenarios": [
+    "Long-context prompts (thousands of tokens) make prefill the dominant TTFT contributor.",
+    "Under high load, queueing can rival prefill for TTFT dominance."
+  ],
+  "versionSensitivity": "stable_principle"
+}

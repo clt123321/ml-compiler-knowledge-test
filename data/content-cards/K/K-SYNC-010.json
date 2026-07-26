@@ -1,0 +1,47 @@
+{
+  "questionId": "K-SYNC-010",
+  "learningObjective": "Identify correct and incorrect statements about host/device synchronization in a CUDA-based ML runtime.",
+  "canonicalClaims": [
+    {
+      "claim": "cudaStreamSynchronize waits only for the specified stream; cudaDeviceSynchronize waits for all streams on the current device. Overusing the latter in a hot loop defeats stream-based overlap.",
+      "conditions": [
+        "Legacy default-stream semantics unless per-thread default stream is enabled.",
+        "Single-process, single-device model."
+      ],
+      "nonImplications": [
+        "Does not imply cudaStreamSynchronize is always cheap; a heavily loaded stream can force long waits.",
+        "Does not imply device sync should never be used; it is appropriate at process shutdown or measurement boundaries."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-guide", "locator": "Stream synchronization" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "cudaMemcpyAsync automatically overlaps with kernels on other streams.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Overlap requires pinned host memory and correct stream separation; async alone is not sufficient.",
+      "sourceOrEvidence": "CUDA Best Practices Guide"
+    },
+    {
+      "claim": "The default stream is independent of user-created streams under legacy semantics.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Under legacy default stream, all user streams synchronize with the default stream.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "cudaDeviceSynchronize is a no-op when only one stream is active.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It always waits for all outstanding device work regardless of stream count.",
+      "sourceOrEvidence": "CUDA Runtime API reference"
+    },
+    {
+      "claim": "cudaMemcpy without Async is nonblocking.",
+      "errorType": "definition_confusion",
+      "whyWrong": "cudaMemcpy is blocking with respect to the host thread and synchronizes with prior work.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

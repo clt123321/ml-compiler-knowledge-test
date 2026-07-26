@@ -1,0 +1,50 @@
+{
+  "questionId": "J-PAGEDDES-024",
+  "learningObjective": "Distinguish correct claims about PagedAttention's design and its capabilities from common misconceptions.",
+  "canonicalClaims": [
+    {
+      "claim": "PagedAttention uses fixed-size KV blocks and per-sequence block tables; internal waste is bounded by block_size - 1 tokens per sequence, and block sharing across sequences enables prefix caching and beam-search fork efficiency.",
+      "conditions": [
+        "Block size fixed at 8-32 tokens typically.",
+        "Block-table indirection is understood by the attention kernel."
+      ],
+      "nonImplications": [
+        "Does not imply zero indirection overhead.",
+        "Does not imply quantization."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 3-4" },
+        { "ref": "DOC:vllm", "locator": "PagedAttention design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PagedAttention is a form of KV compression.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Paging is a memory layout; KV is stored at full precision.",
+      "sourceOrEvidence": "vLLM paper Sec 3"
+    },
+    {
+      "claim": "PagedAttention has variable-size blocks per sequence.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fixed block size is central to the design.",
+      "sourceOrEvidence": "vLLM paper Sec 3"
+    },
+    {
+      "claim": "Block sharing is impossible with paged storage.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "The indirection is precisely what enables sharing.",
+      "sourceOrEvidence": "vLLM paper Sec 4"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM default block size is 16 tokens; larger blocks reduce indirection overhead but increase waste.",
+    "Copy-on-write is used when shared blocks need to diverge."
+  ],
+  "performanceScenarios": [
+    "Prefix caching for system prompts benefits directly from block sharing.",
+    "Beam search with many branches shares prefix blocks across beams."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

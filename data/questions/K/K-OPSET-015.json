@@ -1,0 +1,61 @@
+{
+  "id": "K-OPSET-015",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "ONNX opset version",
+  "learningObjective": "Explain the meaning of the ONNX opset version in a model file and the compatibility contract between opset producers and consumers.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "ONNX",
+    "stability": "stable_principle"
+  },
+  "stem": "An ONNX model advertises `opset_import: [{domain: \"\", version: 17}]` in its metadata. What does the opset version encode, and what compatibility guarantee follows?",
+  "options": [
+    { "id": "A", "text": "It specifies the ONNX Runtime binary version that must be installed to load the model; opset 17 corresponds to ONNX Runtime version 17.x and models built with a mismatched runtime version fail to load." },
+    { "id": "B", "text": "It specifies the version of the model's weight file format; opset changes only affect serialization layout, not operator semantics, so any runtime version can consume the file if it understands protobuf." },
+    { "id": "C", "text": "It specifies the version of each operator's schema used by the model — signatures, attribute defaults, and semantics of ops in the default (ai.onnx) domain at opset 17. A runtime that claims to support opset ≥ 17 must be able to execute those ops with those semantics; older runtimes may lack ops introduced after their supported opset." },
+    { "id": "D", "text": "It specifies the version of the underlying framework that exported the model; a model exported by PyTorch 1.13 must be loaded by an ONNX Runtime linked against PyTorch 1.13 for correctness." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "The `opset_import` list declares, per domain, which version of each op's schema the model relies on. Op schemas evolve — new ops are added, attributes change, defaults shift, behaviors can be tightened. A runtime advertises which opset ranges it supports and must respect the exact schema of the declared opset for correct execution. Opset is not tied to runtime binary version, weight format, or framework version.",
+  "optionExplanations": {
+    "A": "Wrong: opset version is orthogonal to runtime binary version.",
+    "B": "Wrong: opset changes affect operator semantics, not just serialization.",
+    "C": "Correct: standard definition per ONNX operator specification.",
+    "D": "Wrong: opset is about ONNX operator schemas, not the exporter framework."
+  },
+  "assumptions": [
+    "The empty domain \"\" refers to the standard ai.onnx op set."
+  ],
+  "nonImplications": [
+    "Does not imply higher opsets are always better; some ops become deprecated in later opsets.",
+    "Does not imply consumers must support every opset ≤ 17; they typically support a range."
+  ],
+  "misconceptionTags": ["opset_vs_binary_version", "opset_vs_framework_version"],
+  "distractorRationales": {
+    "A": "Confuses opset with runtime binary version.",
+    "B": "Confuses semantics with serialization.",
+    "D": "Confuses opset with exporter version."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:onnx", "locator": "Operator versioning and opset semantics", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-OPSET-015.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

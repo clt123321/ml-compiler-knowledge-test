@@ -1,0 +1,56 @@
+{
+  "questionId": "I-GEMM-001",
+  "learningObjective": "Reason about the arithmetic intensity of a tiled GEMM kernel and why larger tiles increase compute-per-byte until register/SMEM pressure caps the design.",
+  "canonicalClaims": [
+    {
+      "claim": "For a tiled GEMM with block tile M_TILE x N_TILE and K-step K_TILE, arithmetic intensity per byte of A/B fetched scales as (M_TILE*N_TILE)/(M_TILE+N_TILE), bounded above by on-chip storage.",
+      "conditions": [
+        "A and B fragments are staged in SMEM and reused across all threads in the block.",
+        "The accumulator C_TILE lives in registers or SMEM within a single thread block."
+      ],
+      "nonImplications": [
+        "Does not imply that arbitrarily large tiles are optimal; register spill and reduced occupancy dominate past a threshold.",
+        "Does not imply that intensity alone determines runtime; launch config, tensor cores, and dtype also matter."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:pmpp4", "locator": "Ch. 5 — Tiled matrix multiplication" },
+        { "ref": "DOC:cuda-best", "locator": "Shared memory strategies for GEMM" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Arithmetic intensity of GEMM is independent of tile size; tiling only changes the launch grid.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Without tiling every output would re-fetch A/B rows/columns from HBM; tiling raises the reuse factor and directly cuts HBM traffic per output.",
+      "sourceOrEvidence": "PMPP 4th ed., tiled matmul chapter"
+    },
+    {
+      "claim": "Setting K_TILE = K in one step is always optimal for HBM traffic minimization.",
+      "errorType": "overgeneralization",
+      "whyWrong": "K is often too large to fit; K_TILE is chosen to fit A and B fragments into SMEM. HBM traffic per flop is dominated by M_TILE/N_TILE-driven reuse, not by K_TILE.",
+      "sourceOrEvidence": "GEMM tiling literature"
+    },
+    {
+      "claim": "C write traffic dominates GEMM HBM cost, so larger tiles reduce arithmetic intensity.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "C writes are O(M*N) while A*B fetch/compute is much larger; larger tiles increase reuse and intensity, not decrease.",
+      "sourceOrEvidence": "Roofline analysis of GEMM"
+    },
+    {
+      "claim": "Bigger tiles are always better because they raise arithmetic intensity monotonically.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Beyond register/SMEM capacity, spills and reduced occupancy hurt throughput; tile sizing is a bounded optimization.",
+      "sourceOrEvidence": "CUDA Best Practices Guide — occupancy vs tile"
+    }
+  ],
+  "implementationFacts": [
+    "Typical A100 SGEMM/HGEMM CTA tiles are 128x128 with K_TILE = 32 or 64.",
+    "Accumulator tile size drives register usage per thread; too large → spills."
+  ],
+  "performanceScenarios": [
+    "Skinny GEMMs (small M or N) benefit from imbalanced tiles because the smaller dim caps intensity.",
+    "FP16/BF16 with FP32 accumulate on tensor cores changes the per-op intensity but the tile-sizing intuition remains."
+  ],
+  "versionSensitivity": "stable_principle"
+}

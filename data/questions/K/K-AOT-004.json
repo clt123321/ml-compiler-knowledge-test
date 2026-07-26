@@ -1,0 +1,62 @@
+{
+  "id": "K-AOT-004",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "AOT artifact vs JIT compilation",
+  "learningObjective": "Compare AOT artifact deployment (all lowering done ahead of first invocation) with JIT compilation (lowering triggered on the first suitable call), and identify the trade-offs.",
+  "archetype": "concept_boundary",
+  "difficulty": 2,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statement most accurately contrasts an Ahead-of-Time (AOT) artifact (e.g., AOTInductor .so, TensorRT plan) with a JIT-compiled workflow (e.g., default torch.compile)?",
+  "options": [
+    { "id": "A", "text": "JIT is always faster than AOT at steady state because JIT observes real inputs and re-optimizes on every call; AOT compiles once and cannot adapt, so its steady-state performance is capped below any JIT implementation." },
+    { "id": "B", "text": "AOT and JIT produce identical binaries; the only difference is the file extension, and either mode can be selected transparently at inference time without any change to compilation semantics or shape support." },
+    { "id": "C", "text": "The AOT artifact avoids first-call compilation latency and can be shipped independently of the compiler, but generally requires known shapes/dtypes at build time; JIT compiles lazily on first call, absorbing warmup cost in exchange for shape/dtype flexibility." },
+    { "id": "D", "text": "AOT requires the source model be present at run time; the compiler is re-invoked from the artifact each time the runtime restarts, which is what enables cross-target dispatch on ARM and x86 from a single file." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "AOT compilation lowers the model to a deployable artifact (shared library, plan file, VM executable) before deployment. The runtime then loads that artifact directly — no compiler needed, no first-call warmup — but the artifact is specialized to the shape/dtype/hardware assumptions used at build time. JIT trades first-call latency and a compiler dependency at run time for the ability to specialize to real observed inputs (dynamic shapes, guards). Neither strictly dominates the other at steady state.",
+  "optionExplanations": {
+    "A": "Wrong: at steady state, an AOT-compiled artifact typically matches or beats JIT because it has already paid the compilation cost; JIT does not re-optimize per call.",
+    "B": "Wrong: AOT and JIT differ in when compilation happens and what assumptions the artifact encodes.",
+    "C": "Correct: describes the standard AOT vs JIT trade-off (compile-time vs run-time specialization).",
+    "D": "Wrong: an AOT artifact does not require the source model or the compiler at run time — that's the point of AOT."
+  },
+  "assumptions": [
+    "Both AOT and JIT stacks emit the same underlying kernels (Triton, cuBLAS, etc.) so we are comparing compilation phase, not code quality."
+  ],
+  "nonImplications": [
+    "Does not imply that JIT is always slower to first-response; systems can cache JIT artifacts across process starts.",
+    "Does not imply AOT is impossible with dynamic shapes; some AOT stacks (AOTInductor with dynamic dims, TensorRT with optimization profiles) support ranges."
+  ],
+  "misconceptionTags": ["aot_jit_confusion"],
+  "distractorRationales": {
+    "A": "Confuses JIT observation with per-call re-optimization.",
+    "B": "Trivializes real semantic differences.",
+    "D": "Reverses the deployment picture."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-aoti", "locator": "AOTInductor deployment story (compile ahead of time, load .so at runtime)", "supports": ["C"] },
+    { "ref": "DOC:trt", "locator": "TensorRT engine build vs. runtime deployment", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-AOT-004.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

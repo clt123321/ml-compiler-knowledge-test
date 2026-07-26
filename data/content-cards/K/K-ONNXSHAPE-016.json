@@ -1,0 +1,47 @@
+{
+  "questionId": "K-ONNXSHAPE-016",
+  "learningObjective": "Identify correct statements about ONNX shape inference and its role in deployment.",
+  "canonicalClaims": [
+    {
+      "claim": "ONNX shape inference is a static, per-op procedure driven by operator schemas; it propagates shapes and dtypes and leaves symbolic dimensions when they depend on runtime tensors. Inferred shapes enable downstream buffer planning and kernel selection.",
+      "conditions": [
+        "Model uses ops with published shape-inference in the declared opset.",
+        "Consumer respects the produced value_info metadata."
+      ],
+      "nonImplications": [
+        "Does not imply full concretization; symbolic dims are supported.",
+        "Does not imply every custom op has shape inference."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Shape inference specification" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Exported ONNX contains no intermediate shape metadata.",
+      "errorType": "definition_confusion",
+      "whyWrong": "ONNX files include value_info entries where known.",
+      "sourceOrEvidence": "ONNX protobuf schema"
+    },
+    {
+      "claim": "Shape inference resolves all symbolic dimensions at export.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Dynamic axes such as batch and seq_len are intentionally left symbolic.",
+      "sourceOrEvidence": "ONNX dynamic shape docs"
+    },
+    {
+      "claim": "Shape inference is a runtime-only concern.",
+      "errorType": "scope_error",
+      "whyWrong": "It is a static analysis defined by op schemas that many tools consume ahead of time.",
+      "sourceOrEvidence": "ONNX shape inference API"
+    },
+    {
+      "claim": "Downstream compilers cannot use ONNX shape info.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "TensorRT, ORT and others rely on it for buffer planning and kernel selection.",
+      "sourceOrEvidence": "TensorRT ONNX parser documentation"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

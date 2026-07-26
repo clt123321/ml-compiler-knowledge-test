@@ -1,0 +1,50 @@
+{
+  "questionId": "J-TP-012",
+  "learningObjective": "Explain how tensor parallelism shards MLP and attention weights across devices and what collective is required per layer.",
+  "canonicalClaims": [
+    {
+      "claim": "Megatron-style TP shards W_up column-wise and W_down row-wise (analogously for attention QKV / output projection); one AllReduce per MLP (and one per attention) sums partial outputs across TP ranks.",
+      "conditions": [
+        "Input x is replicated across TP ranks entering each transformer block.",
+        "Activation is elementwise (silu/gelu)."
+      ],
+      "nonImplications": [
+        "Does not imply zero communication.",
+        "Does not imply TP is always the best strategy."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:trtllm", "locator": "TP design" },
+        { "ref": "DOC:vllm", "locator": "TP implementation" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "TP requires AllGather of the intermediate before W_down.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The row-column arrangement is designed to avoid AllGather; a single AllReduce at the end suffices.",
+      "sourceOrEvidence": "Megatron-LM paper"
+    },
+    {
+      "claim": "TP works with zero communication because sharding aligns perfectly.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Partial products from each rank must be summed via AllReduce.",
+      "sourceOrEvidence": "Megatron-LM design"
+    },
+    {
+      "claim": "Only one of W_up or W_down is sharded in TP.",
+      "errorType": "scope_error",
+      "whyWrong": "Both are sharded to save memory; the point is column-then-row.",
+      "sourceOrEvidence": "Megatron-LM paper"
+    }
+  ],
+  "implementationFacts": [
+    "Attention analog: QKV projection column-parallel, output projection row-parallel, one AllReduce per attention block.",
+    "SwiGLU with fused gate/up: both gate and up are column-parallel; down is row-parallel."
+  ],
+  "performanceScenarios": [
+    "TP scales best on NVLink-connected GPUs; scaling across nodes over InfiniBand is more limited.",
+    "AllReduce bandwidth is often the bottleneck for very large TP degrees."
+  ],
+  "versionSensitivity": "stable_principle"
+}

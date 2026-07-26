@@ -1,0 +1,62 @@
+{
+  "id": "K-EXTLIB-013",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "External library (cuBLAS / cuDNN / cuBLASLt)",
+  "learningObjective": "Reason about the trade-offs of calling external libraries (cuBLAS, cuDNN, cutlass, MKL) from a compiled runtime versus emitting compiler-generated kernels.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere+ (sm_80+)",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic runtime + cuBLAS/cuDNN",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about calling into external libraries (cuBLAS, cuDNN, cutlass) from an ML compiler stack are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "For standard GEMM/Conv patterns, a heavily-tuned vendor library often outperforms a compiler-generated kernel of comparable complexity because it ships hand-tuned tile shapes, algorithmic variants, and Tensor Core paths per architecture." },
+    { "id": "B", "text": "A compiler emitting its own fused kernel can beat an external GEMM library specifically when it fuses producer or epilogue ops into the matmul, because the external library sees only the isolated GEMM and cannot fuse across its boundaries." },
+    { "id": "C", "text": "Calling an external library from a compiled graph always eliminates the need for a caching allocator because the external library manages its own memory pool that the runtime can substitute in for its own allocator." },
+    { "id": "D", "text": "External libraries expose stable numerical results across driver and library versions on the same hardware; the compiler can assume bitwise reproducibility of outputs across major versions of cuBLAS or cuDNN." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "A is correct: vendor libraries ship per-architecture hand-tuned kernels and typically beat compiler-generated GEMM/Conv for stand-alone calls. B is correct: compiler advantage appears exactly when it fuses ops adjacent to a matmul (bias, activation, quant/dequant) that the external library cannot see. C is wrong: external libraries do not replace the runtime's allocator; they typically request workspace from it. D is wrong: cuBLAS/cuDNN version updates can change algorithm selection and numerical results in the low bits; bitwise reproducibility is not guaranteed across versions.",
+  "optionExplanations": {
+    "A": "Correct: standard vendor-lib advantage.",
+    "B": "Correct: compiler advantage lies in fusion boundaries.",
+    "C": "Wrong: external libraries request workspace but do not replace the allocator.",
+    "D": "Wrong: numerical results can drift across cuBLAS/cuDNN versions."
+  },
+  "assumptions": [
+    "The reference stack is CUDA with NVIDIA vendor libraries; analogous points apply on other vendors."
+  ],
+  "nonImplications": [
+    "Does not imply compilers can never beat vendor libs at GEMM in isolation; specialized shapes or dtypes sometimes favor Triton/Cutlass generation.",
+    "Does not imply fusion is always feasible; some epilogues are unsupported in specific library APIs."
+  ],
+  "misconceptionTags": ["extlib_replaces_allocator", "bit_reproducibility_myth"],
+  "distractorRationales": {
+    "C": "Confuses workspace with full allocator ownership.",
+    "D": "Overstates reproducibility guarantees."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-guide", "locator": "cuBLAS workspace management", "supports": ["A"] },
+    { "ref": "DOC:torch-inductor", "locator": "TorchInductor + external kernels; fusion boundary discussion", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GEMM/Conv comparison of vendor-lib vs compiler codegen with and without epilogue fusion",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/K/K-EXTLIB-013.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

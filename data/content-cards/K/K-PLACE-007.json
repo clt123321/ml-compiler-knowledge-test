@@ -1,0 +1,48 @@
+{
+  "questionId": "K-PLACE-007",
+  "learningObjective": "Reason about how a runtime decides where to place each op and tensor when the graph mixes CPU-only ops, GPU-native ops, and host↔device transfers.",
+  "canonicalClaims": [
+    {
+      "claim": "Device placement passes insert explicit host↔device transfer ops at boundaries between differently placed ops, and placement heuristics minimize the number of transitions on the critical path because transfer cost can dominate fine-grained kernels.",
+      "conditions": [
+        "The runtime supports mixed CPU/GPU execution.",
+        "Host and device have distinct memory spaces connected by PCIe or NVLink."
+      ],
+      "nonImplications": [
+        "Does not imply that all CPU ops should move to GPU; a round-trip may be more expensive than running the op on the slower device.",
+        "Does not imply transfer cost is zero on NVLink; NVLink is faster than PCIe but still non-zero."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:onnx", "locator": "Device placement, Memcpy nodes" },
+        { "ref": "DOC:iree", "locator": "HAL placement" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Device tags are advisory; the runtime can promote a CPU kernel to run on GPU.",
+      "errorType": "definition_confusion",
+      "whyWrong": "An op with only a CPU implementation lacks a GPU kernel; there is no auto-promotion.",
+      "sourceOrEvidence": "ONNX Runtime execution provider design"
+    },
+    {
+      "claim": "Host↔device transfers are cheap and can be ignored in placement.",
+      "errorType": "performance_confusion",
+      "whyWrong": "PCIe transfers cost microseconds to milliseconds and often dominate small ops; NVLink is faster but non-zero.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Placing every op on the GPU is always optimal.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For small CPU-friendly ops the round-trip cost can exceed the GPU speedup.",
+      "sourceOrEvidence": "TensorRT / ONNX Runtime placement docs"
+    },
+    {
+      "claim": "Transfer ops are inserted at run time based on tensor addresses.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Transfer ops are inserted at compile-time by a placement pass and recorded in the plan.",
+      "sourceOrEvidence": "ONNX Runtime graph transformations"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

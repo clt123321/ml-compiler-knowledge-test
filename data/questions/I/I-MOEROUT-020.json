@@ -1,0 +1,69 @@
+{
+  "id": "I-MOEROUT-020",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "MoE / Top-k routing and dispatch",
+  "learningObjective": "Describe the MoE routing pipeline: gating, top-k expert selection, and token dispatch to experts.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "tensorContext": {
+    "shapes": [["B", "N", "D"], ["D", "E"], ["B", "N", "k"], ["B", "N", "k"]],
+    "dtypes": ["float16", "float16", "int32", "float16"],
+    "layouts": ["contiguous", "contiguous", "contiguous", "contiguous"]
+  },
+  "stem": "In a top-k MoE MLP layer with E experts, each token is routed to k experts based on a gating network. Which description of the dataflow is correct?",
+  "options": [
+    { "id": "A", "text": "Every token is sent to every expert; the gating scores are used only as a soft mask on the outputs so that experts with score 0 contribute nothing. The 'sparsity' of MoE is entirely about the sum of gating weights, not about avoided compute." },
+    { "id": "B", "text": "The gating network selects a single expert per token; multi-expert (top-k > 1) MoE always requires k independent forward passes through the full MLP block, because token-to-expert routing is not amenable to batched execution." },
+    { "id": "C", "text": "The gate produces per-expert probabilities for each token; every token is routed to the expert with highest probability, and its output is scaled by that probability. The scaling is what preserves gradient flow through the routing decision." },
+    { "id": "D", "text": "The gate produces scores over the E experts per token; top-k experts (typically k=2) are selected and each token contributes to those k experts' input batches with weights = softmax over the top-k scores. Only the k selected experts run their MLP on that token, and outputs are combined by the gate weights. Load balancing across experts is enforced by auxiliary losses / capacity limits." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "Top-k MoE (as in Switch Transformer, Mixtral) computes gating scores g = x @ W_gate of shape [B*N, E], selects the top-k experts per token, and normalizes the k selected scores (softmax over the k) to get combining weights. Each token is dispatched to k expert input batches; each expert runs a standard MLP over the tokens routed to it. Outputs from the k experts are combined by the normalized gate weights. Load balancing is a serious concern (some experts get too many tokens) and is addressed via auxiliary losses in training and capacity factors / dropping in serving.",
+  "optionExplanations": {
+    "D": "Correct: canonical top-k MoE routing.",
+    "A": "Wrong: sparsity means skipped compute; not every expert runs on every token.",
+    "B": "Wrong: k > 1 does not force k passes; a single grouped dispatch handles all k slots.",
+    "C": "Wrong: describes top-1 MoE only and mischaracterizes the scaling role."
+  },
+  "assumptions": [
+    "Discussion is of top-k sparse MoE at inference or training, not dense mixture.",
+    "Capacity limits and drop policies are implementation details not affecting the routing definition."
+  ],
+  "nonImplications": [
+    "Does not imply MoE always improves throughput; imbalance and communication (in TP/EP) can hurt.",
+    "Does not imply that all-to-all is the only dispatch method; token-shuffle and grouped-GEMM approaches exist."
+  ],
+  "misconceptionTags": ["moe_dense_myth", "moe_top1_only_myth"],
+  "distractorRationales": {
+    "A": "Denies sparsity.",
+    "B": "Denies batched multi-expert dispatch.",
+    "C": "Ignores k > 1 case."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:sze-eff", "locator": "MoE and conditional computation", "supports": ["D"] },
+    { "ref": "DOC:vllm", "locator": "MoE serving and expert dispatch", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Top-k MoE routing and dispatch dataflow",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-MOEROUT-020.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

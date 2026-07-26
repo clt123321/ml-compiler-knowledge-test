@@ -1,0 +1,22 @@
+{
+  "module": "distributed",
+  "code": "M",
+  "expectedCount": 15,
+  "questions": [
+    { "id": "M-AR-001", "file": "data/questions/M/M-AR-001.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-AR-001.json", "version": 1 },
+    { "id": "M-COST-002", "file": "data/questions/M/M-COST-002.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-COST-002.json", "version": 1 },
+    { "id": "M-RS-003", "file": "data/questions/M/M-RS-003.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-RS-003.json", "version": 1 },
+    { "id": "M-A2A-004", "file": "data/questions/M/M-A2A-004.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-A2A-004.json", "version": 1 },
+    { "id": "M-OVERLAP-005", "file": "data/questions/M/M-OVERLAP-005.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-OVERLAP-005.json", "version": 1 },
+    { "id": "M-BUCKET-006", "file": "data/questions/M/M-BUCKET-006.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-BUCKET-006.json", "version": 1 },
+    { "id": "M-SPMD-007", "file": "data/questions/M/M-SPMD-007.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-SPMD-007.json", "version": 1 },
+    { "id": "M-MESH-008", "file": "data/questions/M/M-MESH-008.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-MESH-008.json", "version": 1 },
+    { "id": "M-SHARD-009", "file": "data/questions/M/M-SHARD-009.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-SHARD-009.json", "version": 1 },
+    { "id": "M-COSTMODEL-010", "file": "data/questions/M/M-COSTMODEL-010.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-COSTMODEL-010.json", "version": 1 },
+    { "id": "M-COSTAG-011", "file": "data/questions/M/M-COSTAG-011.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-COSTAG-011.json", "version": 1 },
+    { "id": "M-GSPMD-012", "file": "data/questions/M/M-GSPMD-012.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-GSPMD-012.json", "version": 1 },
+    { "id": "M-GSPMD-013", "file": "data/questions/M/M-GSPMD-013.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-GSPMD-013.json", "version": 1 },
+    { "id": "M-BOUNDARY-014", "file": "data/questions/M/M-BOUNDARY-014.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-BOUNDARY-014.json", "version": 1 },
+    { "id": "M-PIPE-015", "file": "data/questions/M/M-PIPE-015.json", "reviewStatus": "draft", "contentCardFile": "data/content-cards/M/M-PIPE-015.json", "version": 1 }
+  ]
+}

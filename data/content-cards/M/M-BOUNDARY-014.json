@@ -1,0 +1,56 @@
+{
+  "questionId": "M-BOUNDARY-014",
+  "learningObjective": "Delineate the responsibilities of an SPMD-style compiler versus a distributed runtime (e.g. NCCL / MPI stack).",
+  "canonicalClaims": [
+    {
+      "claim": "The compiler decides which collectives to insert, at which graph boundaries, and on which mesh axes; the runtime is responsible for executing each collective on the physical hardware, choosing algorithm (ring/tree/…), managing streams, and handling faults.",
+      "conditions": [
+        "The compiler has enough static information (sharding annotations, mesh) to emit collectives.",
+        "The runtime provides a collective API with well-defined per-collective semantics."
+      ],
+      "nonImplications": [
+        "Does not imply the compiler is unaware of costs; cost models can bias its decisions.",
+        "Does not imply the runtime is topology-agnostic; NCCL selects algorithms based on discovered topology."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§ compiler/runtime interface" },
+        { "ref": "DOC:stablehlo", "locator": "Collective ops at the HLO level" }
+      ]
+    },
+    {
+      "claim": "Choosing the internal algorithm (ring vs tree vs recursive halving), tuning message chunk sizes, and picking which NIC / NVLink lane to use are runtime concerns, invisible at the SPMD IR level.",
+      "conditions": [
+        "The runtime enumerates topologies and internal algorithms."
+      ],
+      "nonImplications": [
+        "Does not imply the runtime always chooses the optimal algorithm; heuristics may be suboptimal for a given payload."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 discussion of collective algorithm selection" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The SPMD compiler chooses the collective algorithm (ring vs tree) for each AllReduce and emits algorithm-specific IR nodes.",
+      "errorType": "scope_error",
+      "whyWrong": "In modern stacks (XLA/StableHLO, PyTorch Distributed) the IR-level collective is algorithm-agnostic; algorithm selection is a runtime decision by NCCL/MPI."
+    },
+    {
+      "claim": "The distributed runtime decides which sharding a tensor should have; the compiler merely emits placeholder ops that the runtime rewrites.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Sharding decisions are compile-time in SPMD systems; the runtime does not re-choose them per iteration."
+    },
+    {
+      "claim": "Fault tolerance across ranks is a compiler responsibility because the compiler owns the graph and can insert retry logic.",
+      "errorType": "scope_error",
+      "whyWrong": "Fault tolerance (retries, dead-rank handling, checkpoint restore) is a runtime / framework concern; the compiler does not manage process lifecycle."
+    },
+    {
+      "claim": "Physical topology awareness (which GPUs are on the same NVSwitch domain) is required at the compiler level to emit correct collectives.",
+      "errorType": "hardware_leak",
+      "whyWrong": "Topology mapping is handled at the runtime via mesh-to-device mapping; the compiler emits mesh-axis-referenced collectives."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

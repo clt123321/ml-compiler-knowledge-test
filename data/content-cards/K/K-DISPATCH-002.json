@@ -1,0 +1,47 @@
+{
+  "questionId": "K-DISPATCH-002",
+  "learningObjective": "State the role of an operator dispatcher in an ML runtime (selecting an implementation based on device, dtype, layout) versus the role of an executor (issuing work on the device).",
+  "canonicalClaims": [
+    {
+      "claim": "An operator dispatcher routes a logical op call to a concrete implementation based on a key set (device, dtype, layout, autograd, functorch, etc.); the executor issues the resulting kernel on the device.",
+      "conditions": [
+        "The runtime maintains an operator registry mapping keys to implementations.",
+        "Dispatch happens at op-call time in eager mode; in a compiled graph the dispatch is baked in."
+      ],
+      "nonImplications": [
+        "Does not imply the dispatcher performs synchronization or allocation.",
+        "Does not imply every framework exposes a user-facing dispatcher API."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "PyTorch dispatcher / dispatch keys" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The dispatcher synchronizes streams before every op.",
+      "errorType": "scope_error",
+      "whyWrong": "Stream and event synchronization is a runtime API concern, not a dispatch concern.",
+      "sourceOrEvidence": "CUDA runtime docs"
+    },
+    {
+      "claim": "The dispatcher allocates output tensors.",
+      "errorType": "scope_error",
+      "whyWrong": "Allocation is the allocator's job; the dispatcher only routes to the kernel, which then requests output memory from the allocator.",
+      "sourceOrEvidence": "PyTorch caching allocator"
+    },
+    {
+      "claim": "The dispatcher performs op fusion.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion is a compile-time transformation; the dispatcher acts on individual op calls at run time.",
+      "sourceOrEvidence": "TorchInductor / TVM design"
+    },
+    {
+      "claim": "The dispatcher makes eager mode as fast as compiled mode.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Per-op dispatch has measurable overhead; eliminating it via compilation is one motivation for torch.compile.",
+      "sourceOrEvidence": "PyTorch 2 paper"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

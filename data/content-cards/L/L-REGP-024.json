@@ -1,0 +1,48 @@
+{
+  "questionId": "L-REGP-024",
+  "learningObjective": "Diagnose register-spill-induced slowdown from Nsight Compute metrics and compiler diagnostics.",
+  "canonicalClaims": [
+    {
+      "claim": "Register spilling is diagnosed via non-zero stack frame + spill stores/loads in ptxas -v output and confirmed by abnormally high L1 local-load traffic in Nsight Compute; mitigations reduce register pressure through __launch_bounds__, -maxrregcount, refactoring, or algorithmic changes.",
+      "conditions": [
+        "ptxas output shows non-zero stack frame and spill stores/loads.",
+        "Kernel is compute-tail-bound with Long Scoreboard stalls."
+      ],
+      "nonImplications": [
+        "Does not imply __launch_bounds__ always helps.",
+        "Does not imply all spills are fatal."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:cuda-best", "locator": "Register tuning" },
+        { "ref": "DOC:ncu", "locator": "Local memory traffic analysis" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Shared memory and register file are the same resource.",
+      "errorType": "hardware_leak",
+      "whyWrong": "They are separate hardware resources on the SM.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "Higher blockDim reduces per-thread register pressure.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Per-thread register usage is determined at compile time by the kernel code, not by launch configuration.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "CUDA_LAUNCH_BLOCKING affects SM occupancy.",
+      "errorType": "definition_confusion",
+      "whyWrong": "This env var controls host-side blocking behavior of API calls.",
+      "sourceOrEvidence": "CUDA runtime documentation"
+    },
+    {
+      "claim": "Local memory in CUDA is on-chip.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Despite the name, CUDA local memory is backed by device DRAM (with L1/L2 caching).",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

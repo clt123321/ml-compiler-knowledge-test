@@ -1,0 +1,64 @@
+{
+  "id": "J-EP-014",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Expert parallelism and sequence parallelism / Purposes and dataflow",
+  "learningObjective": "Distinguish expert parallelism (EP) and sequence parallelism (SP) from TP/PP and identify their communication primitives.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "multi-GPU node/cluster",
+    "device": "GPU",
+    "requiredFeatures": ["inter-device interconnect"]
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Which comparison of Expert Parallelism (EP) and Sequence Parallelism (SP) is correct?",
+  "options": [
+    { "id": "A", "text": "Both EP and SP shard the MLP weights across devices. They differ only in whether the shard axis is aligned with expert index (EP) or with sequence position (SP); both require a single AllReduce per MLP block just like TP." },
+    { "id": "B", "text": "EP shards attention heads across experts; SP shards the sequence length across attention groups. Both are Attention-only parallelism schemes and do not touch the MLP block." },
+    { "id": "C", "text": "EP places different experts of a Mixture-of-Experts on different devices; token-to-expert routing requires all-to-all communication to shuffle tokens to their assigned expert. SP shards intermediate activations along the sequence dimension inside a TP region (e.g., after a norm) to reduce activation memory; SP requires AllGather/ReduceScatter around the sharded region." },
+    { "id": "D", "text": "EP is used for training-time load balancing only and has no role in inference; SP is exclusively an inference-time trick that reduces KV cache footprint by sharding along the sequence axis." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "EP (Expert Parallelism, from GShard / DeepSpeed-MoE / vLLM MoE): experts of a MoE layer are placed on different devices; routing shuffles tokens to their assigned expert via all-to-all, and results are all-to-all'd back. SP (Sequence Parallelism, from Megatron): inside a TP region, some ops (norm, dropout) that don't need cross-hidden-dim communication are sharded along the sequence axis instead of being replicated; AllGather/ReduceScatter transitions between SP and TP regions save activation memory. They serve different purposes and have different communication patterns.",
+  "optionExplanations": {
+    "C": "Correct: EP = MoE expert placement + all-to-all; SP = sequence-axis sharding within TP region.",
+    "A": "Wrong: both are collapsed into an incorrect single collective.",
+    "B": "Wrong: EP is about experts (MLP), not attention heads; SP is not attention-only.",
+    "D": "Wrong: EP is heavily used in inference; SP is not about KV cache."
+  },
+  "assumptions": [
+    "Standard EP as in GShard / DeepSpeed-MoE / vLLM MoE.",
+    "SP is defined as in Megatron-LM's sequence-parallel augmentation of TP."
+  ],
+  "nonImplications": [
+    "Does not imply EP and TP cannot be combined; they often are (e.g., TP=8 within a node, EP across nodes).",
+    "Does not imply SP is universally beneficial; small models may not need it."
+  ],
+  "misconceptionTags": ["ep_sp_conflation", "sp_kv_shard_myth"],
+  "distractorRationales": {
+    "A": "Collapses two distinct schemes.",
+    "B": "Wrong scope for both.",
+    "D": "Fabricates purpose."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:trtllm", "locator": "EP and SP implementation notes", "supports": ["C"] },
+    { "ref": "DOC:vllm", "locator": "Expert parallelism", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "EP and SP definitions and communication patterns",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/J/J-EP-014.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

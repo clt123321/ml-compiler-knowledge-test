@@ -1,0 +1,47 @@
+{
+  "questionId": "K-IREE-025",
+  "learningObjective": "Describe IREE's design as an MLIR-based end-to-end compilation and runtime stack with an explicit compiler/runtime separation and a hardware abstraction layer (HAL).",
+  "canonicalClaims": [
+    {
+      "claim": "IREE is an MLIR-based end-to-end compilation stack whose runtime consists of a bytecode VM plus a Hardware Abstraction Layer (HAL) that portably drives multiple backends (Vulkan, CUDA, ROCm, CPU, WebGPU).",
+      "conditions": [
+        "IREE 2024+ mainline architecture.",
+        "The input is one of the supported dialects (StableHLO, TOSA, Torch-MLIR)."
+      ],
+      "nonImplications": [
+        "Does not imply IREE is the fastest option for every target.",
+        "Does not imply IREE is the only MLIR-based ML compiler."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:iree", "locator": "Architecture overview" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "IREE is a Python-only JIT that only targets NVIDIA GPUs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "IREE is C++/MLIR-based and multi-target.",
+      "sourceOrEvidence": "IREE documentation"
+    },
+    {
+      "claim": "IREE is a thin wrapper over cuDNN.",
+      "errorType": "definition_confusion",
+      "whyWrong": "IREE has its own codegen path via MLIR dialects.",
+      "sourceOrEvidence": "IREE codegen documentation"
+    },
+    {
+      "claim": "IREE is a training framework.",
+      "errorType": "scope_error",
+      "whyWrong": "IREE targets inference deployment.",
+      "sourceOrEvidence": "IREE project scope"
+    },
+    {
+      "claim": "IREE requires a Python runtime at deployment.",
+      "errorType": "scope_error",
+      "whyWrong": "The IREE runtime is a C runtime; Python is only used at build/test time.",
+      "sourceOrEvidence": "IREE runtime library"
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

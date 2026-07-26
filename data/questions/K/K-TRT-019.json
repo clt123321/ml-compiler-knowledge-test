@@ -1,0 +1,61 @@
+{
+  "id": "K-TRT-019",
+  "type": "single",
+  "module": "runtime_deploy",
+  "subtopic": "TensorRT: builder / engine / plan file",
+  "learningObjective": "Describe the TensorRT deployment pipeline: the builder produces an engine (plan file) from a network description; the runtime loads and executes the engine.",
+  "archetype": "precise_definition",
+  "difficulty": 2,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any TensorRT-supported",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "TensorRT",
+    "stability": "stable_principle"
+  },
+  "stem": "In the TensorRT workflow, which sequence best describes the roles of the builder, engine and runtime?",
+  "options": [
+    { "id": "A", "text": "The builder and the runtime are the same object in TensorRT; every inference call re-optimizes the graph on the currently observed inputs, which is what allows TensorRT to adapt to shape variations at run time without recompilation." },
+    { "id": "B", "text": "The builder consumes a network description (e.g., parsed ONNX or the TensorRT network API), runs optimizations (layer fusion, kernel selection, precision calibration) and produces a serialized engine (plan file); the runtime deserializes the engine on the target device and creates an execution context that runs inference." },
+    { "id": "C", "text": "The engine is a text-format description of the model that the runtime interprets line by line; kernel selection happens on every execution, so plan files are portable across GPUs but slower than a JIT compiler." },
+    { "id": "D", "text": "TensorRT builds and runs entirely on the CPU; the GPU is only used for peripheral memory transfer, and the actual compute is executed by CUDA-backed CPU kernels that emulate GPU instructions." }
+  ],
+  "correctAnswers": ["B"],
+  "explanation": "TensorRT's builder is a compile-time component that takes a network description and produces a serialized engine (plan). Optimizations — layer fusion, kernel selection from a tactic set, precision calibration, memory planning — are performed during build. At deployment the runtime deserializes the plan and creates one or more execution contexts that run inference. The plan file is a compiled binary artifact, and it is generally not portable across different GPU architectures without rebuild.",
+  "optionExplanations": {
+    "A": "Wrong: TensorRT does not re-optimize per inference call.",
+    "B": "Correct: standard TensorRT builder → engine → runtime pipeline.",
+    "C": "Wrong: the plan is binary and pre-optimized; the runtime does not select kernels per call.",
+    "D": "Wrong: TensorRT executes kernels on the GPU."
+  },
+  "assumptions": [
+    "The user is running the standard TensorRT flow (not TensorRT-LLM's specialized flow, though it is similar)."
+  ],
+  "nonImplications": [
+    "Does not imply plan files are portable across GPU generations; they are typically architecture- and TRT-version-specific.",
+    "Does not imply build time is negligible; large models can take minutes to hours to build."
+  ],
+  "misconceptionTags": ["build_vs_runtime_confusion", "text_engine_myth"],
+  "distractorRationales": {
+    "A": "Fabricates per-call re-optimization.",
+    "C": "Wrong engine format claim.",
+    "D": "Wrong execution locus."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:trt", "locator": "TensorRT builder, engine, and execution context", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-TRT-019.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

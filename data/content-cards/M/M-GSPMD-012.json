@@ -1,0 +1,38 @@
+{
+  "questionId": "M-GSPMD-012",
+  "learningObjective": "Explain GSPMD's sharding-propagation design: how user annotations become a fully sharded graph.",
+  "canonicalClaims": [
+    {
+      "claim": "GSPMD's sharding propagation takes a partially-annotated computation graph and infers sharding specs for unannotated tensors by pushing constraints through operators (e.g. an elementwise op forces its inputs and outputs to share sharding; a matmul propagates according to which contracting/batch/non-contracting axes are sharded), inserting reshard collectives at boundaries where required and produced sharding disagree.",
+      "conditions": [
+        "The graph contains at least one user sharding hint.",
+        "Operators have known sharding-propagation rules."
+      ],
+      "nonImplications": [
+        "Does not imply propagation is unique — for many graphs several consistent sharding assignments exist; GSPMD uses heuristics/cost to choose.",
+        "Does not imply the user must annotate every tensor; propagation is designed precisely to avoid that."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§3 sharding propagation algorithm" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "GSPMD is a pure runtime system: it reads sharding hints at run time and dispatches per-op parallel implementations without any compile-time transformation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "GSPMD is a compile-time partitioning pass in XLA that rewrites the HLO graph before execution."
+    },
+    {
+      "claim": "GSPMD requires every tensor to carry a user-specified sharding annotation; missing annotations are a compile error.",
+      "errorType": "wrong_condition",
+      "whyWrong": "Propagation exists precisely because the user only annotates a few key tensors; the compiler fills in the rest."
+    },
+    {
+      "claim": "GSPMD propagates sharding but never inserts collectives; users must place All* ops manually where needed.",
+      "errorType": "scope_error",
+      "whyWrong": "Reshard collectives are inserted automatically by the partitioner wherever adjacent ops disagree on required sharding."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

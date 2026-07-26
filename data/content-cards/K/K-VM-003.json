@@ -1,0 +1,48 @@
+{
+  "questionId": "K-VM-003",
+  "learningObjective": "Explain why deep-learning runtimes such as TVM Relax VM or IREE use a bytecode virtual machine to interpret a compiled program, rather than directly linking a monolithic function.",
+  "canonicalClaims": [
+    {
+      "claim": "A bytecode VM in a DL runtime represents host-side control flow, dynamic-shape branches, allocator ops and external calls around a fixed set of precompiled device kernels, giving portability and serializability that a monolithic native function does not.",
+      "conditions": [
+        "The model has control flow, dynamic shapes, or must be portable across host ISAs.",
+        "The kernels themselves are still native (compiled to the target device)."
+      ],
+      "nonImplications": [
+        "Does not imply that VM execution is faster than native execution.",
+        "Does not imply that VM replaces allocators or streams."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:tvm-relax", "locator": "Relax VM design" },
+        { "ref": "DOC:iree", "locator": "IREE VM design" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Bytecode interpretation is faster than native execution.",
+      "errorType": "performance_confusion",
+      "whyWrong": "Bytecode adds interpretation overhead; it is chosen for portability, not speed.",
+      "sourceOrEvidence": "General VM design principles"
+    },
+    {
+      "claim": "GPU kernels can only be dispatched from a VM, not native code.",
+      "errorType": "hardware_leak",
+      "whyWrong": "The CUDA runtime API is callable from native C/C++; VM is a design choice, not a requirement.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "VMs eliminate the memory allocator.",
+      "errorType": "scope_error",
+      "whyWrong": "VMs still invoke allocators via VM instructions; they do not statically preallocate all memory.",
+      "sourceOrEvidence": "TVM Relax VM instruction set"
+    },
+    {
+      "claim": "A VM makes it easier to write custom kernels because kernels can be written in the VM's bytecode.",
+      "errorType": "definition_confusion",
+      "whyWrong": "DL VM bytecode dispatches to native kernels; kernels themselves are still written in CUDA/HIP/etc.",
+      "sourceOrEvidence": "IREE / TVM code base"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,62 @@
+{
+  "questionId": "I-ATTBACK-025",
+  "learningObjective": "Reason about the peak activation memory of standard attention backward and how FlashAttention-style recomputation changes it.",
+  "canonicalClaims": [
+    {
+      "claim": "Naive attention backward keeps the [B, H, N, N] softmax matrix P (or logits S) as an activation for use in gradient formulas; this quadratic-in-N tensor dominates activation memory and limits training context length.",
+      "conditions": [
+        "Standard autograd-derived backward without I/O-aware fusion.",
+        "P is materialized in HBM (as in most default frameworks pre-FA)."
+      ],
+      "nonImplications": [
+        "Does not imply P must always be stored; FA shows an alternative."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Sec 2.2 memory analysis" }
+      ]
+    },
+    {
+      "claim": "FlashAttention backward stores only per-row (m, l) statistics (O(B*H*N)) from forward and recomputes P block-by-block in backward using Q, K, and dO; total FLOPs increase (extra recomputation), but HBM I/O drops sharply, giving wall-clock speedup.",
+      "conditions": [
+        "SMEM per SM large enough for a Q/K/V tile.",
+        "Backward implementation follows FA algorithm."
+      ],
+      "nonImplications": [
+        "Does not imply FA backward matches naive FLOP count.",
+        "Does not imply recomputation is always the right choice; short-sequence workloads may prefer storing P."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:flashattn", "locator": "Sec 3.3 backward algorithm" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The full P matrix must be HBM-resident at some point in any correct attention backward.",
+      "errorType": "overgeneralization",
+      "whyWrong": "FlashAttention shows a tiled backward that avoids full-P materialization.",
+      "sourceOrEvidence": "FlashAttention paper Sec 3.3"
+    },
+    {
+      "claim": "FA backward has the same total FLOPs as naive backward.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Backward recomputes P, adding FLOPs; the trade is I/O for compute.",
+      "sourceOrEvidence": "FlashAttention paper Sec 3.3"
+    },
+    {
+      "claim": "Attention backward memory is linear in N.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Naive backward is quadratic in N due to storing P; FA collapses this to linear.",
+      "sourceOrEvidence": "FlashAttention paper Sec 2.2"
+    }
+  ],
+  "implementationFacts": [
+    "FA stores l_i = sum exp(x - m_i) and m_i per row; combined size is O(B*H*N).",
+    "Some frameworks offer 'attention with checkpoint' as a middle ground: store P but no dP intermediate."
+  ],
+  "performanceScenarios": [
+    "Long-context training (>8K tokens) is essentially only tractable with FA-style backward.",
+    "Even short-sequence training benefits marginally from FA due to reduced HBM I/O."
+  ],
+  "versionSensitivity": "stable_principle"
+}

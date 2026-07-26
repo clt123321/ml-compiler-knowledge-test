@@ -1,0 +1,39 @@
+{
+  "questionId": "M-RS-003",
+  "learningObjective": "Distinguish ReduceScatter from AllReduce and identify how the two compose.",
+  "canonicalClaims": [
+    {
+      "claim": "ReduceScatter reduces per-rank inputs of shape S element-wise and distributes disjoint 1/N-sized shards of the result to each rank; equivalently, AllReduce is semantically equivalent to ReduceScatter followed by AllGather.",
+      "conditions": [
+        "All ranks contribute inputs of the same shape S and dtype.",
+        "The reduction axis is understood; the scatter axis partitions S into N disjoint contiguous shards."
+      ],
+      "nonImplications": [
+        "Does not imply that ReduceScatter is cheaper than AllReduce for the same payload — it costs (N-1)/N · S per rank, half of ring-AllReduce.",
+        "Does not imply that a subsequent AllGather is always cheaper than starting from AllReduce; you pay for both phases either way."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 collective operations" },
+        { "ref": "PAPER:gspmd", "locator": "§2/§3 use of ReduceScatter for weight-sharded training" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "ReduceScatter is a strict subset of AllReduce: it performs the same reduction but only returns the result to rank 0.",
+      "errorType": "definition_confusion",
+      "whyWrong": "That description matches Reduce, not ReduceScatter. ReduceScatter returns disjoint shards of the reduced tensor to every rank."
+    },
+    {
+      "claim": "ReduceScatter and AllGather are inverses: applying both in either order recovers the original per-rank inputs.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "AllGather ∘ ReduceScatter equals AllReduce (a reduction), which is not the identity; per-rank inputs are lost."
+    },
+    {
+      "claim": "ReduceScatter is only useful for FSDP; it has no role in classical data-parallel gradient synchronization.",
+      "errorType": "scope_error",
+      "whyWrong": "Ring-AllReduce is internally implemented as ReduceScatter + AllGather; it is a standard building block, not FSDP-specific."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

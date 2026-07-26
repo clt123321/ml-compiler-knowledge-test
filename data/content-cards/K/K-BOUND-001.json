@@ -1,0 +1,53 @@
+{
+  "questionId": "K-BOUND-001",
+  "learningObjective": "Distinguish which decisions belong to compile-time (ahead-of-time lowering, kernel selection, memory planning) and which belong to run-time (dispatch, allocator calls, dynamic shape adaptation).",
+  "canonicalClaims": [
+    {
+      "claim": "In mainstream ML compilation stacks the compiler is responsible for lowering, optimization, kernel selection and memory planning ahead of time, and the runtime is responsible for dispatch, allocator/stream management and shape-dependent execution paths within the emitted plan.",
+      "conditions": [
+        "The system follows a compile-then-run design (with or without JIT specialization at first call).",
+        "The runtime consumes a compiler-produced artifact such as a VM program, plan file, or shared library."
+      ],
+      "nonImplications": [
+        "Does not imply that no optimization ever happens at run time; some caches, kernel autotuning and shape specialization occur at run time but do not blur allocator/stream ownership.",
+        "Does not imply the boundary is identical across stacks; TensorRT bakes more into the plan than TVM Relax VM, but the compile/runtime split is present in both."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:iree", "locator": "Compiler/Runtime separation" },
+        { "ref": "DOC:tvm-relax", "locator": "IRModule → runtime.Module" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "The runtime performs kernel selection and fusion at each invocation.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion and kernel selection are compile-time optimizations; the runtime only chooses among precompiled variants at dispatch time.",
+      "sourceOrEvidence": "IREE / TVM documentation"
+    },
+    {
+      "claim": "The compiler owns the memory allocator and stream scheduler.",
+      "errorType": "scope_error",
+      "whyWrong": "Allocator pools and CUDA streams live in the runtime; the compiler emits memory plans but does not call cudaMalloc.",
+      "sourceOrEvidence": "CUDA Programming Guide; IREE runtime docs"
+    },
+    {
+      "claim": "Compiler and runtime are the same component in JIT systems.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Even in JIT-heavy systems the lowering phase (which emits kernels or bytecode) is distinct from the execution phase (which dispatches those kernels).",
+      "sourceOrEvidence": "TorchInductor / TVM design"
+    },
+    {
+      "claim": "Runtime memory allocation is negligible so allocator design belongs to the compiler.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Allocator design is a first-class runtime concern (caching allocator, memory pools, fragmentation) and directly affects latency and throughput.",
+      "sourceOrEvidence": "PyTorch caching allocator; TensorRT runtime memory pools"
+    }
+  ],
+  "implementationFacts": [
+    "IREE separates the iree-compile binary from the iree-run-module runtime",
+    "TVM emits a VMExecutable and runs it in tvm.runtime.relax_vm.VirtualMachine",
+    "TensorRT emits a serialized plan file consumed by nvinfer1::IExecutionContext"
+  ],
+  "versionSensitivity": "stable_principle"
+}

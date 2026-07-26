@@ -1,0 +1,64 @@
+{
+  "id": "I-GGEMM-021",
+  "type": "single",
+  "module": "core_ops_attention",
+  "subtopic": "Grouped GEMM / MoE batched execution",
+  "learningObjective": "Explain what a Grouped GEMM is and why it is preferred over per-expert independent GEMMs in sparse MoE serving.",
+  "archetype": "systems_dataflow",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Ampere or newer (CUTLASS grouped GEMM)",
+    "device": "GPU",
+    "requiredFeatures": ["dynamic per-group problem sizes"]
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "In a sparse MoE layer with E experts, after routing each expert i receives n_i tokens (n_i variable, sum n_i = k * B * N). Which choice best describes Grouped GEMM and why it is used?",
+  "options": [
+    { "id": "A", "text": "Grouped GEMM executes E GEMMs of shapes [n_i, D] x [D, F] as a single kernel launch that dispatches per-group tile schedules across SMs. Compared to E independent GEMM launches, it amortizes launch overhead and lets small n_i groups share SMs with larger groups, avoiding SM under-utilization on skinny GEMMs." },
+    { "id": "B", "text": "Grouped GEMM sums the outputs of E GEMMs into a single [B*N, F] tensor as part of the same kernel; the 'grouping' refers to the reduction across experts, and the kernel is chosen because it fuses the final combination step of MoE." },
+    { "id": "C", "text": "Grouped GEMM pads all n_i to the same length n_max and runs a single batched GEMM [E, n_max, F]. It is preferred because a single batched GEMM primitive is always faster than a grouped kernel; the padding overhead is negligible." },
+    { "id": "D", "text": "Grouped GEMM is a Winograd-like transform that combines groups of adjacent experts into a shared linear operator; only the transform + inverse-transform cost per group scales with n_i, so the algorithm reduces FLOPs by a factor of E." }
+  ],
+  "correctAnswers": ["A"],
+  "explanation": "Grouped GEMM (as in CUTLASS/cuBLAS grouped-GEMM APIs) fuses many independent GEMMs of varying shapes into a single kernel launch. It computes a per-group tile schedule so that SMs can work on tiles from any group in parallel, avoiding the SM-underutilization problem that occurs if you dispatch each expert's small GEMM independently. This is critical for MoE where token counts per expert (n_i) are small and highly variable. Padding to n_max would waste flops proportional to expert imbalance; grouped GEMM avoids that waste.",
+  "optionExplanations": {
+    "A": "Correct: standard rationale for MoE grouped GEMM.",
+    "B": "Wrong: grouping is over independent GEMM problems, not over an output-summation reduction.",
+    "C": "Wrong: padding wastes compute proportional to imbalance; grouped GEMM avoids padding.",
+    "D": "Wrong: fabricates a Winograd-like decomposition; grouped GEMM does not reduce FLOPs."
+  },
+  "assumptions": [
+    "Token distribution across experts is variable and often skewed.",
+    "Modern CUTLASS or cuBLAS grouped-GEMM APIs are available."
+  ],
+  "nonImplications": [
+    "Does not imply grouped GEMM is faster than batched GEMM for uniformly-sized groups; batched is fine there.",
+    "Does not imply zero routing overhead; the permutation of tokens into per-expert input buffers still costs a scatter kernel."
+  ],
+  "misconceptionTags": ["ggemm_reduction_myth", "ggemm_padded_batched_myth"],
+  "distractorRationales": {
+    "B": "Confuses group over problem shapes with reduction across outputs.",
+    "C": "Ignores waste of padding.",
+    "D": "Fabricates FLOP reduction."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-best", "locator": "CUTLASS grouped GEMM for irregular problem sizes", "supports": ["A"] },
+    { "ref": "DOC:trtllm", "locator": "MoE expert grouped-GEMM path", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Grouped GEMM utility for MoE with variable per-expert token counts",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/I/I-GGEMM-021.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

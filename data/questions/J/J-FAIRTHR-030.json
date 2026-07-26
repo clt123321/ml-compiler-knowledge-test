@@ -1,0 +1,65 @@
+{
+  "id": "J-FAIRTHR-030",
+  "type": "multiple",
+  "module": "llm_inference",
+  "subtopic": "Multi-tenancy fairness / Diagnosis and levers",
+  "learningObjective": "Diagnose fairness issues in multi-tenant LLM serving and identify levers that improve fairness without collapsing throughput.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 4,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "vLLM / SGLang / TRT-LLM",
+    "frameworkVersionScope": "current stable",
+    "verifiedAt": "2026-07-26",
+    "stability": "version_sensitive"
+  },
+  "stem": "Multi-tenant serving of an LLM shows the following per-user metrics under load. Which mitigations would reduce the unfairness without regressing aggregate throughput below the load's floor. (Choose all that apply.)",
+  "profileData": "Two tenants share a serving pool:\n  Tenant A (short prompts, ~200 tokens; short outputs, ~50 tokens): TPOT p50 = 55 ms, TTFT p50 = 200 ms\n  Tenant B (long prompts, ~4K tokens; long outputs, ~500 tokens): TPOT p50 = 55 ms, TTFT p50 = 4.5 s\n  Preemption rate on tenant A: 25%\n  Preemption rate on tenant B: 8%\n  When tenant B has a burst of arrivals, tenant A's TPOT spikes to 180 ms.\n  KV usage: ~90% steady, ~99% during bursts.",
+  "options": [
+    { "id": "A", "text": "Enable chunked prefill so tenant B's long prefills are broken into chunks that interleave with tenant A's decode iterations; tenant A's TPOT during bursts drops back near the steady-state 55 ms." },
+    { "id": "B", "text": "Serialize the scheduler to only run one tenant at a time: this eliminates cross-tenant interference and guarantees fair TPOT to whichever tenant is running." },
+    { "id": "C", "text": "Enforce per-tenant KV budgets or admission quotas so tenant B's bursty long prompts cannot consume more than a bounded fraction of KV, preventing tenant A's preemption rate from spiking." },
+    { "id": "D", "text": "Add a fairness-aware scheduler (e.g., token-level fair queueing across tenants): prevents one tenant's long-decoding requests from monopolizing decode iterations." }
+  ],
+  "correctAnswers": ["A", "C", "D"],
+  "explanation": "A is correct: chunked prefill directly solves the burst-driven TPOT spike for tenant A by interleaving decoding with the long prefill of tenant B. C is correct: KV budget quotas cap the contention tenant B can create. D is correct: fairness-aware scheduling addresses long-request domination. B is wrong: serializing tenants collapses aggregate throughput to a single-tenant baseline; the goal is fairness without throughput collapse.",
+  "optionExplanations": {
+    "A": "Correct: chunked prefill.",
+    "C": "Correct: per-tenant KV quotas.",
+    "D": "Correct: fair queueing.",
+    "B": "Wrong: serializing kills aggregate throughput."
+  },
+  "assumptions": [
+    "Serving stack supports chunked prefill and per-tenant admission control.",
+    "Fair-queueing scheduler is available (or can be added)."
+  ],
+  "nonImplications": [
+    "Does not imply chunked prefill has zero overhead; there is a small per-chunk cost.",
+    "Does not imply admission quotas eliminate all bursts; they cap the worst case."
+  ],
+  "misconceptionTags": ["serialize_solves_fairness", "fairness_no_throughput_cost"],
+  "distractorRationales": {
+    "B": "Kills aggregate throughput to gain fairness."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:sglang", "locator": "Chunked prefill and fairness policies", "supports": ["A", "C", "D"] },
+    { "ref": "DOC:vllm", "locator": "Preemption + admission control", "supports": ["C", "D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Multi-tenant fairness diagnosis and mitigations",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/J/J-FAIRTHR-030.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

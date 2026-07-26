@@ -1,0 +1,67 @@
+{
+  "id": "L-CPUEVT-006",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "CUDA Event vs CPU Timer: single-kernel timing",
+  "learningObjective": "Choose between CUDA events and CPU timers when timing a single small CUDA kernel; understand the precision and semantic implications.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 3,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "PyTorch / CUDA",
+    "frameworkVersionScope": "PyTorch 2.0+",
+    "verifiedAt": "2026-07-26",
+    "stability": "stable_principle"
+  },
+  "stem": "You want to time a single small CUDA kernel (expected duration ~30 µs) that runs on a non-default stream in the middle of a larger workload. Which measurement approach is most accurate, and why?",
+  "profileData": "Setup:\n  - Kernel duration expected ~30 µs\n  - Runs on user stream `s1`, while stream `s2` runs concurrent work\n  - Wall-clock question: time _only_ this one kernel, not the concurrent work\n\nCandidate approaches:\n  (i)   time.perf_counter() around a single non-synced launch\n  (ii)  time.perf_counter() around launch + torch.cuda.synchronize() (device-wide)\n  (iii) cuda.Event(enable_timing=True), event.record(s1) before and after kernel, elapsed_time after event.synchronize()\n  (iv)  time.perf_counter() around launch + s1.synchronize()",
+  "options": [
+    { "id": "A", "text": "Approach (i) is best because it eliminates any synchronization overhead; the reported time is exactly the wall-clock cost of the launch and it also captures the GPU-side execution because CUDA launches block the host until completion when the kernel is small enough (<100 µs)." },
+    { "id": "B", "text": "Approach (ii) is best because a device-wide synchronize also flushes work on `s2` before recording the end time, which gives the most accurate measurement of _only_ the kernel of interest by ensuring the entire GPU is idle at the endpoints." },
+    { "id": "C", "text": "Approach (iii) is best: CUDA events recorded on `s1` around the kernel isolate its execution on that stream, are timed by the GPU with ~0.5 µs resolution, and are unaffected by concurrent work on `s2`. Approaches using device-wide synchronize would also charge concurrent work on other streams." },
+    { "id": "D", "text": "Approach (iv) is best because a stream-scoped synchronize combined with a CPU timer captures the full CPU dispatch cost plus GPU execution; CUDA events cannot record a stream because `cudaEventRecord` only accepts the default stream in single-context CUDA programs." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "CUDA events with `enable_timing=True` are recorded onto the target stream and time GPU-side execution with sub-microsecond resolution. They isolate `s1`'s work and are not perturbed by concurrent work on `s2`. A device-wide synchronize (ii) forces all streams to drain and, combined with a CPU timer, over-charges the measurement with `s2`'s work. Approach (i) is completely wrong (CUDA launches are async). Approach (iv) is misleading: `s1.synchronize()` waits for `s1` only, but the CPU timer also captures dispatch and driver-visible latency, and CUDA events can be recorded on any stream (D's premise is false).",
+  "optionExplanations": {
+    "A": "Wrong: kernel launches are always asynchronous; a CPU timer around a launch measures dispatch, not execution.",
+    "B": "Wrong: device-wide synchronize charges `s2`'s concurrent work into the measurement, over-reporting the target kernel's cost.",
+    "C": "Correct: stream-scoped CUDA events give per-stream isolation and high timing resolution.",
+    "D": "Wrong: CUDA events can be recorded on any stream, not only the default stream."
+  },
+  "assumptions": [
+    "Modern CUDA runtime; `cudaEventRecord` supports non-default streams.",
+    "Concurrent work on `s2` may overlap in wall clock but is not the measurement target."
+  ],
+  "nonImplications": [
+    "Does not imply CUDA events are always the right tool; for coarse workflow-level timing, CPU timers with synchronize are fine.",
+    "Does not imply event timing has zero overhead; event record itself adds a few hundred nanoseconds of driver work."
+  ],
+  "misconceptionTags": ["event_default_stream_myth", "device_sync_semantics"],
+  "distractorRationales": {
+    "A": "Reverses async semantics.",
+    "B": "Confuses stream isolation.",
+    "D": "False claim about event stream restrictions."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-best", "locator": "Using CUDA events for timing", "supports": ["C"] },
+    { "ref": "DOC:torch-profiler", "locator": "CUDA event timing best practices", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Single small CUDA kernel timing with concurrent streams",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-CPUEVT-006.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

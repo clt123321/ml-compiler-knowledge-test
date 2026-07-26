@@ -1,0 +1,60 @@
+{
+  "questionId": "I-MOEPROP-028",
+  "learningObjective": "Distinguish correct claims about MoE compute/parameter efficiency and imbalance from common misconceptions.",
+  "canonicalClaims": [
+    {
+      "claim": "In top-k MoE with E experts and k << E, total parameter count scales as O(E) but activated compute per token stays at O(k) plus an O(E) gating term; this decoupling is the source of MoE's parameter-per-flop leverage.",
+      "conditions": [
+        "Sparse top-k routing (k << E).",
+        "Router cost is small relative to MLP compute."
+      ],
+      "nonImplications": [
+        "Does not imply MoE always outperforms dense; imbalance and communication overheads can absorb the win."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:sze-eff", "locator": "MoE — parameter/compute leverage" }
+      ]
+    },
+    {
+      "claim": "MoE serving suffers from routing skew; hot experts bottleneck the batched matmul, and capacity limits or load-balancing losses are used to mitigate this.",
+      "conditions": [
+        "Router is not perfectly balanced.",
+        "Serving with fixed capacity per expert."
+      ],
+      "nonImplications": [
+        "Does not imply imbalance is unavoidable; auxiliary losses reduce it in training."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:vllm", "locator": "MoE serving load balancing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "MoE compute per token scales linearly with E.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Only k out of E experts are activated; the router adds O(E), MLP compute stays O(k).",
+      "sourceOrEvidence": "Switch Transformer paper"
+    },
+    {
+      "claim": "Expert parallelism cannot help MoE inference.",
+      "errorType": "definition_confusion",
+      "whyWrong": "EP distributes both parameter storage and per-token weight bandwidth across devices.",
+      "sourceOrEvidence": "GShard, DeepSpeed-MoE"
+    },
+    {
+      "claim": "MoE routing is deterministic and always balanced.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Routing has empirical skew; balancing is an active mitigation.",
+      "sourceOrEvidence": "GShard, Switch load-balancing loss"
+    }
+  ],
+  "implementationFacts": [
+    "Auxiliary balancing loss encourages uniform routing during training.",
+    "In serving, capacity factor > 1 (typically 1.25-2) allows some slack before dropping."
+  ],
+  "performanceScenarios": [
+    "Mixtral 8x7B uses 8 experts with top-2 routing; parameter count ~47B but active flops per token similar to a 13B dense model."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,49 @@
+{
+  "questionId": "I-FUSEDPROP-030",
+  "learningObjective": "Distinguish real benefits and non-benefits of kernel fusion for transformer building blocks.",
+  "canonicalClaims": [
+    {
+      "claim": "Kernel fusion reduces HBM roundtrips of intermediates and amortizes launch overhead; it does not change FLOP count and can hurt performance when register pressure causes spills or when reduction boundaries prevent good tiling.",
+      "conditions": [
+        "Comparison is at fixed algorithm; only the kernel structure changes.",
+        "Register file / SMEM sized comparably between fused and un-fused variants."
+      ],
+      "nonImplications": [
+        "Does not imply zero HBM traffic in the fused case; inputs and outputs still stream.",
+        "Does not imply fusion is always applied by compilers; it is a tunable decision."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-inductor", "locator": "Fusion strategy" },
+        { "ref": "DOC:cuda-best", "locator": "Fusion trade-offs" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Kernel fusion always improves latency.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Fusion increases register footprint and can cause spills; can lose to un-fused variants.",
+      "sourceOrEvidence": "TorchInductor tuning experience"
+    },
+    {
+      "claim": "Fusion changes total FLOPs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Fusion is a scheduling change; ops still execute their original arithmetic.",
+      "sourceOrEvidence": "Compiler fusion definition"
+    },
+    {
+      "claim": "Reduction-boundary fusion is trivial like pointwise fusion.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Reductions require cooperation across threads; fusion across them requires special tiling and often fails.",
+      "sourceOrEvidence": "TVM / Ansor scheduling literature"
+    }
+  ],
+  "implementationFacts": [
+    "Inductor prefers pointwise-with-pointwise fusion by default; reduction fusion requires shape compatibility.",
+    "CUTLASS epilogues handle common patterns (bias, activation, quantize) without giving up tensor-core throughput."
+  ],
+  "performanceScenarios": [
+    "Fused RMSNorm+QKV or fused down+add+norm variants are common in LLM inference libraries."
+  ],
+  "versionSensitivity": "stable_principle"
+}

@@ -1,0 +1,47 @@
+{
+  "questionId": "L-DYNREG-013",
+  "learningObjective": "Diagnose dynamic-shape performance regressions in compiled workloads from a mix of graph-break/recompile logs and per-shape latency data.",
+  "canonicalClaims": [
+    {
+      "claim": "Static-shape torch.compile produces one specialized graph per unique guard shape; first-time-seen shapes pay the JIT compile cost inside the request latency. Enabling dynamic shapes (dynamic=True or mark_dynamic) allows one graph to cover a range of shapes and eliminates repeated recompile spikes.",
+      "conditions": [
+        "torch.compile in static-shape mode.",
+        "Request stream contains multiple distinct shapes."
+      ],
+      "nonImplications": [
+        "Does not imply dynamic=True is free; guards and shape-generic kernels can add per-iteration overhead.",
+        "Does not imply larger cache_size_limit fixes the root cause; it merely hides evictions."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-compile", "locator": "Dynamic shapes" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Cache thrashing is the cause whenever recompiles are visible.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Thrashing requires eviction; with N unique shapes and cache_size_limit≥N there is no eviction.",
+      "sourceOrEvidence": "torch._dynamo cache design"
+    },
+    {
+      "claim": "JIT compile cost is not part of request latency.",
+      "errorType": "benchmark_leak",
+      "whyWrong": "For first-time-seen shapes, compile time is charged to the request that triggered it.",
+      "sourceOrEvidence": "torch.compile documentation"
+    },
+    {
+      "claim": "Increasing cache_size_limit removes JIT cost.",
+      "errorType": "scope_error",
+      "whyWrong": "A larger cache prevents evictions but does not remove first-time compilation cost.",
+      "sourceOrEvidence": "torch._dynamo config docs"
+    },
+    {
+      "claim": "Dynamic shapes are always faster than static shapes.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Static specialization can produce tighter kernels; dynamic generalization trades some peak throughput for shape flexibility.",
+      "sourceOrEvidence": "TorchInductor dynamic shape docs"
+    }
+  ],
+  "versionSensitivity": "version_sensitive"
+}

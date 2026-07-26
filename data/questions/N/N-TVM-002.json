@@ -1,0 +1,61 @@
+{
+  "id": "N-TVM-002",
+  "type": "single",
+  "module": "paper_design",
+  "subtopic": "TVM: real measurement vs analytical cost model",
+  "learningObjective": "Explain why TVM (and its Ansor/AutoTVM descendants) rely on real hardware measurement rather than a pure analytical cost model to select schedules.",
+  "archetype": "paper_design_intent",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "Modern GPU / CPU",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "TVM's schedule search relies on on-device measurement (feeding a learned cost model) rather than a pure analytical performance model. Which statement best captures the design rationale argued in the TVM paper?",
+  "options": [
+    { "id": "A", "text": "Analytical models cannot express any form of loop tiling, so measurement is the only way to compare tiled schedules; without measurement TVM would be forced to emit only untiled code." },
+    { "id": "B", "text": "The paper argues that a sufficiently detailed analytical model is always superior; measurement is included only as a compatibility path for hardware without a published architecture manual." },
+    { "id": "C", "text": "Measurement is used purely for reproducibility: since analytical models depend on constants that vary by driver version, TVM re-measures every kernel on every deployment to remove that dependency." },
+    { "id": "D", "text": "On modern accelerators, effective performance depends on hard-to-model factors (cache/coalescing, register pressure, instruction mix, compiler back-end choices) that closed-form models fail to rank reliably at fine granularity, so a measurement-driven (and learned) cost model is used to guide the search." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "TVM (and Ansor) argue that closed-form analytical models miss important microarchitectural effects. A learned cost model trained on measurements ranks candidates cheaply; a subset is then measured on-device to refine the model. The design accepts autotuning wall-clock time as a trade-off for high-quality schedules across many targets.",
+  "optionExplanations": {
+    "A": "Wrong: analytical models can express tiling; the objection is about ranking accuracy, not expressibility.",
+    "B": "Wrong: the paper does not claim analytical models are always superior.",
+    "C": "Wrong: reproducibility is not the stated motivation.",
+    "D": "Correct: matches the paper's stated argument for measurement-based (learned) cost."
+  },
+  "assumptions": [
+    "Familiarity with the TVM paper's autotuning pipeline."
+  ],
+  "nonImplications": [
+    "Does not imply autotuning is free; TVM explicitly accepts autotuning time as a trade-off.",
+    "Does not imply analytical models are removed; a learned cost model on top of measurements is analytical in a broad sense."
+  ],
+  "misconceptionTags": ["analytical_model_replaces_measurement", "measurement_only_for_gpu"],
+  "distractorRationales": {
+    "A": "Confuses expressibility with ranking fidelity.",
+    "B": "Reverses the stated preference.",
+    "C": "Fabricated reproducibility rationale."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:tvm", "locator": "§4–§5 schedule search + learned cost model motivation", "supports": ["D"] },
+    { "ref": "PAPER:ansor", "locator": "§3 why measurement is necessary", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/N/N-TVM-002.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

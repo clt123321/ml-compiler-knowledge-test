@@ -1,0 +1,56 @@
+{
+  "questionId": "M-SPMD-007",
+  "learningObjective": "Distinguish SPMD-style compiler-driven parallelization (as in GSPMD) from manual multi-controller / MPMD approaches.",
+  "canonicalClaims": [
+    {
+      "claim": "In an SPMD compiler flow (e.g. GSPMD), every rank executes the same program that has been rewritten by the compiler from a single-device semantics-preserving graph, with sharding annotations propagated through operators and collectives inserted at reshard boundaries; the user does not manually write per-rank code.",
+      "conditions": [
+        "The compiler has a partitioning pass that transforms operator implementations based on sharding specs.",
+        "Sharding annotations can be either user-provided (hints) or inferred (propagation)."
+      ],
+      "nonImplications": [
+        "Does not imply that SPMD forbids per-rank divergence at all: control-flow specialization is possible where needed, but the compiled artifact is a single program.",
+        "Does not imply that SPMD's generated collectives are always optimal; the partitioner's cost model may still miss reshard opportunities."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§1–§3 SPMD partitioning motivation and mechanism" },
+        { "ref": "DOC:stablehlo", "locator": "Sharding and SPMD-related HLO attributes" }
+      ]
+    },
+    {
+      "claim": "Manual / MPMD-style parallelism requires the user to write separate programs (or explicit per-rank branches) that place ops on specific devices and issue collectives by hand.",
+      "conditions": [
+        "The runtime dispatches distinct programs to different ranks or explicitly guards code paths per rank."
+      ],
+      "nonImplications": [
+        "Does not imply that MPMD is inherently less efficient; it can express patterns SPMD partitioners struggle with (e.g. asymmetric pipelines)."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:gspmd", "locator": "§2 comparison with prior manual approaches" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "SPMD means every rank literally runs identical machine code including identical collective payload sizes at every step.",
+      "errorType": "definition_confusion",
+      "whyWrong": "SPMD means a single-program model; per-rank differences in shard indices, buffer offsets and even control-flow specializations are permitted."
+    },
+    {
+      "claim": "GSPMD generates a program per device (MPMD), differing only in device IDs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "GSPMD produces one SPMD program run on all devices; per-device parameterization (mesh axis, rank id) is threaded through the same program."
+    },
+    {
+      "claim": "SPMD makes manual placement obsolete because the compiler always chooses the optimal sharding without any user hint.",
+      "errorType": "overgeneralization",
+      "whyWrong": "The GSPMD paper explicitly relies on user-provided sharding annotations at least on some operators; the compiler propagates them but does not always synthesize them from scratch."
+    },
+    {
+      "claim": "MPMD is the same as pipeline parallelism; any pipeline-parallel scheme is by definition MPMD.",
+      "errorType": "scope_error",
+      "whyWrong": "Pipeline parallelism can be expressed in either SPMD (one program with stage-specific branches driven by rank) or MPMD (separate stage programs); the two axes are distinct."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

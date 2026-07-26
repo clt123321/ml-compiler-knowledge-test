@@ -1,0 +1,40 @@
+{
+  "questionId": "M-BUCKET-006",
+  "learningObjective": "Explain the motivation for gradient bucketing in data-parallel training and the trade-off it induces.",
+  "canonicalClaims": [
+    {
+      "claim": "Gradient bucketing groups multiple small gradient tensors into a single larger AllReduce payload to amortize the per-collective latency term (α) and better saturate link bandwidth, at the cost of delaying the launch of the collective until all tensors in the bucket are ready.",
+      "conditions": [
+        "The collective cost is well modelled as α + βS with a non-negligible α (latency).",
+        "The per-layer gradients are small enough that many of them fall inside the latency-dominated regime.",
+        "Bucket boundaries respect backward-order availability so the bucket can be dispatched as early as possible."
+      ],
+      "nonImplications": [
+        "Does not imply that larger buckets are always better: a bucket that spans too many layers delays overlap with backward compute.",
+        "Does not imply that bucketing changes numerical results (aside from reduction ordering effects)."
+      ],
+      "sourceMappings": [
+        { "ref": "BOOK:hp6", "locator": "Ch. 6 latency-vs-bandwidth communication cost model" },
+        { "ref": "PAPER:gspmd", "locator": "§4 partitioner-driven collective coalescing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Bucketing exists because NCCL requires all AllReduces to be issued in a single call per iteration.",
+      "errorType": "definition_confusion",
+      "whyWrong": "NCCL supports many AllReduces per iteration; bucketing is a policy for grouping payloads, not a NCCL requirement."
+    },
+    {
+      "claim": "Bucketing improves accuracy by summing more gradients before averaging, reducing variance in the AllReduce operator.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "AllReduce is exact (up to FP ordering); bucketing is a performance optimization and does not change the reduced value beyond floating-point ordering effects."
+    },
+    {
+      "claim": "Bucket size should always be chosen as small as possible so that each layer's AllReduce can start immediately when its gradient is ready.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Very small buckets pay the latency α for each launch, wasting bandwidth. A balance between bandwidth utilization and overlap window is needed."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

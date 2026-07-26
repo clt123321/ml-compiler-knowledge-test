@@ -1,0 +1,49 @@
+{
+  "questionId": "J-CBATCH-004",
+  "learningObjective": "Explain what continuous (iteration-level) batching is and why it improves throughput over static batching for LLM serving.",
+  "canonicalClaims": [
+    {
+      "claim": "Continuous batching rebuilds the batch at each model-forward iteration; new requests can join and finished ones leave without waiting for the whole batch to complete, keeping the GPU utilized under variable-length workloads.",
+      "conditions": [
+        "Requests share the same model and can share a batched forward.",
+        "Scheduler operates at model-forward granularity."
+      ],
+      "nonImplications": [
+        "Does not imply per-request semantics change.",
+        "Does not require uniform progress across requests."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:orca", "locator": "Sec 3-4" },
+        { "ref": "DOC:vllm", "locator": "Continuous batching" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Continuous batching requires all requests in the batch to make the same number of steps.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The exact point is that requests can join/leave freely per iteration.",
+      "sourceOrEvidence": "Orca paper Sec 3"
+    },
+    {
+      "claim": "Continuous batching relies on per-request CUDA streams.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The mechanism is batching granularity, not stream parallelism.",
+      "sourceOrEvidence": "Orca paper"
+    },
+    {
+      "claim": "Continuous batching predicts multiple tokens per step for each request non-autoregressively.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Each iteration is still one autoregressive step per request; batching happens across requests.",
+      "sourceOrEvidence": "Orca paper"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM's scheduler runs continuous batching over PagedAttention KV cache.",
+    "Prefill can be interleaved with decode via chunked prefill + continuous batching (SGLang/vLLM)."
+  ],
+  "performanceScenarios": [
+    "The larger the variance in output lengths, the bigger the benefit vs static batching."
+  ],
+  "versionSensitivity": "stable_principle"
+}

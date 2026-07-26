@@ -1,0 +1,63 @@
+{
+  "id": "I-GQA-008",
+  "type": "multiple",
+  "module": "core_ops_attention",
+  "subtopic": "GQA / Compute vs memory trade-off across variants",
+  "learningObjective": "Distinguish how MQA/GQA affect KV memory, decode compute, and quality relative to MHA.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Select all statements that are correct about GQA (Grouped Query Attention) relative to MHA and MQA. (Choose all that apply.)",
+  "options": [
+    { "id": "A", "text": "GQA reduces per-token KV cache to 2 * G * d per layer (G = number of KV groups), which for typical G = H/8 or H/4 gives 4-8x KV footprint reduction over MHA." },
+    { "id": "B", "text": "GQA reduces total attention FLOPs at inference by the same factor as it reduces KV heads, because each query head only needs to compute attention against a subset of KV heads." },
+    { "id": "C", "text": "GQA is typically found to preserve model quality better than MQA, at the cost of using more KV memory than MQA but still much less than MHA." },
+    { "id": "D", "text": "GQA cannot be applied to a pretrained MHA model without full retraining, because the arrangement of KV heads is a topological property of the attention operator that is not amenable to post-hoc adaptation." }
+  ],
+  "correctAnswers": ["A", "C"],
+  "explanation": "A is correct: GQA groups H query heads into G KV groups; per-token KV cache is 2*G*d per layer, and typical H/G ratios of 4-8 give the same factor of reduction over MHA. C is correct: this is the empirical motivation for GQA (better quality than MQA at slightly higher memory). B is wrong: total attention FLOPs per token do not shrink because each query head still computes a full Q@K^T against its shared K (the same total number of multiply-adds; only the memory reads are shared). D is wrong: GQA can be initialized from an MHA checkpoint by averaging or replicating KV projections and then finetuned briefly.",
+  "optionExplanations": {
+    "A": "Correct: canonical GQA footprint formula.",
+    "C": "Correct: empirical finding motivating GQA.",
+    "B": "Wrong: FLOPs are unchanged; only KV bandwidth/storage shrinks.",
+    "D": "Wrong: 'uptraining' from MHA to GQA is a documented practice."
+  },
+  "assumptions": [
+    "G divides H evenly; each group of H/G query heads shares one KV head.",
+    "Discussion is inference decode compute/memory, not training."
+  ],
+  "nonImplications": [
+    "Does not imply GQA always matches MHA quality; it is a compromise.",
+    "Does not imply that any G value is optimal; the choice depends on model scale and data."
+  ],
+  "misconceptionTags": ["gqa_reduces_flops_myth", "mha_gqa_conversion_myth"],
+  "distractorRationales": {
+    "B": "Confuses memory reduction with FLOP reduction.",
+    "D": "Denies the standard uptraining recipe."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:sze-eff", "locator": "Attention variants — compute vs memory", "supports": ["A", "C"] },
+    { "ref": "PAPER:flashattn", "locator": "Related work — GQA/MQA overview", "supports": ["A"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "GQA memory reduction and quality trade-off vs MHA/MQA",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/I/I-GQA-008.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

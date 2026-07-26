@@ -1,0 +1,62 @@
+{
+  "id": "M-GSPMD-012",
+  "type": "single",
+  "module": "distributed",
+  "subtopic": "GSPMD sharding propagation",
+  "learningObjective": "Explain GSPMD's sharding-propagation design: how user annotations become a fully sharded graph.",
+  "archetype": "paper_design_intent",
+  "difficulty": 4,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "Multi-device cluster",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "GSPMD (XLA)",
+    "stability": "stable_principle"
+  },
+  "stem": "The GSPMD paper describes a sharding-propagation pass that turns a partially-annotated graph into a fully sharded one. What is the core design intent of propagation, as argued by the paper?",
+  "options": [
+    { "id": "A", "text": "To search over all possible partitioning strategies at runtime and pick the one with the lowest measured latency, so annotations serve only as a starting point for a runtime autotuner." },
+    { "id": "B", "text": "To transform every collective into a point-to-point send/recv so that any topology can be supported, at the cost of removing NCCL AllReduce optimizations." },
+    { "id": "C", "text": "To bypass the XLA compiler entirely and generate CUDA code directly from the sharding annotations, avoiding HLO-level intermediate representation." },
+    { "id": "D", "text": "To eliminate the need for the user to annotate every tensor: given a small number of sharding hints, the compiler pushes constraints through operators (respecting each op's propagation rules) and inserts reshard collectives at boundaries where required and produced sharding disagree." }
+  ],
+  "correctAnswers": ["D"],
+  "explanation": "The GSPMD paper's key design intent is that user annotations are sparse (a few key tensors), and the compiler propagates them algorithmically through operator-specific rules, inserting reshard collectives where downstream ops require a different sharding than what upstream produced. This is a compile-time transformation over HLO; the goal is expressive-but-lightweight user interface plus a systematic partitioner.",
+  "optionExplanations": {
+    "A": "Wrong: GSPMD is a compile-time system, not a runtime autotuner.",
+    "B": "Wrong: GSPMD emits standard collectives (AllReduce, AllGather, etc.), not raw point-to-point.",
+    "C": "Wrong: GSPMD operates over HLO, does not bypass XLA.",
+    "D": "Correct: the paper's stated propagation-and-reshard design."
+  },
+  "assumptions": [
+    "The reader is familiar with GSPMD/XLA's operator-level sharding rules.",
+    "'Annotation' means an sharding attribute attached to a tensor in HLO."
+  ],
+  "nonImplications": [
+    "Does not imply propagation always produces the globally optimal partitioning; it uses heuristics.",
+    "Does not imply that every graph is expressible in SPMD; some patterns benefit from user re-annotation."
+  ],
+  "misconceptionTags": ["gspmd_runtime_only", "gspmd_annotate_everything"],
+  "distractorRationales": {
+    "A": "Confuses GSPMD with a runtime search system.",
+    "B": "Fabricates a collective-substitution design.",
+    "C": "Fabricates a compilation flow that skips HLO."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:gspmd", "locator": "§3 sharding propagation algorithm and its role", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-GSPMD-012.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

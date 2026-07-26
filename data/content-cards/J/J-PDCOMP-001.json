@@ -1,0 +1,49 @@
+{
+  "questionId": "J-PDCOMP-001",
+  "learningObjective": "Distinguish the compute and memory characteristics of prefill and decode phases in autoregressive LLM inference.",
+  "canonicalClaims": [
+    {
+      "claim": "In batch-1 LLM inference, prefill is compute-bound on the QKV/MLP GEMMs (intensity scales with prompt length P), while decode is memory-bandwidth bound (each linear op is a batch-1 GEMV with intensity ~1 flop/byte).",
+      "conditions": [
+        "Batch size 1.",
+        "Dense (non-MoE) transformer."
+      ],
+      "nonImplications": [
+        "Does not imply the classification holds at large batch size for decode.",
+        "Does not imply prefill is always faster per user; wall-clock depends on P."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 2" },
+        { "ref": "PAPER:orca", "locator": "Sec 3" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Prefill and decode have the same arithmetic intensity because they use the same weights.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Intensity depends on activation shape reuse; P tokens reuse weights P times.",
+      "sourceOrEvidence": "Roofline analysis of transformer inference"
+    },
+    {
+      "claim": "Decode is compute-bound; that's why it needs quantization.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "Decode is bandwidth-bound; quantization helps precisely because it reduces bandwidth.",
+      "sourceOrEvidence": "Decode roofline analysis"
+    },
+    {
+      "claim": "Prefill is memory-bound because it reads all weights once.",
+      "errorType": "overgeneralization",
+      "whyWrong": "For non-trivial P, GEMMs have compute-bound intensity; weights are streamed but many flops per byte are extracted.",
+      "sourceOrEvidence": "GEMM roofline"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM, SGLang, and TRT-LLM all track prefill vs decode as distinct scheduling classes.",
+    "Chunked prefill and continuous batching are motivated by this asymmetry."
+  ],
+  "performanceScenarios": [
+    "Large batches turn decode into an aggregated GEMV that can approach compute-bound (batched matmul)."
+  ],
+  "versionSensitivity": "stable_principle"
+}

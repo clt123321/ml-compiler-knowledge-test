@@ -1,0 +1,61 @@
+{
+  "id": "K-SHAPE-026",
+  "type": "multiple",
+  "module": "runtime_deploy",
+  "subtopic": "Shape runtime and dynamic shapes",
+  "learningObjective": "Reason about how a runtime handles dynamic (unknown-at-compile-time) shapes: symbolic dim tracking, allocator reservation, and specialization vs generalization trade-offs.",
+  "archetype": "precise_definition",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic (AOTInductor, TensorRT, TVM, IREE)",
+    "stability": "stable_principle"
+  },
+  "stem": "Which statements about how modern ML runtimes handle dynamic shapes are correct? (Select all that apply.)",
+  "options": [
+    { "id": "A", "text": "A shape runtime maintains symbolic descriptors for tensor dimensions (batch = N, seq_len = S) and evaluates them at run time based on actual input shapes; downstream kernels can be parameterized on those symbols or specialized." },
+    { "id": "B", "text": "Compilers typically declare a set of shape ranges (min / opt / max, or bucketed shapes) at build time; runtime inputs falling within a supported range use the generalized kernel, while inputs outside the range typically trigger a fallback, recompilation, or error." },
+    { "id": "C", "text": "Fully-dynamic shapes and fully-static shapes are equivalent in cost: any modern compiler can generate a single kernel that is as fast on unknown shapes as on known ones, because dynamic-shape codegen has no runtime overhead versus fully specialized codegen." },
+    { "id": "D", "text": "Bucketing (grouping inputs into a small set of pre-compiled shape classes) is a standard practical trade-off: it retains most of the specialization benefit while covering a large range of real workloads, at the cost of build time proportional to the number of buckets." }
+  ],
+  "correctAnswers": ["A", "B", "D"],
+  "explanation": "A: symbolic dim tracking is the standard mechanism (torch.export's SymInt, TensorRT's dynamic dims, TVM's symbolic vars). B: shape ranges/optimization profiles are declared at build time and inputs outside them are not silently accepted. D: bucketing (padding inputs to canonical sizes or precompiling several bucket kernels) is a well-known deployment trade-off. C is wrong: dynamic-shape kernels typically have some overhead versus fully specialized ones (bounds checks, mask handling, less-tight tile shapes), and cost is not equal.",
+  "optionExplanations": {
+    "A": "Correct: symbolic dim descriptors are the standard tool.",
+    "B": "Correct: shape ranges must be declared at build.",
+    "C": "Wrong: dynamic and static shapes are not zero-cost equivalent.",
+    "D": "Correct: bucketing is a mainstream practical technique."
+  },
+  "assumptions": [
+    "The runtime supports dynamic shapes (most modern stacks do to some degree)."
+  ],
+  "nonImplications": [
+    "Does not imply dynamic-shape kernels are always slow; the gap is often small for large ops.",
+    "Does not imply bucketing works for all workloads; extreme shape variability may exhaust the bucket budget."
+  ],
+  "misconceptionTags": ["dynamic_equals_static_myth"],
+  "distractorRationales": {
+    "C": "Overgeneralizes about zero-cost dynamic shapes."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:torch-export", "locator": "torch.export dynamic shapes (SymInt)", "supports": ["A"] },
+    { "ref": "DOC:trt", "locator": "TensorRT optimization profiles (dynamic ranges)", "supports": ["B", "D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Dynamic-vs-static kernel cost, bucketing trade-off in deployment",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/K/K-SHAPE-026.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

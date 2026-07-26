@@ -1,0 +1,63 @@
+{
+  "id": "M-OVERLAP-005",
+  "type": "multiple",
+  "module": "distributed",
+  "subtopic": "Communication/computation overlap preconditions",
+  "learningObjective": "Identify the preconditions under which a compiler or DDP-style runtime can overlap gradient AllReduce with the backward compute of earlier layers.",
+  "archetype": "systems_dataflow",
+  "difficulty": 3,
+  "depth": "systems",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "Multi-GPU node with NVLink and/or NIC",
+    "device": "GPU",
+    "requiredFeatures": ["multi-stream execution", "async collective launch"]
+  },
+  "softwareContext": {
+    "framework": "NCCL / DDP-style runtime",
+    "stability": "stable_principle"
+  },
+  "stem": "A data-parallel training runtime wants to overlap gradient AllReduce with the backward compute of earlier layers. Which two conditions are together sufficient for the accelerator scheduler to actually run them concurrently? (Select exactly TWO.)",
+  "options": [
+    { "id": "A", "text": "The gradient AllReduce is launched on a stream distinct from the backward-compute stream, and the collective backend supports non-blocking asynchronous execution." },
+    { "id": "B", "text": "The reduced gradient is not consumed by any op earlier than the optimizer step (or a later synchronization point), so the runtime does not have to insert a wait between the AllReduce and the ongoing backward compute." },
+    { "id": "C", "text": "The compiler reorders the backward pass so that all AllReduce operations are executed after the entire backward compute has finished, then a single fused AllReduce is emitted." },
+    { "id": "D", "text": "The accelerator has a dedicated communication core separate from its compute cores; on GPUs without such a core, overlap is impossible." }
+  ],
+  "correctAnswers": ["A", "B"],
+  "explanation": "For actual concurrency, the collective must be on a stream independent of compute AND the reduced result must not be required by ongoing backward compute (only by the optimizer). Both conditions are necessary; together they are sufficient for the scheduler to execute the two streams in parallel. C describes serialization (the opposite of overlap). D is a hardware fallacy: overlap is achieved via distinct streams and DMA engines, not a separate 'communication core'.",
+  "optionExplanations": {
+    "A": "Correct: distinct streams + async launch is the standard mechanism for GPU stream-level concurrency.",
+    "B": "Correct: without dependency on the reduced result, the compute stream can continue without waiting.",
+    "C": "Wrong: this defeats the purpose of overlap by fully serializing the two phases.",
+    "D": "Wrong: no dedicated communication core is required; NVLink/PCIe DMA runs concurrently with SM compute."
+  },
+  "assumptions": [
+    "Backend supports non-blocking collectives (e.g. NCCL on a separate stream).",
+    "Link bandwidth is not saturated by compute stream memory traffic."
+  ],
+  "nonImplications": [
+    "Does not imply that overlap always yields net speedup; if compute is short relative to communication, gains are small.",
+    "Does not imply bucketing is unnecessary; bucketing amortizes launch/latency overhead orthogonally to overlap."
+  ],
+  "misconceptionTags": ["overlap_needs_dedicated_core", "overlap_needs_reorder"],
+  "distractorRationales": {
+    "C": "Confuses serialization with overlap.",
+    "D": "Hardware fallacy about dedicated communication cores."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:hp6", "locator": "Ch. 6 latency hiding, comm/compute overlap", "supports": ["A", "B"] },
+    { "ref": "DOC:cuda-guide", "locator": "Streams and concurrent kernel execution", "supports": ["A"] },
+    { "ref": "PAPER:gspmd", "locator": "§4 overlap of collectives with partitioned compute", "supports": ["B"] }
+  ],
+  "performanceClaim": {
+    "present": false,
+    "evidenceType": "none",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-OVERLAP-005.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

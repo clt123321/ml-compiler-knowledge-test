@@ -1,0 +1,38 @@
+{
+  "questionId": "N-TRITON-005",
+  "learningObjective": "Explain why the Triton paper introduces a tile-level IR, positioned between CUDA-thread and pure tensor abstractions.",
+  "canonicalClaims": [
+    {
+      "claim": "The Triton paper introduces a tile-level (block-of-elements) programming abstraction so that per-thread bookkeeping (indices, coalescing, shared-memory staging, register tiling) is handled by the compiler while the user still controls block sizes, memory access patterns via block pointers/offsets, and program-level parallelism, striking a middle ground between raw CUDA (thread-level) and high-level tensor libraries.",
+      "conditions": [
+        "The programmer writes kernels at the tile granularity (a program processes a block of elements).",
+        "The compiler is responsible for translating tile-level ops into per-thread PTX with vectorization, coalescing and shared-memory usage."
+      ],
+      "nonImplications": [
+        "Does not imply Triton is faster than hand-tuned CUDA on every kernel; it targets productivity + competitive performance for many common ops.",
+        "Does not imply the tile-level IR eliminates the need to think about memory access patterns; users still choose block shapes and offsets."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:triton", "locator": "§2–§3 tile-level abstraction and compiler responsibilities" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Triton exposes the same thread/warp/block hierarchy as CUDA; programmers still write per-thread indexing manually.",
+      "errorType": "definition_confusion",
+      "whyWrong": "The paper's key departure from CUDA is to hide per-thread indexing behind tile-level ops; the compiler emits per-thread code from tile-level programs."
+    },
+    {
+      "claim": "Triton is a Python DSL that compiles to NumPy; it does not target GPU hardware.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Triton compiles Python-embedded tile-level kernels to GPU PTX (via LLVM), targeting NVIDIA GPUs (with ongoing AMD support)."
+    },
+    {
+      "claim": "Triton's IR is at the same level of abstraction as PyTorch tensor operations; there is no notion of block/tile.",
+      "errorType": "scope_error",
+      "whyWrong": "Triton sits below tensor libraries: users choose block sizes, offsets and mask patterns explicitly, unlike PyTorch tensor ops."
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

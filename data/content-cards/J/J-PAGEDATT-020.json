@@ -1,0 +1,49 @@
+{
+  "questionId": "J-PAGEDATT-020",
+  "learningObjective": "Explain how a PagedAttention kernel differs from a FlashAttention kernel and what block-table indirection costs at execution time.",
+  "canonicalClaims": [
+    {
+      "claim": "PagedAttention adds a block-table lookup to a FlashAttention-style kernel: per KV block, look up its physical HBM address in the per-sequence block table, then stream that block into SMEM and run standard online-softmax attention math. Overhead is per-block, not per-element.",
+      "conditions": [
+        "Block size typical 16 tokens.",
+        "Block table small enough to fit alongside KV blocks in HBM."
+      ],
+      "nonImplications": [
+        "Does not imply approximate attention.",
+        "Does not imply a gather-to-contiguous step."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 3" },
+        { "ref": "DOC:vllm", "locator": "PagedAttention kernels" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "PagedAttention gathers scattered blocks into a contiguous buffer before attention math.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Blocks are loaded directly into SMEM; no gather-to-contiguous step.",
+      "sourceOrEvidence": "vLLM paper Sec 3"
+    },
+    {
+      "claim": "PagedAttention is an approximate sparse attention.",
+      "errorType": "definition_confusion",
+      "whyWrong": "It is exact; paging refers to memory layout only.",
+      "sourceOrEvidence": "vLLM paper Sec 3"
+    },
+    {
+      "claim": "PagedAttention stores KV in host memory.",
+      "errorType": "definition_confusion",
+      "whyWrong": "KV lives in HBM; the page table maps virtual position to HBM block.",
+      "sourceOrEvidence": "vLLM paper Sec 3"
+    }
+  ],
+  "implementationFacts": [
+    "vLLM ships two PagedAttention kernel variants (v1, v2) with different tiling strategies.",
+    "FlashAttention with paged KV cache is also supported (FlashAttention-2 has a paged mode)."
+  ],
+  "performanceScenarios": [
+    "Measured PagedAttention latency is within a few percent of contiguous FlashAttention in production."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

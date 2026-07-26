@@ -1,0 +1,50 @@
+{
+  "questionId": "J-KVCAP-007",
+  "learningObjective": "Compute the KV cache memory footprint of a specific model configuration and reason about capacity limits.",
+  "canonicalClaims": [
+    {
+      "claim": "Per-token KV cache footprint = 2 (K and V) * L (layers) * H_kv * d * sizeof(dtype); total capacity = HBM budget for KV / per-token footprint.",
+      "conditions": [
+        "Uniform per-layer KV shape.",
+        "H_kv is the number of KV heads (not query heads)."
+      ],
+      "nonImplications": [
+        "Does not account for paged-cache internal fragmentation.",
+        "Does not include workspace or activation buffers."
+      ],
+      "sourceMappings": [
+        { "ref": "PAPER:vllm", "locator": "Sec 2" },
+        { "ref": "DOC:vllm", "locator": "KV cache sizing" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Per-token KV uses H (query heads), not H_kv.",
+      "errorType": "definition_confusion",
+      "whyWrong": "MQA/GQA is defined precisely to reduce this to H_kv; using H overstates the footprint.",
+      "sourceOrEvidence": "MQA/GQA definitions"
+    },
+    {
+      "claim": "Per-token KV is one entry across all layers.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Every layer has its own KV cache; total is L * per-layer.",
+      "sourceOrEvidence": "Transformer architecture"
+    },
+    {
+      "claim": "KV cache is a fixed cost per sequence and does not scale with length.",
+      "errorType": "definition_confusion",
+      "whyWrong": "KV grows one entry per token per layer.",
+      "sourceOrEvidence": "Standard KV cache formula"
+    }
+  ],
+  "implementationFacts": [
+    "Per-token KV for Llama-2-7B (32L, 32 KV, 128 d, FP16) = 512 KB; Llama-2-70B GQA (80L, 8 KV, 128 d, FP16) = 320 KB.",
+    "KV cache is often the tightest resource for long-context batch serving."
+  ],
+  "performanceScenarios": [
+    "Doubling context length cuts effective batch size roughly in half at fixed HBM budget.",
+    "MQA/GQA and KV quantization are direct capacity levers."
+  ],
+  "versionSensitivity": "stable_principle"
+}

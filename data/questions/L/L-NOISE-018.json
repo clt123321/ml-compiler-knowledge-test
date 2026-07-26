@@ -1,0 +1,64 @@
+{
+  "id": "L-NOISE-018",
+  "type": "single",
+  "module": "profiling_debug",
+  "subtopic": "Performance noise and reporting statistics",
+  "learningObjective": "Choose a robust statistic (median or a percentile) rather than mean when reporting kernel latency in the presence of outliers.",
+  "archetype": "performance_diagnosis",
+  "difficulty": 2,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "NVIDIA",
+    "architecture": "any CUDA-capable",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Given the following 20 warmed-up per-iter latencies of the same kernel, which single number is the most defensible headline for a report and why?",
+  "profileData": "Per-iter latency, ms (sorted): 2.10, 2.12, 2.14, 2.15, 2.15, 2.16, 2.17, 2.17, 2.18, 2.18, 2.19, 2.19, 2.20, 2.21, 2.22, 2.23, 2.25, 2.30, 5.80, 12.4\n\nSummary:\n  mean   = 2.98 ms\n  median = 2.18 ms\n  p95    = 5.80 ms\n  p99    = 12.4 ms (single sample)\n  std    = 2.5 ms",
+  "options": [
+    { "id": "A", "text": "The mean (2.98 ms) is a good headline because it summarizes all 20 samples in a single number, and mean is the standard statistic in scientific reporting." },
+    { "id": "B", "text": "The p99 (12.4 ms) is a good headline because it represents worst-case behavior and captures the tail; when in doubt, always report the worst observed sample as the summary number." },
+    { "id": "C", "text": "The median (2.18 ms) is the most defensible headline: it is robust to the two obvious outliers (5.80 ms and 12.4 ms), agrees with the bulk of the distribution, and does not overstate steady-state cost. Ideally the report should include median plus one or more tail percentiles (p95, p99) rather than a single number." },
+    { "id": "D", "text": "The std (2.5 ms) is the most useful headline because it captures the spread; readers can infer any percentile from mean ± std under the assumption of a normal distribution of kernel latencies." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "With 20 samples containing 2 clear outliers, the mean is pulled far above the bulk of the distribution (2.98 vs 2.18 ms). Median (or a robust central estimator like trimmed mean) reflects the typical steady-state behavior; tail percentiles capture the rare bad case. Reporting only mean or only p99 misleads. Standard deviation assumes normality which does not hold for latency (usually right-skewed with a heavy tail).",
+  "optionExplanations": {
+    "A": "Wrong: mean is not robust to outliers common in latency distributions.",
+    "B": "Wrong: p99 on 20 samples is essentially one worst-case sample; unstable and not representative.",
+    "C": "Correct: median (with additional tail percentiles) is the standard robust choice.",
+    "D": "Wrong: latency distributions are right-skewed; std does not encode percentiles under a normal assumption that fails."
+  },
+  "assumptions": [
+    "The two outliers (5.80 ms, 12.4 ms) reflect infrequent noise events (GC, driver events), not the target measurement."
+  ],
+  "nonImplications": [
+    "Does not imply mean is never useful; for total-throughput calculations it can be appropriate.",
+    "Does not imply p99 should be ignored; it is essential for latency SLOs, just not as a stand-alone headline."
+  ],
+  "misconceptionTags": ["mean_as_default", "normality_assumption"],
+  "distractorRationales": {
+    "A": "Not robust to outliers.",
+    "B": "Single-sample p99 with n=20 is unstable.",
+    "D": "Wrong distributional assumption."
+  },
+  "sourceRefs": [
+    { "ref": "DOC:cuda-best", "locator": "Timing methodology and outlier handling", "supports": ["C"] },
+    { "ref": "DOC:torch-profiler", "locator": "Reporting practices in profiler output", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Kernel latency reporting statistics under a right-skewed distribution",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/L/L-NOISE-018.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

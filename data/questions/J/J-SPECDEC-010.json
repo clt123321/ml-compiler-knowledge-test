@@ -1,0 +1,63 @@
+{
+  "id": "J-SPECDEC-010",
+  "type": "single",
+  "module": "llm_inference",
+  "subtopic": "Speculative decoding / Basic mechanism",
+  "learningObjective": "Explain the mechanism of speculative decoding and its correctness property.",
+  "archetype": "concept_boundary",
+  "difficulty": 3,
+  "depth": "research",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any modern GPU",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "Which description of speculative decoding for LLM inference is correct?",
+  "options": [
+    { "id": "A", "text": "A small 'draft' model is used to generate k candidate tokens at once by predicting all k positions in parallel; the target model is then used only to compute a probability for the whole k-token sequence, and the whole sequence is accepted if the joint probability exceeds a threshold." },
+    { "id": "B", "text": "Speculative decoding uses a distilled quantized version of the target model as the sole decoder; the 'speculative' name refers to running INT4 arithmetic that may be numerically wrong but recovers quality through calibration." },
+    { "id": "C", "text": "A smaller/faster draft model proposes k tokens autoregressively. The target model runs one forward pass on all k proposed positions (like a k-token prefill) and, using its own logits, accepts a prefix of the proposal by comparing probabilities per position via rejection sampling; the accepted prefix has the exact same distribution as target-only sampling." },
+    { "id": "D", "text": "The target model itself decodes in parallel over k positions by conditioning each of the k output positions on the same input hidden state; the 'draft' terminology refers to these draft positions being generated in one shot before being ranked." }
+  ],
+  "correctAnswers": ["C"],
+  "explanation": "Speculative decoding (Leviathan et al., 2023) uses a small/fast draft model to propose k tokens autoregressively, then does a single target-model forward on all k positions (equivalent to k-token prefill for the target). Using rejection sampling comparing draft and target probabilities per position, a prefix of the proposal is accepted; the retained distribution is exactly the target model's sampling distribution. On acceptance of j <= k tokens, one target forward yields j+1 output tokens (j accepted plus one new sampled by target when rejection happens), improving throughput without changing sampling semantics.",
+  "optionExplanations": {
+    "C": "Correct: canonical speculative decoding mechanism.",
+    "A": "Wrong: draft model is used autoregressively for k steps; acceptance is per-token via rejection sampling.",
+    "B": "Wrong: describes model quantization, not speculative decoding.",
+    "D": "Wrong: describes non-autoregressive generation, not spec decoding."
+  },
+  "assumptions": [
+    "Both draft and target use the same vocabulary and tokenization.",
+    "Rejection sampling scheme correctly implemented."
+  ],
+  "nonImplications": [
+    "Does not imply arbitrary speedup; benefit depends on the acceptance rate.",
+    "Does not imply the draft model's outputs are ever visible; only accepted tokens flow to the user."
+  ],
+  "misconceptionTags": ["specdec_joint_probability_myth", "specdec_quantization_confusion"],
+  "distractorRationales": {
+    "A": "Fabricates joint-probability threshold.",
+    "B": "Confuses with quantization.",
+    "D": "Confuses with non-autoregressive generation."
+  },
+  "sourceRefs": [
+    { "ref": "PAPER:specdecode", "locator": "Sec 2-3 — algorithm and rejection sampling", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Speculative decoding mechanism and correctness",
+    "evidenceType": "paper_result",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/J/J-SPECDEC-010.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

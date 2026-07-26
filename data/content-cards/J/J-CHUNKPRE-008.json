@@ -1,0 +1,51 @@
+{
+  "questionId": "J-CHUNKPRE-008",
+  "learningObjective": "Explain what chunked prefill is and why it improves multi-tenant serving under mixed prefill+decode load.",
+  "canonicalClaims": [
+    {
+      "claim": "Chunked prefill splits a long prefill into fixed-size chunks (e.g., 512-2048 tokens) and interleaves each chunk into model-forward iterations shared with ongoing decode requests, keeping TPOT bounded for other tenants while the long prefill makes forward progress.",
+      "conditions": [
+        "Serving supports continuous / inflight batching.",
+        "Chunk size is a tunable parameter."
+      ],
+      "nonImplications": [
+        "Does not speed up prefill in isolation.",
+        "Does not require any specific KV cache layout, though it composes with paged KV."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:sglang", "locator": "Chunked prefill scheduler" },
+        { "ref": "DOC:vllm", "locator": "Chunked prefill" },
+        { "ref": "DOC:trtllm", "locator": "Chunked context" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "Chunked prefill is context parallelism across GPUs.",
+      "errorType": "definition_confusion",
+      "whyWrong": "Context/sequence parallelism splits across devices; chunked prefill is a within-device scheduling policy.",
+      "sourceOrEvidence": "SGLang docs"
+    },
+    {
+      "claim": "Chunked prefill's primary purpose is fitting activations in HBM.",
+      "errorType": "scope_error",
+      "whyWrong": "The primary motivation is scheduling fairness / TPOT; activation memory is a secondary consideration.",
+      "sourceOrEvidence": "SGLang/vLLM design docs"
+    },
+    {
+      "claim": "Chunked prefill improves prefill throughput.",
+      "errorType": "wrong_causal_direction",
+      "whyWrong": "It typically adds small overhead per chunk; the win is in tail-latency / fairness for other requests.",
+      "sourceOrEvidence": "vLLM benchmarks"
+    }
+  ],
+  "implementationFacts": [
+    "Chunk size is a tunable knob; too small increases overhead, too large defeats the purpose.",
+    "Chunked prefill is combined with continuous batching in vLLM, SGLang, and TRT-LLM."
+  ],
+  "performanceScenarios": [
+    "Multi-tenant serving with mixed prompt lengths sees the largest tail-latency benefit.",
+    "Single-request workloads see no benefit and slight overhead."
+  ],
+  "versionSensitivity": "version_sensitive"
+}

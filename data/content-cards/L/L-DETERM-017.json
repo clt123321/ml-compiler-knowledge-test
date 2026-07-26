@@ -1,0 +1,47 @@
+{
+  "questionId": "L-DETERM-017",
+  "learningObjective": "Identify sources of non-determinism in GPU-based ML training/inference and which knobs (deterministic algorithms flag, atomic-free kernels, seed control) address them.",
+  "canonicalClaims": [
+    {
+      "claim": "Cross-block atomicAdd on floats and non-deterministic cuDNN algorithm selection are two of the main GPU non-determinism sources; PyTorch's deterministic-algorithms flag and cudnn.deterministic address the latter but do not guarantee cross-architecture bit-identity.",
+      "conditions": [
+        "Same GPU/software stack across runs.",
+        "Determinism flags actually set and seeds fixed."
+      ],
+      "nonImplications": [
+        "Does not imply determinism is free of performance cost.",
+        "Does not imply cross-architecture bit-identity."
+      ],
+      "sourceMappings": [
+        { "ref": "DOC:torch-profiler", "locator": "Reproducibility notes" }
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "claim": "deterministic-algorithms guarantees cross-architecture bit-identity.",
+      "errorType": "overgeneralization",
+      "whyWrong": "Different hardware runs different code paths; bit-identity is not a guarantee.",
+      "sourceOrEvidence": "PyTorch reproducibility docs"
+    },
+    {
+      "claim": "Fixing RNG seeds is sufficient for determinism.",
+      "errorType": "scope_error",
+      "whyWrong": "Op-level non-determinism (atomics, cuDNN choice) is orthogonal to RNG seeds.",
+      "sourceOrEvidence": "PyTorch reproducibility docs"
+    },
+    {
+      "claim": "atomicAdd of floats is deterministic under a fixed CUDA driver version.",
+      "errorType": "definition_confusion",
+      "whyWrong": "CUDA does not order concurrent atomics; results depend on scheduling.",
+      "sourceOrEvidence": "CUDA C++ Programming Guide"
+    },
+    {
+      "claim": "cuDNN always picks the same algorithm given the same input shapes.",
+      "errorType": "definition_confusion",
+      "whyWrong": "In benchmark mode cuDNN times multiple algorithms and picks the fastest per run, which may vary.",
+      "sourceOrEvidence": "cuDNN benchmark mode docs"
+    }
+  ],
+  "versionSensitivity": "stable_principle"
+}

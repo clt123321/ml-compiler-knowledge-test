@@ -1,0 +1,62 @@
+{
+  "id": "I-FFT-023",
+  "type": "multiple",
+  "module": "core_ops_attention",
+  "subtopic": "FFT / Custom operator characteristics",
+  "learningObjective": "Reason about the memory and compute characteristics of FFT and related transforms as custom operators inside ML models.",
+  "archetype": "concept_boundary",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "any",
+    "device": "GPU",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "framework": "generic",
+    "stability": "stable_principle"
+  },
+  "stem": "A model uses a 1D FFT of length N (with N a power of two) as a custom operator inside a layer. Select all correct statements about this operator on GPU. (Choose all that apply.)",
+  "options": [
+    { "id": "A", "text": "The Cooley-Tukey FFT has O(N log N) compute (versus O(N^2) for a naive DFT); on modern GPUs cuFFT organizes the computation into O(log N) rounds of butterfly operations, each round with a specific stride pattern that dominates its memory access." },
+    { "id": "B", "text": "FFT of length N reads/writes O(N) elements per round; the compute-to-byte ratio per round is essentially constant (small), which makes FFT of large N memory-bandwidth bound on GPU rather than compute bound." },
+    { "id": "C", "text": "Because FFT preserves L2 norms (Parseval), it introduces no numerical error and can therefore be treated as a bit-exact linear operator regardless of floating-point precision used." },
+    { "id": "D", "text": "In ML models, FFT is often used to accelerate long-range convolutions via the convolution theorem: conv(a, b) = IFFT(FFT(a) * FFT(b)); the crossover point where FFT-based convolution beats direct convolution grows with kernel size." }
+  ],
+  "correctAnswers": ["A", "B", "D"],
+  "explanation": "A is correct: Cooley-Tukey achieves O(N log N) via log N butterfly stages. B is correct: each stage reads and writes O(N) elements with a small constant amount of compute per element, making the operator bandwidth-bound. D is correct: FFT-based convolution's cost is O((N+K) log(N+K)) vs O(N*K) for direct; large K makes FFT competitive (this is the basis of long-range convolutional layers like FlashFFT / SSMs). C is wrong: FFT is not bit-exact; it involves complex multiplications with irrational twiddle factors and accumulates rounding error; Parseval is a mathematical identity in exact arithmetic, not a numerical guarantee.",
+  "optionExplanations": {
+    "A": "Correct: O(N log N) with log N butterfly rounds.",
+    "B": "Correct: per-round constant flops/byte, hence memory-bound.",
+    "D": "Correct: convolution theorem gives FFT-based conv, competitive for large kernels.",
+    "C": "Wrong: Parseval is an exact-arithmetic identity, not a numerical guarantee; twiddle factors introduce rounding."
+  },
+  "assumptions": [
+    "N is a power of two so radix-2 or radix-4 FFTs apply directly.",
+    "GPU has HBM and standard cuFFT-like optimized implementations available."
+  ],
+  "nonImplications": [
+    "Does not imply FFT is always faster than direct methods for small N; direct is faster below the crossover.",
+    "Does not imply that FFT of a real input equals FFT of a complex input in cost; real FFT is roughly half the cost."
+  ],
+  "misconceptionTags": ["fft_bit_exact_myth", "parseval_numerical_guarantee"],
+  "distractorRationales": {
+    "C": "Confuses exact-arithmetic identity with numerical guarantee."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:pmpp4", "locator": "Chapter on FFT and spectral operators on GPU", "supports": ["A", "B"] },
+    { "ref": "BOOK:sze-eff", "locator": "Frequency-domain convolutions in DNN accelerators", "supports": ["D"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "FFT compute and memory characteristics on GPU",
+    "evidenceType": "analytical",
+    "hardwareDependent": true
+  },
+  "contentCardRef": "data/content-cards/I/I-FFT-023.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}

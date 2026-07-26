@@ -1,0 +1,62 @@
+{
+  "id": "M-COSTAG-011",
+  "type": "multiple",
+  "module": "distributed",
+  "subtopic": "AllGather / ReduceScatter / AllReduce cost relationships",
+  "learningObjective": "Compare the per-rank bandwidth costs of ring-AllGather, ring-ReduceScatter and ring-AllReduce and the relationships between them.",
+  "archetype": "formula_performance",
+  "difficulty": 4,
+  "depth": "implementation",
+  "hardwareContext": {
+    "vendor": "generic",
+    "architecture": "Ring topology, N ranks",
+    "device": "generic",
+    "requiredFeatures": []
+  },
+  "softwareContext": {
+    "stability": "stable_principle"
+  },
+  "stem": "For a total payload of S bytes on N ranks arranged as a ring, ignoring the latency term α, which THREE of the following statements about per-rank bandwidth cost are correct?",
+  "options": [
+    { "id": "A", "text": "Ring-AllGather per rank sends and receives (N-1)/N · S bytes (each rank starts with its own S/N shard and must receive the remaining (N-1)·(S/N))." },
+    { "id": "B", "text": "Ring-ReduceScatter per rank moves (N-1)/N · S bytes, matching AllGather's per-rank cost." },
+    { "id": "C", "text": "Ring-AllReduce cost equals the sum of ring-ReduceScatter and ring-AllGather, i.e. 2·(N-1)/N · S per rank." },
+    { "id": "D", "text": "Ring-AllGather per rank must move N · S bytes because every rank has to see every other rank's full copy of the payload." }
+  ],
+  "correctAnswers": ["A", "B", "C"],
+  "explanation": "A, B, C are the standard ring-collective costs. AllGather receives S − S/N = (N-1)/N · S per rank. ReduceScatter on a ring pipelines partial reductions with the same per-rank byte movement, (N-1)/N · S. AllReduce = ReduceScatter + AllGather = 2·(N-1)/N · S per rank. D is wrong: no rank ends with N·S bytes; every rank ends with S bytes (the whole payload once).",
+  "optionExplanations": {
+    "A": "Correct: canonical AllGather cost on a ring.",
+    "B": "Correct: canonical ReduceScatter cost.",
+    "C": "Correct: sum of the two phases.",
+    "D": "Wrong: overcounts by a factor N (confuses per-hop volume with per-rank end state)."
+  },
+  "assumptions": [
+    "The ring implementation is used (no tree/hypercube).",
+    "Latency term α is negligible relative to the bandwidth term.",
+    "S is evenly divisible by N."
+  ],
+  "nonImplications": [
+    "Does not imply the same equalities on hypercube/tree topologies.",
+    "Does not imply the wall-clock cost is exactly (N-1)/N · S / BW; contention and pipelining stalls can push it higher."
+  ],
+  "misconceptionTags": ["ring_ag_double_cost", "ring_rs_double_cost"],
+  "distractorRationales": {
+    "D": "Overcounts by factor N."
+  },
+  "sourceRefs": [
+    { "ref": "BOOK:hp6", "locator": "Ch. 6 cost analysis of ring collectives", "supports": ["A", "B", "C"] },
+    { "ref": "PAPER:gspmd", "locator": "§3 collective cost accounting", "supports": ["C"] }
+  ],
+  "performanceClaim": {
+    "present": true,
+    "scope": "Ring collectives on N ranks with payload S",
+    "evidenceType": "analytical",
+    "hardwareDependent": false
+  },
+  "contentCardRef": "data/content-cards/M/M-COSTAG-011.json",
+  "reviewStatus": "draft",
+  "version": 1,
+  "createdAt": "2026-07-26",
+  "updatedAt": "2026-07-26"
+}
