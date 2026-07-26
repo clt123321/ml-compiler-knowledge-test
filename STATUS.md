@@ -24,8 +24,10 @@ _由主控 Agent 在每个阶段结束时更新。_
 | MAJOR 累计 | 24（全部 Repair 阶段修复） |
 | MINOR 累计 | ~52（多为 shuffle 后 label mismatch，Repair 修复 45） |
 | 人工抽查包大小 | 260 题（每模块 3 + L5 + paper_design + version_sensitive + performanceClaim + CUDA/Triton + needs_source_verification） |
-| 当前分支 | `feat/ml-compiler-knowledge-test-v1` |
-| 远程推送 | pending |
+| 当前分支 | `main`（已合并 feat/ml-compiler-knowledge-test-v1） |
+| 本地 HEAD | `084c294` merge commit |
+| 本地 tag | `v0.1.0`（未推送） |
+| 远程推送 | **失败**：GitHub `403 Permission denied to clt123321`。已保留全部本地提交、tag 与集成分支。 |
 
 ## 阶段追踪
 
@@ -51,7 +53,8 @@ _由主控 Agent 在每个阶段结束时更新。_
       - **累计升级：396**
 - [x] Phase 12: 生成导出（exports/**）
 - [x] Phase 13: 人工抽查包（260 题）
-- [ ] Phase 14: 合并 main + 推送 GitHub
+- [x] Phase 14: 合并到 main（merge commit 084c294）
+- [ ] Phase 15: 推送 GitHub —— **失败** `403 Permission denied`；保留本地状态，等待用户配置凭证后手动 `git push -u origin main` 与 `git push origin v0.1.0`。
 
 ## 保留 draft 题目（4）
 
