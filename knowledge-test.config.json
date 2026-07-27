@@ -3,14 +3,15 @@
   "site": {
     "id": "ml-compiler-knowledge-test",
     "title": "机器学习编译与推理优化知识题库",
-    "description": "覆盖编译器基础、MLIR、TVM、PyTorch Compiler、CUDA、Triton、量化、LLM推理和系统性能分析。400题，14模块，Tier 1/2引用。",
+    "description": "从编译器基础到 CUDA、Triton、量化与 LLM 推理系统的系统化知识测试。",
     "language": "zh-CN",
     "repository": "clt123321/ml-compiler-knowledge-test",
-    "version": "0.1.0"
+    "publicUrl": "https://clt123321.github.io/ml-compiler-knowledge-test/",
+    "version": "0.2.0"
   },
   "content": {
     "questionGlobs": [
-      "data/questions/**/*.json"
+      "exports/kit-question-bank.json"
     ],
     "contentCardGlobs": [
       "data/content-cards/**/*.json"
@@ -23,7 +24,7 @@
       "docs/SYLLABUS.md",
       "docs/LEARNING_PATH.md"
     ],
-    "moduleFile": "manifests",
+    "moduleFile": "modules.json",
     "schemas": {
       "question": "schemas/question.schema.json",
       "contentCard": "schemas/content-card.schema.json",
@@ -80,7 +81,9 @@
     "passingRatio": 0.6,
     "passingRoundUp": true,
     "shuffleQuestions": true,
-    "shuffleOptions": true
+    "shuffleOptions": true,
+    "defaultSingleCount": 60,
+    "defaultMultipleCount": 20
   },
   "presets": {
     "comprehensive": {

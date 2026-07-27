@@ -55,7 +55,7 @@ _由主控 Agent 在每个阶段结束时更新。_
 - [x] Phase 13: 人工抽查包（260 题）
 - [x] Phase 14: 合并到 main（merge commit 084c294）
 - [x] Phase 15: 推送 GitHub —— **成功**（切换 origin → SSH 后 `git push -u origin main` + `git push origin v0.1.0`）。
-- [x] Phase 16: 发布收尾 —— 解析标签扫描（106 命中，4 真实冲突已修复，2 启发式误报）；新增 `knowledge-test.config.json` / KIT 集成文档 / Release Notes / Pages 工作流草案 / MANUAL_GITHUB_SETUP。draft 数由 4 → 8。
+- [x] Phase 16: 发布收尾 —— 解析标签扫描（106 命中，4 真实冲突已修复，2 启发式误报）；新增 `knowledge-test.config.json` / KIT 集成文档 / Release Notes / Pages 配置草案。后续产品化重构已将其收敛为正式 `pages.yml` 与维护文档。draft 数由 4 → 8。
 
 ## 保留 draft 题目（4）
 
