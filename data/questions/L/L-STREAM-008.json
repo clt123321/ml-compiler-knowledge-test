@@ -40,7 +40,7 @@
   "correctAnswers": [
     "A"
   ],
-  "explanation": "The bug is that the events are recorded on the current stream (the default/legacy stream), not on `s1`. Under legacy default-stream semantics, the default stream synchronizes with all user streams; `end_evt.record()` therefore waits for `s2`'s outstanding work as well. Recording the events on `s1` explicitly (`start_evt.record(s1)`, `end_evt.record(s1)`) isolates the measurement to `s1`'s progress. Option A is false (events are per-stream when recorded on that stream). Option C fabricates dividing semantics. Option D misattributes the cause to synchronize.",
+  "explanation": "The bug is that the events are recorded on the current stream (the default/legacy stream), not on `s1`. Under legacy default-stream semantics, the default stream synchronizes with all user streams; `end_evt.record()` therefore waits for `s2`'s outstanding work as well. Recording the events on `s1` explicitly (`start_evt.record(s1)`, `end_evt.record(s1)`) isolates the measurement to `s1`'s progress. Option A is correct. Option B is false — events ARE stream-scoped when recorded via `record(stream)`. Option C fabricates dividing semantics. Option D misattributes the cause to synchronize.",
   "optionExplanations": {
     "A": "Correct: default-stream event record + legacy semantics = accidental cross-stream sync.",
     "B": "Wrong: correctly-placed events do isolate the target stream.",
@@ -86,8 +86,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/L/L-STREAM-008.json",
-  "reviewStatus": "agent_reviewed",
-  "version": 1,
+  "reviewStatus": "draft",
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-27"
 }

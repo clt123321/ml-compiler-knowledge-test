@@ -38,7 +38,7 @@
   "correctAnswers": [
     "B"
   ],
-  "explanation": "Saturation clamps out-of-range results to the nearest representable extreme, preserving monotonicity of the mapping and avoiding catastrophic sign flips. Wrap-around (two's-complement modular arithmetic) is the default behavior of raw integer arithmetic on most hardware; if applied naively during quantization, it produces values that are semantically nonsensical (a large positive becomes a large negative). Quantization frameworks (TensorRT, PyTorch, ONNX Q/DQ, cuDNN) all use saturation. Options B, C, D are unrelated or wrong.",
+  "explanation": "Saturation clamps out-of-range results to the nearest representable extreme, preserving monotonicity of the mapping and avoiding catastrophic sign flips. Wrap-around (two's-complement modular arithmetic) is the default behavior of raw integer arithmetic on most hardware; if applied naively during quantization, it produces values that are semantically nonsensical (a large positive becomes a large negative). Quantization frameworks (TensorRT, PyTorch, ONNX Q/DQ, cuDNN) all use saturation. Options A, C, D are wrong: A wrongly equates saturation with wrap-around, C prefers wrap-around, and D artificially restricts saturation to weights only.",
   "optionExplanations": {
     "A": "Wrong: they are qualitatively different.",
     "B": "Correct: saturation preserves ordinal semantics; wrap-around is catastrophic.",
@@ -82,8 +82,8 @@
     "hardwareDependent": false
   },
   "contentCardRef": "data/content-cards/H/H-SATURATE-031.json",
-  "reviewStatus": "agent_reviewed",
-  "version": 1,
+  "reviewStatus": "draft",
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-27"
 }

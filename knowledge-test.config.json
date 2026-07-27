@@ -1,0 +1,121 @@
+{
+  "schemaVersion": "1.0.0",
+  "site": {
+    "id": "ml-compiler-knowledge-test",
+    "title": "机器学习编译与推理优化知识题库",
+    "description": "覆盖编译器基础、MLIR、TVM、PyTorch Compiler、CUDA、Triton、量化、LLM推理和系统性能分析。400题，14模块，Tier 1/2引用。",
+    "language": "zh-CN",
+    "repository": "clt123321/ml-compiler-knowledge-test",
+    "version": "0.1.0"
+  },
+  "content": {
+    "questionGlobs": [
+      "data/questions/**/*.json"
+    ],
+    "contentCardGlobs": [
+      "data/content-cards/**/*.json"
+    ],
+    "referenceGlobs": [
+      "references/*.md",
+      "references/*.json"
+    ],
+    "syllabusGlobs": [
+      "docs/SYLLABUS.md",
+      "docs/LEARNING_PATH.md"
+    ],
+    "moduleFile": "manifests",
+    "schemas": {
+      "question": "schemas/question.schema.json",
+      "contentCard": "schemas/content-card.schema.json",
+      "manifest": "schemas/manifest.schema.json",
+      "review": "schemas/review.schema.json"
+    },
+    "exports": {
+      "questionBank": "exports/question-bank.json",
+      "questionBankCsv": "exports/question-bank.csv",
+      "moduleCoverage": "exports/module-coverage.json",
+      "sourceCoverage": "exports/source-coverage.json",
+      "reviewSummary": "exports/review-summary.json",
+      "humanSampling": "exports/human-sampling-package.md"
+    }
+  },
+  "modules": [
+    { "code": "A", "name": "arch_perf_model", "label": "计算机体系结构与性能模型", "expected": 30 },
+    { "code": "B", "name": "compiler_basics", "label": "编译器基础与程序分析", "expected": 25 },
+    { "code": "C", "name": "graph_tensor_ir", "label": "计算图、张量程序与中间表示", "expected": 30 },
+    { "code": "D", "name": "pytorch_compiler", "label": "PyTorch Compiler 与动态图捕获", "expected": 35 },
+    { "code": "E", "name": "mlir_tvm_xla", "label": "MLIR / TVM / XLA 与编译器生态", "expected": 30 },
+    { "code": "F", "name": "cuda_triton_kernel", "label": "CUDA / Triton / GPU Kernel", "expected": 40 },
+    { "code": "G", "name": "graph_opt_schedule", "label": "图优化 / 循环变换 / 调度 / 自动调优", "expected": 30 },
+    { "code": "H", "name": "quantization", "label": "数值表示、混合精度与模型量化", "expected": 35 },
+    { "code": "I", "name": "core_ops_attention", "label": "核心算子、融合 Kernel 与 Attention", "expected": 30 },
+    { "code": "J", "name": "llm_inference", "label": "LLM 推理优化与生成系统", "expected": 30 },
+    { "code": "K", "name": "runtime_deploy", "label": "Runtime、模型交换与部署", "expected": 30 },
+    { "code": "L", "name": "profiling_debug", "label": "Profiling / Benchmark / Debug / 正确性", "expected": 30 },
+    { "code": "M", "name": "distributed", "label": "分布式、通信编译与异构执行", "expected": 15 },
+    { "code": "N", "name": "paper_design", "label": "论文设计、系统权衡与研究判断", "expected": 10 }
+  ],
+  "review": {
+    "publicStatuses": [
+      "agent_reviewed",
+      "human_reviewed"
+    ],
+    "practiceStatuses": [
+      "agent_reviewed",
+      "human_reviewed"
+    ],
+    "developerPreviewStatuses": [
+      "draft",
+      "agent_reviewed",
+      "human_reviewed"
+    ],
+    "excludedStatuses": [
+      "deprecated"
+    ]
+  },
+  "exam": {
+    "singleScore": 2,
+    "multipleScore": 3,
+    "multiplePartialCredit": false,
+    "passingRatio": 0.6,
+    "passingRoundUp": true,
+    "shuffleQuestions": true,
+    "shuffleOptions": true
+  },
+  "presets": {
+    "comprehensive": {
+      "label": "综合模拟",
+      "size": 100,
+      "sampleMode": "stratifiedByModule",
+      "moduleWeights": "spec"
+    },
+    "moduleFocused": {
+      "label": "模块专项",
+      "size": 30,
+      "sampleMode": "singleModule"
+    },
+    "canary": {
+      "label": "金丝雀 25 题",
+      "questionIds": [
+        "A-ARITH-001", "A-ARITH-002", "A-OCC-003", "A-LITTLE-004", "A-MEM-005",
+        "C-LICM-001", "C-LAYOUT-002", "C-SSA-003", "C-SHAPE-004", "C-IRLEVEL-005",
+        "D-DYNAMO-001", "D-DYNAMIC-002", "D-INDUCTOR-003", "D-AOT-004", "D-BREAK-005",
+        "F-TRITON-001", "F-COALESCE-002", "F-BANK-003", "F-DOTPROD-004", "F-RMS-005",
+        "L-LAUNCH-001", "L-TIMING-002", "L-TOL-003", "L-NCU-004", "L-WARMUP-005"
+      ]
+    }
+  },
+  "humanQueue": {
+    "note": "以下题目当前保留 draft，等待人工确认；下游平台默认不公开。",
+    "ids": [
+      "G-COSTMODEL-020",
+      "G-FUSION-003",
+      "G-REORDER-010",
+      "H-MIXED-023",
+      "H-SATURATE-031",
+      "I-ATTBACK-025",
+      "K-ONNXVER-017",
+      "L-STREAM-008"
+    ]
+  }
+}

@@ -41,7 +41,7 @@
   "correctAnswers": [
     "D"
   ],
-  "explanation": "Both orders compute the same set of multiply-accumulates on the same triples (i,j,k); the reduction on `C[i,j]` is +='s over `k`, so any permutation over `(j,k)` is semantically equivalent modulo FP non-associativity (typically ignored for GEMM correctness testing). Order 2 (ikj) is preferred on row-major layouts: the innermost `j` loop walks `B[k, 0..N]` and `C[i, 0..N]` with unit stride (cache-friendly, vectorizable), while Order 1's innermost `k` loop walks `B[0..K, j]` with stride `N` (cache-unfriendly). Option A over-states FP non-associativity as a correctness issue; option C is wrong (the dependence is a reduction on `C[i,j]`, present in both orders); option D reverses the locality direction.",
+  "explanation": "Both orders compute the same set of multiply-accumulates on the same triples (i,j,k); the reduction on `C[i,j]` is +='s over `k`, so any permutation over `(j,k)` is semantically equivalent modulo FP non-associativity (typically ignored for GEMM correctness testing). Order 2 (ikj) is preferred on row-major layouts: the innermost `j` loop walks `B[k, 0..N]` and `C[i, 0..N]` with unit stride (cache-friendly, vectorizable), while Order 1's innermost `k` loop walks `B[0..K, j]` with stride `N` (cache-unfriendly). Option A over-states FP non-associativity as a correctness issue; option B reverses the locality direction; option C is wrong (the dependence is a reduction on `C[i,j]`, present in both orders).",
   "optionExplanations": {
     "A": "Wrong: while FP addition is non-associative, GEMM reductions are treated as commutative/associative in practice; the two orders are considered semantically equivalent for optimization.",
     "B": "Wrong: reverses the locality direction.",
@@ -88,8 +88,8 @@
     "hardwareDependent": true
   },
   "contentCardRef": "data/content-cards/G/G-REORDER-010.json",
-  "reviewStatus": "agent_reviewed",
-  "version": 1,
+  "reviewStatus": "draft",
+  "version": 2,
   "createdAt": "2026-07-26",
   "updatedAt": "2026-07-27"
 }

@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-07-27",
+  "agent": "release-orchestrator",
+  "note": "Release-phase targeted repair of 4 stale explanation-label references discovered by scripts/scan-explanation-labels.mjs. Only explanation text changed; correctAnswers, options, sourceRefs, contentCards unchanged. Each question version bumped and reviewStatus reverted to draft for single-question re-verification.",
+  "resolutions": [
+    {
+      "id": "G-REORDER-010",
+      "finding": "explanation last sentence said 'option D reverses the locality direction' but D is the correct answer; shuffle had moved the reversal-of-direction distractor to option B.",
+      "resolution": "Rewrote last sentence to 'option A over-states FP non-associativity; option B reverses the locality direction; option C is wrong (reduction present in both orders).' Options and correctAnswers unchanged.",
+      "diff": ["explanation", "reviewStatus", "version", "updatedAt"],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "H-SATURATE-031",
+      "finding": "explanation said 'Options B, C, D are unrelated or wrong' but B is the correct answer.",
+      "resolution": "Rewrote to 'Options A, C, D are wrong: A wrongly equates saturation with wrap-around, C prefers wrap-around, and D artificially restricts saturation to weights only.' Options and correctAnswers unchanged.",
+      "diff": ["explanation", "reviewStatus", "version", "updatedAt"],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "K-ONNXVER-017",
+      "finding": "explanation said 'Options A/B/C fabricate relationships' but B is the correct answer.",
+      "resolution": "Rewrote to 'The correct diagnostic (option B) looks at both. Options A, C, D fabricate relationships that do not exist in the ONNX spec.' Options and correctAnswers unchanged.",
+      "diff": ["explanation", "reviewStatus", "version", "updatedAt"],
+      "priorVersion": 1,
+      "newVersion": 2
+    },
+    {
+      "id": "L-STREAM-008",
+      "finding": "explanation said 'Option A is false (events are per-stream when recorded on that stream)' but A is the correct answer; the per-stream claim actually rebuts option B.",
+      "resolution": "Rewrote to 'Option A is correct. Option B is false — events ARE stream-scoped when recorded via record(stream). Option C fabricates dividing semantics. Option D misattributes the cause to synchronize.' Options and correctAnswers unchanged.",
+      "diff": ["explanation", "reviewStatus", "version", "updatedAt"],
+      "priorVersion": 1,
+      "newVersion": 2
+    }
+  ],
+  "scannerFalsePositives": [
+    {
+      "id": "G-REORDER-010 (v2)",
+      "note": "Scanner sees 'Option A over-states...' with 'correctness' nearby in the 80-char window and flags Option A as 'positive'. This is a heuristic false positive; the sentence is negative about A."
+    },
+    {
+      "id": "K-ONNXVER-017 (v2)",
+      "note": "Scanner sees 'Options A, C, D fabricate...' with 'correct diagnostic (option B)' earlier in the window and flags Option A as 'positive'. False positive."
+    }
+  ]
+}

@@ -6,8 +6,8 @@ _由主控 Agent 在每个阶段结束时更新。_
 
 | 项 | 值 |
 |----|-----|
-| 阶段 | Phase 15 – 导出完成，准备推送 |
-| 基线 commit | `<pending final merge>` |
+| 阶段 | Phase 16 – 发布完成（含人工队列） |
+| 基线 commit | `3a9c43f`（remote main HEAD 一致） |
 | 集成分支 | `feat/ml-compiler-knowledge-test-v1` |
 | 目标分支 | `main` |
 | 已完成模块 | 14 / 14 |
@@ -18,16 +18,16 @@ _由主控 Agent 在每个阶段结束时更新。_
 | Primary Review | 400 题 4 独立盲审 subagent 完成 |
 | Repair | 72 题（23 poison-tail + 45 label + 4 substantive） |
 | Verification | 400 题 4 独立复核 subagent 完成 |
-| **升级到 agent_reviewed** | **396 / 400** |
-| 保留 draft | 4（G-COSTMODEL-020、G-FUSION-003、H-MIXED-023、I-ATTBACK-025） |
+| **升级到 agent_reviewed** | **392 / 400** |
+| 保留 draft | 8（G-COSTMODEL-020、G-FUSION-003、H-MIXED-023、I-ATTBACK-025、G-REORDER-010、H-SATURATE-031、K-ONNXVER-017、L-STREAM-008） |
 | BLOCKER 累计 | 0 |
 | MAJOR 累计 | 24（全部 Repair 阶段修复） |
 | MINOR 累计 | ~52（多为 shuffle 后 label mismatch，Repair 修复 45） |
 | 人工抽查包大小 | 260 题（每模块 3 + L5 + paper_design + version_sensitive + performanceClaim + CUDA/Triton + needs_source_verification） |
 | 当前分支 | `main`（已合并 feat/ml-compiler-knowledge-test-v1） |
-| 本地 HEAD | `084c294` merge commit |
-| 本地 tag | `v0.1.0`（未推送） |
-| 远程推送 | **失败**：GitHub `403 Permission denied to clt123321`。已保留全部本地提交、tag 与集成分支。 |
+| 本地 HEAD | `3a9c43f`（待新增 release commit） |
+| 本地 tag | `v0.1.0`（已推送 → `e0577fc`） |
+| 远程推送 | **成功**（SSH origin）：`main` HEAD 与 `v0.1.0` tag 均已同步。 |
 
 ## 阶段追踪
 
@@ -54,7 +54,8 @@ _由主控 Agent 在每个阶段结束时更新。_
 - [x] Phase 12: 生成导出（exports/**）
 - [x] Phase 13: 人工抽查包（260 题）
 - [x] Phase 14: 合并到 main（merge commit 084c294）
-- [ ] Phase 15: 推送 GitHub —— **失败** `403 Permission denied`；保留本地状态，等待用户配置凭证后手动 `git push -u origin main` 与 `git push origin v0.1.0`。
+- [x] Phase 15: 推送 GitHub —— **成功**（切换 origin → SSH 后 `git push -u origin main` + `git push origin v0.1.0`）。
+- [x] Phase 16: 发布收尾 —— 解析标签扫描（106 命中，4 真实冲突已修复，2 启发式误报）；新增 `knowledge-test.config.json` / KIT 集成文档 / Release Notes / Pages 工作流草案 / MANUAL_GITHUB_SETUP。draft 数由 4 → 8。
 
 ## 保留 draft 题目（4）
 

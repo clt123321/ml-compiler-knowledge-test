@@ -1,0 +1,2631 @@
+{
+  "generatedAt": "2026-07-27",
+  "totalHits": 106,
+  "likelyStaleCount": 2,
+  "noteCount": 104,
+  "hits": [
+    {
+      "questionId": "A-BANK-022",
+      "file": "data/questions/A/A-BANK-022.json",
+      "module": "arch_perf_model",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option D is correct; options A, B, C are incorrect. A (Wrong): with a 32-wide ro…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "A-BATCH-028",
+      "file": "data/questions/A/A-BATCH-028.json",
+      "module": "arch_perf_model",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…und until continuous batching aggregates roughly this many concurrent requests. Options B, C, D contradict the analysis."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "A-INTENSE-019",
+      "file": "data/questions/A/A-INTENSE-019.json",
+      "module": "arch_perf_model",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…4096) ≈ 100+ FLOP/byte, entering compute-bound regime on FP16 Tensor-Core GPUs. Option A captures this."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "A-NVLINK-014",
+      "file": "data/questions/A/A-NVLINK-014.json",
+      "module": "arch_perf_model",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…an order of magnitude. So NVLink completes the collective substantially faster. Options A, C, D contain factual or reasoning errors."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "A-PEAK-018",
+      "file": "data/questions/A/A-PEAK-018.json",
+      "module": "arch_perf_model",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ile-boundary padding, warp-scheduler stalls and non-ideal MMA pipeline packing. Options A (memory-bound), C (launch overhead), and D (ridge alignment) contradic…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "A-POWER-029",
+      "file": "data/questions/A/A-POWER-029.json",
+      "module": "arch_perf_model",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… State P0 → P2). The GEMM is compute-bound, so throughput drops proportionally. Options B, C, D contradict the profile or introduce fictional causes."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "A-REGSPILL-025",
+      "file": "data/questions/A/A-REGSPILL-025.json",
+      "module": "arch_perf_model",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…cles of latency and consume HBM bandwidth when L1/L2 do not absorb the traffic. Options B, C, D contradict the CUDA memory model."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "A-TC-023",
+      "file": "data/questions/A/A-TC-023.json",
+      "module": "arch_perf_model",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… speedup; memory-bound kernels benefit less because HBM bandwidth is unchanged. Options B, C, D contradict the documented peak numbers."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-CPROP-010",
+      "file": "data/questions/B/B-CPROP-010.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…known due to %unknown), yielding non-constant top for %y. SCCP is more precise. Options B, C, D contain factual errors about the algorithm."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-CSE-012",
+      "file": "data/questions/B/B-CSE-012.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option C is correct; options A, B, D are incorrect. A (Wrong): compilers default…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-DEFUSE-006",
+      "file": "data/questions/B/B-DEFUSE-006.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…rmine which of possibly many textual definitions of a variable can reach a use. Options B, C, D contain incorrect claims about SSA semantics."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-DOMTREE-025",
+      "file": "data/questions/B/B-DOMTREE-025.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ition's dominance stops applying and multiple reaching definitions could merge. Options B, C, D describe unrelated structures (reverse CFG, phi graph, loop nest…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-ESCAPE-008",
+      "file": "data/questions/B/B-ESCAPE-008.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… stack-allocated (avoiding heap GC pressure), scalarized (SROA), or eliminated. Options B, C, D refer to unrelated analyses."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-INSTSEL-016",
+      "file": "data/questions/B/B-INSTSEL-016.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…er multiple IR ops in one machine instruction, typically with lower total cost. Options B, C, D confuse instruction selection with register allocation, inlining…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-LICM-013",
+      "file": "data/questions/B/B-LICM-013.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option D is correct; options A, B, C are incorrect. A (Wrong): unrolling is a se…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-LOOPINV-023",
+      "file": "data/questions/B/B-LOOPINV-023.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…op-variant. `%e = %s * 2` is therefore also loop-variant and cannot be hoisted. Options B, C, D contain reasoning errors: constants + loop-variant operand ≠ inv…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-PARTIAL-018",
+      "file": "data/questions/B/B-PARTIAL-018.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…and shape specialization in ML compilers (recompiling for a fixed input shape). Options B, C, D confuse partial evaluation with unrelated concepts."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-REGALLOC-015",
+      "file": "data/questions/B/B-REGALLOC-015.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ir uses/defs replaced by loads/stores), then the process repeats until success. Options B, C, D describe unrelated formulations."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "B-SSAFORM-024",
+      "file": "data/questions/B/B-SSAFORM-024.json",
+      "module": "compiler_basics",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…copies with temporaries or use permutation-decomposition to preserve semantics. Options B, C, D contain factual errors: B ignores that phis fire from predecesso…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "C-GRAPH-025",
+      "file": "data/questions/C/C-GRAPH-025.json",
+      "module": "graph_tensor_ir",
+      "correctAnswers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C, D are correct; option A is incorrect. A (Wrong): materialization i…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "D-EXPORT-018",
+      "file": "data/questions/D/D-EXPORT-018.json",
+      "module": "pytorch_compiler",
+      "correctAnswers": [
+        "A",
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, B, D are correct; option C is incorrect. A (Correct). B (Correct). C …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "E-MLIRDIA-002",
+      "file": "data/questions/E/E-MLIRDIA-002.json",
+      "module": "mlir_tvm_xla",
+      "correctAnswers": [
+        "A",
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, B, D are correct; option C is incorrect. A (Correct): Traits are stat…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "E-MLIRTYPE-006",
+      "file": "data/questions/E/E-MLIRTYPE-006.json",
+      "module": "mlir_tvm_xla",
+      "correctAnswers": [
+        "B",
+        "C"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C are correct; options A, D are incorrect. A (Wrong): bufferization i…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "E-TVMSCH-013",
+      "file": "data/questions/E/E-TVMSCH-013.json",
+      "module": "mlir_tvm_xla",
+      "correctAnswers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C, D are correct; option A is incorrect. A (Wrong): `vectorize` is no…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "E-XLASHP-022",
+      "file": "data/questions/E/E-XLASHP-022.json",
+      "module": "mlir_tvm_xla",
+      "correctAnswers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C, D are correct; option B is incorrect. A (Correct): dynamic_* ops e…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "F-BENCH-039",
+      "file": "data/questions/F/F-BENCH-039.json",
+      "module": "cuda_triton_kernel",
+      "correctAnswers": [
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options C, D are correct; options A, B are incorrect. A (Wrong): single-launch t…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "F-DIVERGE-029",
+      "file": "data/questions/F/F-DIVERGE-029.json",
+      "module": "cuda_triton_kernel",
+      "correctAnswers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C, D are correct; option A is incorrect. A (Wrong): nvcc uses predica…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "F-FLASHATTN-023",
+      "file": "data/questions/F/F-FLASHATTN-023.json",
+      "module": "cuda_triton_kernel",
+      "correctAnswers": [
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options C, D are correct; options A, B are incorrect. A (Wrong): FlashAttention …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "F-GEMMFP16-015",
+      "file": "data/questions/F/F-GEMMFP16-015.json",
+      "module": "cuda_triton_kernel",
+      "correctAnswers": [
+        "B",
+        "C"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C are correct; options A, D are incorrect. A (Wrong): mixed-precision…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "F-LN-020",
+      "file": "data/questions/F/F-LN-020.json",
+      "module": "cuda_triton_kernel",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option C is correct; options A, B, D are incorrect. A (Wrong): rsqrt/tl.sqrt rec…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "F-SOFTMAX-019",
+      "file": "data/questions/F/F-SOFTMAX-019.json",
+      "module": "cuda_triton_kernel",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option C is correct; options A, B, D are incorrect. A (Wrong): -inf is the corre…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "F-STREAM-026",
+      "file": "data/questions/F/F-STREAM-026.json",
+      "module": "cuda_triton_kernel",
+      "correctAnswers": [
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options C, D are correct; options A, B are incorrect. A (Wrong): streams are con…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "F-TLPGM-006",
+      "file": "data/questions/F/F-TLPGM-006.json",
+      "module": "cuda_triton_kernel",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…broadcasting on `[:, None]` / `[None, :]` to form a 2D `[BM, BN]` address grid. Options B/C/D fabricate incorrect behaviors."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-ANSOR-024",
+      "file": "data/questions/G/G-ANSOR-024.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…s a system that discovers schedules for new operators without per-op templates. Option B misrepresents Ansor as a Tensor Core code generator. Option C misrepres…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…per-op templates. Option B misrepresents Ansor as a Tensor Core code generator. Option C misrepresents it as a runtime autotuner. Option D is a straw-man reimpl…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…a Tensor Core code generator. Option C misrepresents it as a runtime autotuner. Option D is a straw-man reimplementation claim."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-AUTOTUNE-021",
+      "file": "data/questions/G/G-AUTOTUNE-021.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…nd and declaring a tie inside it, and (c) using median/geomean instead of mean. Options B (driver leak) and C (alternating optima) are unsupported. Option D con…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ad of mean. Options B (driver leak) and C (alternating optima) are unsupported. Option D confuses seed determinism with measurement noise — a seed affects the t…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-BUDGET-029",
+      "file": "data/questions/G/G-BUDGET-029.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "A",
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, B, D are correct; option C is incorrect. A (Correct): short-lived usa…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-CFCSE-017",
+      "file": "data/questions/G/G-CFCSE-017.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option B is correct; options A, C, D are incorrect. A (Wrong): mischaracterizes …"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…mer and no side effect). All three are semantics-preserving on pure operations. Option D introduces an irrelevant loop context."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-COSTMODEL-020",
+      "file": "data/questions/G/G-COSTMODEL-020.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "B",
+        "C"
+      ],
+      "labelsMentioned": [
+        "A",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… learned or measurement-based rankings rather than pure analytical cost models. Option A asserts no divergence in principle, contradicting the entire motivation…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…gence in principle, contradicting the entire motivation of learned cost models. Option D describes warmup effects, which are a *measurement-methodology* concern…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-FUSION-005",
+      "file": "data/questions/G/G-FUSION-005.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option C is correct; options A, B, D are incorrect. A (Wrong): correctness is pr…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-HALIDE-025",
+      "file": "data/questions/G/G-HALIDE-025.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ammers write the algorithm once and iterate on schedules or use autoschedulers. Options B, C, D are inversions or unrelated framings."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-INDUCTOR-027",
+      "file": "data/questions/G/G-INDUCTOR-027.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "… consider memory traffic as a fusion cost; it declined this fusion accordingly. Option B is false: TorchInductor routinely fuses pointwise with reductions (e.g.…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…lse: TorchInductor routinely fuses pointwise with reductions (e.g., LayerNorm). Option C is false: pointwise-into-reduction is legal; the scheduler's decision i…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…gal; the scheduler's decision is a performance heuristic, not a legality issue. Option D over-claims optimality; heuristics are approximations, not proofs of op…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-KERNSEL-019",
+      "file": "data/questions/G/G-KERNSEL-019.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… driven by a static cost model, a learned cost model, or by direct measurement. Option B refers to link-time library resolution, unrelated. Option C describes r…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…direct measurement. Option B refers to link-time library resolution, unrelated. Option C describes runtime device dispatch. Option D describes pruning, unrelate…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…time library resolution, unrelated. Option C describes runtime device dispatch. Option D describes pruning, unrelated."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-MEMPLAN-015",
+      "file": "data/questions/G/G-MEMPLAN-015.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…assigns tensor → offset into an arena, so the runtime avoids per-op allocation. Option B describes a runtime allocator (like PyTorch's CachingAllocator), a diff…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…tor (like PyTorch's CachingAllocator), a different and complementary mechanism. Option C confuses per-iteration reuse (runtime concept) with the compile-time pl…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…on C confuses per-iteration reuse (runtime concept) with the compile-time plan. Option D confuses SSA renaming with buffer assignment."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-PORTABILITY-026",
+      "file": "data/questions/G/G-PORTABILITY-026.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C, D are correct; option B is incorrect. A (Correct): honest baseline…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-REORDER-010",
+      "file": "data/questions/G/G-REORDER-010.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "positive",
+          "stale": true,
+          "context": "…r 1's innermost `k` loop walks `B[0..K, j]` with stride `N` (cache-unfriendly). Option A over-states FP non-associativity as a correctness issue; option B rever…"
+        }
+      ],
+      "likelyStaleLabel": true,
+      "severity": "MAJOR",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-TVMSCHED-028",
+      "file": "data/questions/G/G-TVMSCHED-028.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C, D are correct; option A is incorrect. A (Wrong): bind to a thread …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-UNROLL-011",
+      "file": "data/questions/G/G-UNROLL-011.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option D is correct; options A, B, C are incorrect. A (Wrong): unrolling can exp…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "G-VECTOR-012",
+      "file": "data/questions/G/G-VECTOR-012.json",
+      "module": "graph_opt_schedule",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "… `N` is not a multiple of 8, a scalar or masked epilogue loop handles the tail. Option A ignores the shift/tail; C fabricates a loop-carried write dependence (t…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": false
+    },
+    {
+      "questionId": "H-ACCUM-007",
+      "file": "data/questions/H/H-ACCUM-007.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C, D are correct; option B is incorrect. A (Correct): bandwidth halvi…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-ACCUM-008",
+      "file": "data/questions/H/H-ACCUM-008.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…es the running sum in each partial, keeping most additions numerically visible. Option B claims associativity, which FP addition does not have. Option C confuse…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ically visible. Option B claims associativity, which FP addition does not have. Option C confuses precision-preserving upcast with a semantic bug. Option D conf…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…es not have. Option C confuses precision-preserving upcast with a semantic bug. Option D confuses swamping with overflow — the reduction may not overflow but st…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-CALIB-017",
+      "file": "data/questions/H/H-CALIB-017.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C, D are correct; option A is incorrect. A (Wrong): not clipping ≠ mo…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-DEQ-029",
+      "file": "data/questions/H/H-DEQ-029.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… but compute uses standard FP16 Tensor Cores (no INT4 Tensor Core is required). Option B fabricates a no-op conversion. Option C misdescribes the numerical comp…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ores (no INT4 Tensor Core is required). Option B fabricates a no-op conversion. Option C misdescribes the numerical composition. Option D wrongly claims INT4 GE…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…fabricates a no-op conversion. Option C misdescribes the numerical composition. Option D wrongly claims INT4 GEMM, which would require INT4 Tensor Core hardware…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-DTYPE-002",
+      "file": "data/questions/H/H-DTYPE-002.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option C is correct; options A, B, D are incorrect. A (Wrong): BF16's exponent w…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-DTYPE-003",
+      "file": "data/questions/H/H-DTYPE-003.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…or FP32 tensors on Ampere+ when `torch.backends.cuda.matmul.allow_tf32 = True`. Options B, C, D misrepresent the format."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": false
+    },
+    {
+      "questionId": "H-DYN-014",
+      "file": "data/questions/H/H-DYN-014.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…erence; static needs a calibration corpus but avoids runtime scale calculation. Option B conflates orthogonal concepts (dynamic/static is about scale timing; PT…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…amic/static is about scale timing; PTQ/QAT is about training-time involvement). Option C invents a format-dependent meaning. Option D is the direct reverse."
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… about training-time involvement). Option C invents a format-dependent meaning. Option D is the direct reverse."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-FAKE-016",
+      "file": "data/questions/H/H-FAKE-016.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option C is correct; options A, B, D are incorrect. A (Wrong): round destroys pr…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ior of the clamp region (and zero outside). This is standard in QAT frameworks. Option D describes rounding-convention mismatches (a real concern) but the misma…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-FP8ACCUM-032",
+      "file": "data/questions/H/H-FP8ACCUM-032.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C, D are correct; option B is incorrect. A (Correct): peak-throughput…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-GEMM-022",
+      "file": "data/questions/H/H-GEMM-022.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…n is weight-only quantization (W4A16, W8A16) that reduces the weight bandwidth. Options B, C, D are inventions."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-GPTQ-020",
+      "file": "data/questions/H/H-GPTQ-020.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…d produces INT4 weights with 1-4% perplexity increase on 175B-parameter models. Options B, C, D are unrelated inventions."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-GRAN-012",
+      "file": "data/questions/H/H-GRAN-012.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option B is correct; options A, C, D are incorrect. A (Wrong): broadcasting alig…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…squeeze(1)` or `.view(out, 1)`, so it broadcasts across the trailing (in) axis. Option D partially recognizes the trailing-axis alignment but misdescribes the f…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-INT-005",
+      "file": "data/questions/H/H-INT-005.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ids the asymmetry problem that would otherwise complicate GEMM implementations. Option B is the unsigned range (UINT8/UINT4). Option C invents ranges (there is …"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… complicate GEMM implementations. Option B is the unsigned range (UINT8/UINT4). Option C invents ranges (there is no +128 in INT8, no +8 in INT4). Option D desc…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…INT8/UINT4). Option C invents ranges (there is no +128 in INT8, no +8 in INT4). Option D describes the full two's-complement range but is not the symmetric conv…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-INT4KV-035",
+      "file": "data/questions/H/H-INT4KV-035.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C, D are correct; option B is incorrect. A (Correct): kernel-support …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-KVQ-025",
+      "file": "data/questions/H/H-KVQ-025.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…attention kernel reads KVs at quantized precision, memory bandwidth also drops. Option B: KV compute is a small fraction of total attention work. Option C: mode…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…h also drops. Option B: KV compute is a small fraction of total attention work. Option C: model weights are separate. Option D: input embeddings are separate."
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…a small fraction of total attention work. Option C: model weights are separate. Option D: input embeddings are separate."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-KVQ-026",
+      "file": "data/questions/H/H-KVQ-026.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…ade-off (0.5% accuracy for 2× batch capacity) is often favorable in production. Option B is false: INT8 KV is not bit-exact with FP16. Option C invents a range …"
+        },
+        {
+          "letter": "C",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…favorable in production. Option B is false: INT8 KV is not bit-exact with FP16. Option C invents a range issue (INT8 quantizes each K/V element with its own sca…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…tizes each K/V element with its own scale; range is handled per-element scale). Option D falsely claims the memory savings are illusory; PagedAttention allocato…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-KVQ-027",
+      "file": "data/questions/H/H-KVQ-027.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A",
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, B, D are correct; option C is incorrect. A (Correct): native quantize…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-MEMTRAFFIC-024",
+      "file": "data/questions/H/H-MEMTRAFFIC-024.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option C is correct; options A, B, D are incorrect. A (Wrong): per-group scales …"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… the observed decode speedup is close to 4× minus dequant-in-register overhead. Option D fabricates an 8× that has no basis (per-channel scale saves no addition…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-MIXED-023",
+      "file": "data/questions/H/H-MIXED-023.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C, D are correct; option B is incorrect. A (Correct): loss scaling fo…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-OUTLIER-018",
+      "file": "data/questions/H/H-OUTLIER-018.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… migrate the outlier magnitude to weights (which can be per-channel-quantized). Options B, C, D are misdirection or misdiagnosis."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-OVERFLOW-006",
+      "file": "data/questions/H/H-OVERFLOW-006.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…e multiply-accumulate accumulator is FP32, and the output is downcast on write. Option B dismisses the numerical issue. Option C invents an indexing bug. Option…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…2, and the output is downcast on write. Option B dismisses the numerical issue. Option C invents an indexing bug. Option D confuses precision with range (they a…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…rite. Option B dismisses the numerical issue. Option C invents an indexing bug. Option D confuses precision with range (they are orthogonal properties of a floa…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-PTQ-015",
+      "file": "data/questions/H/H-PTQ-015.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…t widths (INT4 or below) or on sensitive layers, at the cost of a training run. Options B, C, D are unrelated or reversed."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-QAT-033",
+      "file": "data/questions/H/H-QAT-033.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ods like PACT (learned clip point) or LSQ (learned step size) reduce STE noise. Options B, C, D misdescribe STE or its scope."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-ROUND-030",
+      "file": "data/questions/H/H-ROUND-030.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…g) to preserve small gradient updates that RNE would systematically round away. Options B, C, D misdescribe or forbid."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-SATURATE-031",
+      "file": "data/questions/H/H-SATURATE-031.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…antization frameworks (TensorRT, PyTorch, ONNX Q/DQ, cuDNN) all use saturation. Options A, C, D are wrong: A wrongly equates saturation with wrap-around, C pref…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": false
+    },
+    {
+      "questionId": "H-SCALE-009",
+      "file": "data/questions/H/H-SCALE-009.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…quantization`, ONNX QuantizeLinear / DequantizeLinear, and academic literature. Options B, C, D swap operators (multiplication vs. division), swap sign of z, or…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-SMOOTH-019",
+      "file": "data/questions/H/H-SMOOTH-019.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…-magnitude variation that per-channel weight quantization already handles well. Option B describes LLM.int8, not SmoothQuant. Option C invents a filtering-based…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…uantization already handles well. Option B describes LLM.int8, not SmoothQuant. Option C invents a filtering-based approach. Option D invents a training-based m…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…scribes LLM.int8, not SmoothQuant. Option C invents a filtering-based approach. Option D invents a training-based method."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-SYMM-010",
+      "file": "data/questions/H/H-SYMM-010.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Option B is correct; options A, C, D are incorrect. A (Wrong): symmetric and asy…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "H-TRTLLM-034",
+      "file": "data/questions/H/H-TRTLLM-034.json",
+      "module": "quantization",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…256 gives 1.5%. The observed perplexity curve captures this trade-off directly. Options B, C are absolutist; option D denies a well-established mechanism."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "I-ATTBACK-025",
+      "file": "data/questions/I/I-ATTBACK-025.json",
+      "module": "core_ops_attention",
+      "correctAnswers": [
+        "A",
+        "B",
+        "C"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, B, C are correct; option D is incorrect. A (Correct): FlashAttention …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "I-EPILOGUE-024",
+      "file": "data/questions/I/I-EPILOGUE-024.json",
+      "module": "core_ops_attention",
+      "correctAnswers": [
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, D are correct; options A, C are incorrect. A (Wrong): tensor-core epi…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "I-FLASHPROP-026",
+      "file": "data/questions/I/I-FLASHPROP-026.json",
+      "module": "core_ops_attention",
+      "correctAnswers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C, D are correct; option A is incorrect. A (Wrong): benchmark_leak — …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "I-FUSEDPROP-030",
+      "file": "data/questions/I/I-FUSEDPROP-030.json",
+      "module": "core_ops_attention",
+      "correctAnswers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C, D are correct; option A is incorrect. A (Wrong): fusion has real c…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "I-KVDF-029",
+      "file": "data/questions/I/I-KVDF-029.json",
+      "module": "core_ops_attention",
+      "correctAnswers": [
+        "A",
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, B, D are correct; option C is incorrect. A (Correct): KV quant is a d…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "I-MOEPROP-028",
+      "file": "data/questions/I/I-MOEPROP-028.json",
+      "module": "core_ops_attention",
+      "correctAnswers": [
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "C"
+      ],
+      "matches": [
+        {
+          "letter": "C",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options C, D are correct; options A, B are incorrect. A (Wrong): expert parallel…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "I-RMSPROP-027",
+      "file": "data/questions/I/I-RMSPROP-027.json",
+      "module": "core_ops_attention",
+      "correctAnswers": [
+        "A",
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, B are correct; options C, D are incorrect. A (Correct): bandwidth-bou…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "I-SPARSE-022",
+      "file": "data/questions/I/I-SPARSE-022.json",
+      "module": "core_ops_attention",
+      "correctAnswers": [
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, D are correct; options A, C are incorrect. A (Wrong): hardware requir…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "J-DISAG-029",
+      "file": "data/questions/J/J-DISAG-029.json",
+      "module": "llm_inference",
+      "correctAnswers": [
+        "A",
+        "C"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C are correct; options B, D are incorrect. A (Correct): transfer over…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "J-FAIRTHR-030",
+      "file": "data/questions/J/J-FAIRTHR-030.json",
+      "module": "llm_inference",
+      "correctAnswers": [
+        "A",
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, B, D are correct; option C is incorrect. A (Correct): fair queueing. …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "J-OOM-028",
+      "file": "data/questions/J/J-OOM-028.json",
+      "module": "llm_inference",
+      "correctAnswers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, C, D are correct; option A is incorrect. A (Wrong): PP shards layers …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "J-PAGEDDES-024",
+      "file": "data/questions/J/J-PAGEDDES-024.json",
+      "module": "llm_inference",
+      "correctAnswers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C, D are correct; option B is incorrect. A (Correct): sharing enables…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "J-SPECPROP-023",
+      "file": "data/questions/J/J-SPECPROP-023.json",
+      "module": "llm_inference",
+      "correctAnswers": [
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, D are correct; options A, C are incorrect. A (Wrong): ignores accepta…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "J-TVL-027",
+      "file": "data/questions/J/J-TVL-027.json",
+      "module": "llm_inference",
+      "correctAnswers": [
+        "A",
+        "C"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C are correct; options B, D are incorrect. A (Correct): bandwidth→com…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "K-ONNXVER-017",
+      "file": "data/questions/K/K-ONNXVER-017.json",
+      "module": "runtime_deploy",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "positive",
+          "stale": true,
+          "context": "…r can make a model unloadable. The correct diagnostic (option B) looks at both. Options A, C, D fabricate relationships that do not exist in the ONNX spec."
+        }
+      ],
+      "likelyStaleLabel": true,
+      "severity": "MAJOR",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "K-PKG-027",
+      "file": "data/questions/K/K-PKG-027.json",
+      "module": "runtime_deploy",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…signatures, and preprocessing/postprocessing metadata, plus an archive version. Options A/B/D describe non-viable packaging schemes: shipping only weights would…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-ASYNC-007",
+      "file": "data/questions/L/L-ASYNC-007.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…o flush prior work), enqueues the loop, and synchronizes before the end marker. Option A conflates autograd with async accounting; C is false (perf_counter reso…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": false
+    },
+    {
+      "questionId": "L-CACHE-025",
+      "file": "data/questions/L/L-CACHE-025.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…peak. Blocking helps when there is reuse to expose, which is not the case here. Options A/B/C fabricate mechanisms: A misapplies blocking, B confuses low DRAM w…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": false
+    },
+    {
+      "questionId": "L-DETERM-017",
+      "file": "data/questions/L/L-DETERM-017.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "B",
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options B, D are correct; options A, C are incorrect. A (Wrong): `CUDA_VISIBLE_D…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-DYNREG-013",
+      "file": "data/questions/L/L-DYNREG-013.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "Options A, C, D are correct; option B is incorrect. A (Correct): dynamic-shape c…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-E2E-020",
+      "file": "data/questions/L/L-E2E-020.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… f/k). For a small f the achievable end-to-end speedup is bounded well below k. Options A, B, C fabricate compositional or additive relationships that don't hol…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-GOLDEN-009",
+      "file": "data/questions/L/L-GOLDEN-009.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…d guarantee failure; applying a BF16 tolerance to an FP32 test would hide bugs. Option B is anti-pattern (same-family reference); C sets a wrong tolerance floor…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": false
+    },
+    {
+      "questionId": "L-IRDUMP-028",
+      "file": "data/questions/L/L-IRDUMP-028.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "B"
+      ],
+      "matches": [
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… the primary use case is diagnosing performance regressions or missing fusions. Options B/C/D fabricate contents that these dumps do not have (PTX/SASS, ONNX se…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-NAN-015",
+      "file": "data/questions/L/L-NAN-015.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ttention-style safe softmax that subtracts the running max in higher precision. Option A misattributes to GradScaler. B is fatalistic. C falsely claims FP32 als…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-OCC-022",
+      "file": "data/questions/L/L-OCC-022.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "B"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "… force smaller tiles, more memory traffic, and typically worse GEMM throughput. Options A/B/D misread the metrics."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-PCTL-019",
+      "file": "data/questions/L/L-PCTL-019.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…³-10⁴ samples, and to communicate uncertainty you report a confidence interval. Options A, C, D fabricate rules that do not exist in statistics."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-ROOFLINE-021",
+      "file": "data/questions/L/L-ROOFLINE-021.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "D"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…s, or the measurement contains async-timing errors, or the grid is undersized). Options A and C mis-count the byte traffic (A: 16 bytes per pair double-counts; …"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-SHAPECOV-012",
+      "file": "data/questions/L/L-SHAPECOV-012.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "C"
+      ],
+      "labelsMentioned": [
+        "A"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ast tile. A well-designed shape matrix covers those edge cases plus a fuzz set. Options A/B/D miss important classes of bugs: A ignores mask logic for non-tile-…"
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    },
+    {
+      "questionId": "L-STREAM-008",
+      "file": "data/questions/L/L-STREAM-008.json",
+      "module": "profiling_debug",
+      "correctAnswers": [
+        "A"
+      ],
+      "labelsMentioned": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "matches": [
+        {
+          "letter": "A",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…record(s1)`, `end_evt.record(s1)`) isolates the measurement to `s1`'s progress. Option A is correct. Option B is false — events ARE stream-scoped when recorded …"
+        },
+        {
+          "letter": "B",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "….record(s1)`) isolates the measurement to `s1`'s progress. Option A is correct. Option B is false — events ARE stream-scoped when recorded via `record(stream)`.…"
+        },
+        {
+          "letter": "C",
+          "claimSide": "negative",
+          "stale": false,
+          "context": "…ption B is false — events ARE stream-scoped when recorded via `record(stream)`. Option C fabricates dividing semantics. Option D misattributes the cause to sync…"
+        },
+        {
+          "letter": "D",
+          "claimSide": "unclear",
+          "stale": false,
+          "context": "…ped when recorded via `record(stream)`. Option C fabricates dividing semantics. Option D misattributes the cause to synchronize."
+        }
+      ],
+      "likelyStaleLabel": false,
+      "severity": "NOTE",
+      "requiresHumanCheck": true
+    }
+  ]
+}
