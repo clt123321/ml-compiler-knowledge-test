@@ -50,7 +50,7 @@
 - 接入 `knowledge-test-kit` 共享前端脚手架（配置见 `knowledge-test.config.json`）。
 - 完成 8 题人工复核后升级至 `human_reviewed` 或改写为新版本。
 - 补充 GPU 实测数据，用于替换纯 analytical 的 performance claim。
-- 启用 GitHub Pages（工作流草案见 `docs/pages-workflow-draft.yml`）。
+- 启用 GitHub Pages（当时为工作流草案；当前产品化版本已由 `.github/workflows/pages.yml` 取代）。
 
 ## 免责声明
 

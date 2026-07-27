@@ -1,0 +1,100 @@
+[
+  {
+    "id": "arch_perf_model",
+    "code": "A",
+    "name": "计算机体系结构与性能模型",
+    "description": "体系结构、存储层次、并行执行模型与性能分析基础。",
+    "order": 1
+  },
+  {
+    "id": "compiler_basics",
+    "code": "B",
+    "name": "编译器基础与程序分析",
+    "description": "CFG、SSA、数据流分析与经典优化。",
+    "order": 2
+  },
+  {
+    "id": "graph_tensor_ir",
+    "code": "C",
+    "name": "计算图、张量程序与中间表示",
+    "description": "图 IR、张量 IR、shape、layout 与 lowering。",
+    "order": 3
+  },
+  {
+    "id": "pytorch_compiler",
+    "code": "D",
+    "name": "PyTorch Compiler 与动态图捕获",
+    "description": "TorchDynamo、AOTAutograd、TorchInductor 与 graph break。",
+    "order": 4
+  },
+  {
+    "id": "mlir_tvm_xla",
+    "code": "E",
+    "name": "MLIR / TVM / XLA 与编译器生态",
+    "description": "MLIR、TVM、XLA、IREE 与 ONNX 等编译生态。",
+    "order": 5
+  },
+  {
+    "id": "cuda_triton_kernel",
+    "code": "F",
+    "name": "CUDA / Triton / GPU Kernel",
+    "description": "CUDA 执行模型、Triton kernel 与 GPU 性能优化。",
+    "order": 6
+  },
+  {
+    "id": "graph_opt_schedule",
+    "code": "G",
+    "name": "图优化 / 循环变换 / 调度 / 自动调优",
+    "description": "融合、tiling、reordering、cost model 与 autotuning。",
+    "order": 7
+  },
+  {
+    "id": "quantization",
+    "code": "H",
+    "name": "数值表示、混合精度与模型量化",
+    "description": "混合精度、量化策略、校准方法与硬件约束。",
+    "order": 8
+  },
+  {
+    "id": "core_ops_attention",
+    "code": "I",
+    "name": "核心算子、融合 Kernel 与 Attention",
+    "description": "GEMM、归一化、Attention 与融合 kernel 数据流。",
+    "order": 9
+  },
+  {
+    "id": "llm_inference",
+    "code": "J",
+    "name": "LLM 推理优化与生成系统",
+    "description": "Prefill/Decode、KV Cache、continuous batching 与 serving。",
+    "order": 10
+  },
+  {
+    "id": "runtime_deploy",
+    "code": "K",
+    "name": "Runtime、模型交换与部署",
+    "description": "AOT、交换格式、runtime 与推理部署链路。",
+    "order": 11
+  },
+  {
+    "id": "profiling_debug",
+    "code": "L",
+    "name": "Profiling / Benchmark / Debug / 正确性",
+    "description": "性能剖析、基准设计、debug 与正确性验证。",
+    "order": 12
+  },
+  {
+    "id": "distributed",
+    "code": "M",
+    "name": "分布式、通信编译与异构执行",
+    "description": "并行策略、通信代价、异构协同与系统扩展。",
+    "order": 13
+  },
+  {
+    "id": "paper_design",
+    "code": "N",
+    "name": "论文设计、系统权衡与研究判断",
+    "description": "论文动机、系统权衡与研究结论判断。",
+    "order": 14
+  }
+]

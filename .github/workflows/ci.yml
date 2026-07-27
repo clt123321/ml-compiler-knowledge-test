@@ -14,17 +14,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Validate question bank
-        run: node scripts/validate-questions.mjs
-      - name: Audit question bank
-        run: node scripts/audit-questions.mjs
+      - name: Validate content
+        run: npm run content:validate
+      - name: Audit content
+        run: npm run content:audit
       - name: Build blind package
-        run: node scripts/build-blind-package.mjs
-      - name: Export
-        run: node scripts/export-questions.mjs
+        run: npm run content:blind
+      - name: Export content
+        run: npm run content:export
+      - name: Inspect content site integration
+        run: npm run inspect
+      - name: Check deploy readiness
+        run: npm run doctor
+      - name: Validate Kit compatibility
+        run: npm run site:validate
+      - name: Build static site
+        run: npm run build
+      - name: Verify dist output
+        run: |
+          test -f dist/index.html
+          test -f dist/practice/index.html
+          test -f dist/pagefind/pagefind.js
+          test -d dist/questions
+          test -d dist/modules
       - name: Archive exports
         uses: actions/upload-artifact@v4
         with:
           name: exports
           path: exports/
           if-no-files-found: warn
+      - name: Archive static site
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error

@@ -1,18 +1,32 @@
 {
   "name": "ml-compiler-knowledge-test",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
+  "private": false,
   "type": "module",
-  "description": "ML Compiler Knowledge Test — question bank, content cards, audit pipeline",
+  "description": "ML Compiler Knowledge Test — a Kit-powered ML compiler and inference optimization knowledge bank",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clt123321/ml-compiler-knowledge-test.git"
+  },
+  "homepage": "https://clt123321.github.io/ml-compiler-knowledge-test/",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "validate:questions": "node scripts/validate-questions.mjs",
-    "audit:questions": "node scripts/audit-questions.mjs",
-    "blind:build": "node scripts/build-blind-package.mjs",
-    "export:questions": "node scripts/export-questions.mjs",
-    "check": "npm run validate:questions && npm run audit:questions"
+    "dev": "node scripts/kit-runner.mjs dev",
+    "build": "node scripts/kit-runner.mjs build",
+    "preview": "node scripts/kit-runner.mjs preview",
+    "doctor": "node scripts/kit-runner.mjs doctor",
+    "inspect": "node scripts/kit-runner.mjs inspect",
+    "site:validate": "node scripts/kit-runner.mjs validate",
+    "site:prepare": "node scripts/build-kit-question-bank.mjs",
+    "content:validate": "node scripts/validate-questions.mjs",
+    "content:audit": "node scripts/audit-questions.mjs",
+    "content:blind": "node scripts/build-blind-package.mjs",
+    "content:export": "node scripts/export-questions.mjs",
+    "content:scan-labels": "node scripts/scan-explanation-labels.mjs",
+    "test": "npm run content:validate && npm run content:audit && npm run site:validate",
+    "clean": "rm -rf dist .cache/knowledge-test-kit"
   }
 }
